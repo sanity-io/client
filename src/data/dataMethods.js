@@ -1,6 +1,5 @@
 const assign = require('object-assign')
-const {filter} = require('@sanity/observable/operators/filter')
-const {map} = require('@sanity/observable/operators/map')
+const {map, filter} = require('../util/observable')
 const validators = require('../validators')
 const getSelection = require('../util/getSelection')
 const encodeQueryString = require('./encodeQueryString')

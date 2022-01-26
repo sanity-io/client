@@ -1,5 +1,5 @@
 const assign = require('object-assign')
-const Observable = require('@sanity/observable/minimal')
+const {Observable} = require('../util/observable')
 const polyfilledEventSource = require('@sanity/eventsource')
 const generateHelpUrl = require('@sanity/generate-help-url')
 const pick = require('../util/pick')

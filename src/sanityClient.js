@@ -1,6 +1,5 @@
 const assign = require('object-assign')
-const {filter} = require('@sanity/observable/operators/filter')
-const {map} = require('@sanity/observable/operators/map')
+const {map, filter} = require('./util/observable')
 const Patch = require('./data/patch')
 const Transaction = require('./data/transaction')
 const dataMethods = require('./data/dataMethods')
