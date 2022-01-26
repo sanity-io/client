@@ -1,5 +1,5 @@
 const assign = require('object-assign')
-const {map, filter} = require('./util/observable')
+const {Observable, map, filter} = require('./util/observable')
 const Patch = require('./data/patch')
 const Transaction = require('./data/transaction')
 const dataMethods = require('./data/dataMethods')
@@ -95,7 +95,9 @@ assign(SanityClient.prototype, {
       })
     )
 
-    return httpRequest(reqOptions, this.clientConfig.requester)
+    return new Observable((subscriber) =>
+      httpRequest(reqOptions, this.clientConfig.requester).subscribe(subscriber)
+    )
   },
 
   request(options) {

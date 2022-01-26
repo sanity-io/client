@@ -154,6 +154,56 @@ test('can use request() for API-relative requests (custom api version)', (t) => 
     .then(t.end)
 })
 
+test('observable requests are lazy', (t) => {
+  let didRequest = false
+  nock(projectHost())
+    .get('/v1/ping')
+    .reply(() => {
+      didRequest = true
+      return [200, {pong: true}]
+    })
+
+  const req = getClient().observable.request({uri: '/ping'})
+
+  setTimeout(() => {
+    t.false(didRequest)
+    req.subscribe({
+      next: (res) => {
+        t.true(didRequest)
+      },
+      error: t.ifError,
+      complete: t.end,
+    })
+  }, 1)
+})
+
+test('observable requests are cold', (t) => {
+  let requestCount = 0
+  nock(projectHost())
+    .get('/v1/ping')
+    .twice()
+    .reply(() => {
+      requestCount++
+      return [200, {pong: true}]
+    })
+
+  const req = getClient().observable.request({uri: '/ping'})
+
+  t.equal(requestCount, 0)
+  req.subscribe({
+    next: () => {
+      t.equal(requestCount, 1)
+      req.subscribe({
+        next: () => {
+          t.equal(requestCount, 2)
+        },
+        error: t.ifError,
+        complete: t.end,
+      })
+    },
+    error: t.ifError,
+  })
+})
 test('can use getUrl() to get API-relative paths', (t) => {
   t.equal(getClient().getUrl('/bar/baz'), `${projectHost()}/v1/bar/baz`)
   t.end()
@@ -1752,6 +1802,76 @@ test('listeners connect to listen endpoint with prefixed request tag, emits even
         t.end()
       },
     })
+})
+
+test('listeners requests are lazy', (t) => {
+  const response = [
+    ':',
+    '',
+    'event: welcome',
+    'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+    '',
+    'event: mutation',
+    `data: ${JSON.stringify({})}`,
+  ].join('\n')
+
+  let didRequest = false
+  nock(projectHost())
+    .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
+    .reply(() => {
+      didRequest = true
+      return [200, response]
+    })
+  const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
+  setTimeout(() => {
+    t.false(didRequest)
+    const sub = req.subscribe({
+      next: (r) => {
+        t.true(didRequest)
+        sub.unsubscribe()
+        t.end()
+      },
+    })
+  }, 10)
+})
+
+test('listener requests are cold', (t) => {
+  const response = [
+    ':',
+    '',
+    'event: welcome',
+    'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+    '',
+    ':',
+  ].join('\n')
+
+  let requestCount = 0
+  nock(projectHost())
+    .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
+    .twice()
+    .reply(() => {
+      requestCount++
+      return [200, response]
+    })
+
+  const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
+
+  t.equal(requestCount, 0)
+  const firstSub = req.subscribe({
+    next: (r) => {
+      t.equal(requestCount, 1)
+      firstSub.unsubscribe()
+      const secondSub = req.subscribe({
+        next: () => {
+          t.equal(requestCount, 2)
+          secondSub.unsubscribe()
+          t.end()
+        },
+        error: t.ifError,
+      })
+    },
+    error: t.ifError
+  })
 })
 
 /*****************
