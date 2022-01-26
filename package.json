@@ -64,8 +64,7 @@
     "content",
     "client",
     "fetch",
-    "api",
-    "gradient"
+    "api"
   ],
   "author": "Sanity.io <hello@sanity.io>",
   "license": "MIT",

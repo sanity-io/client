@@ -505,16 +505,6 @@ export interface ClientConfig {
   /**
    * @deprecated Don't use
    */
-  gradientMode?: boolean
-
-  /**
-   * @deprecated Don't use
-   */
-  namespace?: string
-
-  /**
-   * @deprecated Don't use
-   */
   useProjectHostname?: boolean
 
   /**

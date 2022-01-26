@@ -8,7 +8,6 @@ const defaultConfig = {
   apiHost: 'https://api.sanity.io',
   apiVersion: '1',
   useProjectHostname: true,
-  gradientMode: false,
   isPromiseAPI: true,
 }
 
@@ -25,16 +24,11 @@ exports.initConfig = (config, prevConfig) => {
   }
 
   const newConfig = assign({}, defaultConfig, specifiedConfig)
-  const gradientMode = newConfig.gradientMode
-  const projectBased = !gradientMode && newConfig.useProjectHostname
+  const projectBased = newConfig.useProjectHostname
 
   if (typeof Promise === 'undefined') {
     const helpUrl = generateHelpUrl('js-client-promise-polyfill')
     throw new Error(`No native Promise-implementation found, polyfill needed - see ${helpUrl}`)
-  }
-
-  if (gradientMode && !newConfig.namespace) {
-    throw new Error('Configuration must contain `namespace` when running in gradient mode')
   }
 
   if (projectBased && !newConfig.projectId) {
@@ -56,8 +50,8 @@ exports.initConfig = (config, prevConfig) => {
     validate.projectId(newConfig.projectId)
   }
 
-  if (!gradientMode && newConfig.dataset) {
-    validate.dataset(newConfig.dataset, newConfig.gradientMode)
+  if (newConfig.dataset) {
+    validate.dataset(newConfig.dataset)
   }
 
   if ('requestTagPrefix' in newConfig) {
@@ -73,22 +67,17 @@ exports.initConfig = (config, prevConfig) => {
 
   exports.validateApiVersion(newConfig.apiVersion)
 
-  if (newConfig.gradientMode) {
-    newConfig.url = newConfig.apiHost
-    newConfig.cdnUrl = newConfig.apiHost
-  } else {
-    const hostParts = newConfig.apiHost.split('://', 2)
-    const protocol = hostParts[0]
-    const host = hostParts[1]
-    const cdnHost = newConfig.isDefaultApi ? defaultCdnHost : host
+  const hostParts = newConfig.apiHost.split('://', 2)
+  const protocol = hostParts[0]
+  const host = hostParts[1]
+  const cdnHost = newConfig.isDefaultApi ? defaultCdnHost : host
 
-    if (newConfig.useProjectHostname) {
-      newConfig.url = `${protocol}://${newConfig.projectId}.${host}/v${newConfig.apiVersion}`
-      newConfig.cdnUrl = `${protocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
-    } else {
-      newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}`
-      newConfig.cdnUrl = newConfig.url
-    }
+  if (newConfig.useProjectHostname) {
+    newConfig.url = `${protocol}://${newConfig.projectId}.${host}/v${newConfig.apiVersion}`
+    newConfig.cdnUrl = `${protocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
+  } else {
+    newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}`
+    newConfig.cdnUrl = newConfig.url
   }
 
   return newConfig

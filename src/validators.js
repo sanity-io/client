@@ -58,7 +58,7 @@ exports.validateInsert = (at, selector, items) => {
 }
 
 exports.hasDataset = (config) => {
-  if (!config.gradientMode && !config.dataset) {
+  if (!config.dataset) {
     throw new Error('`dataset` must be provided to perform queries')
   }
 

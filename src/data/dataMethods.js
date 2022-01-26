@@ -38,10 +38,10 @@ module.exports = {
 
   getDataUrl(operation, path) {
     const config = this.clientConfig
-    const catalog = config.gradientMode ? config.namespace : validators.hasDataset(config)
+    const catalog = validators.hasDataset(config)
     const baseUri = `/${operation}/${catalog}`
     const uri = path ? `${baseUri}/${path}` : baseUri
-    return (this.clientConfig.gradientMode ? uri : `/data${uri}`).replace(/\/($|\?)/, '$1')
+    return `/data${uri}`.replace(/\/($|\?)/, '$1')
   },
 
   fetch(query, params, options = {}) {
