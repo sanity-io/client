@@ -1,4 +1,3 @@
-const deepAssign = require('deep-assign')
 const assign = require('object-assign')
 const getSelection = require('../util/getSelection')
 const validate = require('../validators')
@@ -14,21 +13,6 @@ function Patch(selection, operations = {}, client = null) {
 assign(Patch.prototype, {
   clone() {
     return new Patch(this.selection, assign({}, this.operations), this.client)
-  },
-
-  merge(props) {
-    validateObject('merge', props)
-
-    const stack = new Error().stack
-      .toString()
-      .split('\n')
-      .filter((str) => str.trim())
-      .slice(2)
-
-    console.warn(
-      `The "merge" patch has been deprecated and will be removed in the future\n${stack.join('\n')}`
-    )
-    return this._assign('merge', deepAssign(this.operations.merge || {}, props))
   },
 
   set(props) {

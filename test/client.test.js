@@ -1,11 +1,3 @@
-/* eslint-disable strict, import/no-unassigned-import */
-// (Node 4 compat)
-
-'use strict'
-
-// eslint-disable-next-line import/no-unassigned-import
-require('hard-rejection/register')
-
 const test = require('tape')
 const nock = require('nock')
 const assign = require('xtend')
@@ -1055,17 +1047,6 @@ test('patch() can take a query and params', (t) => {
   t.end()
 })
 
-test('merge() patch can be applied multiple times', (t) => {
-  const patch = getClient()
-    .patch('abc123')
-    .merge({count: 1, foo: 'bar'})
-    .merge({count: 2, bar: 'foo'})
-    .serialize()
-
-  t.deepEqual(patch, {id: 'abc123', merge: {count: 2, foo: 'bar', bar: 'foo'}})
-  t.end()
-})
-
 test('setIfMissing() patch can be applied multiple times', (t) => {
   const patch = getClient()
     .patch('abc123')
@@ -1208,7 +1189,6 @@ test('can apply diffMatchPatch()', (t) => {
 
 test('all patch methods throw on non-objects being passed as argument', (t) => {
   const patch = getClient().patch('abc123')
-  t.throws(() => patch.merge([]), /merge\(\) takes an object of properties/, 'merge throws')
   t.throws(() => patch.set(null), /set\(\) takes an object of properties/, 'set throws')
   t.throws(
     () => patch.setIfMissing('foo'),
@@ -1883,7 +1863,6 @@ test('uploads images with progress events', (t) => {
     .post('/v1/assets/images/foo', isImage)
     .reply(201, {url: 'https://some.asset.url'})
 
-  // @todo write a test that asserts upload events (slowness)
   getClient()
     .observable.assets.upload('image', fs.createReadStream(fixturePath))
     .pipe(filter((event) => event.type === 'progress'))
@@ -2274,51 +2253,6 @@ test('handles HTTP errors gracefully', (t) => {
     .catch((err) => {
       t.ok(err instanceof Error, 'should error')
       t.equal(err.message, 'Something went wrong', 'has message')
-      t.end()
-    })
-})
-
-// @todo these tests are failing because `nock` doesn't work well with `timed-out`
-test.skip('handles connection timeouts gracefully', (t) => {
-  const doc = {_id: 'barfoo', visits: 5}
-  const expectedBody = {mutations: [{create: doc}]}
-  nock(projectHost())
-    .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
-    .socketDelay(75)
-    .delay({head: 500, body: 750})
-    .reply(200, {transactionId: 'abc123', documents: []})
-
-  getClient({timeout: 150})
-    .create(doc)
-    .then(() => {
-      t.fail('Should not call success handler on timeouts')
-      t.end()
-    })
-    .catch((err) => {
-      t.ok(err instanceof Error, 'should error')
-      t.equal(err.code, 'ETIMEDOUT', `should have timeout error code, got err\n${err.toString()}`)
-      t.end()
-    })
-})
-
-// @todo these tests are failing because `nock` doesn't work well with `timed-out`
-test.skip('handles socket timeouts gracefully', (t) => {
-  const doc = {_id: 'barfoo', visits: 5}
-  const expectedBody = {mutations: [{create: doc}]}
-  nock(projectHost())
-    .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
-    .socketDelay(1000)
-    .reply(200)
-
-  getClient({timeout: 150})
-    .create(doc)
-    .then(() => {
-      t.fail('Should not call success handler on timeouts')
-      t.end()
-    })
-    .catch((err) => {
-      t.ok(err instanceof Error, 'should error')
-      t.equal(err.code, 'ESOCKETTIMEDOUT', 'should have timeout error code')
       t.end()
     })
 })

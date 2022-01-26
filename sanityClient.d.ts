@@ -190,7 +190,6 @@ export type InsertPatch =
 export interface PatchOperations {
   set?: {[key: string]: any}
   setIfMissing?: {[key: string]: any}
-  merge?: {[key: string]: any}
   diffMatchPatch?: {[key: string]: any}
   unset?: string[]
   inc?: {[key: string]: number}
@@ -229,15 +228,6 @@ export class Patch {
    * Clones the patch
    */
   clone(): Patch
-
-  /**
-   * DEPRECATED: Don't use.
-   * The operation is added to the current patch, ready to be commited by `commit()`
-   *
-   * @deprecated
-   * @param attrs Attributes to merge
-   */
-  merge(attrs: AttributeSet): this
 
   /**
    * DEPRECATED: Don't use.
