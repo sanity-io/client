@@ -298,7 +298,7 @@ One or more documents can be deleted by specifying a GROQ query (and optionally,
 // Without params
 
 client
-  .delete({ query: '*[_type == "bike"][0]' })
+  .delete({query: '*[_type == "bike"][0]'})
   .then(() => {
     console.log('The document matching *[_type == "bike"][0] was deleted')
   })
@@ -311,7 +311,7 @@ client
 // With params
 
 client
-  .delete({ query: '*[_type == $type][0..1]', params: { type: 'bike' } })
+  .delete({query: '*[_type == $type][0..1]', params: {type: 'bike'}})
   .then(() => {
     console.log('The documents matching *[_type == "bike"][0..1] was deleted')
   })
@@ -513,3 +513,7 @@ client.config({dataset: 'newDataset'})
 `client.config(options)`
 
 Set client configuration. Required options are `projectId` and `dataset`.
+
+## License
+
+MIT © [Sanity.io](https://www.sanity.io/)
