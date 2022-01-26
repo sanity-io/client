@@ -1870,7 +1870,7 @@ test('listener requests are cold', (t) => {
         error: t.ifError,
       })
     },
-    error: t.ifError
+    error: t.ifError,
   })
 })
 
@@ -2213,7 +2213,7 @@ test('will use live API for mutations', (t) => {
   client.create({_type: 'foo', title: 'yep'}).then(noop).catch(t.ifError).then(t.end)
 })
 
-test('will use live API if token is specified', (t) => {
+test('will use cdn for queries even when with token specified', (t) => {
   const client = sanityClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -2222,7 +2222,7 @@ test('will use live API if token is specified', (t) => {
   })
 
   const reqheaders = {Authorization: 'Bearer foo'}
-  nock('https://abc123.api.sanity.io', {reqheaders})
+  nock('https://abc123.apicdn.sanity.io', {reqheaders})
     .get('/v1/data/query/foo?query=*')
     .reply(200, {result: []})
 

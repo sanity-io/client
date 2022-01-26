@@ -19,12 +19,6 @@ exports.printBrowserTokenWarning = createWarningPrinter([
   )} for more information and how to hide this warning.`,
 ])
 
-exports.printCdnTokenWarning = createWarningPrinter([
-  'You have set `useCdn` to `true` while also specifying a token. This is usually not what you',
-  'want. The CDN cannot be used with an authorization token, since private data cannot be cached.',
-  `See ${generateHelpUrl('js-client-usecdn-token')} for more information.`,
-])
-
 exports.printNoApiVersionSpecifiedWarning = createWarningPrinter([
   'Using the Sanity client without specifying an API version is deprecated.',
   `See ${generateHelpUrl('js-client-api-version')}`,

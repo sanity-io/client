@@ -40,8 +40,6 @@ exports.initConfig = (config, prevConfig) => {
 
   if (isBrowser && isLocalhost && newConfig.token && newConfig.ignoreBrowserTokenWarning !== true) {
     warnings.printBrowserTokenWarning()
-  } else if ((!isBrowser || isLocalhost) && newConfig.useCdn && newConfig.token) {
-    warnings.printCdnTokenWarning()
   } else if (typeof newConfig.useCdn === 'undefined') {
     warnings.printCdnWarning()
   }
@@ -63,7 +61,7 @@ exports.initConfig = (config, prevConfig) => {
 
   newConfig.apiVersion = `${newConfig.apiVersion}`.replace(/^v/, '')
   newConfig.isDefaultApi = newConfig.apiHost === defaultConfig.apiHost
-  newConfig.useCdn = Boolean(newConfig.useCdn) && !newConfig.token && !newConfig.withCredentials
+  newConfig.useCdn = Boolean(newConfig.useCdn) && !newConfig.withCredentials
 
   exports.validateApiVersion(newConfig.apiVersion)
 
