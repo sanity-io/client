@@ -8,3 +8,5 @@ src
 .gitignore
 rollup.config.js
 tsconfig.tsbuildinfo
+.github
+CHANGELOG.md
