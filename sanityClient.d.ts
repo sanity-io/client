@@ -51,6 +51,7 @@ interface RawRequestOptions {
   timeout?: number
   proxy?: string
   body?: any
+  maxRedirects?: number
 }
 
 interface AuthProvider {
