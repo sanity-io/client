@@ -108,6 +108,7 @@ interface SanityProject {
 
 type GetItRequester = {
   use: (middleware: any) => GetItRequester
+  clone(): GetItRequester
 }
 
 export interface UploadOptions {
