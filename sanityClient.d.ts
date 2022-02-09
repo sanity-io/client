@@ -538,6 +538,7 @@ type BaseMutationOptions = RequestOptions & {
   visibility?: 'sync' | 'async' | 'deferred'
   returnDocuments?: boolean
   returnFirst?: boolean
+  skipCrossDatasetReferenceValidation?: boolean
 }
 
 export type MutationEvent<R = any> = {
