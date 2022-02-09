@@ -940,6 +940,25 @@ test('mutate() accepts request tag', (t) => {
     .then(() => t.end())
 })
 
+test('mutate() accepts skipCrossDatasetReferenceValidation', (t) => {
+  const mutations = [{delete: {id: 'abc123'}}]
+
+  nock(projectHost())
+    .post(
+      '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync&skipCrossDatasetReferenceValidation=true',
+      {mutations}
+    )
+    .reply(200, {
+      transactionId: 'foo',
+      results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+    })
+
+  getClient()
+    .mutate(mutations, {tag: 'foobar', skipCrossDatasetReferenceValidation: true})
+    .catch(t.ifError)
+    .then(() => t.end())
+})
+
 test('uses GET for queries below limit', (t) => {
   // Please dont ever do this. Just... don't.
   const clause = []
