@@ -2074,7 +2074,7 @@ export interface SanityClient {
    * @deprecated Use your own request library!
    * @param options Request options
    */
-  request(options: RawRequestOptions): Promise<any>
+  request<T = any>(options: RawRequestOptions): Promise<T>
 
   /**
    * DEPRECATED: Perform an HTTP request a `/data` sub-endpoint
