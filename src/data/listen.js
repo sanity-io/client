@@ -1,9 +1,7 @@
 const assign = require('object-assign')
 const {Observable} = require('../util/observable')
 const polyfilledEventSource = require('@sanity/eventsource')
-const generateHelpUrl = require('@sanity/generate-help-url')
 const pick = require('../util/pick')
-const once = require('../util/once')
 const defaults = require('../util/defaults')
 const encodeQueryString = require('./encodeQueryString')
 
@@ -11,18 +9,7 @@ const encodeQueryString = require('./encodeQueryString')
 // unknown range of headers, but an average EventSource request from Chrome seems
 // to have around 700 bytes of cruft, so let us account for 1.2K to be "safe"
 const MAX_URL_LENGTH = 16000 - 1200
-
-const tokenWarning = [
-  'Using token with listeners is not supported in browsers. ',
-  `For more info, see ${generateHelpUrl('js-client-listener-tokens-browser')}.`,
-]
-// eslint-disable-next-line no-console
-const printTokenWarning = once(() => console.warn(tokenWarning.join(' ')))
-
-const isWindowEventSource = Boolean(typeof window !== 'undefined' && window.EventSource)
-const EventSource = isWindowEventSource
-  ? window.EventSource // Native browser EventSource
-  : polyfilledEventSource // Node.js, IE etc
+const EventSource = polyfilledEventSource
 
 const possibleOptions = [
   'includePreviousRevision',
@@ -50,10 +37,6 @@ module.exports = function listen(query, params, opts = {}) {
 
   const listenFor = options.events ? options.events : ['mutation']
   const shouldEmitReconnect = listenFor.indexOf('reconnect') !== -1
-
-  if (token && isWindowEventSource) {
-    printTokenWarning()
-  }
 
   const esOptions = {}
   if (token || withCredentials) {
