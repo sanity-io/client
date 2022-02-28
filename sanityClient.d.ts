@@ -503,6 +503,7 @@ export interface ClientConfig {
   requestTagPrefix?: string
   ignoreBrowserTokenWarning?: boolean
   withCredentials?: boolean
+  timeout?: number
 
   /**
    * @deprecated Don't use
