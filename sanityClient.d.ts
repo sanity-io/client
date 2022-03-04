@@ -532,6 +532,7 @@ export interface RequestOptions {
   timeout?: number
   token?: string
   tag?: string
+  headers?: Record<string, string>
 }
 
 type BaseMutationOptions = RequestOptions & {
