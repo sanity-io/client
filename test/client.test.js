@@ -2248,6 +2248,23 @@ test('will use cdn for queries even when with token specified', (t) => {
   client.fetch('*').then(noop).catch(t.ifError).then(t.end)
 })
 
+test('allows overriding headers', (t) => {
+
+  const client = sanityClient({
+    projectId: 'abc123',
+    dataset: 'foo',
+    token: 'foo',
+  })
+
+  const reqheaders = {foo: 'bar'}
+  nock('https://abc123.api.sanity.io', {reqheaders})
+    .get('/v1/data/query/foo?query=*')
+    .reply(200, {result: []})
+
+  client.fetch('*', {}, {headers: {foo: 'bar'}}).then(noop).catch(t.ifError).then(t.end)
+
+})
+
 test('will use live API if withCredentials is set to true', (t) => {
   const client = sanityClient({
     withCredentials: true,

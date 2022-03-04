@@ -130,7 +130,7 @@ module.exports = {
     const useGet = !isMutation && strQuery.length < getQuerySizeLimit
     const stringQuery = useGet ? strQuery : ''
     const returnFirst = options.returnFirst
-    const {timeout, token, tag} = options
+    const {timeout, token, tag, headers} = options
 
     const uri = this.getDataUrl(endpoint, stringQuery)
 
@@ -141,6 +141,7 @@ module.exports = {
       body: useGet ? undefined : body,
       query: isMutation && getMutationQuery(options),
       timeout,
+      headers,
       token,
       tag,
       canUseCdn: isQuery,
