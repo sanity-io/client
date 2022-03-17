@@ -1,4 +1,4 @@
-const generateHelpUrl = require('@sanity/generate-help-url')
+const generateHelpUrl = require('@sanity/generate-help-url').generateHelpUrl
 const once = require('./util/once')
 
 const createWarningPrinter = (message) =>
