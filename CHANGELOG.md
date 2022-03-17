@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.2]
+
+- fix: use named import for `@sanity/generate-help-url` module
+
 ## [3.2.1]
 
 - chore(deps): upgrade dependencies
