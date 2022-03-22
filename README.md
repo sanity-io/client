@@ -131,11 +131,12 @@ client.create(doc).then((res) => {
 })
 ```
 
-`client.create(doc)`
+`client.create(doc)`  
+`client.create(doc, mutationOptions)`
 
 Create a document. Argument is a plain JS object representing the document. It must contain a `_type` attribute. It _may_ contain an `_id`. If an ID is not specified, it will automatically be created.
 
-To create a draft document, add an `_id` attribute set to `'drafts.'`.
+To create a draft document, prefix the document ID with `drafts.` - eg `_id: 'drafts.myDocumentId'`. To auto-generate a draft document ID, set `_id` to `drafts.` (nothing after the `.`).
 
 ### Creating/replacing documents
 
@@ -152,7 +153,8 @@ client.createOrReplace(doc).then((res) => {
 })
 ```
 
-`client.createOrReplace(doc)`
+`client.createOrReplace(doc)`  
+`client.createOrReplace(doc, mutationOptions)`
 
 If you are not sure whether or not a document exists but want to overwrite it if it does, you can use the `createOrReplace()` method. When using this method, the document must contain an `_id` attribute.
 
@@ -171,7 +173,8 @@ client.createIfNotExists(doc).then((res) => {
 })
 ```
 
-`client.createIfNotExists(doc)`
+`client.createIfNotExists(doc)`  
+`client.createIfNotExists(doc, mutationOptions)`
 
 If you want to create a document if it does not already exist, but fall back without error if it does, you can use the `createIfNotExists()` method. When using this method, the document must contain an `_id` attribute.
 
@@ -193,6 +196,12 @@ client
 ```
 
 Modify a document. `patch` takes a document ID. `set` merges the partialDoc with the stored document. `inc` increments the given field with the given numeric value. `commit` executes the given `patch`. Returns the updated object.
+
+```
+client.patch()
+  [operations]
+  .commit(mutationOptions)
+```
 
 ### Setting a field only if not already present
 
@@ -233,19 +242,17 @@ client
 The patch operation `insert` takes a location (`before`, `after` or `replace`), a path selector and an array of elements to insert.
 
 ```js
-const {nanoid} = require('nanoid')
-
 client
   .patch('bike-123')
   // Ensure that the `reviews` arrays exists before attempting to add items to it
   .setIfMissing({reviews: []})
   // Add the items after the last item in the array (append)
-  .insert('after', 'reviews[-1]', [
-    // Add a `_key` unique within the array to ensure it can be addressed uniquely
-    // in a real-time collaboration context
-    {_key: nanoid(), title: 'Great bike!', stars: 5},
-  ])
-  .commit()
+  .insert('after', 'reviews[-1]', [{title: 'Great bike!', stars: 5}])
+  .commit({
+    // Adds a `_key` attribute to array items, unique within the array, to
+    // ensure it can be addressed uniquely in a real-time collaboration context
+    autoGenerateArrayKeys: true,
+  })
 ```
 
 ### Appending/prepending elements to an array
@@ -277,7 +284,8 @@ client.patch('bike-123').unset(reviewsToRemove).commit()
 
 A single document can be deleted by specifying a document ID:
 
-`client.delete(docId)`
+`client.delete(docId)`  
+`client.delete(docId, mutationOptions)`
 
 ```js
 client
@@ -296,7 +304,6 @@ One or more documents can be deleted by specifying a GROQ query (and optionally,
 
 ```js
 // Without params
-
 client
   .delete({query: '*[_type == "bike"][0]'})
   .then(() => {
@@ -309,7 +316,6 @@ client
 
 ```js
 // With params
-
 client
   .delete({query: '*[_type == $type][0..1]', params: {type: 'bike'}})
   .then(() => {
@@ -484,7 +490,7 @@ client.assets
 Deleting an asset document will also trigger deletion of the actual asset.
 
 ```
-client.delete(id: string): Promise
+client.delete(assetDocumentId: string): Promise
 ```
 
 ```js
@@ -492,6 +498,17 @@ client.delete('image-abc123_someAssetId-500x500-png').then((result) => {
   console.log('deleted imageAsset', result)
 })
 ```
+
+### Mutation options
+
+The following options are available for mutations, and can be applied either as the second argument to `create()`, `createOrReplace`, `createIfNotExist`, `delete()` and `mutate()` - or as an argument to the `commit()` method on patches and transactions.
+
+- `visibility` (`'sync'|'async'|'deferred'`) - default `'sync'`
+  - `sync`: request will not return until the requested changes are visible to subsequent queries.
+  - `async`: request will return immediately when the changes have been committed, but it might still be a second or more until changes are reflected in a query. Unless you are immediately re-querying for something that includes the mutated data, this is the preferred choice.
+  - `deferred`: fastest way to write - bypasses real-time indexing completely, and should be used in cases where you are bulk importing/mutating a large number of documents and don't need to see that data in a query for tens of seconds.
+- `dryRun` (`true|false`) - default `false`. If true, the mutation will be a dry run - the response will be identical to the one returned had this property been omitted or false (including error responses) but no documents will be affected.
+- `autoGenerateArrayKeys` (`true|false`) - default `false`. If true, the mutation API will automatically add `_key` attributes to objects in arrays that is missing them. This makes array operations more robust by having a unique key within the array available for selections, which helps prevent race conditions in real-time, collaborative editing.
 
 ### Get client configuration
 
