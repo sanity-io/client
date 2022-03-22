@@ -540,6 +540,8 @@ type BaseMutationOptions = RequestOptions & {
   visibility?: 'sync' | 'async' | 'deferred'
   returnDocuments?: boolean
   returnFirst?: boolean
+  dryRun?: boolean
+  autoGenerateArrayKeys?: boolean
   skipCrossDatasetReferenceValidation?: boolean
 }
 

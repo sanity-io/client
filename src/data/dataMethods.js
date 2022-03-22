@@ -14,12 +14,12 @@ const excludeFalsey = (param, defValue) => {
 
 const getMutationQuery = (options = {}) => {
   return {
+    dryRun: options.dryRun,
     returnIds: true,
     returnDocuments: excludeFalsey(options.returnDocuments, true),
     visibility: options.visibility || 'sync',
-    ...(options.skipCrossDatasetReferenceValidation && {
-      skipCrossDatasetReferenceValidation: options.skipCrossDatasetReferenceValidation,
-    }),
+    autoGenerateArrayKeys: options.autoGenerateArrayKeys,
+    skipCrossDatasetReferenceValidation: options.skipCrossDatasetReferenceValidation,
   }
 }
 

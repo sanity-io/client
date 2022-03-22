@@ -748,6 +748,64 @@ test('can tell create() to use non-default visibility mode', (t) => {
     .then(t.end)
 })
 
+test('can tell create() to auto-generate array keys', (t) => {
+  const doc = {
+    _id: 'abc123',
+    name: 'Dromaeosauridae',
+    genus: [{_type: 'dino', name: 'Velociraptor'}],
+  }
+  nock(projectHost())
+    .post(
+      '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&autoGenerateArrayKeys=true&visibility=sync',
+      {
+        mutations: [{create: doc}],
+      }
+    )
+    .reply(200, {
+      transactionId: 'abc123',
+      results: [
+        {
+          id: 'abc123',
+          document: {...doc, genus: [{...doc.genus[0], _key: 'r4p70r'}]},
+          operation: 'create',
+        },
+      ],
+    })
+
+  getClient()
+    .create(doc, {autoGenerateArrayKeys: true})
+    .then((res) => {
+      t.equal(res._id, 'abc123', 'document id returned')
+      t.equal(res.genus[0]._key, 'r4p70r', 'array keys generated returned')
+    })
+    .catch(t.ifError)
+    .then(t.end)
+})
+
+test('can tell create() to do a dry-run', (t) => {
+  const doc = {_id: 'abc123', name: 'Dromaeosauridae'}
+  nock(projectHost())
+    .post('/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync', {
+      mutations: [{create: doc}],
+    })
+    .reply(200, {
+      transactionId: 'abc123',
+      results: [
+        {
+          id: 'abc123',
+          document: doc,
+          operation: 'create',
+        },
+      ],
+    })
+
+  getClient()
+    .create(doc, {dryRun: true})
+    .then((res) => t.equal(res._id, 'abc123', 'document id returned'))
+    .catch(t.ifError)
+    .then(t.end)
+})
+
 test('createIfNotExists() sends correct mutation', (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   const expectedBody = {mutations: [{createIfNotExists: doc}]}
@@ -940,7 +998,52 @@ test('mutate() accepts request tag', (t) => {
     .then(() => t.end())
 })
 
-test('mutate() accepts skipCrossDatasetReferenceValidation', (t) => {
+test('mutate() accepts `autoGenerateArrayKeys`', (t) => {
+  const mutations = [
+    {
+      create: {
+        _id: 'abc123',
+        _type: 'post',
+        items: [{_type: 'block', children: [{_type: 'span', text: 'Hello there'}]}],
+      },
+    },
+  ]
+
+  nock(projectHost())
+    .post(
+      '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync&autoGenerateArrayKeys=true',
+      {mutations}
+    )
+    .reply(200, {
+      transactionId: 'foo',
+      results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
+    })
+
+  getClient()
+    .mutate(mutations, {autoGenerateArrayKeys: true})
+    .catch(t.ifError)
+    .then(() => t.end())
+})
+
+test('mutate() accepts `dryRun`', (t) => {
+  const mutations = [{create: {_id: 'abc123', _type: 'post'}}]
+
+  nock(projectHost())
+    .post('/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync', {
+      mutations,
+    })
+    .reply(200, {
+      transactionId: 'foo',
+      results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
+    })
+
+  getClient()
+    .mutate(mutations, {dryRun: true})
+    .catch(t.ifError)
+    .then(() => t.end())
+})
+
+test('mutate() accepts `skipCrossDatasetReferenceValidation`', (t) => {
   const mutations = [{delete: {id: 'abc123'}}]
 
   nock(projectHost())
@@ -955,6 +1058,29 @@ test('mutate() accepts skipCrossDatasetReferenceValidation', (t) => {
 
   getClient()
     .mutate(mutations, {tag: 'foobar', skipCrossDatasetReferenceValidation: true})
+    .catch(t.ifError)
+    .then(() => t.end())
+})
+
+test('mutate() skips/falls back to defaults on undefined but known properties', (t) => {
+  const mutations = [{delete: {id: 'abc123'}}]
+
+  nock(projectHost())
+    .post('/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync', {
+      mutations,
+    })
+    .reply(200, {
+      transactionId: 'foo',
+      results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+    })
+
+  getClient()
+    .mutate(mutations, {
+      tag: 'foobar',
+      skipCrossDatasetReferenceValidation: undefined,
+      returnDocuments: undefined,
+      autoGenerateArrayKeys: undefined,
+    })
     .catch(t.ifError)
     .then(() => t.end())
 })
@@ -1309,6 +1435,25 @@ test('executes patch with request tag when commit() is called with tag', (t) => 
     .patch('abc123')
     .set({visited: true})
     .commit({returnDocuments: false, tag: 'company.setvisited'})
+    .then((res) => {
+      t.equal(res.transactionId, 'blatti', 'applies given patch')
+    })
+    .catch(t.ifError)
+    .then(t.end)
+})
+
+test('executes patch with auto generate key option if specified commit()', (t) => {
+  const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
+  nock(projectHost())
+    .post('/v1/data/mutate/foo?returnIds=true&autoGenerateArrayKeys=true&visibility=sync', {
+      mutations: [expectedPatch],
+    })
+    .reply(200, {transactionId: 'blatti'})
+
+  getClient()
+    .patch('abc123')
+    .set({visited: true})
+    .commit({returnDocuments: false, autoGenerateArrayKeys: true})
     .then((res) => {
       t.equal(res.transactionId, 'blatti', 'applies given patch')
     })
@@ -2249,7 +2394,6 @@ test('will use cdn for queries even when with token specified', (t) => {
 })
 
 test('allows overriding headers', (t) => {
-
   const client = sanityClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -2261,8 +2405,11 @@ test('allows overriding headers', (t) => {
     .get('/v1/data/query/foo?query=*')
     .reply(200, {result: []})
 
-  client.fetch('*', {}, {headers: {foo: 'bar'}}).then(noop).catch(t.ifError).then(t.end)
-
+  client
+    .fetch('*', {}, {headers: {foo: 'bar'}})
+    .then(noop)
+    .catch(t.ifError)
+    .then(t.end)
 })
 
 test('will use live API if withCredentials is set to true', (t) => {
