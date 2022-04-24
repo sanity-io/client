@@ -1,6 +1,6 @@
 const assign = require('object-assign')
 const {map, filter} = require('../util/observable')
-const validators = require('../validators')
+import * as validators from '../validators'
 const getSelection = require('../util/getSelection')
 const encodeQueryString = require('./encodeQueryString')
 const Transaction = require('./transaction')

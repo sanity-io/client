@@ -6,12 +6,12 @@ const dataMethods = require('./data/dataMethods')
 const DatasetsClient = require('./datasets/datasetsClient')
 const ProjectsClient = require('./projects/projectsClient')
 const AssetsClient = require('./assets/assetsClient')
-const UsersClient = require('./users/usersClient')
+import {UsersClient} from './users/usersClient'
 const AuthClient = require('./auth/authClient')
 const httpRequest = require('./http/request')
 const getRequestOptions = require('./http/requestOptions')
 const {defaultConfig, initConfig} = require('./config')
-const validate = require('./validators')
+import * as validate from './validators'
 
 const toPromise = (observable) => observable.toPromise()
 

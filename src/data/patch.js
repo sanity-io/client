@@ -1,6 +1,6 @@
 const assign = require('object-assign')
 const getSelection = require('../util/getSelection')
-const validate = require('../validators')
+import * as validate from '../validators'
 const validateObject = validate.validateObject
 const validateInsert = validate.validateInsert
 

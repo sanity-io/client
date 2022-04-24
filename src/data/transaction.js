@@ -1,5 +1,5 @@
 const assign = require('object-assign')
-const validators = require('../validators')
+import * as validators from '../validators'
 const Patch = require('./patch')
 
 const defaultMutateOptions = {returnDocuments: false}

@@ -1,7 +1,7 @@
 const assign = require('object-assign')
 const {map, filter} = require('../util/observable')
 const queryString = require('../http/queryString')
-const validators = require('../validators')
+import * as validators from '../validators'
 
 function AssetsClient(client) {
   this.client = client

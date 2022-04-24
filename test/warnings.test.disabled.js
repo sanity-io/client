@@ -1,3 +1,5 @@
+// eslint-disable-next-line no-global-assign -- we know what we're doing ESlint ;)
+require = require('esm')(module)
 // This test suite fails using tape but should pass if running with as a node script
 const test = require('tape')
 const nock = require('nock')
@@ -11,10 +13,12 @@ const stub = (target, prop, stubbed) => {
   }
 }
 
-const combine = (...fns) => () => {
-  const [head, ...tail] = fns
-  return tail.reduce((acc, fn) => fn(acc), head())
-}
+const combine =
+  (...fns) =>
+  () => {
+    const [head, ...tail] = fns
+    return tail.reduce((acc, fn) => fn(acc), head())
+  }
 
 /**************************
  * CLIENT CONFIG WARNINGS *

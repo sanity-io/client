@@ -1,3 +1,5 @@
+// eslint-disable-next-line no-global-assign -- we know what we're doing ESlint ;)
+require = require('esm')(module)
 const test = require('tape')
 const nock = require('nock')
 const assign = require('xtend')

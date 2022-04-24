@@ -2,7 +2,8 @@
 // (Node 4 compat)
 
 'use strict'
-
+// eslint-disable-next-line no-global-assign -- we know what we're doing ESlint ;)
+require = require('esm')(module)
 const http = require('http')
 const SseChannel = require('sse-channel')
 

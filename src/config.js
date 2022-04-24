@@ -1,6 +1,5 @@
 const generateHelpUrl = require('@sanity/generate-help-url').generateHelpUrl
-const assign = require('object-assign')
-const validate = require('./validators')
+import * as validate from './validators'
 const warnings = require('./warnings')
 
 const defaultCdnHost = 'apicdn.sanity.io'
@@ -18,12 +17,12 @@ exports.defaultConfig = defaultConfig
 
 // eslint-disable-next-line complexity
 exports.initConfig = (config, prevConfig) => {
-  const specifiedConfig = assign({}, prevConfig, config)
+  const specifiedConfig = Object.assign({}, prevConfig, config)
   if (!specifiedConfig.apiVersion) {
     warnings.printNoApiVersionSpecifiedWarning()
   }
 
-  const newConfig = assign({}, defaultConfig, specifiedConfig)
+  const newConfig = Object.assign({}, defaultConfig, specifiedConfig)
   const projectBased = newConfig.useProjectHostname
 
   if (typeof Promise === 'undefined') {

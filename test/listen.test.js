@@ -2,6 +2,8 @@
 // (Node 4 compat)
 
 'use strict'
+// eslint-disable-next-line no-global-assign -- we know what we're doing ESlint ;)
+require = require('esm')(module)
 
 const test = require('tape')
 const assign = require('xtend')

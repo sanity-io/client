@@ -1,7 +1,7 @@
 const VALID_ASSET_TYPES = ['image', 'file']
 const VALID_INSERT_LOCATIONS = ['before', 'after', 'replace']
 
-exports.dataset = (name) => {
+export const dataset = (name) => {
   if (!/^(~[a-z0-9]{1}[-\w]{0,63}|[a-z0-9]{1}[-\w]{0,63})$/.test(name)) {
     throw new Error(
       'Datasets can only contain lowercase characters, numbers, underscores and dashes, and start with tilde, and be maximum 64 characters'
@@ -9,39 +9,39 @@ exports.dataset = (name) => {
   }
 }
 
-exports.projectId = (id) => {
+export const projectId = (id) => {
   if (!/^[-a-z0-9]+$/i.test(id)) {
     throw new Error('`projectId` can only contain only a-z, 0-9 and dashes')
   }
 }
 
-exports.validateAssetType = (type) => {
+export const validateAssetType = (type) => {
   if (VALID_ASSET_TYPES.indexOf(type) === -1) {
     throw new Error(`Invalid asset type: ${type}. Must be one of ${VALID_ASSET_TYPES.join(', ')}`)
   }
 }
 
-exports.validateObject = (op, val) => {
+export const validateObject = (op, val) => {
   if (val === null || typeof val !== 'object' || Array.isArray(val)) {
     throw new Error(`${op}() takes an object of properties`)
   }
 }
 
-exports.requireDocumentId = (op, doc) => {
+export const requireDocumentId = (op, doc) => {
   if (!doc._id) {
     throw new Error(`${op}() requires that the document contains an ID ("_id" property)`)
   }
 
-  exports.validateDocumentId(op, doc._id)
+  export const validateDocumentId(op, doc._id)
 }
 
-exports.validateDocumentId = (op, id) => {
+export const validateDocumentId = (op, id) => {
   if (typeof id !== 'string' || !/^[a-z0-9_.-]+$/i.test(id)) {
     throw new Error(`${op}(): "${id}" is not a valid document ID`)
   }
 }
 
-exports.validateInsert = (at, selector, items) => {
+export const validateInsert = (at, selector, items) => {
   const signature = 'insert(at, selector, items)'
   if (VALID_INSERT_LOCATIONS.indexOf(at) === -1) {
     const valid = VALID_INSERT_LOCATIONS.map((loc) => `"${loc}"`).join(', ')
@@ -57,7 +57,7 @@ exports.validateInsert = (at, selector, items) => {
   }
 }
 
-exports.hasDataset = (config) => {
+export const hasDataset = (config) => {
   if (!config.dataset) {
     throw new Error('`dataset` must be provided to perform queries')
   }
@@ -65,7 +65,7 @@ exports.hasDataset = (config) => {
   return config.dataset || ''
 }
 
-exports.requestTag = (tag) => {
+export const requestTag = (tag) => {
   if (typeof tag !== 'string' || !/^[a-z0-9._-]{1,75}$/i.test(tag)) {
     throw new Error(
       `Tag can only contain alphanumeric characters, underscores, dashes and dots, and be between one and 75 characters long.`

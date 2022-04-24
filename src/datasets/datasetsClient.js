@@ -1,5 +1,5 @@
 const assign = require('object-assign')
-const validate = require('../validators')
+import * as validate from '../validators'
 
 function DatasetsClient(client) {
   this.request = client.request.bind(client)

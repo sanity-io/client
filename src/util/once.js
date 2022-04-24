@@ -1,4 +1,4 @@
-module.exports = (fn) => {
+export const once = (fn) => {
   let didCall = false
   let returnValue
   return (...args) => {

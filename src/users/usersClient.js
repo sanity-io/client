@@ -1,13 +1,9 @@
-const assign = require('object-assign')
+export class UsersClient {
+  constructor(client) {
+    this.client = client
+  }
 
-function UsersClient(client) {
-  this.client = client
-}
-
-assign(UsersClient.prototype, {
   getById(id) {
     return this.client.request({uri: `/users/${id}`})
-  },
-})
-
-module.exports = UsersClient
+  }
+}
