@@ -9,6 +9,7 @@
   "module": "./dist/sanityClient.js",
   "exports": {
     ".": {
+      "source": "./src/sanityClient.js",
       "browser": "./dist/browser/sanityClient.js",
       "default": "./dist/node/sanityClient.js"
     },
