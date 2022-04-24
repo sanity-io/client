@@ -1,26 +1,12 @@
-const {map, filter} = require('../util/observable')
-const queryString = require('../http/queryString')
+import {map, filter} from '../util/observable'
+import {queryString} from '../http/queryString'
 import * as validators from '../validators'
 
-function AssetsClient(client) {
-  this.client = client
-}
-
-function optionsFromFile(opts, file) {
-  if (typeof window === 'undefined' || !(file instanceof window.File)) {
-    return opts
+export class AssetsClient {
+  constructor(client) {
+    this.client = client
   }
 
-  return Object.assign(
-    {
-      filename: opts.preserveFilename === false ? undefined : file.name,
-      contentType: file.type,
-    },
-    opts
-  )
-}
-
-Object.assign(AssetsClient.prototype, {
   /**
    * Upload an asset
    *
@@ -90,7 +76,7 @@ Object.assign(AssetsClient.prototype, {
           )
           .toPromise()
       : observable
-  },
+  }
 
   delete(type, id) {
     // eslint-disable-next-line no-console
@@ -106,7 +92,7 @@ Object.assign(AssetsClient.prototype, {
 
     validators.hasDataset(this.client.clientConfig)
     return this.client.delete(docId)
-  },
+  }
 
   getImageUrl(ref, query) {
     const id = ref._ref || ref
@@ -128,7 +114,19 @@ Object.assign(AssetsClient.prototype, {
     const {projectId, dataset} = this.client.clientConfig
     const qs = query ? queryString(query) : ''
     return `https://cdn.sanity.io/images/${projectId}/${dataset}/${assetId}-${size}.${format}${qs}`
-  },
-})
+  }
+}
 
-module.exports = AssetsClient
+function optionsFromFile(opts, file) {
+  if (typeof window === 'undefined' || !(file instanceof window.File)) {
+    return opts
+  }
+
+  return Object.assign(
+    {
+      filename: opts.preserveFilename === false ? undefined : file.name,
+      contentType: file.type,
+    },
+    opts
+  )
+}

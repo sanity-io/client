@@ -8,9 +8,7 @@ const fs = require('fs')
 const validators = require('../src/validators')
 const observableOf = require('rxjs').of
 const {filter} = require('rxjs/operators')
-const sanityClient = require('../src/sanityClient')
-
-const SanityClient = sanityClient
+const {createClient, SanityClient} = require('../src/sanityClient')
 const noop = () => {
   /* intentional noop */
 }
@@ -28,7 +26,7 @@ const clientConfig = {
   useCdn: false,
 }
 
-const getClient = (conf) => sanityClient(assign({}, clientConfig, conf || {}))
+const getClient = (conf) => createClient(assign({}, clientConfig, conf || {}))
 const fixture = (name) => path.join(__dirname, 'fixtures', name)
 const ifError = (t) => (err) => {
   t.ifError(err)
@@ -40,20 +38,20 @@ const ifError = (t) => (err) => {
 /*****************
  * BASE CLIENT   *
  *****************/
-test('can construct client with new keyword', (t) => {
+test('can create a client with new keyword', (t) => {
   const client = new SanityClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.end()
 })
 
 test('can construct client without new keyword', (t) => {
-  const client = sanityClient({projectId: 'abc123'})
+  const client = createClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.end()
 })
 
 test('can get and set config', (t) => {
-  const client = sanityClient({projectId: 'abc123'})
+  const client = createClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.equal(client.config({projectId: 'def456'}), client, 'returns client on set')
   t.equal(client.config().projectId, 'def456', 'new config is set')
@@ -61,7 +59,7 @@ test('can get and set config', (t) => {
 })
 
 test('config getter returns a cloned object', (t) => {
-  const client = sanityClient({projectId: 'abc123'})
+  const client = createClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   const config = client.config()
   config.projectId = 'def456'
@@ -70,7 +68,7 @@ test('config getter returns a cloned object', (t) => {
 })
 
 test('calling config() reconfigures observable API too', (t) => {
-  const client = sanityClient({projectId: 'abc123'})
+  const client = createClient({projectId: 'abc123'})
 
   client.config({projectId: 'def456'})
   t.equal(client.observable.config().projectId, 'def456', 'Observable API gets reconfigured')
@@ -78,7 +76,7 @@ test('calling config() reconfigures observable API too', (t) => {
 })
 
 test('can clone client', (t) => {
-  const client = sanityClient({projectId: 'abc123'})
+  const client = createClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
 
   const client2 = client.clone()
@@ -89,7 +87,7 @@ test('can clone client', (t) => {
 })
 
 test('can clone client with new config', (t) => {
-  const client = sanityClient({projectId: 'abc123', apiVersion: 'v2021-03-25'})
+  const client = createClient({projectId: 'abc123', apiVersion: 'v2021-03-25'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.equal(client.config().apiVersion, '2021-03-25', 'constructor opts are set')
 
@@ -103,18 +101,18 @@ test('can clone client with new config', (t) => {
 })
 
 test('throws if no projectId is set', (t) => {
-  t.throws(sanityClient, /projectId/)
+  t.throws(createClient, /projectId/)
   t.end()
 })
 
 test('throws on invalid project ids', (t) => {
-  t.throws(() => sanityClient({projectId: '*foo*'}), /projectId.*?can only contain/i)
+  t.throws(() => createClient({projectId: '*foo*'}), /projectId.*?can only contain/i)
   t.end()
 })
 
 test('throws on invalid dataset names', (t) => {
   t.throws(
-    () => sanityClient({projectId: 'abc123', dataset: '*foo*'}),
+    () => createClient({projectId: 'abc123', dataset: '*foo*'}),
     /Datasets can only contain/i
   )
   t.end()
@@ -122,7 +120,7 @@ test('throws on invalid dataset names', (t) => {
 
 test('throws on invalid request tag prefix', (t) => {
   t.throws(
-    () => sanityClient({projectId: 'abc123', dataset: 'foo', requestTagPrefix: 'no#shot'}),
+    () => createClient({projectId: 'abc123', dataset: 'foo', requestTagPrefix: 'no#shot'}),
     /tag can only contain alphanumeric/i
   )
   t.end()
@@ -130,7 +128,7 @@ test('throws on invalid request tag prefix', (t) => {
 
 test('accepts alias in dataset field', (t) => {
   t.doesNotThrow(
-    () => sanityClient({projectId: 'abc123', dataset: '~alias'}),
+    () => createClient({projectId: 'abc123', dataset: '~alias'}),
     /Datasets can only contain/i
   )
   t.end()
@@ -246,7 +244,7 @@ test('can request list of projects', (t) => {
     .get('/v1/projects')
     .reply(200, [{projectId: 'foo'}, {projectId: 'bar'}])
 
-  const client = sanityClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+  const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
   client.projects
     .list()
     .then((projects) => {
@@ -262,7 +260,7 @@ test('can request list of projects (custom api version)', (t) => {
     .get('/v2019-01-29/projects')
     .reply(200, [{projectId: 'foo'}, {projectId: 'bar'}])
 
-  const client = sanityClient({
+  const client = createClient({
     useProjectHostname: false,
     apiHost: `https://${apiHost}`,
     apiVersion: '2019-01-29',
@@ -293,7 +291,7 @@ test('can request project by id', (t) => {
 
   nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(200, doc)
 
-  const client = sanityClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+  const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
   client.projects
     .getById('n1f7y')
     .then((project) => t.deepEqual(project, doc))
@@ -629,7 +627,7 @@ test('populates response body on errors', (t) => {
 
 test('throws if trying to perform data request without dataset', (t) => {
   t.throws(
-    () => sanityClient({projectId: 'foo'}).fetch('blah'),
+    () => createClient({projectId: 'foo'}).fetch('blah'),
     Error,
     /dataset.*?must be provided/
   )
@@ -1182,7 +1180,7 @@ test('uses POST for long queries, but puts request tag as query param', (t) => {
 })
 
 test('uses POST for long queries also towards CDN', (t) => {
-  const client = sanityClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+  const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
   const clause = []
   const params = {}
@@ -1571,7 +1569,7 @@ test('patch has toJSON() which serializes patch', (t) => {
 })
 
 test('Patch is available on client and can be used without instantiated client', (t) => {
-  const patch = new sanityClient.Patch('foo.bar')
+  const patch = new createClient.Patch('foo.bar')
   t.deepEqual(
     patch.inc({foo: 1}).dec({bar: 2}).serialize(),
     {id: 'foo.bar', inc: {foo: 1}, dec: {bar: 2}},
@@ -1581,7 +1579,7 @@ test('Patch is available on client and can be used without instantiated client',
 })
 
 test('patch commit() throws if called without a client', (t) => {
-  const patch = new sanityClient.Patch('foo.bar')
+  const patch = new createClient.Patch('foo.bar')
   t.throws(() => patch.dec({bar: 2}).commit(), /client.*mutate/i)
   t.end()
 })
@@ -1793,7 +1791,7 @@ test('transaction has toJSON() which serializes patch', (t) => {
 })
 
 test('Transaction is available on client and can be used without instantiated client', (t) => {
-  const trans = new sanityClient.Transaction()
+  const trans = new createClient.Transaction()
   t.deepEqual(
     trans.delete('barfoo').serialize(),
     [{delete: {id: 'barfoo'}}],
@@ -1803,7 +1801,7 @@ test('Transaction is available on client and can be used without instantiated cl
 })
 
 test('transaction can be created without client and passed to mutate()', (t) => {
-  const trx = new sanityClient.Transaction()
+  const trx = new createClient.Transaction()
   trx.delete('foo')
 
   const mutations = [{delete: {id: 'foo'}}]
@@ -1818,7 +1816,7 @@ test('transaction can be created without client and passed to mutate()', (t) => 
 })
 
 test('transaction commit() throws if called without a client', (t) => {
-  const trans = new sanityClient.Transaction()
+  const trans = new createClient.Transaction()
   t.throws(() => trans.delete('foo.bar').commit(), /client.*mutate/i)
   t.end()
 })
@@ -2340,7 +2338,7 @@ test('can retrieve user by id', (t) => {
  * CDN API USAGE *
  *****************/
 test('will use live API by default', (t) => {
-  const client = sanityClient({projectId: 'abc123', dataset: 'foo'})
+  const client = createClient({projectId: 'abc123', dataset: 'foo'})
 
   const response = {result: []}
   nock('https://abc123.api.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
@@ -2355,7 +2353,7 @@ test('will use live API by default', (t) => {
 })
 
 test('will use CDN API if told to', (t) => {
-  const client = sanityClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+  const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
   const response = {result: []}
   nock('https://abc123.apicdn.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
@@ -2370,7 +2368,7 @@ test('will use CDN API if told to', (t) => {
 })
 
 test('will use live API for mutations', (t) => {
-  const client = sanityClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+  const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
   nock('https://abc123.api.sanity.io')
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
@@ -2380,7 +2378,7 @@ test('will use live API for mutations', (t) => {
 })
 
 test('will use cdn for queries even when with token specified', (t) => {
-  const client = sanityClient({
+  const client = createClient({
     projectId: 'abc123',
     dataset: 'foo',
     useCdn: true,
@@ -2396,7 +2394,7 @@ test('will use cdn for queries even when with token specified', (t) => {
 })
 
 test('allows overriding headers', (t) => {
-  const client = sanityClient({
+  const client = createClient({
     projectId: 'abc123',
     dataset: 'foo',
     token: 'foo',
@@ -2415,7 +2413,7 @@ test('allows overriding headers', (t) => {
 })
 
 test('will use live API if withCredentials is set to true', (t) => {
-  const client = sanityClient({
+  const client = createClient({
     withCredentials: true,
     projectId: 'abc123',
     dataset: 'foo',
@@ -2520,24 +2518,24 @@ test('ServerError includes message in stack', (t) => {
 })
 
 test('exposes ClientError', (t) => {
-  t.equal(typeof sanityClient.ClientError, 'function')
+  t.equal(typeof createClient.ClientError, 'function')
   const error = new SanityClient.ClientError({statusCode: 400, headers: {}, body: {}})
   t.ok(error instanceof Error)
-  t.ok(error instanceof sanityClient.ClientError)
+  t.ok(error instanceof createClient.ClientError)
   t.end()
 })
 
 test('exposes ServerError', (t) => {
-  t.equal(typeof sanityClient.ServerError, 'function')
+  t.equal(typeof createClient.ServerError, 'function')
   const error = new SanityClient.ServerError({statusCode: 500, headers: {}, body: {}})
   t.ok(error instanceof Error)
-  t.ok(error instanceof sanityClient.ServerError)
+  t.ok(error instanceof createClient.ServerError)
   t.end()
 })
 
 // Don't rely on this unless you're working at Sanity Inc ;)
 test('exposes default requester', (t) => {
-  t.equal(typeof sanityClient.requester, 'function')
+  t.equal(typeof createClient.requester, 'function')
   t.end()
 })
 

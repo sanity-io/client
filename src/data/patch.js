@@ -1,27 +1,25 @@
-const getSelection = require('../util/getSelection')
-import * as validate from '../validators'
-const validateObject = validate.validateObject
-const validateInsert = validate.validateInsert
+import {getSelection} from '../util/getSelection'
+import {validateObject, validateInsert} from '../validators'
 
-function Patch(selection, operations = {}, client = null) {
-  this.selection = selection
-  this.operations = Object.assign({}, operations)
-  this.client = client
-}
+export class Patch {
+  constructor(selection, operations = {}, client = null) {
+    this.selection = selection
+    this.operations = Object.assign({}, operations)
+    this.client = client
+  }
 
-Object.assign(Patch.prototype, {
   clone() {
     return new Patch(this.selection, Object.assign({}, this.operations), this.client)
-  },
+  }
 
   set(props) {
     return this._assign('set', props)
-  },
+  }
 
   diffMatchPatch(props) {
     validateObject('diffMatchPatch', props)
     return this._assign('diffMatchPatch', props)
-  },
+  }
 
   unset(attrs) {
     if (!Array.isArray(attrs)) {
@@ -30,37 +28,37 @@ Object.assign(Patch.prototype, {
 
     this.operations = Object.assign({}, this.operations, {unset: attrs})
     return this
-  },
+  }
 
   setIfMissing(props) {
     return this._assign('setIfMissing', props)
-  },
+  }
 
   replace(props) {
     validateObject('replace', props)
     return this._set('set', {$: props}) // eslint-disable-line id-length
-  },
+  }
 
   inc(props) {
     return this._assign('inc', props)
-  },
+  }
 
   dec(props) {
     return this._assign('dec', props)
-  },
+  }
 
   insert(at, selector, items) {
     validateInsert(at, selector, items)
     return this._assign('insert', {[at]: selector, items})
-  },
+  }
 
   append(selector, items) {
     return this.insert('after', `${selector}[-1]`, items)
-  },
+  }
 
   prepend(selector, items) {
     return this.insert('before', `${selector}[0]`, items)
-  },
+  }
 
   splice(selector, start, deleteCount, items) {
     // Negative indexes doesn't mean the same in Sanity as they do in JS;
@@ -74,20 +72,20 @@ Object.assign(Patch.prototype, {
     const delRange = startIndex < 0 && delCount >= 0 ? '' : delCount
     const rangeSelector = `${selector}[${startIndex}:${delRange}]`
     return this.insert('replace', rangeSelector, items || [])
-  },
+  }
 
   ifRevisionId(rev) {
     this.operations.ifRevisionID = rev
     return this
-  },
+  }
 
   serialize() {
     return Object.assign(getSelection(this.selection), this.operations)
-  },
+  }
 
   toJSON() {
     return this.serialize()
-  },
+  }
 
   commit(options = {}) {
     if (!this.client) {
@@ -100,16 +98,16 @@ Object.assign(Patch.prototype, {
     const returnFirst = typeof this.selection === 'string'
     const opts = Object.assign({returnFirst, returnDocuments: true}, options)
     return this.client.mutate({patch: this.serialize()}, opts)
-  },
+  }
 
   reset() {
     this.operations = {}
     return this
-  },
+  }
 
   _set(op, props) {
     return this._assign(op, props, false)
-  },
+  }
 
   _assign(op, props, merge = true) {
     validateObject(op, props)
@@ -117,7 +115,5 @@ Object.assign(Patch.prototype, {
       [op]: Object.assign({}, (merge && this.operations[op]) || {}, props),
     })
     return this
-  },
-})
-
-module.exports = Patch
+  }
+}

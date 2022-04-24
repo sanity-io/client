@@ -7,11 +7,11 @@ require = require('esm')(module)
 
 const test = require('tape')
 const assign = require('xtend')
-const sanityClient = require('../src/sanityClient')
+const {createClient} = require('../src/sanityClient')
 const sseServer = require('./helpers/sseServer')
 
 const getClient = (options) =>
-  sanityClient(
+  createClient(
     assign(
       {
         dataset: 'prod',

@@ -2091,16 +2091,4 @@ export interface SanityClient {
   dataRequest(endpoint: string, body: unknown, options?: BaseMutationOptions): Promise<any>
 }
 
-export interface ClientConstructor {
-  Patch: typeof Patch
-  Transaction: typeof Transaction
-  ClientError: typeof ClientError
-  ServerError: typeof ServerError
-  requester: GetItRequester
-
-  new (config: ClientConfig): SanityClient
-  (config: ClientConfig): SanityClient
-}
-
-declare const SanityClientConstructor: ClientConstructor
-export default SanityClientConstructor
+export function createClient(config: ClientConfig): SanityClient

@@ -1,9 +1,9 @@
-const generateHelpUrl = require('@sanity/generate-help-url').generateHelpUrl
+import {generateHelpUrl} from '@sanity/generate-help-url'
 import * as validate from './validators'
-const warnings = require('./warnings')
+import * as warnings from './warnings'
 
 const defaultCdnHost = 'apicdn.sanity.io'
-const defaultConfig = {
+export const defaultConfig = {
   apiHost: 'https://api.sanity.io',
   apiVersion: '1',
   useProjectHostname: true,
@@ -13,10 +13,8 @@ const defaultConfig = {
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 const isLocal = (host) => LOCALHOSTS.indexOf(host) !== -1
 
-exports.defaultConfig = defaultConfig
-
 // eslint-disable-next-line complexity
-exports.initConfig = (config, prevConfig) => {
+export const initConfig = (config, prevConfig) => {
   const specifiedConfig = Object.assign({}, prevConfig, config)
   if (!specifiedConfig.apiVersion) {
     warnings.printNoApiVersionSpecifiedWarning()
@@ -62,7 +60,7 @@ exports.initConfig = (config, prevConfig) => {
   newConfig.isDefaultApi = newConfig.apiHost === defaultConfig.apiHost
   newConfig.useCdn = Boolean(newConfig.useCdn) && !newConfig.withCredentials
 
-  exports.validateApiVersion(newConfig.apiVersion)
+  validateApiVersion(newConfig.apiVersion)
 
   const hostParts = newConfig.apiHost.split('://', 2)
   const protocol = hostParts[0]
@@ -80,7 +78,7 @@ exports.initConfig = (config, prevConfig) => {
   return newConfig
 }
 
-exports.validateApiVersion = function validateApiVersion(apiVersion) {
+export function validateApiVersion(apiVersion) {
   if (apiVersion === '1' || apiVersion === 'X') {
     return
   }

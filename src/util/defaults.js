@@ -1,4 +1,5 @@
-module.exports = (obj, defaults) =>
+// eslint-disable-next-line no-shadow
+export const defaults = (obj, defaults) =>
   Object.keys(defaults)
     .concat(Object.keys(obj))
     .reduce((target, prop) => {

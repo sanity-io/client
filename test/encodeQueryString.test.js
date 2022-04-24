@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-global-assign -- we know what we're doing ESlint ;)
 require = require('esm')(module)
 const test = require('tape')
-const encode = require('../src/data/encodeQueryString')
+const {encodeQueryString: encode} = require('../src/data/encodeQueryString')
 
 test('can encode basic query without parameters', (t) => {
   const query = 'gamedb.game[maxPlayers == 64]'

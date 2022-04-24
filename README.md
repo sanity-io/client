@@ -19,8 +19,8 @@ npm install -g @sanity/client
 ## API
 
 ```js
-const sanityClient = require('@sanity/client')
-const client = sanityClient({
+import {createClient} from '@sanity/client'
+const client = createClient({
   projectId: 'your-project-id',
   dataset: 'bikeshop',
   apiVersion: '2021-03-25', // use current UTC date - see "specifying API version"!
@@ -29,7 +29,7 @@ const client = sanityClient({
 })
 ```
 
-`const client = sanityClient(options)`
+`const client = createClient(options)`
 
 Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. Setting a value for `useCdn` is encouraged.
 
@@ -260,7 +260,7 @@ client
 The operations of appending and prepending to an array are so common that they have been given their own methods for better readability:
 
 ```js
-const {nanoid} = require('nanoid')
+import {nanoid} from 'nanoid'
 
 client
   .patch('bike-123')
@@ -372,27 +372,27 @@ A `patch` can be performed inline on a `transaction`.
 Transactions and patches can also be built outside the scope of a client:
 
 ```js
-const sanityClient = require('@sanity/client')
-const client = sanityClient({
+import {SanityClient} from '@sanity/client'
+const client = new SanityClient({
   projectId: 'your-project-id',
   dataset: 'bikeshop',
 })
 
 // Patches:
-const patch = new sanityClient.Patch('<documentId>')
+const patch = new SanityClient.Patch('<documentId>')
 client.mutate(patch.inc({count: 1}).unset(['visits']))
 
 // Transactions:
-const transaction = new sanityClient.Transaction()
+const transaction = new SanityClient.Transaction()
   .create({_id: '123', name: 'FooBike'})
   .delete('someDocId')
 
 client.mutate(transaction)
 ```
 
-`const patch = new sanityClient.Patch(docId)`
+`const patch = new SanityClient.Patch(docId)`
 
-`const transaction = new sanityClient.Transaction()`
+`const transaction = new SanityClient.Transaction()`
 
 An important note on this approach is that you cannot call `commit()` on transactions or patches instantiated this way, instead you have to pass them to `client.mutate()`
 

@@ -1,6 +1,6 @@
 const projectHeader = 'X-Sanity-Project-ID'
 
-module.exports = (config, overrides = {}) => {
+export const requestOptions = (config, overrides = {}) => {
   const headers = {}
 
   const token = overrides.token || config.token

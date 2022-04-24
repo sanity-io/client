@@ -1,42 +1,42 @@
 import * as validators from '../validators'
-const Patch = require('./patch')
+import {Patch} from './patch'
 
 const defaultMutateOptions = {returnDocuments: false}
 
-function Transaction(operations = [], client, transactionId) {
-  this.trxId = transactionId
-  this.operations = operations
-  this.client = client
-}
+export class Transaction {
+  constructor(operations = [], client, transactionId) {
+    this.trxId = transactionId
+    this.operations = operations
+    this.client = client
+  }
 
-Object.assign(Transaction.prototype, {
   clone() {
     return new Transaction(this.operations.slice(0), this.client, this.trxId)
-  },
+  }
 
   create(doc) {
     validators.validateObject('create', doc)
     return this._add({create: doc})
-  },
+  }
 
   createIfNotExists(doc) {
     const op = 'createIfNotExists'
     validators.validateObject(op, doc)
     validators.requireDocumentId(op, doc)
     return this._add({[op]: doc})
-  },
+  }
 
   createOrReplace(doc) {
     const op = 'createOrReplace'
     validators.validateObject(op, doc)
     validators.requireDocumentId(op, doc)
     return this._add({[op]: doc})
-  },
+  }
 
   delete(documentId) {
     validators.validateDocumentId('delete', documentId)
     return this._add({delete: {id: documentId}})
-  },
+  }
 
   patch(documentId, patchOps) {
     const isBuilder = typeof patchOps === 'function'
@@ -58,7 +58,7 @@ Object.assign(Transaction.prototype, {
     }
 
     return this._add({patch: Object.assign({id: documentId}, patchOps)})
-  },
+  }
 
   transactionId(id) {
     if (!id) {
@@ -67,15 +67,15 @@ Object.assign(Transaction.prototype, {
 
     this.trxId = id
     return this
-  },
+  }
 
   serialize() {
     return this.operations.slice()
-  },
+  }
 
   toJSON() {
     return this.serialize()
-  },
+  }
 
   commit(options) {
     if (!this.client) {
@@ -89,17 +89,15 @@ Object.assign(Transaction.prototype, {
       this.serialize(),
       Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
     )
-  },
+  }
 
   reset() {
     this.operations = []
     return this
-  },
+  }
 
   _add(mut) {
     this.operations.push(mut)
     return this
-  },
-})
-
-module.exports = Transaction
+  }
+}

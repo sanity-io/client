@@ -7,7 +7,5 @@
     "node": true,
     "browser": true
   },
-  "parserOptions": {
-    "ecmaVersion": 2018
-  }
+  "parser": "@babel/eslint-parser"
 }

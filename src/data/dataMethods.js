@@ -1,10 +1,10 @@
-const {map, filter} = require('../util/observable')
+import {map, filter} from '../util/observable'
 import * as validators from '../validators'
-const getSelection = require('../util/getSelection')
-const encodeQueryString = require('./encodeQueryString')
-const Transaction = require('./transaction')
-const Patch = require('./patch')
-const listen = require('./listen')
+import {getSelection} from '../util/getSelection'
+import {encodeQueryString} from './encodeQueryString'
+import {Transaction} from './transaction'
+import {Patch} from './patch'
+import {listen} from './listen'
 
 const excludeFalsey = (param, defValue) => {
   const value = typeof param === 'undefined' ? defValue : param
@@ -35,7 +35,7 @@ const toPromise = (observable) => observable.toPromise()
 
 const getQuerySizeLimit = 11264
 
-module.exports = {
+export const dataMethods = {
   listen: listen,
 
   getDataUrl(operation, path) {

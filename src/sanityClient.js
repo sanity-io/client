@@ -1,43 +1,38 @@
-const {Observable, map, filter} = require('./util/observable')
-const Patch = require('./data/patch')
-const Transaction = require('./data/transaction')
-const dataMethods = require('./data/dataMethods')
-const DatasetsClient = require('./datasets/datasetsClient')
-const ProjectsClient = require('./projects/projectsClient')
-const AssetsClient = require('./assets/assetsClient')
+import {Observable, map, filter} from './util/observable'
+import {Patch} from './data/patch'
+import {Transaction} from './data/transaction'
+import {dataMethods} from './data/dataMethods'
+import {DatasetsClient} from './datasets/datasetsClient'
+import {ProjectsClient} from './projects/projectsClient'
+import {AssetsClient} from './assets/assetsClient'
 import {UsersClient} from './users/usersClient'
-const AuthClient = require('./auth/authClient')
-const httpRequest = require('./http/request')
-const getRequestOptions = require('./http/requestOptions')
-const {defaultConfig, initConfig} = require('./config')
+import {AuthClient} from './auth/authClient'
+import {httpRequest} from './http/request'
+import {requestOptions} from './http/requestOptions'
+import {defaultConfig, initConfig} from './config'
 import * as validate from './validators'
 
 const toPromise = (observable) => observable.toPromise()
 
-function SanityClient(config = defaultConfig) {
-  if (!(this instanceof SanityClient)) {
-    return new SanityClient(config)
+export class SanityClient {
+  constructor(config = defaultConfig) {
+    this.config(config)
+
+    this.assets = new AssetsClient(this)
+    this.datasets = new DatasetsClient(this)
+    this.projects = new ProjectsClient(this)
+    this.users = new UsersClient(this)
+    this.auth = new AuthClient(this)
+
+    if (this.clientConfig.isPromiseAPI) {
+      const observableConfig = Object.assign({}, this.clientConfig, {isPromiseAPI: false})
+      this.observable = new SanityClient(observableConfig)
+    }
   }
 
-  this.config(config)
-
-  this.assets = new AssetsClient(this)
-  this.datasets = new DatasetsClient(this)
-  this.projects = new ProjectsClient(this)
-  this.users = new UsersClient(this)
-  this.auth = new AuthClient(this)
-
-  if (this.clientConfig.isPromiseAPI) {
-    const observableConfig = Object.assign({}, this.clientConfig, {isPromiseAPI: false})
-    this.observable = new SanityClient(observableConfig)
-  }
-}
-
-Object.assign(SanityClient.prototype, dataMethods)
-Object.assign(SanityClient.prototype, {
   clone() {
     return new SanityClient(this.config())
-  },
+  }
 
   config(newConfig) {
     if (typeof newConfig === 'undefined') {
@@ -51,20 +46,20 @@ Object.assign(SanityClient.prototype, {
 
     this.clientConfig = initConfig(newConfig, this.clientConfig || {})
     return this
-  },
+  }
 
   withConfig(newConfig) {
     return this.clone().config(newConfig)
-  },
+  }
 
   getUrl(uri, useCdn = false) {
     const base = useCdn ? this.clientConfig.cdnUrl : this.clientConfig.url
     return `${base}/${uri.replace(/^\//, '')}`
-  },
+  }
 
   isPromiseAPI() {
     return this.clientConfig.isPromiseAPI
-  },
+  }
 
   _requestObservable(options) {
     const uri = options.url || options.uri
@@ -87,7 +82,7 @@ Object.assign(SanityClient.prototype, {
       options.query = {tag: validate.requestTag(tag), ...options.query}
     }
 
-    const reqOptions = getRequestOptions(
+    const reqOptions = requestOptions(
       this.clientConfig,
       Object.assign({}, options, {
         url: this.getUrl(uri, useCdn),
@@ -97,7 +92,7 @@ Object.assign(SanityClient.prototype, {
     return new Observable((subscriber) =>
       httpRequest(reqOptions, this.clientConfig.requester).subscribe(subscriber)
     )
-  },
+  }
 
   request(options) {
     const observable = this._requestObservable(options).pipe(
@@ -106,8 +101,10 @@ Object.assign(SanityClient.prototype, {
     )
 
     return this.isPromiseAPI() ? toPromise(observable) : observable
-  },
-})
+  }
+}
+
+Object.assign(SanityClient.prototype, dataMethods)
 
 SanityClient.Patch = Patch
 SanityClient.Transaction = Transaction
@@ -115,4 +112,13 @@ SanityClient.ClientError = httpRequest.ClientError
 SanityClient.ServerError = httpRequest.ServerError
 SanityClient.requester = httpRequest.defaultRequester
 
-module.exports = SanityClient
+// Not using default exports is intentional, as it permits importing from both ESM and CJS node envs with less hazards
+// https://nodejs.org/docs/latest/api/packages.html#writing-dual-packages-while-avoiding-or-minimizing-hazards
+export function createClient(config) {
+  return new SanityClient(config)
+}
+createClient.Patch = Patch
+createClient.Transaction = Transaction
+createClient.ClientError = httpRequest.ClientError
+createClient.ServerError = httpRequest.ServerError
+createClient.requester = httpRequest.defaultRequester

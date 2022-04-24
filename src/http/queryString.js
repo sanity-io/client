@@ -1,4 +1,4 @@
-module.exports = (params) => {
+export const queryString = (params) => {
   const qs = []
   for (const key in params) {
     if (params.hasOwnProperty(key)) {

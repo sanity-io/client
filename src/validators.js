@@ -27,18 +27,18 @@ export const validateObject = (op, val) => {
   }
 }
 
+export const validateDocumentId = (op, id) => {
+  if (typeof id !== 'string' || !/^[a-z0-9_.-]+$/i.test(id)) {
+    throw new Error(`${op}(): "${id}" is not a valid document ID`)
+  }
+}
+
 export const requireDocumentId = (op, doc) => {
   if (!doc._id) {
     throw new Error(`${op}() requires that the document contains an ID ("_id" property)`)
   }
 
-  export const validateDocumentId(op, doc._id)
-}
-
-export const validateDocumentId = (op, id) => {
-  if (typeof id !== 'string' || !/^[a-z0-9_.-]+$/i.test(id)) {
-    throw new Error(`${op}(): "${id}" is not a valid document ID`)
-  }
+  validateDocumentId(op, doc._id)
 }
 
 export const validateInsert = (at, selector, items) => {

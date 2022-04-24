@@ -1,11 +1,13 @@
 /* eslint-disable no-empty-function, no-process-env */
-const getIt = require('get-it')
-const observable = require('get-it/lib/middleware/observable')
-const jsonRequest = require('get-it/lib/middleware/jsonRequest')
-const jsonResponse = require('get-it/lib/middleware/jsonResponse')
-const progress = require('get-it/lib/middleware/progress')
-const {Observable} = require('../util/observable')
-const {ClientError, ServerError} = require('./errors')
+import getIt from 'get-it'
+import observable from 'get-it/lib/middleware/observable'
+import jsonRequest from 'get-it/lib/middleware/jsonRequest'
+import jsonResponse from 'get-it/lib/middleware/jsonResponse'
+import progress from 'get-it/lib/middleware/progress'
+import {Observable} from '../util/observable'
+import {ClientError, ServerError} from './errors'
+// Environment-specific middleware.
+import {middleware as envSpecific} from './nodeMiddleware'
 
 const httpError = {
   onResponse: (res) => {
@@ -28,9 +30,6 @@ const printWarnings = {
   },
 }
 
-// Environment-specific middleware.
-const envSpecific = require('./nodeMiddleware')
-
 const middleware = envSpecific.concat([
   printWarnings,
   jsonRequest(),
@@ -42,12 +41,10 @@ const middleware = envSpecific.concat([
 
 const request = getIt(middleware)
 
-function httpRequest(options, requester = request) {
+export function httpRequest(options, requester = request) {
   return requester(Object.assign({maxRedirects: 0}, options))
 }
 
 httpRequest.defaultRequester = request
 httpRequest.ClientError = ClientError
 httpRequest.ServerError = ServerError
-
-module.exports = httpRequest
