@@ -1428,9 +1428,14 @@ export class ObservableSanityClient {
   request<T = any>(options: RawRequestOptions): Observable<T>
 }
 
-export interface SanityClient {
+export class SanityClient {
+  static Patch: typeof Patch
+  static Transaction: typeof Transaction
+  static ClientError: typeof ClientError
+  static ServerError: typeof ServerError
+  static requester: GetItRequester
   // Client/configuration
-  constructor(config: ClientConfig): SanityClient
+  constructor(config: ClientConfig)
 
   /**
    * Clone the client - returns a new instance
