@@ -1,6 +1,5 @@
 /* eslint-disable no-empty-function, no-process-env */
 const getIt = require('get-it')
-const assign = require('object-assign')
 const observable = require('get-it/lib/middleware/observable')
 const jsonRequest = require('get-it/lib/middleware/jsonRequest')
 const jsonResponse = require('get-it/lib/middleware/jsonResponse')
@@ -44,7 +43,7 @@ const middleware = envSpecific.concat([
 const request = getIt(middleware)
 
 function httpRequest(options, requester = request) {
-  return requester(assign({maxRedirects: 0}, options))
+  return requester(Object.assign({maxRedirects: 0}, options))
 }
 
 httpRequest.defaultRequester = request

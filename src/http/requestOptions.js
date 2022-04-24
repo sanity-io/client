@@ -1,5 +1,3 @@
-const assign = require('object-assign')
-
 const projectHeader = 'X-Sanity-Project-ID'
 
 module.exports = (config, overrides = {}) => {
@@ -21,8 +19,8 @@ module.exports = (config, overrides = {}) => {
   )
 
   const timeout = typeof overrides.timeout === 'undefined' ? config.timeout : overrides.timeout
-  return assign({}, overrides, {
-    headers: assign({}, headers, overrides.headers || {}),
+  return Object.assign({}, overrides, {
+    headers: Object.assign({}, headers, overrides.headers || {}),
     timeout: typeof timeout === 'undefined' ? 5 * 60 * 1000 : timeout,
     proxy: overrides.proxy || config.proxy,
     json: true,

@@ -1,4 +1,3 @@
-const assign = require('object-assign')
 const {Observable} = require('../util/observable')
 const polyfilledEventSource = require('@sanity/eventsource')
 const pick = require('../util/pick')
@@ -132,7 +131,7 @@ module.exports = function listen(query, params, opts = {}) {
 function parseEvent(event) {
   try {
     const data = (event.data && JSON.parse(event.data)) || {}
-    return assign({type: event.type}, data)
+    return Object.assign({type: event.type}, data)
   } catch (err) {
     return err
   }

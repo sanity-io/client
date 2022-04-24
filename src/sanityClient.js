@@ -1,4 +1,3 @@
-const assign = require('object-assign')
 const {Observable, map, filter} = require('./util/observable')
 const Patch = require('./data/patch')
 const Transaction = require('./data/transaction')
@@ -29,24 +28,24 @@ function SanityClient(config = defaultConfig) {
   this.auth = new AuthClient(this)
 
   if (this.clientConfig.isPromiseAPI) {
-    const observableConfig = assign({}, this.clientConfig, {isPromiseAPI: false})
+    const observableConfig = Object.assign({}, this.clientConfig, {isPromiseAPI: false})
     this.observable = new SanityClient(observableConfig)
   }
 }
 
-assign(SanityClient.prototype, dataMethods)
-assign(SanityClient.prototype, {
+Object.assign(SanityClient.prototype, dataMethods)
+Object.assign(SanityClient.prototype, {
   clone() {
     return new SanityClient(this.config())
   },
 
   config(newConfig) {
     if (typeof newConfig === 'undefined') {
-      return assign({}, this.clientConfig)
+      return Object.assign({}, this.clientConfig)
     }
 
     if (this.observable) {
-      const observableConfig = assign({}, newConfig, {isPromiseAPI: false})
+      const observableConfig = Object.assign({}, newConfig, {isPromiseAPI: false})
       this.observable.config(observableConfig)
     }
 
@@ -90,7 +89,7 @@ assign(SanityClient.prototype, {
 
     const reqOptions = getRequestOptions(
       this.clientConfig,
-      assign({}, options, {
+      Object.assign({}, options, {
         url: this.getUrl(uri, useCdn),
       })
     )

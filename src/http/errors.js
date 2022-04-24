@@ -1,16 +1,15 @@
 const makeError = require('make-error')
-const assign = require('object-assign')
 
 function ClientError(res) {
   const props = extractErrorProps(res)
   ClientError.super.call(this, props.message)
-  assign(this, props)
+  Object.assign(this, props)
 }
 
 function ServerError(res) {
   const props = extractErrorProps(res)
   ServerError.super.call(this, props.message)
-  assign(this, props)
+  Object.assign(this, props)
 }
 
 function extractErrorProps(res) {

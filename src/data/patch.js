@@ -1,4 +1,3 @@
-const assign = require('object-assign')
 const getSelection = require('../util/getSelection')
 import * as validate from '../validators'
 const validateObject = validate.validateObject
@@ -6,13 +5,13 @@ const validateInsert = validate.validateInsert
 
 function Patch(selection, operations = {}, client = null) {
   this.selection = selection
-  this.operations = assign({}, operations)
+  this.operations = Object.assign({}, operations)
   this.client = client
 }
 
-assign(Patch.prototype, {
+Object.assign(Patch.prototype, {
   clone() {
-    return new Patch(this.selection, assign({}, this.operations), this.client)
+    return new Patch(this.selection, Object.assign({}, this.operations), this.client)
   },
 
   set(props) {
@@ -29,7 +28,7 @@ assign(Patch.prototype, {
       throw new Error('unset(attrs) takes an array of attributes to unset, non-array given')
     }
 
-    this.operations = assign({}, this.operations, {unset: attrs})
+    this.operations = Object.assign({}, this.operations, {unset: attrs})
     return this
   },
 
@@ -83,7 +82,7 @@ assign(Patch.prototype, {
   },
 
   serialize() {
-    return assign(getSelection(this.selection), this.operations)
+    return Object.assign(getSelection(this.selection), this.operations)
   },
 
   toJSON() {
@@ -99,7 +98,7 @@ assign(Patch.prototype, {
     }
 
     const returnFirst = typeof this.selection === 'string'
-    const opts = assign({returnFirst, returnDocuments: true}, options)
+    const opts = Object.assign({returnFirst, returnDocuments: true}, options)
     return this.client.mutate({patch: this.serialize()}, opts)
   },
 
@@ -114,8 +113,8 @@ assign(Patch.prototype, {
 
   _assign(op, props, merge = true) {
     validateObject(op, props)
-    this.operations = assign({}, this.operations, {
-      [op]: assign({}, (merge && this.operations[op]) || {}, props),
+    this.operations = Object.assign({}, this.operations, {
+      [op]: Object.assign({}, (merge && this.operations[op]) || {}, props),
     })
     return this
   },

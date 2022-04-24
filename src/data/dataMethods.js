@@ -1,4 +1,3 @@
-const assign = require('object-assign')
 const {map, filter} = require('../util/observable')
 import * as validators from '../validators'
 const getSelection = require('../util/getSelection')
@@ -177,7 +176,7 @@ module.exports = {
 
   _create(doc, op, options = {}) {
     const mutation = {[op]: doc}
-    const opts = assign({returnFirst: true, returnDocuments: true}, options)
+    const opts = Object.assign({returnFirst: true, returnDocuments: true}, options)
     return this.dataRequest('mutate', {mutations: [mutation]}, opts)
   },
 }

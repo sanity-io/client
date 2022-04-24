@@ -1,11 +1,10 @@
-const assign = require('object-assign')
 import * as validate from '../validators'
 
 function DatasetsClient(client) {
   this.request = client.request.bind(client)
 }
 
-assign(DatasetsClient.prototype, {
+Object.assign(DatasetsClient.prototype, {
   create(name, options) {
     return this._modify('PUT', name, options)
   },
