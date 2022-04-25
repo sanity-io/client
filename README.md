@@ -260,13 +260,11 @@ client
 The operations of appending and prepending to an array are so common that they have been given their own methods for better readability:
 
 ```js
-const {nanoid} = require('nanoid')
-
 client
   .patch('bike-123')
   .setIfMissing({reviews: []})
-  .append('reviews', [{_key: nanoid(), title: 'Great bike!', stars: 5}])
-  .commit()
+  .append('reviews', [{title: 'Great bike!', stars: 5}])
+  .commit({autoGenerateArrayKeys: true})
 ```
 
 ### Deleting an element from an array
