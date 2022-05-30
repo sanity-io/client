@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@sanity/client.svg?style=flat-square)](https://www.npmjs.com/package/@sanity/client)
 
-Javascript client for Sanity. Works in node.js and modern browsers (older browsers needs a [Promise polyfill](https://www.sanity.io/help/js-client-promise-polyfill)).
+Javascript client for Sanity. Works in node.js and modern browsers (older browsers need a [Promise polyfill](https://www.sanity.io/help/js-client-promise-polyfill)).
 
 ## Requirements
 
