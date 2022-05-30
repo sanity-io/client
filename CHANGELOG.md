@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.1]
+
+- docs: fix typo in readme (#10)
+- chore: upgrade eventsource dependency
+
 ## [3.3.0]
 
 - feat: add `dryRun`, `autoGenerateArrayKeys` mutation options
