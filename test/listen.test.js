@@ -14,7 +14,7 @@ const getClient = (options) =>
       {
         dataset: 'prod',
         namespace: 'beerns',
-        apiHost: `http://localhost:${options.port}`,
+        apiHost: `http://127.0.0.1:${options.port}`,
         useProjectHostname: false,
         useCdn: false,
         apiVersion: '1',
