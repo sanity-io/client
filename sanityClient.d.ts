@@ -12,6 +12,7 @@ export type AssetMetadataType =
 export type DatasetAclMode = 'public' | 'private' | 'custom'
 export type ListenVisibility = 'sync' | 'async' | 'query'
 export type ListenEventName = 'mutation' | 'welcome' | 'reconnect'
+export type MutationOperation = 'create' | 'delete' | 'update' | 'none'
 
 export interface ResponseEvent<T = unknown> {
   type: 'response'
@@ -214,13 +215,13 @@ export type Mutation<R = any> =
 export interface SingleMutationResult {
   transactionId: string
   documentId: string
-  results: {id: string}[]
+  results: {id: string; operation: MutationOperation}[]
 }
 
 export interface MultipleMutationResult {
   transactionId: string
   documentIds: string[]
-  results: {id: string}[]
+  results: {id: string; operation: MutationOperation}[]
 }
 
 export class Patch {
