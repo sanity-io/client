@@ -1,3 +1,4 @@
+/* eslint-disable no-process-env */
 const test = require('tape')
 const nock = require('nock')
 const assign = require('xtend')
@@ -6,9 +7,37 @@ const fs = require('fs')
 const validators = require('../src/validators')
 const observableOf = require('rxjs').of
 const {filter} = require('rxjs/operators')
-const sanityClient = require('../src/sanityClient')
 
-const SanityClient = sanityClient
+if (process.env.TEST_COND === 'browser') {
+  const {AbortController} = require('node-abort-controller')
+  global.AbortController = AbortController
+  const fetch = require('node-fetch')
+  // node v18 ships a stellar, web-ready Response class that has response.body.getReader
+  global.fetch =
+    typeof Response === 'undefined'
+      ? fetch
+      : (...args) =>
+          fetch(...args).then(
+            (res) =>
+              new Response(res.body, {
+                status: res.status,
+                statusText: res.statusText,
+                headers: res.headers,
+              })
+          )
+}
+
+const loadClient = async () => {
+  switch (process.env.TEST_COND) {
+    case 'browser':
+      return (await import('../dist/sanityClient.browser.mjs')).default
+    case 'node':
+      return require('../dist/sanityClient.node.cjs')
+    default:
+      return require('../src/sanityClient')
+  }
+}
+
 const noop = () => {
   /* intentional noop */
 }
@@ -26,7 +55,7 @@ const clientConfig = {
   useCdn: false,
 }
 
-const getClient = (conf) => sanityClient(assign({}, clientConfig, conf || {}))
+const getClient = (sanityClient, conf) => sanityClient(assign({}, clientConfig, conf || {}))
 const fixture = (name) => path.join(__dirname, 'fixtures', name)
 const ifError = (t) => (err) => {
   t.ifError(err)
@@ -38,19 +67,22 @@ const ifError = (t) => (err) => {
 /*****************
  * BASE CLIENT   *
  *****************/
-test('can construct client with new keyword', (t) => {
+test('can construct client with new keyword', async (t) => {
+  const SanityClient = await loadClient()
   const client = new SanityClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.end()
 })
 
-test('can construct client without new keyword', (t) => {
+test('can construct client without new keyword', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.end()
 })
 
-test('can get and set config', (t) => {
+test('can get and set config', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.equal(client.config({projectId: 'def456'}), client, 'returns client on set')
@@ -58,7 +90,8 @@ test('can get and set config', (t) => {
   t.end()
 })
 
-test('config getter returns a cloned object', (t) => {
+test('config getter returns a cloned object', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   const config = client.config()
@@ -67,26 +100,29 @@ test('config getter returns a cloned object', (t) => {
   t.end()
 })
 
-test('calling config() reconfigures observable API too', (t) => {
+test('calling config() reconfigures observable API too', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123'})
 
-  client.config({projectId: 'def456'})
+  await client.config({projectId: 'def456'})
   t.equal(client.observable.config().projectId, 'def456', 'Observable API gets reconfigured')
   t.end()
 })
 
-test('can clone client', (t) => {
+test('can clone client', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
 
   const client2 = client.clone()
-  client2.config({projectId: 'def456'})
+  await client2.config({projectId: 'def456'})
   t.equal(client.config().projectId, 'abc123')
   t.equal(client2.config().projectId, 'def456')
   t.end()
 })
 
-test('can clone client with new config', (t) => {
+test('can clone client with new config', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123', apiVersion: 'v2021-03-25'})
   t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
   t.equal(client.config().apiVersion, '2021-03-25', 'constructor opts are set')
@@ -100,17 +136,20 @@ test('can clone client with new config', (t) => {
   t.end()
 })
 
-test('throws if no projectId is set', (t) => {
+test('throws if no projectId is set', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(sanityClient, /projectId/)
   t.end()
 })
 
-test('throws on invalid project ids', (t) => {
+test('throws on invalid project ids', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(() => sanityClient({projectId: '*foo*'}), /projectId.*?can only contain/i)
   t.end()
 })
 
-test('throws on invalid dataset names', (t) => {
+test('throws on invalid dataset names', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(
     () => sanityClient({projectId: 'abc123', dataset: '*foo*'}),
     /Datasets can only contain/i
@@ -118,7 +157,8 @@ test('throws on invalid dataset names', (t) => {
   t.end()
 })
 
-test('throws on invalid request tag prefix', (t) => {
+test('throws on invalid request tag prefix', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(
     () => sanityClient({projectId: 'abc123', dataset: 'foo', requestTagPrefix: 'no#shot'}),
     /tag can only contain alphanumeric/i
@@ -126,7 +166,8 @@ test('throws on invalid request tag prefix', (t) => {
   t.end()
 })
 
-test('accepts alias in dataset field', (t) => {
+test('accepts alias in dataset field', async (t) => {
+  const sanityClient = await loadClient()
   t.doesNotThrow(
     () => sanityClient({projectId: 'abc123', dataset: '~alias'}),
     /Datasets can only contain/i
@@ -134,20 +175,20 @@ test('accepts alias in dataset field', (t) => {
   t.end()
 })
 
-test('can use request() for API-relative requests', (t) => {
+test('can use request() for API-relative requests', async (t) => {
   nock(projectHost()).get('/v1/ping').reply(200, {pong: true})
 
-  getClient()
+  await getClient(await loadClient())
     .request({uri: '/ping'})
     .then((res) => t.equal(res.pong, true))
     .catch(t.ifError)
     .then(t.end)
 })
 
-test('can use request() for API-relative requests (custom api version)', (t) => {
+test('can use request() for API-relative requests (custom api version)', async (t) => {
   nock(projectHost()).get('/v2019-01-29/ping').reply(200, {pong: true})
 
-  getClient({apiVersion: '2019-01-29'})
+  await getClient(await loadClient(), {apiVersion: '2019-01-29'})
     .request({uri: '/ping'})
     .then((res) => t.equal(res.pong, true))
     .catch(t.ifError)
@@ -163,18 +204,20 @@ test('observable requests are lazy', (t) => {
       return [200, {pong: true}]
     })
 
-  const req = getClient().observable.request({uri: '/ping'})
+  loadClient().then((sanityClient) => {
+    const req = getClient(sanityClient).observable.request({uri: '/ping'})
 
-  setTimeout(() => {
-    t.false(didRequest)
-    req.subscribe({
-      next: (res) => {
-        t.true(didRequest)
-      },
-      error: t.ifError,
-      complete: t.end,
-    })
-  }, 1)
+    setTimeout(() => {
+      t.false(didRequest)
+      req.subscribe({
+        next: (res) => {
+          t.true(didRequest)
+        },
+        error: t.ifError,
+        complete: t.end,
+      })
+    }, 1)
+  })
 })
 
 test('observable requests are cold', (t) => {
@@ -187,31 +230,33 @@ test('observable requests are cold', (t) => {
       return [200, {pong: true}]
     })
 
-  const req = getClient().observable.request({uri: '/ping'})
+  loadClient().then((sanityClient) => {
+    const req = getClient(sanityClient).observable.request({uri: '/ping'})
 
-  t.equal(requestCount, 0)
-  req.subscribe({
-    next: () => {
-      t.equal(requestCount, 1)
-      req.subscribe({
-        next: () => {
-          t.equal(requestCount, 2)
-        },
-        error: t.ifError,
-        complete: t.end,
-      })
-    },
-    error: t.ifError,
+    t.equal(requestCount, 0)
+    req.subscribe({
+      next: () => {
+        t.equal(requestCount, 1)
+        req.subscribe({
+          next: () => {
+            t.equal(requestCount, 2)
+          },
+          error: t.ifError,
+          complete: t.end,
+        })
+      },
+      error: t.ifError,
+    })
   })
 })
-test('can use getUrl() to get API-relative paths', (t) => {
-  t.equal(getClient().getUrl('/bar/baz'), `${projectHost()}/v1/bar/baz`)
+test('can use getUrl() to get API-relative paths', async (t) => {
+  t.equal(getClient(await loadClient()).getUrl('/bar/baz'), `${projectHost()}/v1/bar/baz`)
   t.end()
 })
 
-test('can use getUrl() to get API-relative paths (custom api version)', (t) => {
+test('can use getUrl() to get API-relative paths (custom api version)', async (t) => {
   t.equal(
-    getClient({apiVersion: '2019-01-29'}).getUrl('/bar/baz'),
+    await getClient(await loadClient(), {apiVersion: '2019-01-29'}).getUrl('/bar/baz'),
     `${projectHost()}/v2019-01-29/bar/baz`
   )
   t.end()
@@ -239,13 +284,14 @@ test('validation', (t) => {
 /*****************
  * PROJECTS      *
  *****************/
-test('can request list of projects', (t) => {
+test('can request list of projects', async (t) => {
   nock(`https://${apiHost}`)
     .get('/v1/projects')
     .reply(200, [{projectId: 'foo'}, {projectId: 'bar'}])
 
+  const sanityClient = await loadClient()
   const client = sanityClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
-  client.projects
+  await client.projects
     .list()
     .then((projects) => {
       t.equal(projects.length, 2, 'should have two projects')
@@ -255,17 +301,18 @@ test('can request list of projects', (t) => {
     .then(t.end)
 })
 
-test('can request list of projects (custom api version)', (t) => {
+test('can request list of projects (custom api version)', async (t) => {
   nock(`https://${apiHost}`)
     .get('/v2019-01-29/projects')
     .reply(200, [{projectId: 'foo'}, {projectId: 'bar'}])
 
+  const sanityClient = await loadClient()
   const client = sanityClient({
     useProjectHostname: false,
     apiHost: `https://${apiHost}`,
     apiVersion: '2019-01-29',
   })
-  client.projects
+  await client.projects
     .list()
     .then((projects) => {
       t.equal(projects.length, 2, 'should have two projects')
@@ -275,7 +322,7 @@ test('can request list of projects (custom api version)', (t) => {
     .then(t.end)
 })
 
-test('can request project by id', (t) => {
+test('can request project by id', async (t) => {
   const doc = {
     _id: 'projects.n1f7y',
     projectId: 'n1f7y',
@@ -291,8 +338,9 @@ test('can request project by id', (t) => {
 
   nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(200, doc)
 
+  const sanityClient = await loadClient()
   const client = sanityClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
-  client.projects
+  await client.projects
     .getById('n1f7y')
     .then((project) => t.deepEqual(project, doc))
     .catch(t.ifError)
@@ -302,29 +350,37 @@ test('can request project by id', (t) => {
 /*****************
  * DATASETS      *
  *****************/
-test('throws when trying to create dataset with invalid name', (t) => {
-  t.throws(() => getClient().datasets.create('*foo*'), /Datasets can only contain/i)
+test('throws when trying to create dataset with invalid name', async (t) => {
+  const sanityClient = await loadClient()
+  t.throws(() => getClient(sanityClient).datasets.create('*foo*'), /Datasets can only contain/i)
   t.end()
 })
 
-test('throws when trying to delete dataset with invalid name', (t) => {
-  t.throws(() => getClient().datasets.delete('*foo*'), /Datasets can only contain/i)
+test('throws when trying to delete dataset with invalid name', async (t) => {
+  const sanityClient = await loadClient()
+  t.throws(() => getClient(sanityClient).datasets.delete('*foo*'), /Datasets can only contain/i)
   t.end()
 })
 
-test('can create dataset', (t) => {
+test('can create dataset', async (t) => {
   nock(projectHost()).put('/v1/datasets/bar').reply(200)
-  getClient().datasets.create('bar').catch(t.ifError).then(t.end)
+  await getClient(await loadClient())
+    .datasets.create('bar')
+    .catch(t.ifError)
+    .then(t.end)
 })
 
-test('can delete dataset', (t) => {
+test('can delete dataset', async (t) => {
   nock(projectHost()).delete('/v1/datasets/bar').reply(200)
-  getClient().datasets.delete('bar').catch(t.ifError).then(t.end)
+  await getClient(await loadClient())
+    .datasets.delete('bar')
+    .catch(t.ifError)
+    .then(t.end)
 })
 
-test('can list datasets', (t) => {
+test('can list datasets', async (t) => {
   nock(projectHost()).get('/v1/datasets').reply(200, ['foo', 'bar'])
-  getClient()
+  await getClient(await loadClient())
     .datasets.list()
     .then((sets) => {
       t.deepEqual(sets, ['foo', 'bar'])
@@ -336,7 +392,7 @@ test('can list datasets', (t) => {
 /*****************
  * DATA          *
  *****************/
-test('can query for documents', (t) => {
+test('can query for documents', async (t) => {
   const query = 'beerfiesta.beer[.title == $beerName]'
   const params = {beerName: 'Headroom Double IPA'}
   const qs =
@@ -350,7 +406,7 @@ test('can query for documents', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .fetch(query, params)
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -360,7 +416,7 @@ test('can query for documents', (t) => {
     .then(t.end)
 })
 
-test('can query for documents and return full response', (t) => {
+test('can query for documents and return full response', async (t) => {
   const query = 'beerfiesta.beer[.title == $beerName]'
   const params = {beerName: 'Headroom Double IPA'}
   const qs =
@@ -374,7 +430,7 @@ test('can query for documents and return full response', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .fetch(query, params, {filterResponse: false})
     .then((res) => {
       t.equal(res.ms, 123, 'should include timing info')
@@ -386,7 +442,7 @@ test('can query for documents and return full response', (t) => {
     .then(t.end)
 })
 
-test('can query for documents with request tag', (t) => {
+test('can query for documents with request tag', async (t) => {
   nock(projectHost())
     .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
     .reply(200, {
@@ -395,7 +451,7 @@ test('can query for documents with request tag', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .fetch('*', {}, {tag: 'mycompany.syncjob'})
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -405,7 +461,7 @@ test('can query for documents with request tag', (t) => {
     .then(t.end)
 })
 
-test('throws on invalid request tag on request', (t) => {
+test('throws on invalid request tag on request', async (t) => {
   nock(projectHost())
     .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
     .reply(200, {
@@ -414,13 +470,17 @@ test('throws on invalid request tag on request', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
+  const sanityClient = await loadClient()
   t.throws(() => {
-    getClient().fetch('*', {}, {tag: 'mycompany syncjob ok'}).catch(t.ifError).then(t.end)
+    getClient(sanityClient)
+      .fetch('*', {}, {tag: 'mycompany syncjob ok'})
+      .catch(t.ifError)
+      .then(t.end)
   }, /tag can only contain alphanumeric/i)
   t.end()
 })
 
-test('can use a tag-prefixed client', (t) => {
+test('can use a tag-prefixed client', async (t) => {
   nock(projectHost())
     .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
     .reply(200, {
@@ -429,7 +489,7 @@ test('can use a tag-prefixed client', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient({requestTagPrefix: 'mycompany'})
+  await getClient(await loadClient(), {requestTagPrefix: 'mycompany'})
     .fetch('*', {}, {tag: 'syncjob'})
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -439,7 +499,7 @@ test('can use a tag-prefixed client', (t) => {
     .then(t.end)
 })
 
-test('handles api errors gracefully', (t) => {
+test('handles api errors gracefully', async (t) => {
   const response = {
     statusCode: 403,
     error: 'Forbidden',
@@ -448,7 +508,7 @@ test('handles api errors gracefully', (t) => {
 
   nock(projectHost()).get('/v1/data/query/foo?query=area51').times(5).reply(403, response)
 
-  getClient()
+  await getClient(await loadClient())
     .fetch('area51')
     .then((res) => {
       t.fail('Resolve handler should not be called on failure')
@@ -463,7 +523,7 @@ test('handles api errors gracefully', (t) => {
     })
 })
 
-test('handles db errors gracefully', (t) => {
+test('handles db errors gracefully', async (t) => {
   const response = {
     error: {
       column: 13,
@@ -479,7 +539,7 @@ test('handles db errors gracefully', (t) => {
     .get('/v1/data/query/foo?query=foo.bar.baz%20%2012%23%5B%7B')
     .reply(400, response)
 
-  getClient()
+  await getClient(await loadClient())
     .fetch('foo.bar.baz  12#[{')
     .then((res) => {
       t.fail('Resolve handler should not be called on failure')
@@ -494,7 +554,7 @@ test('handles db errors gracefully', (t) => {
     })
 })
 
-test('can query for single document', (t) => {
+test('can query for single document', async (t) => {
   nock(projectHost())
     .get('/v1/data/doc/foo/abc123')
     .reply(200, {
@@ -502,7 +562,7 @@ test('can query for single document', (t) => {
       documents: [{_id: 'abc123', mood: 'lax'}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .getDocument('abc123')
     .then((res) => {
       t.equal(res.mood, 'lax', 'data should match')
@@ -511,7 +571,7 @@ test('can query for single document', (t) => {
     .then(t.end)
 })
 
-test('can query for single document with request tag', (t) => {
+test('can query for single document with request tag', async (t) => {
   nock(projectHost())
     .get('/v1/data/doc/foo/abc123?tag=some.tag')
     .reply(200, {
@@ -519,7 +579,7 @@ test('can query for single document with request tag', (t) => {
       documents: [{_id: 'abc123', mood: 'lax'}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .getDocument('abc123', {tag: 'some.tag'})
     .then((res) => {
       t.equal(res.mood, 'lax', 'data should match')
@@ -528,7 +588,7 @@ test('can query for single document with request tag', (t) => {
     .then(t.end)
 })
 
-test('can query for multiple documents', (t) => {
+test('can query for multiple documents', async (t) => {
   nock(projectHost())
     .get('/v1/data/doc/foo/abc123,abc321')
     .reply(200, {
@@ -539,7 +599,7 @@ test('can query for multiple documents', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .getDocuments(['abc123', 'abc321'])
     .then(([abc123, abc321]) => {
       t.equal(abc123.mood, 'lax', 'data should match')
@@ -549,7 +609,7 @@ test('can query for multiple documents', (t) => {
     .then(t.end)
 })
 
-test('can query for multiple documents with tag', (t) => {
+test('can query for multiple documents with tag', async (t) => {
   nock(projectHost())
     .get('/v1/data/doc/foo/abc123,abc321?tag=mood.docs')
     .reply(200, {
@@ -560,7 +620,7 @@ test('can query for multiple documents with tag', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .getDocuments(['abc123', 'abc321'], {tag: 'mood.docs'})
     .then(([abc123, abc321]) => {
       t.equal(abc123.mood, 'lax', 'data should match')
@@ -570,7 +630,7 @@ test('can query for multiple documents with tag', (t) => {
     .then(t.end)
 })
 
-test('preserves the position of requested documents', (t) => {
+test('preserves the position of requested documents', async (t) => {
   nock(projectHost())
     .get('/v1/data/doc/foo/abc123,abc321,abc456')
     .reply(200, {
@@ -581,7 +641,7 @@ test('preserves the position of requested documents', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .getDocuments(['abc123', 'abc321', 'abc456'])
     .then(([abc123, abc321, abc456]) => {
       t.equal(abc123, null, 'first item should be null')
@@ -592,10 +652,10 @@ test('preserves the position of requested documents', (t) => {
     .then(t.end)
 })
 
-test('gives http statuscode as error if no body is present on errors', (t) => {
+test('gives http statuscode as error if no body is present on errors', async (t) => {
   nock(projectHost()).get('/v1/data/doc/foo/abc123').reply(400)
 
-  getClient()
+  await getClient(await loadClient())
     .getDocument('abc123')
     .then((res) => {
       t.fail('Resolve handler should not be called on failure')
@@ -608,10 +668,10 @@ test('gives http statuscode as error if no body is present on errors', (t) => {
     })
 })
 
-test('populates response body on errors', (t) => {
+test('populates response body on errors', async (t) => {
   nock(projectHost()).get('/v1/data/doc/foo/abc123').times(5).reply(400, 'Some Weird Error')
 
-  getClient()
+  await getClient(await loadClient())
     .getDocument('abc123')
     .then((res) => {
       t.fail('Resolve handler should not be called on failure')
@@ -625,7 +685,8 @@ test('populates response body on errors', (t) => {
     })
 })
 
-test('throws if trying to perform data request without dataset', (t) => {
+test('throws if trying to perform data request without dataset', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(
     () => sanityClient({projectId: 'foo'}).fetch('blah'),
     Error,
@@ -634,7 +695,7 @@ test('throws if trying to perform data request without dataset', (t) => {
   t.end()
 })
 
-test('can create documents', (t) => {
+test('can create documents', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
 
   nock(projectHost())
@@ -651,7 +712,7 @@ test('can create documents', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc)
     .then((res) => {
       t.equal(res._id, doc._id, 'document id returned')
@@ -661,7 +722,7 @@ test('can create documents', (t) => {
     .then(t.end)
 })
 
-test('can create documents without specifying ID', (t) => {
+test('can create documents without specifying ID', async (t) => {
   const doc = {name: 'Raptor'}
   const expectedBody = {mutations: [{create: Object.assign({}, doc)}]}
   nock(projectHost())
@@ -676,7 +737,7 @@ test('can create documents without specifying ID', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc)
     .then((res) => {
       t.equal(res._id, 'abc456', 'document id returned')
@@ -685,7 +746,7 @@ test('can create documents without specifying ID', (t) => {
     .then(t.end)
 })
 
-test('can create documents with request tag', (t) => {
+test('can create documents with request tag', async (t) => {
   const doc = {name: 'Raptor'}
   const expectedBody = {mutations: [{create: Object.assign({}, doc)}]}
   nock(projectHost())
@@ -703,7 +764,7 @@ test('can create documents with request tag', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc, {tag: 'dino.import'})
     .then((res) => {
       t.equal(res._id, 'abc456', 'document id returned')
@@ -712,13 +773,13 @@ test('can create documents with request tag', (t) => {
     .then(t.end)
 })
 
-test('can tell create() not to return documents', (t) => {
+test('can tell create() not to return documents', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations: [{create: doc}]})
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc, {returnDocuments: false})
     .then((res) => {
       t.equal(res.transactionId, 'abc123', 'returns transaction ID')
@@ -728,7 +789,7 @@ test('can tell create() not to return documents', (t) => {
     .then(t.end)
 })
 
-test('can tell create() to use non-default visibility mode', (t) => {
+test('can tell create() to use non-default visibility mode', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=async', {
@@ -739,7 +800,7 @@ test('can tell create() to use non-default visibility mode', (t) => {
       results: [{id: 'abc123', document: doc, operation: 'create'}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc, {visibility: 'async'})
     .then((res) => {
       t.equal(res._id, 'abc123', 'document id returned')
@@ -748,7 +809,7 @@ test('can tell create() to use non-default visibility mode', (t) => {
     .then(t.end)
 })
 
-test('can tell create() to auto-generate array keys', (t) => {
+test('can tell create() to auto-generate array keys', async (t) => {
   const doc = {
     _id: 'abc123',
     name: 'Dromaeosauridae',
@@ -772,7 +833,7 @@ test('can tell create() to auto-generate array keys', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc, {autoGenerateArrayKeys: true})
     .then((res) => {
       t.equal(res._id, 'abc123', 'document id returned')
@@ -782,7 +843,7 @@ test('can tell create() to auto-generate array keys', (t) => {
     .then(t.end)
 })
 
-test('can tell create() to do a dry-run', (t) => {
+test('can tell create() to do a dry-run', async (t) => {
   const doc = {_id: 'abc123', name: 'Dromaeosauridae'}
   nock(projectHost())
     .post('/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync', {
@@ -799,14 +860,14 @@ test('can tell create() to do a dry-run', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .create(doc, {dryRun: true})
     .then((res) => t.equal(res._id, 'abc123', 'document id returned'))
     .catch(t.ifError)
     .then(t.end)
 })
 
-test('createIfNotExists() sends correct mutation', (t) => {
+test('createIfNotExists() sends correct mutation', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   const expectedBody = {mutations: [{createIfNotExists: doc}]}
   nock(projectHost())
@@ -816,20 +877,20 @@ test('createIfNotExists() sends correct mutation', (t) => {
       results: [{id: 'abc123', document: doc, operation: 'create'}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .createIfNotExists(doc)
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('can tell createIfNotExists() not to return documents', (t) => {
+test('can tell createIfNotExists() not to return documents', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   const expectedBody = {mutations: [{createIfNotExists: doc}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .createIfNotExists(doc, {returnDocuments: false})
     .then((res) => {
       t.equal(res.transactionId, 'abc123', 'returns transaction ID')
@@ -839,14 +900,14 @@ test('can tell createIfNotExists() not to return documents', (t) => {
     .then(t.end)
 })
 
-test('can use request tag with createIfNotExists()', (t) => {
+test('can use request tag with createIfNotExists()', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   const expectedBody = {mutations: [{createIfNotExists: doc}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?tag=mysync&returnIds=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .createIfNotExists(doc, {returnDocuments: false, tag: 'mysync'})
     .then((res) => {
       t.equal(res.transactionId, 'abc123', 'returns transaction ID')
@@ -856,24 +917,27 @@ test('can use request tag with createIfNotExists()', (t) => {
     .then(t.end)
 })
 
-test('createOrReplace() sends correct mutation', (t) => {
+test('createOrReplace() sends correct mutation', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   const expectedBody = {mutations: [{createOrReplace: doc}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
 
-  getClient().createOrReplace(doc).catch(t.ifError).then(t.end)
+  await getClient(await loadClient())
+    .createOrReplace(doc)
+    .catch(t.ifError)
+    .then(t.end)
 })
 
-test('can tell createOrReplace() not to return documents', (t) => {
+test('can tell createOrReplace() not to return documents', async (t) => {
   const doc = {_id: 'abc123', name: 'Raptor'}
   const expectedBody = {mutations: [{createOrReplace: doc}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .createOrReplace(doc, {returnDocuments: false})
     .then((res) => {
       t.equal(res.transactionId, 'abc123', 'returns transaction ID')
@@ -883,31 +947,31 @@ test('can tell createOrReplace() not to return documents', (t) => {
     .then(t.end)
 })
 
-test('delete() sends correct mutation', (t) => {
+test('delete() sends correct mutation', async (t) => {
   const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .delete('abc123')
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('delete() can use query', (t) => {
+test('delete() can use query', async (t) => {
   const expectedBody = {mutations: [{delete: {query: 'foo.sometype'}}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123'})
 
-  getClient()
+  await getClient(await loadClient())
     .delete({query: 'foo.sometype'})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('delete() can use request tag', (t) => {
+test('delete() can use request tag', async (t) => {
   const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
   nock(projectHost())
     .post(
@@ -916,13 +980,13 @@ test('delete() can use request tag', (t) => {
     )
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .delete('abc123', {tag: 'delete.abc'})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('delete() can use query with params', (t) => {
+test('delete() can use query with params', async (t) => {
   const query = '*[_type == "beer" && title == $beerName]'
   const params = {beerName: 'Headroom Double IPA'}
   const expectedBody = {mutations: [{delete: {query: query, params: params}}]}
@@ -930,25 +994,25 @@ test('delete() can use query with params', (t) => {
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123'})
 
-  getClient()
+  await getClient(await loadClient())
     .delete({query: query, params: params})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('delete() can be told not to return documents', (t) => {
+test('delete() can be told not to return documents', async (t) => {
   const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .delete('abc123', {returnDocuments: false})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('mutate() accepts multiple mutations', (t) => {
+test('mutate() accepts multiple mutations', async (t) => {
   const docs = [
     {
       _id: 'movies.raiders-of-the-lost-ark',
@@ -974,13 +1038,13 @@ test('mutate() accepts multiple mutations', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(mutations)
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('mutate() accepts request tag', (t) => {
+test('mutate() accepts request tag', async (t) => {
   const mutations = [{delete: {id: 'abc123'}}]
 
   nock(projectHost())
@@ -992,13 +1056,13 @@ test('mutate() accepts request tag', (t) => {
       results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(mutations, {tag: 'foobar'})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('mutate() accepts `autoGenerateArrayKeys`', (t) => {
+test('mutate() accepts `autoGenerateArrayKeys`', async (t) => {
   const mutations = [
     {
       create: {
@@ -1019,13 +1083,13 @@ test('mutate() accepts `autoGenerateArrayKeys`', (t) => {
       results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(mutations, {autoGenerateArrayKeys: true})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('mutate() accepts `dryRun`', (t) => {
+test('mutate() accepts `dryRun`', async (t) => {
   const mutations = [{create: {_id: 'abc123', _type: 'post'}}]
 
   nock(projectHost())
@@ -1037,13 +1101,13 @@ test('mutate() accepts `dryRun`', (t) => {
       results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(mutations, {dryRun: true})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('mutate() accepts `skipCrossDatasetReferenceValidation`', (t) => {
+test('mutate() accepts `skipCrossDatasetReferenceValidation`', async (t) => {
   const mutations = [{delete: {id: 'abc123'}}]
 
   nock(projectHost())
@@ -1056,13 +1120,13 @@ test('mutate() accepts `skipCrossDatasetReferenceValidation`', (t) => {
       results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(mutations, {tag: 'foobar', skipCrossDatasetReferenceValidation: true})
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('mutate() skips/falls back to defaults on undefined but known properties', (t) => {
+test('mutate() skips/falls back to defaults on undefined but known properties', async (t) => {
   const mutations = [{delete: {id: 'abc123'}}]
 
   nock(projectHost())
@@ -1074,7 +1138,7 @@ test('mutate() skips/falls back to defaults on undefined but known properties', 
       results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(mutations, {
       tag: 'foobar',
       skipCrossDatasetReferenceValidation: undefined,
@@ -1085,7 +1149,7 @@ test('mutate() skips/falls back to defaults on undefined but known properties', 
     .then(() => t.end())
 })
 
-test('uses GET for queries below limit', (t) => {
+test('uses GET for queries below limit', async (t) => {
   // Please dont ever do this. Just... don't.
   const clause = []
   const qParams = {}
@@ -1108,7 +1172,7 @@ test('uses GET for queries below limit', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .fetch(query, params)
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -1118,7 +1182,7 @@ test('uses GET for queries below limit', (t) => {
     .then(t.end)
 })
 
-test('uses POST for long queries', (t) => {
+test('uses POST for long queries', async (t) => {
   // Please dont ever do this. Just... don't.
   const clause = []
   const params = {}
@@ -1139,7 +1203,7 @@ test('uses POST for long queries', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .fetch(query, params)
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -1149,7 +1213,7 @@ test('uses POST for long queries', (t) => {
     .then(t.end)
 })
 
-test('uses POST for long queries, but puts request tag as query param', (t) => {
+test('uses POST for long queries, but puts request tag as query param', async (t) => {
   const clause = []
   const params = {}
   for (let i = 1866; i <= 2016; i++) {
@@ -1169,7 +1233,7 @@ test('uses POST for long queries, but puts request tag as query param', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .fetch(query, params, {tag: 'myapp.silly-query'})
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -1179,7 +1243,8 @@ test('uses POST for long queries, but puts request tag as query param', (t) => {
     .then(t.end)
 })
 
-test('uses POST for long queries also towards CDN', (t) => {
+test('uses POST for long queries also towards CDN', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
   const clause = []
@@ -1200,7 +1265,7 @@ test('uses POST for long queries also towards CDN', (t) => {
       result: [{_id: 'njgNkngskjg', rating: 5}],
     })
 
-  client
+  await client
     .fetch(query, params)
     .then((res) => {
       t.equal(res.length, 1, 'length should match')
@@ -1213,27 +1278,37 @@ test('uses POST for long queries also towards CDN', (t) => {
 /*****************
  * PATCH OPS     *
  *****************/
-test('can build and serialize a patch of operations', (t) => {
-  const patch = getClient().patch('abc123').inc({count: 1}).set({brownEyes: true}).serialize()
+test('can build and serialize a patch of operations', async (t) => {
+  const patch = getClient(await loadClient())
+    .patch('abc123')
+    .inc({count: 1})
+    .set({brownEyes: true})
+    .serialize()
 
   t.deepEqual(patch, {id: 'abc123', inc: {count: 1}, set: {brownEyes: true}})
   t.end()
 })
 
-test('patch() can take an array of IDs', (t) => {
-  const patch = getClient().patch(['abc123', 'foo.456']).inc({count: 1}).serialize()
+test('patch() can take an array of IDs', async (t) => {
+  const patch = getClient(await loadClient())
+    .patch(['abc123', 'foo.456'])
+    .inc({count: 1})
+    .serialize()
   t.deepEqual(patch, {id: ['abc123', 'foo.456'], inc: {count: 1}})
   t.end()
 })
 
-test('patch() can take a query', (t) => {
-  const patch = getClient().patch({query: '*[_type == "beer]'}).inc({count: 1}).serialize()
+test('patch() can take a query', async (t) => {
+  const patch = getClient(await loadClient())
+    .patch({query: '*[_type == "beer]'})
+    .inc({count: 1})
+    .serialize()
   t.deepEqual(patch, {query: '*[_type == "beer]', inc: {count: 1}})
   t.end()
 })
 
-test('patch() can take a query and params', (t) => {
-  const patch = getClient()
+test('patch() can take a query and params', async (t) => {
+  const patch = getClient(await loadClient())
     .patch({query: '*[_type == $type]', params: {type: 'beer'}})
     .inc({count: 1})
     .serialize()
@@ -1242,8 +1317,8 @@ test('patch() can take a query and params', (t) => {
   t.end()
 })
 
-test('setIfMissing() patch can be applied multiple times', (t) => {
-  const patch = getClient()
+test('setIfMissing() patch can be applied multiple times', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .setIfMissing({count: 1, foo: 'bar'})
     .setIfMissing({count: 2, bar: 'foo'})
@@ -1253,8 +1328,8 @@ test('setIfMissing() patch can be applied multiple times', (t) => {
   t.end()
 })
 
-test('only last replace() patch call gets applied', (t) => {
-  const patch = getClient()
+test('only last replace() patch call gets applied', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .replace({count: 1, foo: 'bar'})
     .replace({count: 2, bar: 'foo'})
@@ -1264,8 +1339,8 @@ test('only last replace() patch call gets applied', (t) => {
   t.end()
 })
 
-test('can apply inc() and dec()', (t) => {
-  const patch = getClient()
+test('can apply inc() and dec()', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1}) // One step forward
     .dec({count: 2}) // Two steps back
@@ -1275,8 +1350,8 @@ test('can apply inc() and dec()', (t) => {
   t.end()
 })
 
-test('can apply unset()', (t) => {
-  const patch = getClient()
+test('can apply unset()', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .unset(['bitter', 'enchilada'])
@@ -1286,13 +1361,17 @@ test('can apply unset()', (t) => {
   t.end()
 })
 
-test('throws if non-array is passed to unset()', (t) => {
-  t.throws(() => getClient().patch('abc123').unset('bitter').serialize(), /non-array given/)
+test('throws if non-array is passed to unset()', async (t) => {
+  const sanityClient = await loadClient()
+  t.throws(
+    () => getClient(sanityClient).patch('abc123').unset('bitter').serialize(),
+    /non-array given/
+  )
   t.end()
 })
 
-test('can apply insert()', (t) => {
-  const patch = getClient()
+test('can apply insert()', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .insert('after', 'tags[-1]', ['hotsauce'])
@@ -1306,20 +1385,31 @@ test('can apply insert()', (t) => {
   t.end()
 })
 
-test('throws on invalid insert()', (t) => {
+test('throws on invalid insert()', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(
-    () => getClient().patch('abc123').insert('bitter', 'sel', ['raf']),
+    () => getClient(sanityClient).patch('abc123').insert('bitter', 'sel', ['raf']),
     /one of: "before", "after", "replace"/
   )
 
-  t.throws(() => getClient().patch('abc123').insert('before', 123, ['raf']), /must be a string/)
+  t.throws(
+    () => getClient(sanityClient).patch('abc123').insert('before', 123, ['raf']),
+    /must be a string/
+  )
 
-  t.throws(() => getClient().patch('abc123').insert('before', 'prop', 'blah'), /must be an array/)
+  t.throws(
+    () => getClient(sanityClient).patch('abc123').insert('before', 'prop', 'blah'),
+    /must be an array/
+  )
   t.end()
 })
 
-test('can apply append()', (t) => {
-  const patch = getClient().patch('abc123').inc({count: 1}).append('tags', ['sriracha']).serialize()
+test('can apply append()', async (t) => {
+  const patch = getClient(await loadClient())
+    .patch('abc123')
+    .inc({count: 1})
+    .append('tags', ['sriracha'])
+    .serialize()
 
   t.deepEqual(patch, {
     id: 'abc123',
@@ -1329,8 +1419,8 @@ test('can apply append()', (t) => {
   t.end()
 })
 
-test('can apply prepend()', (t) => {
-  const patch = getClient()
+test('can apply prepend()', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .prepend('tags', ['sriracha', 'hotsauce'])
@@ -1344,8 +1434,9 @@ test('can apply prepend()', (t) => {
   t.end()
 })
 
-test('can apply splice()', (t) => {
-  const patch = () => getClient().patch('abc123')
+test('can apply splice()', async (t) => {
+  const sanityClient = await loadClient()
+  const patch = () => getClient(sanityClient).patch('abc123')
   const replaceFirst = patch().splice('tags', 0, 1, ['foo']).serialize()
   const insertInMiddle = patch().splice('tags', 5, 0, ['foo']).serialize()
   const deleteLast = patch().splice('tags', -1, 1).serialize()
@@ -1362,13 +1453,14 @@ test('can apply splice()', (t) => {
   t.end()
 })
 
-test('serializing invalid selectors throws', (t) => {
-  t.throws(() => getClient().patch(123).serialize(), /unknown selection/i)
+test('serializing invalid selectors throws', async (t) => {
+  const sanityClient = await loadClient()
+  t.throws(() => getClient(sanityClient).patch(123).serialize(), /unknown selection/i)
   t.end()
 })
 
-test('can apply diffMatchPatch()', (t) => {
-  const patch = getClient()
+test('can apply diffMatchPatch()', async (t) => {
+  const patch = getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .diffMatchPatch({description: '@@ -1,13 +1,12 @@\n The \n-rabid\n+nice\n  dog\n'})
@@ -1382,8 +1474,8 @@ test('can apply diffMatchPatch()', (t) => {
   t.end()
 })
 
-test('all patch methods throw on non-objects being passed as argument', (t) => {
-  const patch = getClient().patch('abc123')
+test('all patch methods throw on non-objects being passed as argument', async (t) => {
+  const patch = getClient(await loadClient()).patch('abc123')
   t.throws(() => patch.set(null), /set\(\) takes an object of properties/, 'set throws')
   t.throws(
     () => patch.setIfMissing('foo'),
@@ -1405,13 +1497,13 @@ test('all patch methods throw on non-objects being passed as argument', (t) => {
   t.end()
 })
 
-test('executes patch when commit() is called', (t) => {
+test('executes patch when commit() is called', async (t) => {
   const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations: [expectedPatch]})
     .reply(200, {transactionId: 'blatti'})
 
-  getClient()
+  await getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .set({visited: true})
@@ -1423,7 +1515,7 @@ test('executes patch when commit() is called', (t) => {
     .then(t.end)
 })
 
-test('executes patch with request tag when commit() is called with tag', (t) => {
+test('executes patch with request tag when commit() is called with tag', async (t) => {
   const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
   nock(projectHost())
     .post('/v1/data/mutate/foo?tag=company.setvisited&returnIds=true&visibility=sync', {
@@ -1431,7 +1523,7 @@ test('executes patch with request tag when commit() is called with tag', (t) => 
     })
     .reply(200, {transactionId: 'blatti'})
 
-  getClient()
+  await getClient(await loadClient())
     .patch('abc123')
     .set({visited: true})
     .commit({returnDocuments: false, tag: 'company.setvisited'})
@@ -1442,7 +1534,7 @@ test('executes patch with request tag when commit() is called with tag', (t) => 
     .then(t.end)
 })
 
-test('executes patch with auto generate key option if specified commit()', (t) => {
+test('executes patch with auto generate key option if specified commit()', async (t) => {
   const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&autoGenerateArrayKeys=true&visibility=sync', {
@@ -1450,7 +1542,7 @@ test('executes patch with auto generate key option if specified commit()', (t) =
     })
     .reply(200, {transactionId: 'blatti'})
 
-  getClient()
+  await getClient(await loadClient())
     .patch('abc123')
     .set({visited: true})
     .commit({returnDocuments: false, autoGenerateArrayKeys: true})
@@ -1461,13 +1553,13 @@ test('executes patch with auto generate key option if specified commit()', (t) =
     .then(t.end)
 })
 
-test('executes patch with given token override commit() is called', (t) => {
+test('executes patch with given token override commit() is called', async (t) => {
   const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
   nock(projectHost(), {reqheaders: {Authorization: 'Bearer abc123'}})
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations: [expectedPatch]})
     .reply(200, {transactionId: 'blatti'})
 
-  getClient()
+  await getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .set({visited: true})
@@ -1479,7 +1571,7 @@ test('executes patch with given token override commit() is called', (t) => {
     .then(t.end)
 })
 
-test('returns patched document by default', (t) => {
+test('returns patched document by default', async (t) => {
   const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
   const expectedBody = {mutations: [expectedPatch]}
   nock(projectHost())
@@ -1500,7 +1592,7 @@ test('returns patched document by default', (t) => {
       ],
     })
 
-  getClient()
+  await getClient(await loadClient())
     .patch('abc123')
     .inc({count: 1})
     .set({visited: true})
@@ -1519,19 +1611,21 @@ test('commit() returns promise', (t) => {
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(400)
 
-  getClient()
-    .patch('abc123')
-    .inc({count: 1})
-    .set({visited: true})
-    .commit()
-    .catch((err) => {
-      t.ok(err instanceof Error, 'should call applied error handler')
-      t.end()
-    })
+  loadClient().then((sanityClient) => {
+    getClient(sanityClient)
+      .patch('abc123')
+      .inc({count: 1})
+      .set({visited: true})
+      .commit()
+      .catch((err) => {
+        t.ok(err instanceof Error, 'should call applied error handler')
+        t.end()
+      })
+  })
 })
 
-test('each patch operation returns same patch', (t) => {
-  const patch = getClient().patch('abc123')
+test('each patch operation returns same patch', async (t) => {
+  const patch = getClient(await loadClient()).patch('abc123')
   const inc = patch.inc({count: 1})
   const dec = patch.dec({count: 1})
   const combined = inc.dec({count: 1})
@@ -1549,8 +1643,11 @@ test('each patch operation returns same patch', (t) => {
   t.end()
 })
 
-test('can reset patches to no operations, keeping document ID', (t) => {
-  const patch = getClient().patch('abc123').inc({count: 1}).dec({visits: 1})
+test('can reset patches to no operations, keeping document ID', async (t) => {
+  const patch = getClient(await loadClient())
+    .patch('abc123')
+    .inc({count: 1})
+    .dec({visits: 1})
   const reset = patch.reset()
 
   t.deepEqual(patch.serialize(), {id: 'abc123'}, 'correct patch')
@@ -1559,8 +1656,10 @@ test('can reset patches to no operations, keeping document ID', (t) => {
   t.end()
 })
 
-test('patch has toJSON() which serializes patch', (t) => {
-  const patch = getClient().patch('abc123').inc({count: 1})
+test('patch has toJSON() which serializes patch', async (t) => {
+  const patch = getClient(await loadClient())
+    .patch('abc123')
+    .inc({count: 1})
   t.deepEqual(
     JSON.parse(JSON.stringify(patch)),
     JSON.parse(JSON.stringify({id: 'abc123', inc: {count: 1}}))
@@ -1568,7 +1667,8 @@ test('patch has toJSON() which serializes patch', (t) => {
   t.end()
 })
 
-test('Patch is available on client and can be used without instantiated client', (t) => {
+test('Patch is available on client and can be used without instantiated client', async (t) => {
+  const sanityClient = await loadClient()
   const patch = new sanityClient.Patch('foo.bar')
   t.deepEqual(
     patch.inc({foo: 1}).dec({bar: 2}).serialize(),
@@ -1578,14 +1678,17 @@ test('Patch is available on client and can be used without instantiated client',
   t.end()
 })
 
-test('patch commit() throws if called without a client', (t) => {
+test('patch commit() throws if called without a client', async (t) => {
+  const sanityClient = await loadClient()
   const patch = new sanityClient.Patch('foo.bar')
   t.throws(() => patch.dec({bar: 2}).commit(), /client.*mutate/i)
   t.end()
 })
 
-test('can manually call clone on patch', (t) => {
-  const patch1 = getClient().patch('abc123').inc({count: 1})
+test('can manually call clone on patch', async (t) => {
+  const patch1 = getClient(await loadClient())
+    .patch('abc123')
+    .inc({count: 1})
   const patch2 = patch1.clone()
 
   t.notEqual(patch1, patch2, 'actually cloned')
@@ -1593,9 +1696,13 @@ test('can manually call clone on patch', (t) => {
   t.end()
 })
 
-test('can apply ifRevisionId constraint', (t) => {
+test('can apply ifRevisionId constraint', async (t) => {
   t.deepEqual(
-    getClient().patch('abc123').inc({count: 1}).ifRevisionId('someRev').serialize(),
+    await getClient(await loadClient())
+      .patch('abc123')
+      .inc({count: 1})
+      .ifRevisionId('someRev')
+      .serialize(),
     {id: 'abc123', inc: {count: 1}, ifRevisionID: 'someRev'},
     'patch should be able to apply ifRevisionId constraint'
   )
@@ -1605,8 +1712,8 @@ test('can apply ifRevisionId constraint', (t) => {
 /*****************
  * TRANSACTIONS  *
  *****************/
-test('can build and serialize a transaction of operations', (t) => {
-  const trans = getClient()
+test('can build and serialize a transaction of operations', async (t) => {
+  const trans = getClient(await loadClient())
     .transaction()
     .create({_id: 'moofoo', name: 'foobar'})
     .delete('nznjkAJnjgnk')
@@ -1616,8 +1723,8 @@ test('can build and serialize a transaction of operations', (t) => {
   t.end()
 })
 
-test('each transaction operation mutates transaction', (t) => {
-  const trans = getClient().transaction()
+test('each transaction operation mutates transaction', async (t) => {
+  const trans = getClient(await loadClient()).transaction()
   const create = trans.create({count: 1})
   const combined = create.delete('foobar')
 
@@ -1633,8 +1740,8 @@ test('each transaction operation mutates transaction', (t) => {
   t.end()
 })
 
-test('transaction methods are chainable', (t) => {
-  const trans = getClient()
+test('transaction methods are chainable', async (t) => {
+  const trans = getClient(await loadClient())
     .transaction()
     .create({moo: 'tools'})
     .createIfNotExists({_id: 'someId', j: 'query'})
@@ -1677,8 +1784,8 @@ test('transaction methods are chainable', (t) => {
   t.end()
 })
 
-test('patches can be built with callback', (t) => {
-  const trans = getClient()
+test('patches can be built with callback', async (t) => {
+  const trans = getClient(await loadClient())
     .transaction()
     .patch('moofoo', (p) => p.inc({sales: 1}).dec({stock: 1}))
     .serialize()
@@ -1695,15 +1802,22 @@ test('patches can be built with callback', (t) => {
   t.end()
 })
 
-test('throws if patch builder does not return patch', (t) => {
-  t.throws(() => getClient().transaction().patch('moofoo', noop), /must return the patch/)
+test('throws if patch builder does not return patch', async (t) => {
+  const sanityClient = await loadClient()
+  t.throws(
+    () => getClient(sanityClient).transaction().patch('moofoo', noop),
+    /must return the patch/
+  )
   t.end()
 })
 
-test('patch can take an existing patch', (t) => {
-  const client = getClient()
+test('patch can take an existing patch', async (t) => {
+  const client = getClient(await loadClient())
   const incPatch = client.patch('bar').inc({sales: 1})
-  const trans = getClient().transaction().patch(incPatch).serialize()
+  const trans = getClient(await loadClient())
+    .transaction()
+    .patch(incPatch)
+    .serialize()
 
   t.deepEqual(trans, [
     {
@@ -1716,13 +1830,13 @@ test('patch can take an existing patch', (t) => {
   t.end()
 })
 
-test('executes transaction when commit() is called', (t) => {
+test('executes transaction when commit() is called', async (t) => {
   const mutations = [{create: {bar: true}}, {delete: {id: 'barfoo'}}]
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations})
     .reply(200, {transactionId: 'blatti'})
 
-  getClient()
+  await getClient(await loadClient())
     .transaction()
     .create({bar: true})
     .delete('barfoo')
@@ -1734,25 +1848,29 @@ test('executes transaction when commit() is called', (t) => {
     .then(t.end)
 })
 
-test('executes transaction with request tag when commit() is called with tag', (t) => {
-  const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
-  nock(projectHost())
-    .post('/v1/data/mutate/foo?tag=sfcraft.createbar&returnIds=true&visibility=sync', {mutations})
-    .reply(200, {transactionId: 'blatti'})
+test(
+  'executes transaction with request tag when commit() is called with tag',
+  {skip: process.env.TEST_COND === 'browser' && typeof Response === 'undefined'},
+  async (t) => {
+    const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
+    nock(projectHost())
+      .post('/v1/data/mutate/foo?tag=sfcraft.createbar&returnIds=true&visibility=sync', {mutations})
+      .reply(200, {transactionId: 'blatti'})
 
-  getClient()
-    .transaction()
-    .create({_type: 'bar', name: 'Toronado'})
-    .commit({tag: 'sfcraft.createbar'})
-    .then((res) => {
-      t.equal(res.transactionId, 'blatti', 'applies given transaction')
-    })
-    .catch(t.ifError)
-    .then(t.end)
-})
+    await getClient(await loadClient())
+      .transaction()
+      .create({_type: 'bar', name: 'Toronado'})
+      .commit({tag: 'sfcraft.createbar'})
+      .then((res) => {
+        t.equal(res.transactionId, 'blatti', 'applies given transaction')
+      })
+      .catch(t.ifError)
+      .then(t.end)
+  }
+)
 
-test('throws when passing incorrect input to transaction operations', (t) => {
-  const trans = getClient().transaction()
+test('throws when passing incorrect input to transaction operations', async (t) => {
+  const trans = getClient(await loadClient()).transaction()
   t.throws(() => trans.create('foo'), /object of prop/, 'throws on create()')
   t.throws(() => trans.createIfNotExists('foo'), /object of prop/, 'throws on createIfNotExists()')
   t.throws(() => trans.createOrReplace('foo'), /object of prop/, 'throws on createOrReplace()')
@@ -1760,8 +1878,8 @@ test('throws when passing incorrect input to transaction operations', (t) => {
   t.end()
 })
 
-test('throws when not including document ID in createOrReplace/createIfNotExists in transaction', (t) => {
-  const trans = getClient().transaction()
+test('throws when not including document ID in createOrReplace/createIfNotExists in transaction', async (t) => {
+  const trans = getClient(await loadClient()).transaction()
   t.throws(
     () => trans.createIfNotExists({_type: 'movie', a: 1}),
     /contains an ID/,
@@ -1775,8 +1893,10 @@ test('throws when not including document ID in createOrReplace/createIfNotExists
   t.end()
 })
 
-test('can manually call clone on transaction', (t) => {
-  const trans1 = getClient().transaction().delete('foo.bar')
+test('can manually call clone on transaction', async (t) => {
+  const trans1 = getClient(await loadClient())
+    .transaction()
+    .delete('foo.bar')
   const trans2 = trans1.clone()
 
   t.notEqual(trans1, trans2, 'actually cloned')
@@ -1784,13 +1904,16 @@ test('can manually call clone on transaction', (t) => {
   t.end()
 })
 
-test('transaction has toJSON() which serializes patch', (t) => {
-  const trans = getClient().transaction().create({count: 1})
+test('transaction has toJSON() which serializes patch', async (t) => {
+  const trans = getClient(await loadClient())
+    .transaction()
+    .create({count: 1})
   t.deepEqual(JSON.parse(JSON.stringify(trans)), JSON.parse(JSON.stringify([{create: {count: 1}}])))
   t.end()
 })
 
-test('Transaction is available on client and can be used without instantiated client', (t) => {
+test('Transaction is available on client and can be used without instantiated client', async (t) => {
+  const sanityClient = await loadClient()
   const trans = new sanityClient.Transaction()
   t.deepEqual(
     trans.delete('barfoo').serialize(),
@@ -1800,7 +1923,8 @@ test('Transaction is available on client and can be used without instantiated cl
   t.end()
 })
 
-test('transaction can be created without client and passed to mutate()', (t) => {
+test('transaction can be created without client and passed to mutate()', async (t) => {
+  const sanityClient = await loadClient()
   const trx = new sanityClient.Transaction()
   trx.delete('foo')
 
@@ -1809,26 +1933,27 @@ test('transaction can be created without client and passed to mutate()', (t) => 
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {mutations})
     .reply(200, {results: [{id: 'foo', operation: 'delete'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .mutate(trx)
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('transaction commit() throws if called without a client', (t) => {
+test('transaction commit() throws if called without a client', async (t) => {
+  const sanityClient = await loadClient()
   const trans = new sanityClient.Transaction()
   t.throws(() => trans.delete('foo.bar').commit(), /client.*mutate/i)
   t.end()
 })
 
-test('transaction can be given an explicit transaction ID', (t) => {
+test('transaction can be given an explicit transaction ID', async (t) => {
   const transactionId = 'moop'
   const mutations = [{create: {bar: true}}, {delete: {id: 'barfoo'}}]
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations, transactionId})
     .reply(200, {transactionId})
 
-  getClient()
+  await getClient(await loadClient())
     .transaction()
     .create({bar: true})
     .delete('barfoo')
@@ -1844,131 +1969,151 @@ test('transaction can be given an explicit transaction ID', (t) => {
 /*****************
  * LISTENERS     *
  *****************/
-test('listeners connect to listen endpoint, emits events', (t) => {
-  const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-  const response = [
-    ':',
-    '',
-    'event: welcome',
-    'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-    '',
-    'event: mutation',
-    `data: ${JSON.stringify({document: doc})}`,
-    '',
-    'event: disconnect',
-    'data: {"reason":"forcefully closed"}',
-  ].join('\n')
+test(
+  'listeners connect to listen endpoint, emits events',
+  {skip: process.env.TEST_COND === 'browser'},
+  (t) => {
+    // skipOnBrowser(t)
+    // if(opts.skip) return
+    const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
+    const response = [
+      ':',
+      '',
+      'event: welcome',
+      'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+      '',
+      'event: mutation',
+      `data: ${JSON.stringify({document: doc})}`,
+      '',
+      'event: disconnect',
+      'data: {"reason":"forcefully closed"}',
+    ].join('\n')
 
-  nock(projectHost())
-    .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
-    .reply(200, response, {
-      'cache-control': 'no-cache',
-      'content-type': 'text/event-stream; charset=utf-8',
-      'transfer-encoding': 'chunked',
+    nock(projectHost())
+      .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
+      .reply(200, response, {
+        'cache-control': 'no-cache',
+        'content-type': 'text/event-stream; charset=utf-8',
+        'transfer-encoding': 'chunked',
+      })
+
+    loadClient().then((sanityClient) => {
+      const sub = getClient(sanityClient)
+        .listen('foo.bar')
+        .subscribe({
+          next: (evt) => {
+            sub.unsubscribe()
+            t.deepEqual(evt.document, doc)
+            t.end()
+          },
+          error: (err) => {
+            sub.unsubscribe()
+            t.ifError(err)
+            t.fail('Should not call error handler')
+            t.end()
+          },
+        })
     })
+  }
+)
 
-  const sub = getClient()
-    .listen('foo.bar')
-    .subscribe({
-      next: (evt) => {
-        sub.unsubscribe()
-        t.deepEqual(evt.document, doc)
-        t.end()
-      },
-      error: (err) => {
-        sub.unsubscribe()
-        t.ifError(err)
-        t.fail('Should not call error handler')
-        t.end()
-      },
+test(
+  'listeners connect to listen endpoint with request tag, emits events',
+  {skip: process.env.TEST_COND === 'browser'},
+  (t) => {
+    const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
+    const response = [
+      ':',
+      '',
+      'event: welcome',
+      'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+      '',
+      'event: mutation',
+      `data: ${JSON.stringify({document: doc})}`,
+      '',
+      'event: disconnect',
+      'data: {"reason":"forcefully closed"}',
+    ].join('\n')
+
+    nock(projectHost())
+      .get(
+        '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true'
+      )
+      .reply(200, response, {
+        'cache-control': 'no-cache',
+        'content-type': 'text/event-stream; charset=utf-8',
+        'transfer-encoding': 'chunked',
+      })
+
+    loadClient().then((sanityClient) => {
+      const sub = getClient(sanityClient)
+        .listen('*[_type == "checkin"]', {}, {tag: 'sfcraft.checkins'})
+        .subscribe({
+          next: (evt) => {
+            sub.unsubscribe()
+            t.deepEqual(evt.document, doc)
+            t.end()
+          },
+          error: (err) => {
+            sub.unsubscribe()
+            t.ifError(err)
+            t.fail('Should not call error handler')
+            t.end()
+          },
+        })
     })
-})
+  }
+)
 
-test('listeners connect to listen endpoint with request tag, emits events', (t) => {
-  const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-  const response = [
-    ':',
-    '',
-    'event: welcome',
-    'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-    '',
-    'event: mutation',
-    `data: ${JSON.stringify({document: doc})}`,
-    '',
-    'event: disconnect',
-    'data: {"reason":"forcefully closed"}',
-  ].join('\n')
+test(
+  'listeners connect to listen endpoint with prefixed request tag, emits events',
+  {skip: process.env.TEST_COND === 'browser' && typeof Response === 'undefined'},
+  (t) => {
+    const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
+    const response = [
+      ':',
+      '',
+      'event: welcome',
+      'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+      '',
+      'event: mutation',
+      `data: ${JSON.stringify({document: doc})}`,
+      '',
+      'event: disconnect',
+      'data: {"reason":"forcefully closed"}',
+    ].join('\n')
 
-  nock(projectHost())
-    .get(
-      '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true'
-    )
-    .reply(200, response, {
-      'cache-control': 'no-cache',
-      'content-type': 'text/event-stream; charset=utf-8',
-      'transfer-encoding': 'chunked',
+    nock(projectHost())
+      .get(
+        '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true'
+      )
+      .reply(200, response, {
+        'cache-control': 'no-cache',
+        'content-type': 'text/event-stream; charset=utf-8',
+        'transfer-encoding': 'chunked',
+      })
+
+    loadClient().then((sanityClient) => {
+      const sub = getClient(sanityClient, {requestTagPrefix: 'sf.craft.'})
+        .listen('*[_type == "checkin"]', {}, {tag: 'checkins'})
+        .subscribe({
+          next: (evt) => {
+            sub.unsubscribe()
+            t.deepEqual(evt.document, doc)
+            t.end()
+          },
+          error: (err) => {
+            sub.unsubscribe()
+            t.ifError(err)
+            t.fail('Should not call error handler')
+            t.end()
+          },
+        })
     })
+  }
+)
 
-  const sub = getClient()
-    .listen('*[_type == "checkin"]', {}, {tag: 'sfcraft.checkins'})
-    .subscribe({
-      next: (evt) => {
-        sub.unsubscribe()
-        t.deepEqual(evt.document, doc)
-        t.end()
-      },
-      error: (err) => {
-        sub.unsubscribe()
-        t.ifError(err)
-        t.fail('Should not call error handler')
-        t.end()
-      },
-    })
-})
-
-test('listeners connect to listen endpoint with prefixed request tag, emits events', (t) => {
-  const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-  const response = [
-    ':',
-    '',
-    'event: welcome',
-    'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-    '',
-    'event: mutation',
-    `data: ${JSON.stringify({document: doc})}`,
-    '',
-    'event: disconnect',
-    'data: {"reason":"forcefully closed"}',
-  ].join('\n')
-
-  nock(projectHost())
-    .get(
-      '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true'
-    )
-    .reply(200, response, {
-      'cache-control': 'no-cache',
-      'content-type': 'text/event-stream; charset=utf-8',
-      'transfer-encoding': 'chunked',
-    })
-
-  const sub = getClient({requestTagPrefix: 'sf.craft.'})
-    .listen('*[_type == "checkin"]', {}, {tag: 'checkins'})
-    .subscribe({
-      next: (evt) => {
-        sub.unsubscribe()
-        t.deepEqual(evt.document, doc)
-        t.end()
-      },
-      error: (err) => {
-        sub.unsubscribe()
-        t.ifError(err)
-        t.fail('Should not call error handler')
-        t.end()
-      },
-    })
-})
-
-test('listeners requests are lazy', (t) => {
+test('listeners requests are lazy', {skip: process.env.TEST_COND === 'browser'}, (t) => {
   const response = [
     ':',
     '',
@@ -1986,20 +2131,23 @@ test('listeners requests are lazy', (t) => {
       didRequest = true
       return [200, response]
     })
-  const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
-  setTimeout(() => {
-    t.false(didRequest)
-    const sub = req.subscribe({
-      next: (r) => {
-        t.true(didRequest)
-        sub.unsubscribe()
-        t.end()
-      },
-    })
-  }, 10)
+
+  loadClient().then((sanityClient) => {
+    const req = getClient(sanityClient).listen('foo.bar', {}, {events: ['welcome']})
+    setTimeout(() => {
+      t.false(didRequest)
+      const sub = req.subscribe({
+        next: (r) => {
+          t.true(didRequest)
+          sub.unsubscribe()
+          t.end()
+        },
+      })
+    }, 10)
+  })
 })
 
-test('listener requests are cold', (t) => {
+test('listener requests are cold', {skip: process.env.TEST_COND === 'browser'}, (t) => {
   const response = [
     ':',
     '',
@@ -2018,30 +2166,32 @@ test('listener requests are cold', (t) => {
       return [200, response]
     })
 
-  const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
+  loadClient().then((sanityClient) => {
+    const req = getClient(sanityClient).listen('foo.bar', {}, {events: ['welcome']})
 
-  t.equal(requestCount, 0)
-  const firstSub = req.subscribe({
-    next: (r) => {
-      t.equal(requestCount, 1)
-      firstSub.unsubscribe()
-      const secondSub = req.subscribe({
-        next: () => {
-          t.equal(requestCount, 2)
-          secondSub.unsubscribe()
-          t.end()
-        },
-        error: t.ifError,
-      })
-    },
-    error: t.ifError,
+    t.equal(requestCount, 0)
+    const firstSub = req.subscribe({
+      next: (r) => {
+        t.equal(requestCount, 1)
+        firstSub.unsubscribe()
+        const secondSub = req.subscribe({
+          next: () => {
+            t.equal(requestCount, 2)
+            secondSub.unsubscribe()
+            t.end()
+          },
+          error: t.ifError,
+        })
+      },
+      error: t.ifError,
+    })
   })
 })
 
 /*****************
  * ASSETS        *
  *****************/
-test('uploads images', (t) => {
+test('uploads images', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2049,7 +2199,7 @@ test('uploads images', (t) => {
     .post('/v1/assets/images/foo', isImage)
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath))
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2057,7 +2207,7 @@ test('uploads images', (t) => {
     }, ifError(t))
 })
 
-test('uploads images with request tag if given', (t) => {
+test('uploads images with request tag if given', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2065,7 +2215,7 @@ test('uploads images with request tag if given', (t) => {
     .post('/v1/assets/images/foo?tag=galaxy.images', isImage)
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath), {tag: 'galaxy.images'})
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2073,7 +2223,7 @@ test('uploads images with request tag if given', (t) => {
     }, ifError(t))
 })
 
-test('uploads images with prefixed request tag if given', (t) => {
+test('uploads images with prefixed request tag if given', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2081,7 +2231,7 @@ test('uploads images with prefixed request tag if given', (t) => {
     .post('/v1/assets/images/foo?tag=galaxy.images', isImage)
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
-  getClient({requestTagPrefix: 'galaxy'})
+  await getClient(await loadClient(), {requestTagPrefix: 'galaxy'})
     .assets.upload('image', fs.createReadStream(fixturePath), {tag: 'images'})
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2089,7 +2239,7 @@ test('uploads images with prefixed request tag if given', (t) => {
     }, ifError(t))
 })
 
-test('uploads images with given content type', (t) => {
+test('uploads images with given content type', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2097,7 +2247,7 @@ test('uploads images with given content type', (t) => {
     .post('/v1/assets/images/foo', isImage)
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath), {contentType: 'image/jpeg'})
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2105,7 +2255,7 @@ test('uploads images with given content type', (t) => {
     }, ifError(t))
 })
 
-test('uploads images with specified metadata to be extracted', (t) => {
+test('uploads images with specified metadata to be extracted', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2114,7 +2264,7 @@ test('uploads images with specified metadata to be extracted', (t) => {
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
   const options = {extract: ['palette', 'location']}
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath), options)
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2122,7 +2272,7 @@ test('uploads images with specified metadata to be extracted', (t) => {
     }, ifError(t))
 })
 
-test('empty extract array sends `none` as metadata', (t) => {
+test('empty extract array sends `none` as metadata', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2131,7 +2281,7 @@ test('empty extract array sends `none` as metadata', (t) => {
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
   const options = {extract: []}
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath), options)
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2147,17 +2297,19 @@ test('uploads images with progress events', (t) => {
     .post('/v1/assets/images/foo', isImage)
     .reply(201, {url: 'https://some.asset.url'})
 
-  getClient()
-    .observable.assets.upload('image', fs.createReadStream(fixturePath))
-    .pipe(filter((event) => event.type === 'progress'))
-    .subscribe(
-      (event) => t.equal(event.type, 'progress'),
-      ifError(t),
-      () => t.end()
-    )
+  loadClient().then((sanityClient) =>
+    getClient(sanityClient)
+      .observable.assets.upload('image', fs.createReadStream(fixturePath))
+      .pipe(filter((event) => event.type === 'progress'))
+      .subscribe(
+        (event) => t.equal(event.type, 'progress'),
+        ifError(t),
+        () => t.end()
+      )
+  )
 })
 
-test('uploads images with custom label', (t) => {
+test('uploads images with custom label', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
   const label = 'xy zzy'
@@ -2165,7 +2317,7 @@ test('uploads images with custom label', (t) => {
     .post(`/v1/assets/images/foo?label=${encodeURIComponent(label)}`, isImage)
     .reply(201, {document: {label: label}})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath), {label: label})
     .then((body) => {
       t.equal(body.label, label)
@@ -2173,7 +2325,7 @@ test('uploads images with custom label', (t) => {
     }, ifError(t))
 })
 
-test('uploads files', (t) => {
+test('uploads files', async (t) => {
   const fixturePath = fixture('pdf-sample.pdf')
   const isFile = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2181,7 +2333,7 @@ test('uploads files', (t) => {
     .post('/v1/assets/files/foo', isFile)
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('file', fs.createReadStream(fixturePath))
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2189,7 +2341,7 @@ test('uploads files', (t) => {
     }, ifError(t))
 })
 
-test('uploads images and can cast to promise', (t) => {
+test('uploads images and can cast to promise', async (t) => {
   const fixturePath = fixture('horsehead-nebula.jpg')
   const isImage = (body) => bufferFrom(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
@@ -2197,7 +2349,7 @@ test('uploads images and can cast to promise', (t) => {
     .post('/v1/assets/images/foo', isImage)
     .reply(201, {document: {url: 'https://some.asset.url'}})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.upload('image', fs.createReadStream(fixturePath))
     .then((document) => {
       t.equal(document.url, 'https://some.asset.url')
@@ -2205,57 +2357,59 @@ test('uploads images and can cast to promise', (t) => {
     }, ifError(t))
 })
 
-test('delete assets', (t) => {
+test('delete assets', async (t) => {
   const expectedBody = {mutations: [{delete: {id: 'image-abc123_foobar-123x123-png'}}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.delete('image', 'image-abc123_foobar-123x123-png')
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('delete assets with prefix', (t) => {
+test('delete assets with prefix', async (t) => {
   const expectedBody = {mutations: [{delete: {id: 'image-abc123_foobar-123x123-png'}}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
-  getClient()
+  await getClient(await loadClient())
     .assets.delete('image', 'abc123_foobar-123x123-png')
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('delete assets given whole asset document', (t) => {
+test('delete assets given whole asset document', async (t) => {
   const expectedBody = {mutations: [{delete: {id: 'image-abc123_foobar-123x123-png'}}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
   const doc = {_id: 'image-abc123_foobar-123x123-png', _type: 'sanity.imageAsset'}
-  getClient()
+  await getClient(await loadClient())
     .assets.delete(doc, 'image-abc123_foobar-123x123-png')
     .catch(t.ifError)
     .then(() => t.end())
 })
 
-test('can get an image URL from a reference ID string', (t) => {
-  const url = getClient().assets.getImageUrl('image-someImageId-200x300-png')
+test('can get an image URL from a reference ID string', async (t) => {
+  const url = getClient(await loadClient()).assets.getImageUrl('image-someImageId-200x300-png')
   t.equal(url, 'https://cdn.sanity.io/images/bf1942/foo/someImageId-200x300.png')
   t.end()
 })
 
-test('can get an image URL from a reference object', (t) => {
-  const url = getClient().assets.getImageUrl({_ref: 'image-someImageId-200x300-png'})
+test('can get an image URL from a reference object', async (t) => {
+  const url = getClient(await loadClient()).assets.getImageUrl({
+    _ref: 'image-someImageId-200x300-png',
+  })
   t.equal(url, 'https://cdn.sanity.io/images/bf1942/foo/someImageId-200x300.png')
   t.end()
 })
 
-test('can get an image URL with added query string', (t) => {
-  const url = getClient().assets.getImageUrl('image-someImageId-200x300-png', {
+test('can get an image URL with added query string', async (t) => {
+  const url = getClient(await loadClient()).assets.getImageUrl('image-someImageId-200x300-png', {
     w: 320,
     fit: 'crop',
     crop: 'bottom,right',
@@ -2267,16 +2421,18 @@ test('can get an image URL with added query string', (t) => {
   t.end()
 })
 
-test('throws if trying to get image URL from object without ref', (t) => {
+test('throws if trying to get image URL from object without ref', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(() => {
-    getClient().assets.getImageUrl({id: 'image-someImageId-200x300-png'})
+    getClient(sanityClient).assets.getImageUrl({id: 'image-someImageId-200x300-png'})
   }, /object with a _ref/)
   t.end()
 })
 
-test('throws if trying to get image URL from string in invalid format', (t) => {
+test('throws if trying to get image URL from string in invalid format', async (t) => {
+  const sanityClient = await loadClient()
   t.throws(() => {
-    getClient().assets.getImageUrl('file-someImageId-200x300-png')
+    getClient(sanityClient).assets.getImageUrl('file-someImageId-200x300-png')
   }, /Unsupported asset ID/)
   t.end()
 })
@@ -2284,7 +2440,7 @@ test('throws if trying to get image URL from string in invalid format', (t) => {
 /*****************
  * AUTH          *
  *****************/
-test('can retrieve auth providers', (t) => {
+test('can retrieve auth providers', async (t) => {
   const response = {
     providers: [
       {
@@ -2297,7 +2453,7 @@ test('can retrieve auth providers', (t) => {
 
   nock(projectHost()).get('/v1/auth/providers').reply(200, response)
 
-  getClient()
+  await getClient(await loadClient())
     .auth.getLoginProviders()
     .then((body) => {
       t.deepEqual(body, response)
@@ -2305,10 +2461,10 @@ test('can retrieve auth providers', (t) => {
     }, ifError(t))
 })
 
-test('can logout', (t) => {
+test('can logout', async (t) => {
   nock(projectHost()).post('/v1/auth/logout').reply(200)
 
-  getClient()
+  await getClient(await loadClient())
     .auth.logout()
     .then(() => t.end(), ifError(t))
 })
@@ -2316,7 +2472,7 @@ test('can logout', (t) => {
 /*****************
  * USERS         *
  *****************/
-test('can retrieve user by id', (t) => {
+test('can retrieve user by id', async (t) => {
   const response = {
     role: null,
     id: 'Z29vZA2MTc2MDY5MDI1MDA3MzA5MTAwOjozMjM',
@@ -2326,7 +2482,7 @@ test('can retrieve user by id', (t) => {
 
   nock(projectHost()).get('/v1/users/me').reply(200, response)
 
-  getClient()
+  await getClient(await loadClient())
     .users.getById('me')
     .then((body) => {
       t.deepEqual(body, response)
@@ -2337,13 +2493,14 @@ test('can retrieve user by id', (t) => {
 /*****************
  * CDN API USAGE *
  *****************/
-test('will use live API by default', (t) => {
+test('will use live API by default', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123', dataset: 'foo'})
 
   const response = {result: []}
   nock('https://abc123.api.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
 
-  client
+  await client
     .fetch('*')
     .then((docs) => {
       t.equal(docs.length, 0)
@@ -2352,13 +2509,14 @@ test('will use live API by default', (t) => {
     .then(t.end)
 })
 
-test('will use CDN API if told to', (t) => {
+test('will use CDN API if told to', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
   const response = {result: []}
   nock('https://abc123.apicdn.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
 
-  client
+  await client
     .fetch('*')
     .then((docs) => {
       t.equal(docs.length, 0)
@@ -2367,17 +2525,19 @@ test('will use CDN API if told to', (t) => {
     .then(t.end)
 })
 
-test('will use live API for mutations', (t) => {
+test('will use live API for mutations', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
   nock('https://abc123.api.sanity.io')
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
     .reply(200, {})
 
-  client.create({_type: 'foo', title: 'yep'}).then(noop).catch(t.ifError).then(t.end)
+  await client.create({_type: 'foo', title: 'yep'}).then(noop).catch(t.ifError).then(t.end)
 })
 
-test('will use cdn for queries even when with token specified', (t) => {
+test('will use cdn for queries even when with token specified', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -2390,10 +2550,11 @@ test('will use cdn for queries even when with token specified', (t) => {
     .get('/v1/data/query/foo?query=*')
     .reply(200, {result: []})
 
-  client.fetch('*').then(noop).catch(t.ifError).then(t.end)
+  await client.fetch('*').then(noop).catch(t.ifError).then(t.end)
 })
 
-test('allows overriding headers', (t) => {
+test('allows overriding headers', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -2405,14 +2566,15 @@ test('allows overriding headers', (t) => {
     .get('/v1/data/query/foo?query=*')
     .reply(200, {result: []})
 
-  client
+  await client
     .fetch('*', {}, {headers: {foo: 'bar'}})
     .then(noop)
     .catch(t.ifError)
     .then(t.end)
 })
 
-test('will use live API if withCredentials is set to true', (t) => {
+test('will use live API if withCredentials is set to true', async (t) => {
+  const sanityClient = await loadClient()
   const client = sanityClient({
     withCredentials: true,
     projectId: 'abc123',
@@ -2422,20 +2584,20 @@ test('will use live API if withCredentials is set to true', (t) => {
 
   nock('https://abc123.api.sanity.io').get('/v1/data/query/foo?query=*').reply(200, {result: []})
 
-  client.fetch('*').then(noop).catch(t.ifError).then(t.end)
+  await client.fetch('*').then(noop).catch(t.ifError).then(t.end)
 })
 
 /*****************
  * HTTP REQUESTS *
  *****************/
 
-test('includes token if set', (t) => {
+test('includes token if set', async (t) => {
   const qs = '?query=foo.bar'
   const token = 'abcdefghijklmnopqrstuvwxyz'
   const reqheaders = {Authorization: `Bearer ${token}`}
   nock(projectHost(), {reqheaders}).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
 
-  getClient({token})
+  await getClient(await loadClient(), {token})
     .fetch('foo.bar')
     .then((docs) => {
       t.equal(docs.length, 0)
@@ -2444,14 +2606,14 @@ test('includes token if set', (t) => {
     .then(t.end)
 })
 
-test('allows overriding token', (t) => {
+test('allows overriding token', async (t) => {
   const qs = '?query=foo.bar'
   const token = 'abcdefghijklmnopqrstuvwxyz'
   const override = '123456789'
   const reqheaders = {Authorization: `Bearer ${override}`}
   nock(projectHost(), {reqheaders}).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
 
-  getClient({token})
+  await getClient(await loadClient(), {token})
     .fetch('foo.bar', {}, {token: override})
     .then((docs) => {
       t.equal(docs.length, 0)
@@ -2460,11 +2622,11 @@ test('allows overriding token', (t) => {
     .then(t.end)
 })
 
-test('allows overriding timeout', (t) => {
+test('allows overriding timeout', async (t) => {
   const qs = `?query=${encodeURIComponent('*[][0]')}`
   nock(projectHost()).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
 
-  getClient()
+  await getClient(await loadClient())
     .fetch('*[][0]', {}, {timeout: 60 * 1000})
     .then((docs) => {
       t.equal(docs.length, 0)
@@ -2473,23 +2635,26 @@ test('allows overriding timeout', (t) => {
     .then(t.end)
 })
 
-test('includes user agent in node', (t) => {
+test('includes user agent in node', {skip: process.env.TEST_COND === 'browser'}, async (t) => {
   const pkg = require('../package.json')
   const reqheaders = {'User-Agent': `${pkg.name} ${pkg.version}`}
   nock(projectHost(), {reqheaders}).get('/v1/data/doc/foo/bar').reply(200, {documents: []})
 
-  getClient().getDocument('bar').catch(t.ifError).then(t.end)
+  await getClient(await loadClient())
+    .getDocument('bar')
+    .catch(t.ifError)
+    .then(t.end)
 })
 
 // Don't rely on this unless you're working at Sanity Inc ;)
-test('can use alternative http requester', (t) => {
+test('can use alternative http requester', async (t) => {
   const requester = () =>
     observableOf({
       type: 'response',
       body: {documents: [{foo: 'bar'}]},
     })
 
-  getClient({requester})
+  await getClient(await loadClient(), {requester})
     .getDocument('foo.bar')
     .then((res) => {
       t.equal(res.foo, 'bar')
@@ -2502,22 +2667,26 @@ test('can use alternative http requester', (t) => {
     })
 })
 
-test('ClientError includes message in stack', (t) => {
+test('ClientError includes message in stack', async (t) => {
   const body = {error: {description: 'Invalid query'}}
+  const SanityClient = await loadClient()
   const error = new SanityClient.ClientError({statusCode: 400, headers: {}, body})
   t.ok(error.stack.includes(body.error.description))
   t.end()
 })
 
-test('ServerError includes message in stack', (t) => {
+test('ServerError includes message in stack', async (t) => {
   const body = {error: 'Gateway Time-Out', message: 'The upstream service did not respond in time'}
+  const SanityClient = await loadClient()
   const error = new SanityClient.ClientError({statusCode: 504, headers: {}, body})
   t.ok(error.stack.includes(body.error))
   t.ok(error.stack.includes(body.message))
   t.end()
 })
 
-test('exposes ClientError', (t) => {
+test('exposes ClientError', async (t) => {
+  const sanityClient = await loadClient()
+  const SanityClient = sanityClient
   t.equal(typeof sanityClient.ClientError, 'function')
   const error = new SanityClient.ClientError({statusCode: 400, headers: {}, body: {}})
   t.ok(error instanceof Error)
@@ -2525,7 +2694,9 @@ test('exposes ClientError', (t) => {
   t.end()
 })
 
-test('exposes ServerError', (t) => {
+test('exposes ServerError', async (t) => {
+  const sanityClient = await loadClient()
+  const SanityClient = sanityClient
   t.equal(typeof sanityClient.ServerError, 'function')
   const error = new SanityClient.ServerError({statusCode: 500, headers: {}, body: {}})
   t.ok(error instanceof Error)
@@ -2534,12 +2705,13 @@ test('exposes ServerError', (t) => {
 })
 
 // Don't rely on this unless you're working at Sanity Inc ;)
-test('exposes default requester', (t) => {
+test('exposes default requester', async (t) => {
+  const sanityClient = await loadClient()
   t.equal(typeof sanityClient.requester, 'function')
   t.end()
 })
 
-test('handles HTTP errors gracefully', (t) => {
+test('handles HTTP errors gracefully', {skip: process.env.TEST_COND === 'browser'}, (t) => {
   const doc = {_id: 'barfoo', visits: 5}
   const expectedBody = {mutations: [{create: doc}]}
   nock(projectHost())
@@ -2547,15 +2719,17 @@ test('handles HTTP errors gracefully', (t) => {
     .times(6)
     .replyWithError(new Error('Something went wrong'))
 
-  getClient()
-    .create(doc)
-    .then(() => {
-      t.fail('Should not call success handler on error')
-      t.end()
-    })
-    .catch((err) => {
-      t.ok(err instanceof Error, 'should error')
-      t.equal(err.message, 'Something went wrong', 'has message')
-      t.end()
-    })
+  loadClient().then((sanityClient) => {
+    getClient(sanityClient)
+      .create(doc)
+      .then(() => {
+        t.fail('Should not call success handler on error')
+        t.end()
+      })
+      .catch((err) => {
+        t.ok(err instanceof Error, 'should error')
+        t.equal(err.message, 'Something went wrong', 'has message')
+        t.end()
+      })
+  })
 })
