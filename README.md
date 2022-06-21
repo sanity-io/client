@@ -27,6 +27,8 @@ const client = sanityClient({
   token: 'sanity-auth-token', // or leave blank for unauthenticated usage
   useCdn: true, // `false` if you want to ensure fresh data
 })
+
+export default client
 ```
 
 `const client = sanityClient(options)`
