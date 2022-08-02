@@ -380,6 +380,48 @@ export class Patch {
   reset(): this
 }
 
+export class ObservablePatch extends Patch {
+  /**
+   * Clones the patch
+   */
+  clone(): ObservablePatch
+
+  /**
+   * Commit the patch, returning an observable that produces the first patched document
+   *
+   * @param options Options for the mutation operation
+   */
+  commit<R = any>(options: FirstDocumentMutationOptions): Observable<SanityDocument<R>>
+
+  /**
+   * Commit the patch, returning an observable that produces an array of the mutated documents
+   *
+   * @param options Options for the mutation operation
+   */
+  commit<R = any>(options: AllDocumentsMutationOptions): Observable<SanityDocument<R>[]>
+
+  /**
+   * Commit the patch, returning an observable that produces a mutation result object
+   *
+   * @param options Options for the mutation operation
+   */
+  commit(options: FirstDocumentIdMutationOptions): Observable<SingleMutationResult>
+
+  /**
+   * Commit the patch, returning an observable that produces a mutation result object
+   *
+   * @param options Options for the mutation operation
+   */
+  commit(options: AllDocumentIdsMutationOptions): Observable<MultipleMutationResult>
+
+  /**
+   * Commit the patch, returning an observable that produces the first patched document
+   *
+   * @param options Options for the mutation operation
+   */
+  commit<R = any>(options?: BaseMutationOptions): Observable<SanityDocument<R>>
+}
+
 export class Transaction {
   constructor(operations?: Mutation[], client?: SanityClient, transactionId?: string)
   clone(): Transaction
@@ -491,6 +533,45 @@ export class Transaction {
    * Clears the transaction of all operations
    */
   reset(): this
+}
+
+export class ObservableTransaction extends Transaction {
+  clone(): ObservableTransaction
+
+  /**
+   * Commit the transaction, returning an observable that produces the first mutated document
+   *
+   * @param options Options for the mutation operation
+   */
+  commit<R>(options: TransactionFirstDocumentMutationOptions): Observable<SanityDocument<R>>
+
+  /**
+   * Commit the transaction, returning an observable that produces an array of the mutated documents
+   *
+   * @param options Options for the mutation operation
+   */
+  commit<R>(options: TransactionAllDocumentsMutationOptions): Observable<SanityDocument<R>[]>
+
+  /**
+   * Commit the transaction, returning an observable that produces a mutation result object
+   *
+   * @param options Options for the mutation operation
+   */
+  commit(options: TransactionFirstDocumentIdMutationOptions): Observable<SingleMutationResult>
+
+  /**
+   * Commit the transaction, returning an observable that produces a mutation result object
+   *
+   * @param options Options for the mutation operation
+   */
+  commit(options: TransactionAllDocumentIdsMutationOptions): Observable<MultipleMutationResult>
+
+  /**
+   * Commit the transaction, returning an observable that produces a mutation result object
+   *
+   * @param options Options for the mutation operation
+   */
+  commit(options?: BaseMutationOptions): Observable<MultipleMutationResult>
 }
 
 export interface ClientConfig {
@@ -1385,14 +1466,14 @@ export class ObservableSanityClient {
    * @param documentId Document ID to patch
    * @param operations Optional object of patch operations to initialize the patch instance with
    */
-  patch(documentId: string | MutationSelection, operations?: PatchOperations): Patch
+  patch(documentId: string | MutationSelection, operations?: PatchOperations): ObservablePatch
 
   /**
    * Create a new transaction of mutations
    *
    * @param operations Optional array of mutation operations to initialize the transaction instance with
    */
-  transaction<R = any>(operations?: Mutation<R>[]): Transaction
+  transaction<R = any>(operations?: Mutation<R>[]): ObservableTransaction
 
   // "Internals", should generally not be used externally
   /**
