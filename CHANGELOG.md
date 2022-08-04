@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.3]
+
+- fix(typings): observable client emits observables on transaction/patch commit
+
 ## [3.3.2]
 
 - fix(typings): add missing `operation` property on mutation result
@@ -61,6 +65,7 @@ All notable changes to this project will be documented in this file.
 - BREAKING: Remove deprecated `document` property on `assets.upload` response
 - BREAKING: Make sure `client.observable.fetch()` returns a cold observable
 
+[3.3.3]: https://github.com/sanity-io/client/compare/v3.3.2...v3.3.3
 [3.3.2]: https://github.com/sanity-io/client/compare/v3.3.1...v3.3.2
 [3.3.1]: https://github.com/sanity-io/client/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/sanity-io/client/compare/v3.2.2...v3.3.0
