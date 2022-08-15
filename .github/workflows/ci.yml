@@ -1,3 +1,5 @@
+name: CI
+
 on: push
 
 jobs:
@@ -12,7 +14,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
+          cache: 'npm'
+      - run: npm install
       - run: npm test
 
   build:
@@ -22,22 +25,20 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: lts/*
-          cache: 'npm'
       - run: npm ci
       - run: npm run prepublishOnly
+      - run: npm install --omit=dev
       - uses: actions/upload-artifact@v3
         with:
           name: build-output
           path: |
             lib/
+            node_modules/
             umd/
 
   edge-runtime:
     runs-on: ubuntu-latest
     needs: build
-    defaults:
-      run:
-        working-directory: ./runtimes/edge
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
