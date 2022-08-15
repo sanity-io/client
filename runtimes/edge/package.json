@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test": "jest --env @edge-runtime/jest-environment"
+  },
+  "dependencies": {
+    "@edge-runtime/jest-environment": "^1.1.0-beta.26",
+    "@sanity/client": "file:../..",
+    "jest": "^28.1.3"
+  }
+}
