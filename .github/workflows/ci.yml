@@ -53,9 +53,9 @@ jobs:
           key: ${{ runner.os }}-dependencies-${{ hashFiles('package-lock.json') }}
       - if: steps.client-deps.outputs.cache-hit != 'true'
         run: npm install --omit=dev --ignore-scripts
-#      - uses: actions/download-artifact@v3
-#        with:
-#          name: build-output
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-output
       - run: npm ci
         working-directory: ./runtimes/edge
       - run: npm test
