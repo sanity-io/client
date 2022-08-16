@@ -55,7 +55,27 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: build-output
-      - run: npm ci
+      - run: |
+          npm ci
+          npm test
         working-directory: ./runtimes/edge
-      - run: npm test
-        working-directory: ./runtimes/edge
+
+  deno-runtime:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        deno-version: [1.x, canary]
+    name: deno ${{ matrix.deno-version }}
+    steps:
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{ matrix.deno-version }}
+      - if: matrix.deno-version == '1.x'
+        run: |
+          deno fmt --check
+          deno lint
+          deno check *.ts
+        working-directory: ./runtimes/deno
+      - run: deno test --allow-net
+        working-directory: ./runtimes/deno
