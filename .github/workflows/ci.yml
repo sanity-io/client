@@ -102,7 +102,6 @@ jobs:
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - uses: antongolub/action-setup-bun@v1
         with:
-          cache: true
           cache-bin: true
       - run: bun install
         working-directory: runtimes/bun

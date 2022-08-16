@@ -1,4 +1,4 @@
-import createClient from '@sanity/client'
+import createClient from '../..'
 import {expect, test} from 'bun:test'
 
 const projectId = '81pocpw8'
