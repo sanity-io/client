@@ -20,7 +20,12 @@ Deno.test("native fetch", async () => {
 });
 
 Deno.test("@sanity/client fetch", async () => {
-  const client = createClient({ projectId, dataset, apiVersion, useCdn: true });
+  const client = createClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: "true",
+  });
   const data = await client.fetch(query);
   assert(Number.isInteger(data));
 });
