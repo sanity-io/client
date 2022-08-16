@@ -68,9 +68,9 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: build-output
-      - run: |
-          npm ci
-          npm test
+      - run: npm ci
+        working-directory: runtimes/edge
+      - run: npm test
         working-directory: runtimes/edge
 
   deno-runtime:
@@ -83,7 +83,8 @@ jobs:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - uses: denoland/setup-deno@v1
-      - run: |
+      - name: deno test
+        run: |
           deno fmt --check
           deno lint
           deno check *.ts
@@ -100,7 +101,7 @@ jobs:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - uses: antongolub/action-setup-bun@v1
-      - run: |
-          bun install --verbose
-          bun wiptest
+      - run: bun install
+        working-directory: runtimes/bun
+      - run: bun wiptest
         working-directory: runtimes/bun
