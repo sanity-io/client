@@ -58,7 +58,7 @@ jobs:
       - run: |
           npm ci
           npm test
-        working-directory: ./runtimes/edge
+        working-directory: runtimes/edge
 
   deno-runtime:
     runs-on: ubuntu-latest
@@ -68,6 +68,18 @@ jobs:
         deno-version: [1.x, canary]
     name: deno ${{ matrix.deno-version }}
     steps:
+      - uses: actions/checkout@v3
+      - id: client-deps
+        uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: client-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.client-deps.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+      - if: steps.client-deps.outputs.cache-hit != 'true'
+        run: npm install --omit=dev --ignore-scripts
       - uses: denoland/setup-deno@v1
         with:
           deno-version: ${{ matrix.deno-version }}
@@ -76,6 +88,6 @@ jobs:
           deno fmt --check
           deno lint
           deno check *.ts
-        working-directory: ./runtimes/deno
+        working-directory: runtimes/deno
       - run: deno test --allow-net
-        working-directory: ./runtimes/deno
+        working-directory: runtimes/deno
