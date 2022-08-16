@@ -100,3 +100,21 @@ jobs:
         working-directory: runtimes/deno
       - run: deno test --allow-net
         working-directory: runtimes/deno
+
+  bun-runtime:
+    runs-on: macos-latest
+    needs: [build, prod-deps]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - uses: antongolub/action-setup-bun@v1
+        with:
+          cache: true
+          cache-bin: true
+      - run: |
+          bun install
+          bun wiptest
+        working-directory: runtimes/bun
