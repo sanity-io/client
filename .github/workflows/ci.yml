@@ -91,7 +91,7 @@ jobs:
         working-directory: runtimes/deno
 
   bun-runtime:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     needs: [build, prod-deps]
     steps:
       - uses: actions/checkout@v3
