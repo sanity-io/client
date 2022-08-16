@@ -101,6 +101,6 @@ jobs:
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - uses: antongolub/action-setup-bun@v1
       - run: |
-          bun install --verbose --production
+          bun install --verbose
           bun wiptest
         working-directory: runtimes/bun
