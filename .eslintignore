@@ -2,3 +2,4 @@ lib
 umd
 coverage
 .nyc_output
+runtimes/deno

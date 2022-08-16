@@ -11,10 +11,12 @@ const stub = (target, prop, stubbed) => {
   }
 }
 
-const combine = (...fns) => () => {
-  const [head, ...tail] = fns
-  return tail.reduce((acc, fn) => fn(acc), head())
-}
+const combine =
+  (...fns) =>
+  () => {
+    const [head, ...tail] = fns
+    return tail.reduce((acc, fn) => fn(acc), head())
+  }
 
 /**************************
  * CLIENT CONFIG WARNINGS *
