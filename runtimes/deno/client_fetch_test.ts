@@ -24,7 +24,7 @@ Deno.test("@sanity/client fetch", async () => {
     projectId,
     dataset,
     apiVersion,
-    useCdn: "true",
+    useCdn: true,
   });
   const data = await client.fetch(query);
   assert(Number.isInteger(data));
