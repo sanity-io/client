@@ -36,7 +36,10 @@ jobs:
             umd/
 
   prod-deps:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os-version: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os-version }}
     steps:
       - uses: actions/checkout@v3
       - id: prod-deps
