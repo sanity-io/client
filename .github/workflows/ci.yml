@@ -36,10 +36,7 @@ jobs:
             umd/
 
   prod-deps:
-    strategy:
-      matrix:
-        os-version: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os-version }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - id: prod-deps
@@ -79,10 +76,6 @@ jobs:
   deno-runtime:
     runs-on: ubuntu-latest
     needs: [build, prod-deps]
-    strategy:
-      matrix:
-        deno-version: [1.x, canary]
-    name: deno ${{ matrix.deno-version }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -90,15 +83,11 @@ jobs:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - uses: denoland/setup-deno@v1
-        with:
-          deno-version: ${{ matrix.deno-version }}
-      - if: matrix.deno-version == '1.x'
-        run: |
+      - run: |
           deno fmt --check
           deno lint
           deno check *.ts
-        working-directory: runtimes/deno
-      - run: deno test --allow-net
+          deno test --allow-net
         working-directory: runtimes/deno
 
   bun-runtime:
@@ -111,9 +100,6 @@ jobs:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - uses: antongolub/action-setup-bun@v1
-        with:
-          cache: true
-          cache-bin: true
       - run: |
           bun install
           bun wiptest
