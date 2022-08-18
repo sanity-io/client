@@ -37,7 +37,7 @@ Initializes a new Sanity Client. Required options are `projectId`, `dataset`, an
 
 Sanity uses ISO dates (YYYY-MM-DD) in UTC timezone for versioning. The explanation for this can be found [in the documentation](http://sanity.io/docs/api-versioning)
 
-In general, unless you know what API version you want to use, you'll want to set it to today's UTC date. By doing this, you'll get all the latest bugfixes and features, while locking the API to prevent breaking changes.
+In general, unless you know what API version you want to use, you'll want to statically set it to today's UTC date when starting a new project. By doing this, you'll get all the latest bugfixes and features, while locking the API to prevent breaking changes.
 
 **Note**: Do not be tempted to use a dynamic value for the `apiVersion`. The reason for setting a static value is to prevent unexpected, breaking changes.
 
