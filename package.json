@@ -6,15 +6,30 @@
   "umd": "umd/sanityClient.min.js",
   "unpkg": "umd/sanityClient.min.js",
   "types": "./sanityClient.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/sanityClient.js",
+      "browser": "./dist/sanityClient.browser.mjs",
+      "default": "./lib/sanityClient.js"
+    }
+  },
+  "files": [
+    "dist",
+    "lib",
+    "umd",
+    "sanityClient.d.ts"
+  ],
   "scripts": {
     "browserify": "NODE_ENV=production BROWSERIFY_ENV=build DEBUG='' browserify -t envify -g uglifyify lib/sanityClient.js -o umd/sanityClient.js --standalone=SanityClient",
     "compile": "babel -d lib src",
-    "build": "npm run compile && npm run browserify && npm run minify",
+    "build": "npm run compile && npm run browserify && npm run minify && npm run esbuild:browser",
+    "esbuild": "esbuild src/sanityClient.js --bundle --sourcemap --external:object-assign --external:rxjs --external:@sanity/eventsource --external:get-it --external:make-error --external:@sanity/generate-help-url",
+    "esbuild:browser": "npm run esbuild -- --format=esm --outfile=dist/sanityClient.browser.mjs --platform=browser",
     "lint": "eslint .",
-    "clean": "rimraf lib coverage .nyc_output umd/*.js",
+    "clean": "rimraf dist lib coverage .nyc_output umd/*.js",
     "coverage": "DEBUG=sanity NODE_ENV=test nyc --reporter=html --reporter=lcov --reporter=text npm test",
     "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run clean && npm run build",
     "test": "NODE_ENV=test tape test/*.test.js",
     "posttest": "npm run lint"
   },
@@ -39,6 +54,7 @@
     "@babel/preset-env": "^7.18.10",
     "browserify": "^17.0.0",
     "envify": "^4.0.0",
+    "esbuild": "^0.15.5",
     "eslint": "^8.21.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-sanity": "^6.0.0",
