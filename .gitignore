@@ -2,6 +2,7 @@
 *.log
 
 # Compiled files
+dist
 lib
 
 # Coverage directories used by tools like istanbul
