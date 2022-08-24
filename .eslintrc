@@ -1,8 +1,5 @@
 {
-  "extends": [
-    "sanity",
-    "prettier"
-  ],
+  "extends": ["sanity", "prettier"],
   "env": {
     "node": true,
     "browser": true
