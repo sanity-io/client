@@ -23,7 +23,7 @@
     "browserify": "NODE_ENV=production BROWSERIFY_ENV=build DEBUG='' browserify -t envify -g uglifyify lib/sanityClient.js -o umd/sanityClient.js --standalone=SanityClient",
     "compile": "babel -d lib src",
     "build": "npm run compile && npm run browserify && npm run minify && npm run esbuild:browser",
-    "esbuild": "esbuild src/sanityClient.js --bundle --sourcemap --external:object-assign --external:rxjs --external:@sanity/eventsource --external:get-it --external:make-error --external:@sanity/generate-help-url",
+    "esbuild": "esbuild src/sanityClient.js --bundle --sourcemap --external:object-assign --external:rxjs --external:@sanity/eventsource --external:get-it --external:make-error",
     "esbuild:browser": "npm run esbuild -- --format=esm --outfile=dist/sanityClient.browser.mjs --platform=browser",
     "lint": "eslint .",
     "clean": "rimraf dist lib coverage .nyc_output umd/*.js",
@@ -43,7 +43,6 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^4.0.0",
-    "@sanity/generate-help-url": "^3.0.0",
     "get-it": "^6.1.1",
     "make-error": "^1.3.0",
     "object-assign": "^4.1.1",

@@ -1,5 +1,5 @@
-const generateHelpUrl = require('@sanity/generate-help-url').generateHelpUrl
 const assign = require('object-assign')
+const generateHelpUrl = require('./generateHelpUrl')
 const validate = require('./validators')
 const warnings = require('./warnings')
 
