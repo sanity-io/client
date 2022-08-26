@@ -25,7 +25,7 @@
     "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
     "prepublishOnly": "npm run clean && npm run build",
     "test": "NODE_ENV=test tape test/*.test.js",
-    "posttest": "npm run lint && npm run typecheck"
+    "posttest": "npm run lint && npm run typecheck --strict"
   },
   "browser": {
     "./src/http/nodeMiddleware.js": "./src/http/browserMiddleware.js",
