@@ -32,6 +32,7 @@ jobs:
         with:
           name: build-output
           path: |
+            dist/
             lib/
             umd/
 
@@ -51,46 +52,48 @@ jobs:
       - if: steps.prod-deps.outputs.cache-hit != 'true'
         run: npm install --omit=dev --ignore-scripts
 
-  edge-runtime:
-    runs-on: ubuntu-latest
-    needs: [build, prod-deps]
-    steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
-      - uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # tag=v3
-        with:
-          node-version: lts/*
-          cache: 'npm'
-          cache-dependency-path: runtimes/edge/package-lock.json
-      - uses: actions/cache@1c73980b09e7aea7201f325a7aa3ad00beddcdda # tag=v3
-        with:
-          path: ./node_modules
-          key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3
-        with:
-          name: build-output
-      - run: npm ci
-        working-directory: runtimes/edge
-      - run: npm test
-        working-directory: runtimes/edge
-
-  ## Temporarily disabled until we can get all downstream dependencies working with deno
-  # deno-runtime:
+  # Disabled until the jest runtime works with ESM
+  # edge-runtime:
   #   runs-on: ubuntu-latest
   #   needs: [build, prod-deps]
   #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/cache@v3
+  #     - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3
+  #     - uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # tag=v3
+  #       with:
+  #         node-version: lts/*
+  #         cache: 'npm'
+  #         cache-dependency-path: runtimes/edge/package-lock.json
+  #     - uses: actions/cache@1c73980b09e7aea7201f325a7aa3ad00beddcdda # tag=v3
   #       with:
   #         path: ./node_modules
   #         key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-  #     - uses: denoland/setup-deno@v1
-  #     - name: deno test
-  #       run: |
-  #         deno fmt --check
-  #         deno lint
-  #         deno check *.ts
-  #         deno test --allow-net
-  #       working-directory: runtimes/deno
+  #     - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3
+  #       with:
+  #         name: build-output
+  #     - run: npm ci
+  #       working-directory: runtimes/edge
+  #     - run: npm test
+  #       working-directory: runtimes/edge
+
+  deno-runtime:
+    runs-on: ubuntu-latest
+    needs: [build, prod-deps]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-output
+      - uses: denoland/setup-deno@v1
+      - name: deno test
+        run: |
+          deno fmt --check
+          deno lint
+          deno task test
+        working-directory: runtimes/deno
 
   bun-runtime:
     runs-on: ubuntu-latest

@@ -1,4 +1,4 @@
-module.exports = (params) => {
+export default (params) => {
   const qs = []
   for (const key in params) {
     if (params.hasOwnProperty(key)) {

@@ -1,10 +1,8 @@
-const assign = require('object-assign')
-
 function ProjectsClient(client) {
   this.client = client
 }
 
-assign(ProjectsClient.prototype, {
+Object.assign(ProjectsClient.prototype, {
   list() {
     return this.client.request({uri: '/projects'})
   },
@@ -14,4 +12,4 @@ assign(ProjectsClient.prototype, {
   },
 })
 
-module.exports = ProjectsClient
+export default ProjectsClient

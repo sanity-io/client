@@ -1,5 +1,5 @@
 import { assert } from "https://deno.land/std@0.152.0/testing/asserts.ts";
-import { createClient } from "./deps.ts";
+import createClient from "../../dist/sanityClient.browser.mjs";
 
 const projectId = "81pocpw8";
 const dataset = "production";
@@ -21,11 +21,13 @@ Deno.test("native fetch", async () => {
 
 Deno.test("@sanity/client fetch", async () => {
   const client = createClient({
+    // @ts-expect-error -- fix the TS typings
     projectId,
     dataset,
     apiVersion,
     useCdn: true,
   });
+  // @ts-expect-error -- fix the TS typings
   const data = await client.fetch(query);
   assert(Number.isInteger(data));
 });

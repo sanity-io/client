@@ -1,11 +1,10 @@
-const assign = require('object-assign')
-const validate = require('../validators')
+import * as validate from '../validators'
 
 function DatasetsClient(client) {
   this.request = client.request.bind(client)
 }
 
-assign(DatasetsClient.prototype, {
+Object.assign(DatasetsClient.prototype, {
   create(name, options) {
     return this._modify('PUT', name, options)
   },
@@ -28,4 +27,4 @@ assign(DatasetsClient.prototype, {
   },
 })
 
-module.exports = DatasetsClient
+export default DatasetsClient

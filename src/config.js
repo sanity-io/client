@@ -1,10 +1,9 @@
-const assign = require('object-assign')
-const generateHelpUrl = require('./generateHelpUrl')
-const validate = require('./validators')
-const warnings = require('./warnings')
+import generateHelpUrl from './generateHelpUrl'
+import * as validate from './validators'
+import * as warnings from './warnings'
 
 const defaultCdnHost = 'apicdn.sanity.io'
-const defaultConfig = {
+export const defaultConfig = {
   apiHost: 'https://api.sanity.io',
   apiVersion: '1',
   useProjectHostname: true,
@@ -14,16 +13,28 @@ const defaultConfig = {
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 const isLocal = (host) => LOCALHOSTS.indexOf(host) !== -1
 
-exports.defaultConfig = defaultConfig
+export const validateApiVersion = function validateApiVersion(apiVersion) {
+  if (apiVersion === '1' || apiVersion === 'X') {
+    return
+  }
+
+  const apiDate = new Date(apiVersion)
+  const apiVersionValid =
+    /^\d{4}-\d{2}-\d{2}$/.test(apiVersion) && apiDate instanceof Date && apiDate.getTime() > 0
+
+  if (!apiVersionValid) {
+    throw new Error('Invalid API version string, expected `1` or date in format `YYYY-MM-DD`')
+  }
+}
 
 // eslint-disable-next-line complexity
-exports.initConfig = (config, prevConfig) => {
-  const specifiedConfig = assign({}, prevConfig, config)
+export const initConfig = (config, prevConfig) => {
+  const specifiedConfig = Object.assign({}, prevConfig, config)
   if (!specifiedConfig.apiVersion) {
     warnings.printNoApiVersionSpecifiedWarning()
   }
 
-  const newConfig = assign({}, defaultConfig, specifiedConfig)
+  const newConfig = Object.assign({}, defaultConfig, specifiedConfig)
   const projectBased = newConfig.useProjectHostname
 
   if (typeof Promise === 'undefined') {
@@ -63,7 +74,7 @@ exports.initConfig = (config, prevConfig) => {
   newConfig.isDefaultApi = newConfig.apiHost === defaultConfig.apiHost
   newConfig.useCdn = Boolean(newConfig.useCdn) && !newConfig.withCredentials
 
-  exports.validateApiVersion(newConfig.apiVersion)
+  validateApiVersion(newConfig.apiVersion)
 
   const hostParts = newConfig.apiHost.split('://', 2)
   const protocol = hostParts[0]
@@ -79,18 +90,4 @@ exports.initConfig = (config, prevConfig) => {
   }
 
   return newConfig
-}
-
-exports.validateApiVersion = function validateApiVersion(apiVersion) {
-  if (apiVersion === '1' || apiVersion === 'X') {
-    return
-  }
-
-  const apiDate = new Date(apiVersion)
-  const apiVersionValid =
-    /^\d{4}-\d{2}-\d{2}$/.test(apiVersion) && apiDate instanceof Date && apiDate.getTime() > 0
-
-  if (!apiVersionValid) {
-    throw new Error('Invalid API version string, expected `1` or date in format `YYYY-MM-DD`')
-  }
 }

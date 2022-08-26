@@ -1,6 +1,6 @@
 const enc = encodeURIComponent
 
-module.exports = ({query, params = {}, options = {}}) => {
+export default ({query, params = {}, options = {}}) => {
   // We generally want tag at the start of the query string
   const {tag, ...opts} = options
   const q = `query=${enc(query)}`

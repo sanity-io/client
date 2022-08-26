@@ -1,10 +1,8 @@
-const assign = require('object-assign')
-
 function AuthClient(client) {
   this.client = client
 }
 
-assign(AuthClient.prototype, {
+Object.assign(AuthClient.prototype, {
   getLoginProviders() {
     return this.client.request({uri: '/auth/providers'})
   },
@@ -14,4 +12,4 @@ assign(AuthClient.prototype, {
   },
 })
 
-module.exports = AuthClient
+export default AuthClient

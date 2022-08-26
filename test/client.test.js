@@ -688,7 +688,7 @@ test('can create documents', (t) => {
 
 test('can create documents without specifying ID', (t) => {
   const doc = {name: 'Raptor'}
-  const expectedBody = {mutations: [{create: Object.assign({}, doc)}]}
+  const expectedBody = {mutations: [{create: assign({}, doc)}]}
   nock(projectHost())
     .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', expectedBody)
     .reply(200, {
@@ -712,7 +712,7 @@ test('can create documents without specifying ID', (t) => {
 
 test('can create documents with request tag', (t) => {
   const doc = {name: 'Raptor'}
-  const expectedBody = {mutations: [{create: Object.assign({}, doc)}]}
+  const expectedBody = {mutations: [{create: assign({}, doc)}]}
   nock(projectHost())
     .post(
       '/v1/data/mutate/foo?tag=dino.import&returnIds=true&returnDocuments=true&visibility=sync',
@@ -1126,7 +1126,7 @@ test('uses GET for queries below limit', (t) => {
 
   nock(projectHost())
     .get('/v1/data/query/foo')
-    .query(Object.assign({query}, qParams))
+    .query(assign({query}, qParams))
     .reply(200, {
       ms: 123,
       q: query,
