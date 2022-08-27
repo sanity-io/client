@@ -6,13 +6,6 @@
   "umd": "umd/sanityClient.min.js",
   "unpkg": "umd/sanityClient.min.js",
   "types": "./sanityClient.d.ts",
-  "exports": {
-    ".": {
-      "source": "./src/sanityClient.js",
-      "browser": "./dist/sanityClient.browser.mjs",
-      "default": "./lib/sanityClient.js"
-    }
-  },
   "files": [
     "dist",
     "lib",

@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file. See
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.5]
+
+- fix: regression introduced in #24. Partially exporting ESM breaks environments that bundle for the browser, such as Next.js. Remove `pkg.exports` until what we ship there is 100% compatible with the ecosystem.
+
 ## [3.3.4]
 
 - fix: removed `@sanity/generate-help-url` dependency which threw `TypeError: generateHelpUrl is not a function` errors in some cases
@@ -76,6 +80,7 @@ All notable changes to this project will be documented in this file.
 - BREAKING: Remove deprecated `document` property on `assets.upload` response
 - BREAKING: Make sure `client.observable.fetch()` returns a cold observable
 
+[3.3.5]: https://github.com/sanity-io/client/compare/v3.3.4...v3.3.5
 [3.3.4]: https://github.com/sanity-io/client/compare/v3.3.3...v3.3.4
 [3.3.3]: https://github.com/sanity-io/client/compare/v3.3.2...v3.3.3
 [3.3.2]: https://github.com/sanity-io/client/compare/v3.3.1...v3.3.2
