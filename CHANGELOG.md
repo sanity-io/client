@@ -1,6 +1,17 @@
+<!-- markdownlint-disable --><!-- textlint-disable -->
+
+# 📓 Changelog
+
+All notable changes to this project will be documented in this file. See
+[Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
 # Change Log
 
 All notable changes to this project will be documented in this file.
+
+## [3.3.4]
+
+- fix: removed `@sanity/generate-help-url` dependency which threw `TypeError: generateHelpUrl is not a function` errors in some cases
 
 ## [3.3.3]
 
@@ -65,6 +76,7 @@ All notable changes to this project will be documented in this file.
 - BREAKING: Remove deprecated `document` property on `assets.upload` response
 - BREAKING: Make sure `client.observable.fetch()` returns a cold observable
 
+[3.3.4]: https://github.com/sanity-io/client/compare/v3.3.3...v3.3.4
 [3.3.3]: https://github.com/sanity-io/client/compare/v3.3.2...v3.3.3
 [3.3.2]: https://github.com/sanity-io/client/compare/v3.3.1...v3.3.2
 [3.3.1]: https://github.com/sanity-io/client/compare/v3.3.0...v3.3.1
