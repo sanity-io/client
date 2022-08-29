@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file. See
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+- fix(typings): missing class extend in #22
+
 ## [3.3.5]
 
 - fix: regression introduced in #24. Partially exporting ESM breaks environments that bundle for the browser, such as Next.js. Remove `pkg.exports` until what we ship there is 100% compatible with the ecosystem.

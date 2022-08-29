@@ -545,7 +545,7 @@ export class Transaction extends BaseTransaction {
   commit(options?: BaseMutationOptions): Promise<MultipleMutationResult>
 }
 
-export class ObservableTransaction {
+export class ObservableTransaction extends BaseTransaction {
   constructor(operations?: Mutation[], client?: ObservableSanityClient, transactionId?: string)
 
   /**
