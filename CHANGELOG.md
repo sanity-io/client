@@ -9,8 +9,9 @@ All notable changes to this project will be documented in this file. See
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
-- fix(typings): missing class extend in #22
+## [3.3.6]
+
+- fix(typings): missing class extend for `ObservableTransaction`
 
 ## [3.3.5]
 
@@ -83,6 +84,7 @@ All notable changes to this project will be documented in this file.
 - BREAKING: Remove deprecated `document` property on `assets.upload` response
 - BREAKING: Make sure `client.observable.fetch()` returns a cold observable
 
+[3.3.6]: https://github.com/sanity-io/client/compare/v3.3.5...v3.3.6
 [3.3.5]: https://github.com/sanity-io/client/compare/v3.3.4...v3.3.5
 [3.3.4]: https://github.com/sanity-io/client/compare/v3.3.3...v3.3.4
 [3.3.3]: https://github.com/sanity-io/client/compare/v3.3.2...v3.3.3
