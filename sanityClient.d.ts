@@ -1094,7 +1094,7 @@ export class ObservableSanityClient {
    *
    * @param query GROQ-query to perform
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(query: string): Observable<R>
+  fetch<R = any>(query: string): Observable<R>
 
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -1102,10 +1102,7 @@ export class ObservableSanityClient {
    * @param query GROQ-query to perform
    * @param params Query parameters
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(
-    query: string,
-    params: QueryParams
-  ): Observable<R>
+  fetch<R = any>(query: string, params: QueryParams): Observable<R>
 
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -1114,7 +1111,7 @@ export class ObservableSanityClient {
    * @param params Query parameters
    * @param options Request options
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(
+  fetch<R = any>(
     query: string,
     params: QueryParams | undefined,
     options: FilteredResponseQueryOptions
@@ -1127,7 +1124,7 @@ export class ObservableSanityClient {
    * @param params Query parameters
    * @param options Request options
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(
+  fetch<R = any>(
     query: string,
     params: QueryParams | undefined,
     options: UnfilteredResponseQueryOptions
@@ -1767,7 +1764,7 @@ export interface SanityClient {
    *
    * @param query GROQ-query to perform
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(query: string): Promise<R>
+  fetch<R = any>(query: string): Promise<R>
 
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -1775,10 +1772,7 @@ export interface SanityClient {
    * @param query GROQ-query to perform
    * @param params Optional query parameters
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(
-    query: string,
-    params: QueryParams
-  ): Promise<R>
+  fetch<R = any>(query: string, params: QueryParams): Promise<R>
 
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -1787,7 +1781,7 @@ export interface SanityClient {
    * @param params Optional query parameters
    * @param options Request options
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(
+  fetch<R = any>(
     query: string,
     params: QueryParams | undefined,
     options: FilteredResponseQueryOptions
@@ -1800,7 +1794,7 @@ export interface SanityClient {
    * @param params Optional query parameters
    * @param options Request options
    */
-  fetch<R extends Record<string, any> = Record<string, any>>(
+  fetch<R = any>(
     query: string,
     params: QueryParams | undefined,
     options: UnfilteredResponseQueryOptions
