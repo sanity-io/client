@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file. See
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.0]
+
+- feat: allow setting `allowReconfigure` to `false` to prevent reconfiguration of existing client instance
+
 ## [3.3.7]
 
 - fix(typings): make typings compatible with TypeScript 4.8
@@ -89,6 +93,7 @@ All notable changes to this project will be documented in this file.
 - BREAKING: Remove deprecated `document` property on `assets.upload` response
 - BREAKING: Make sure `client.observable.fetch()` returns a cold observable
 
+[3.4.0]: https://github.com/sanity-io/client/compare/v3.3.7...v3.4.0
 [3.3.7]: https://github.com/sanity-io/client/compare/v3.3.6...v3.3.7
 [3.3.6]: https://github.com/sanity-io/client/compare/v3.3.5...v3.3.6
 [3.3.5]: https://github.com/sanity-io/client/compare/v3.3.4...v3.3.5
