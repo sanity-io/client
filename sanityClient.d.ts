@@ -35,7 +35,7 @@ export interface ProgressEvent {
 
 type AttributeSet = {[key: string]: any}
 type QueryParams = {[key: string]: any}
-type MutationSelection = {query: string, params?: QueryParams} | {id: string}
+type MutationSelection = {query: string; params?: QueryParams} | {id: string}
 type SanityReference = {_ref: string}
 
 interface RawRequestOptions {
@@ -624,6 +624,7 @@ export interface ClientConfig {
   requestTagPrefix?: string
   ignoreBrowserTokenWarning?: boolean
   withCredentials?: boolean
+  allowReconfigure?: boolean
   timeout?: number
 
   /**

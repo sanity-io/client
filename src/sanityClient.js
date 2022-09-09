@@ -45,6 +45,12 @@ assign(SanityClient.prototype, {
       return assign({}, this.clientConfig)
     }
 
+    if (this.clientConfig && this.clientConfig.allowReconfigure === false) {
+      throw new Error(
+        'Existing client instance cannot be reconfigured - use `withConfig(newConfig)` to return a new client'
+      )
+    }
+
     if (this.observable) {
       const observableConfig = assign({}, newConfig, {isPromiseAPI: false})
       this.observable.config(observableConfig)
@@ -55,7 +61,7 @@ assign(SanityClient.prototype, {
   },
 
   withConfig(newConfig) {
-    return this.clone().config(newConfig)
+    return new SanityClient({...this.config(), ...newConfig})
   },
 
   getUrl(uri, useCdn = false) {

@@ -100,6 +100,31 @@ test('can clone client with new config', (t) => {
   t.end()
 })
 
+test('can disallow reconfiguration of client', (t) => {
+  const client = sanityClient({
+    projectId: 'abc123',
+    apiVersion: 'v2021-03-25',
+    allowReconfigure: false,
+  })
+  t.equal(client.config().projectId, 'abc123', 'constructor opts are set')
+  t.throws(() => client.config({apiVersion: 'v2022-09-09'}), /reconfigure/)
+  t.throws(() => client.observable.config({apiVersion: 'v2022-09-09'}), /reconfigure/)
+  t.end()
+})
+
+test('can create new instance of configured client when `allowReconfigure` set to false', (t) => {
+  const client = sanityClient({
+    projectId: 'abc123',
+    apiVersion: 'v2021-03-25',
+    allowReconfigure: false,
+  })
+  const newClient = client.withConfig({dataset: 'abc321'})
+  t.equal(newClient.config().projectId, client.config().projectId, 'existing config cloned')
+  t.equal(newClient.config().dataset, 'abc321', 'modified properties are set')
+  t.throws(() => newClient.config({projectId: 'bar'}), /reconfigure/)
+  t.end()
+})
+
 test('throws if no projectId is set', (t) => {
   t.throws(sanityClient, /projectId/)
   t.end()
