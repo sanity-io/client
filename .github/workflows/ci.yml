@@ -10,8 +10,8 @@ jobs:
         node-version: [12.x, 14.x, 16.x, 18.x]
     name: node ${{ matrix.node-version }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - uses: actions/setup-node@2fddd8803e2f5c9604345a0b591c3020ee971a93 # tag=v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -21,14 +21,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - uses: actions/setup-node@2fddd8803e2f5c9604345a0b591c3020ee971a93 # tag=v3
         with:
           node-version: lts/*
           cache: 'npm'
       - run: npm ci
       - run: npm run prepublishOnly
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3
         with:
           name: build-output
           path: |
@@ -38,14 +38,14 @@ jobs:
   prod-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
       - id: prod-deps
-        uses: actions/cache@v3
+        uses: actions/cache@fd5de65bc895cf536527842281bea11763fefd77 # tag=v3
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - if: steps.prod-deps.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@2fddd8803e2f5c9604345a0b591c3020ee971a93 # tag=v3
         with:
           node-version: lts/*
       - if: steps.prod-deps.outputs.cache-hit != 'true'
@@ -55,17 +55,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, prod-deps]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - uses: actions/setup-node@2fddd8803e2f5c9604345a0b591c3020ee971a93 # tag=v3
         with:
           node-version: lts/*
           cache: 'npm'
           cache-dependency-path: runtimes/edge/package-lock.json
-      - uses: actions/cache@v3
+      - uses: actions/cache@fd5de65bc895cf536527842281bea11763fefd77 # tag=v3
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741 # tag=v3
         with:
           name: build-output
       - run: npm ci
@@ -96,11 +96,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, prod-deps]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - uses: actions/cache@fd5de65bc895cf536527842281bea11763fefd77 # tag=v3
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: antongolub/action-setup-bun@v1
+      - uses: antongolub/action-setup-bun@bc198f5cb868ce282f0a72bdd7da3a06a5387f83 # tag=v1
       - run: bun wiptest
         working-directory: runtimes/bun
