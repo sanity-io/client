@@ -1,4 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>sanity-io/renovate-presets//ecosystem/auto"]
+  "extends": ["github>sanity-io/renovate-presets//ecosystem/auto"],
+  "packageRules": [
+    {
+      "description": "Dependency updates to the testing suite package jsons should always use the chore scope as they aren't published to npm",
+      "matchFiles": ["runtimes/edge/package.json"],
+      "extends": [":semanticCommitTypeAll(chore)"],
+      "groupSlug": "runtimes"
+    }
+  ]
 }
