@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
       - uses: antongolub/action-setup-bun@bc198f5cb868ce282f0a72bdd7da3a06a5387f83 # tag=v1
       - run: bun install
-      - uses: EndBug/add-and-commit@d4d066316a2a85974a05efb42be78f897793c6d9 # tag=v9
+      - uses: EndBug/add-and-commit@61a88be553afe4206585b31aa72387c64295d08b # tag=v9
         with:
           message: 'chore(bun): update bun lockfile'
           default_author: github_actions
