@@ -3,7 +3,7 @@
     "test": "jest --env @edge-runtime/jest-environment"
   },
   "dependencies": {
-    "@edge-runtime/jest-environment": "^2.0.0",
+    "@edge-runtime/jest-environment": "^2.0.1",
     "@sanity/client": "file:../..",
     "jest": "^29.2.2"
   }
