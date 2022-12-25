@@ -1,4 +1,4 @@
-module.exports = (obj, props) =>
+export default (obj, props) =>
   props.reduce((selection, prop) => {
     if (typeof obj[prop] === 'undefined') {
       return selection

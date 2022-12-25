@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@sanity/client": "../../dist/sanityClient.browser.mjs",
+    "get-it": "../../node_modules/get-it/dist/esm/index.mjs",
+    "get-it/middleware": "../../node_modules/get-it/dist/esm/middleware/index.mjs"
+  }
+}

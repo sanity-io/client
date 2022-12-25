@@ -1,4 +1,4 @@
-module.exports = function getSelection(sel) {
+export default function getSelection(sel) {
   if (typeof sel === 'string' || Array.isArray(sel)) {
     return {id: sel}
   }

@@ -1,6 +1,6 @@
-const retry = require('get-it/lib-node/middleware/retry')
-const debug = require('get-it/lib-node/middleware/debug')
-const headers = require('get-it/lib-node/middleware/headers')
+import retry from 'get-it/lib-node/middleware/retry'
+import debug from 'get-it/lib-node/middleware/debug'
+import headers from 'get-it/lib-node/middleware/headers'
 
 const pkg = require('../../package.json')
 
@@ -10,4 +10,4 @@ const middleware = [
   retry({maxRetries: 3}),
 ]
 
-module.exports = middleware
+export default middleware

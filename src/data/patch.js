@@ -1,27 +1,24 @@
-const assign = require('object-assign')
-const getSelection = require('../util/getSelection')
-const validate = require('../validators')
-const validateObject = validate.validateObject
-const validateInsert = validate.validateInsert
+import getSelection from '../util/getSelection'
+import {validateObject, validateInsert} from '../validators'
 
 function Patch(selection, operations = {}, client = null) {
   this.selection = selection
-  this.operations = assign({}, operations)
+  this.operations = Object.assign({}, operations)
   this.client = client
 }
 
-assign(Patch.prototype, {
+Object.assign(Patch.prototype, {
   clone() {
-    return new Patch(this.selection, assign({}, this.operations), this.client)
+    return new Patch(this.selection, Object.assign({}, this.operations), this.client)
   },
 
   set(props) {
-    return this._assign('set', props)
+    return this.assign('set', props)
   },
 
   diffMatchPatch(props) {
     validateObject('diffMatchPatch', props)
-    return this._assign('diffMatchPatch', props)
+    return this.assign('diffMatchPatch', props)
   },
 
   unset(attrs) {
@@ -29,12 +26,12 @@ assign(Patch.prototype, {
       throw new Error('unset(attrs) takes an array of attributes to unset, non-array given')
     }
 
-    this.operations = assign({}, this.operations, {unset: attrs})
+    this.operations = Object.assign({}, this.operations, {unset: attrs})
     return this
   },
 
   setIfMissing(props) {
-    return this._assign('setIfMissing', props)
+    return this.assign('setIfMissing', props)
   },
 
   replace(props) {
@@ -43,16 +40,16 @@ assign(Patch.prototype, {
   },
 
   inc(props) {
-    return this._assign('inc', props)
+    return this.assign('inc', props)
   },
 
   dec(props) {
-    return this._assign('dec', props)
+    return this.assign('dec', props)
   },
 
   insert(at, selector, items) {
     validateInsert(at, selector, items)
-    return this._assign('insert', {[at]: selector, items})
+    return this.assign('insert', {[at]: selector, items})
   },
 
   append(selector, items) {
@@ -83,7 +80,7 @@ assign(Patch.prototype, {
   },
 
   serialize() {
-    return assign(getSelection(this.selection), this.operations)
+    return Object.assign(getSelection(this.selection), this.operations)
   },
 
   toJSON() {
@@ -99,7 +96,7 @@ assign(Patch.prototype, {
     }
 
     const returnFirst = typeof this.selection === 'string'
-    const opts = assign({returnFirst, returnDocuments: true}, options)
+    const opts = Object.assign({returnFirst, returnDocuments: true}, options)
     return this.client.mutate({patch: this.serialize()}, opts)
   },
 
@@ -109,16 +106,16 @@ assign(Patch.prototype, {
   },
 
   _set(op, props) {
-    return this._assign(op, props, false)
+    return this.assign(op, props, false)
   },
 
-  _assign(op, props, merge = true) {
+  assign(op, props, merge = true) {
     validateObject(op, props)
-    this.operations = assign({}, this.operations, {
-      [op]: assign({}, (merge && this.operations[op]) || {}, props),
+    this.operations = Object.assign({}, this.operations, {
+      [op]: Object.assign({}, (merge && this.operations[op]) || {}, props),
     })
     return this
   },
 })
 
-module.exports = Patch
+export default Patch

@@ -1,4 +1,4 @@
-module.exports = (obj, defaults) =>
+export default (obj, defaults) =>
   Object.keys(defaults)
     .concat(Object.keys(obj))
     .reduce((target, prop) => {

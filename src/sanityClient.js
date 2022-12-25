@@ -1,17 +1,16 @@
-const assign = require('object-assign')
-const {Observable, map, filter} = require('./util/observable')
-const Patch = require('./data/patch')
-const Transaction = require('./data/transaction')
-const dataMethods = require('./data/dataMethods')
-const DatasetsClient = require('./datasets/datasetsClient')
-const ProjectsClient = require('./projects/projectsClient')
-const AssetsClient = require('./assets/assetsClient')
-const UsersClient = require('./users/usersClient')
-const AuthClient = require('./auth/authClient')
-const httpRequest = require('./http/request')
-const getRequestOptions = require('./http/requestOptions')
-const {defaultConfig, initConfig} = require('./config')
-const validate = require('./validators')
+import {Observable, map, filter} from './util/observable'
+import Patch from './data/patch'
+import Transaction from './data/transaction'
+import dataMethods from './data/dataMethods'
+import DatasetsClient from './datasets/datasetsClient'
+import ProjectsClient from './projects/projectsClient'
+import AssetsClient from './assets/assetsClient'
+import UsersClient from './users/usersClient'
+import AuthClient from './auth/authClient'
+import httpRequest from './http/request'
+import getRequestOptions from './http/requestOptions'
+import {defaultConfig, initConfig} from './config'
+import * as validate from './validators'
 
 const toPromise = (observable) => observable.toPromise()
 
@@ -29,20 +28,20 @@ function SanityClient(config = defaultConfig) {
   this.auth = new AuthClient(this)
 
   if (this.clientConfig.isPromiseAPI) {
-    const observableConfig = assign({}, this.clientConfig, {isPromiseAPI: false})
+    const observableConfig = Object.assign({}, this.clientConfig, {isPromiseAPI: false})
     this.observable = new SanityClient(observableConfig)
   }
 }
 
-assign(SanityClient.prototype, dataMethods)
-assign(SanityClient.prototype, {
+Object.assign(SanityClient.prototype, dataMethods)
+Object.assign(SanityClient.prototype, {
   clone() {
     return new SanityClient(this.config())
   },
 
   config(newConfig) {
     if (typeof newConfig === 'undefined') {
-      return assign({}, this.clientConfig)
+      return Object.assign({}, this.clientConfig)
     }
 
     if (this.clientConfig && this.clientConfig.allowReconfigure === false) {
@@ -52,7 +51,7 @@ assign(SanityClient.prototype, {
     }
 
     if (this.observable) {
-      const observableConfig = assign({}, newConfig, {isPromiseAPI: false})
+      const observableConfig = Object.assign({}, newConfig, {isPromiseAPI: false})
       this.observable.config(observableConfig)
     }
 
@@ -96,7 +95,7 @@ assign(SanityClient.prototype, {
 
     const reqOptions = getRequestOptions(
       this.clientConfig,
-      assign({}, options, {
+      Object.assign({}, options, {
         url: this.getUrl(uri, useCdn),
       })
     )
@@ -122,4 +121,4 @@ SanityClient.ClientError = httpRequest.ClientError
 SanityClient.ServerError = httpRequest.ServerError
 SanityClient.requester = httpRequest.defaultRequester
 
-module.exports = SanityClient
+export default SanityClient

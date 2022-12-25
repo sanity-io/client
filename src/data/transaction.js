@@ -1,6 +1,5 @@
-const assign = require('object-assign')
-const validators = require('../validators')
-const Patch = require('./patch')
+import * as validators from '../validators'
+import Patch from './patch'
 
 const defaultMutateOptions = {returnDocuments: false}
 
@@ -10,7 +9,7 @@ function Transaction(operations = [], client, transactionId) {
   this.client = client
 }
 
-assign(Transaction.prototype, {
+Object.assign(Transaction.prototype, {
   clone() {
     return new Transaction(this.operations.slice(0), this.client, this.trxId)
   },
@@ -58,7 +57,7 @@ assign(Transaction.prototype, {
       return this._add({patch: patch.serialize()})
     }
 
-    return this._add({patch: assign({id: documentId}, patchOps)})
+    return this._add({patch: Object.assign({id: documentId}, patchOps)})
   },
 
   transactionId(id) {
@@ -88,7 +87,7 @@ assign(Transaction.prototype, {
 
     return this.client.mutate(
       this.serialize(),
-      assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
+      Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
     )
   },
 
@@ -103,4 +102,4 @@ assign(Transaction.prototype, {
   },
 })
 
-module.exports = Transaction
+export default Transaction

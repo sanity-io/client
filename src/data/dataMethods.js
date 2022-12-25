@@ -1,11 +1,10 @@
-const assign = require('object-assign')
-const {map, filter} = require('../util/observable')
-const validators = require('../validators')
-const getSelection = require('../util/getSelection')
-const encodeQueryString = require('./encodeQueryString')
-const Transaction = require('./transaction')
-const Patch = require('./patch')
-const listen = require('./listen')
+import {map, filter} from '../util/observable'
+import * as validators from '../validators'
+import getSelection from '../util/getSelection'
+import encodeQueryString from './encodeQueryString'
+import Transaction from './transaction'
+import Patch from './patch'
+import listen from './listen'
 
 const excludeFalsey = (param, defValue) => {
   const value = typeof param === 'undefined' ? defValue : param
@@ -36,7 +35,7 @@ const toPromise = (observable) => observable.toPromise()
 
 const getQuerySizeLimit = 11264
 
-module.exports = {
+export default {
   listen: listen,
 
   getDataUrl(operation, path) {
@@ -177,7 +176,7 @@ module.exports = {
 
   _create(doc, op, options = {}) {
     const mutation = {[op]: doc}
-    const opts = assign({returnFirst: true, returnDocuments: true}, options)
+    const opts = Object.assign({returnFirst: true, returnDocuments: true}, options)
     return this.dataRequest('mutate', {mutations: [mutation]}, opts)
   },
 }

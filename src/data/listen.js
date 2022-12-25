@@ -1,9 +1,8 @@
-const assign = require('object-assign')
-const {Observable} = require('../util/observable')
-const polyfilledEventSource = require('@sanity/eventsource')
-const pick = require('../util/pick')
-const defaults = require('../util/defaults')
-const encodeQueryString = require('./encodeQueryString')
+import {Observable} from '../util/observable'
+import polyfilledEventSource from '@sanity/eventsource'
+import pick from '../util/pick'
+import defaults from '../util/defaults'
+import encodeQueryString from './encodeQueryString'
 
 // Limit is 16K for a _request_, eg including headers. Have to account for an
 // unknown range of headers, but an average EventSource request from Chrome seems
@@ -23,7 +22,7 @@ const defaultOptions = {
   includeResult: true,
 }
 
-module.exports = function listen(query, params, opts = {}) {
+export default function listen(query, params, opts = {}) {
   const {url, token, withCredentials, requestTagPrefix} = this.clientConfig
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag
   const options = {...defaults(opts, defaultOptions), tag}
@@ -132,7 +131,7 @@ module.exports = function listen(query, params, opts = {}) {
 function parseEvent(event) {
   try {
     const data = (event.data && JSON.parse(event.data)) || {}
-    return assign({type: event.type}, data)
+    return Object.assign({type: event.type}, data)
   } catch (err) {
     return err
   }

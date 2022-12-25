@@ -1,7 +1,6 @@
-const assign = require('object-assign')
-const {map, filter} = require('../util/observable')
-const queryString = require('../http/queryString')
-const validators = require('../validators')
+import {map, filter} from '../util/observable'
+import queryString from '../http/queryString'
+import * as validators from '../validators'
 
 function AssetsClient(client) {
   this.client = client
@@ -12,7 +11,7 @@ function optionsFromFile(opts, file) {
     return opts
   }
 
-  return assign(
+  return Object.assign(
     {
       filename: opts.preserveFilename === false ? undefined : file.name,
       contentType: file.type,
@@ -21,7 +20,7 @@ function optionsFromFile(opts, file) {
   )
 }
 
-assign(AssetsClient.prototype, {
+Object.assign(AssetsClient.prototype, {
   /**
    * Upload an asset
    *
@@ -132,4 +131,4 @@ assign(AssetsClient.prototype, {
   },
 })
 
-module.exports = AssetsClient
+export default AssetsClient

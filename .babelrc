@@ -9,6 +9,7 @@
       }
     ]
   ],
+  "plugins": ["add-module-exports", "@babel/plugin-transform-object-assign","@babel/plugin-transform-modules-commonjs"],
   "env": {
     "test": {
       "plugins": ["istanbul"]

@@ -1,16 +1,15 @@
-const makeError = require('make-error')
-const assign = require('object-assign')
+import makeError from 'make-error'
 
 function ClientError(res) {
   const props = extractErrorProps(res)
   ClientError.super.call(this, props.message)
-  assign(this, props)
+  Object.assign(this, props)
 }
 
 function ServerError(res) {
   const props = extractErrorProps(res)
   ServerError.super.call(this, props.message)
-  assign(this, props)
+  Object.assign(this, props)
 }
 
 function extractErrorProps(res) {
@@ -53,5 +52,4 @@ function stringifyBody(body, res) {
 makeError(ClientError)
 makeError(ServerError)
 
-exports.ClientError = ClientError
-exports.ServerError = ServerError
+export {ClientError, ServerError}
