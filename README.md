@@ -402,7 +402,7 @@ Assets can be uploaded using the `client.assets.upload(...)` method.
 client.assets.upload(type: 'file' | image', body: File | Blob | Buffer | NodeStream, options = {}): Promise<AssetDocument>
 ```
 
-👉 Read more about [assets in Sanity](https://sanity.io/docs/http-api/assets)
+👉 Read more about [assets in Sanity](https://sanity.io/docs/assets)
 
 #### Examples: Uploading assets from Node.js
 
