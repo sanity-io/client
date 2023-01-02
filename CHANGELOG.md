@@ -5,6 +5,17 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0](https://github.com/sanity-io/client/compare/v3.4.1...v4.0.0) (2023-01-02)
+
+### ⚠ BREAKING CHANGES
+
+- Expanding ESM support is a significant change. Although a tremendous effort is made to preserve backward compatibility it can't be guaranteed as there are too many conditions, environments, and runtime versions to cover them all.
+
+### Bug Fixes
+
+- **deps:** update dependencies (non-major) ([#36](https://github.com/sanity-io/client/issues/36)) ([658b40f](https://github.com/sanity-io/client/commit/658b40fb51541eeb0b4313bd9aaef746eeb670d2))
+- improve ESM output to support Deno, Bun and Edge runtimes ([#29](https://github.com/sanity-io/client/issues/29)) ([5ef19d4](https://github.com/sanity-io/client/commit/5ef19d497f884fce0b0f5e3974158df0ad6d9866))
+
 ## [3.4.1]
 
 - fix(typings): `fetch()` does not need to return record
