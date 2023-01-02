@@ -1,9 +1,9 @@
 /* eslint-disable no-empty-function, no-process-env */
 import getIt from 'get-it'
 import {observable, jsonRequest, jsonResponse, progress} from 'get-it/middleware'
-import {Observable} from '../util/observable'
 import {ClientError, ServerError} from './errors'
 import envMiddleware from './nodeMiddleware'
+import {Observable} from 'rxjs'
 
 const httpError = {
   onResponse: (res) => {

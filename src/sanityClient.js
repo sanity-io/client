@@ -1,4 +1,3 @@
-import {Observable, map, filter} from './util/observable'
 import Patch from './data/patch'
 import Transaction from './data/transaction'
 import dataMethods from './data/dataMethods'
@@ -11,6 +10,8 @@ import httpRequest from './http/request'
 import getRequestOptions from './http/requestOptions'
 import {defaultConfig, initConfig} from './config'
 import * as validate from './validators'
+import {Observable} from 'rxjs'
+import {filter, map} from 'rxjs/operators'
 
 const toPromise = (observable) => observable.toPromise()
 
