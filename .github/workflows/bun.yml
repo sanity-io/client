@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3
-      - uses: antongolub/action-setup-bun@bc198f5cb868ce282f0a72bdd7da3a06a5387f83 # tag=v1
+      - uses: antongolub/action-setup-bun@bc198f5cb868ce282f0a72bdd7da3a06a5387f83 # v1
       - run: bun install
-      - uses: EndBug/add-and-commit@61a88be553afe4206585b31aa72387c64295d08b # tag=v9
+      - uses: EndBug/add-and-commit@61a88be553afe4206585b31aa72387c64295d08b # v9
         with:
           message: 'chore(bun): update bun lockfile'
           default_author: github_actions
