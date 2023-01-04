@@ -1,6 +1,6 @@
-import {map, filter} from '../util/observable'
 import queryString from '../http/queryString'
 import * as validators from '../validators'
+import {filter, map} from 'rxjs/operators'
 
 function AssetsClient(client) {
   this.client = client

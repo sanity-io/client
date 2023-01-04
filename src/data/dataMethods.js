@@ -1,10 +1,10 @@
-import {map, filter} from '../util/observable'
 import * as validators from '../validators'
 import getSelection from '../util/getSelection'
 import encodeQueryString from './encodeQueryString'
 import Transaction from './transaction'
 import Patch from './patch'
 import listen from './listen'
+import {filter, map} from 'rxjs/operators'
 
 const excludeFalsey = (param, defValue) => {
   const value = typeof param === 'undefined' ? defValue : param
