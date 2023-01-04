@@ -944,7 +944,7 @@ export class ObservableSanityClient {
      */
     upload(
       assetType: 'file' | 'image',
-      body: File | Blob | Buffer | ReadableStream,
+      body: File | Blob | Buffer | NodeJS.ReadableStream,
       options?: UploadOptions
     ): Observable<
       ResponseEvent<{document: SanityAssetDocument | SanityImageAssetDocument}> | ProgressEvent
@@ -959,7 +959,7 @@ export class ObservableSanityClient {
      */
     upload(
       assetType: 'file',
-      body: File | Blob | Buffer | ReadableStream,
+      body: File | Blob | Buffer | NodeJS.ReadableStream,
       options?: UploadOptions
     ): Observable<ResponseEvent<{document: SanityAssetDocument}> | ProgressEvent>
 
@@ -972,7 +972,7 @@ export class ObservableSanityClient {
      */
     upload(
       assetType: 'image',
-      body: File | Blob | Buffer | ReadableStream,
+      body: File | Blob | Buffer | NodeJS.ReadableStream,
       options?: UploadOptions
     ): Observable<ResponseEvent<{document: SanityImageAssetDocument}> | ProgressEvent>
 
@@ -1609,7 +1609,7 @@ export interface SanityClient {
      */
     upload(
       assetType: 'file' | 'image',
-      body: File | Blob | Buffer | ReadableStream,
+      body: File | Blob | Buffer | NodeJS.ReadableStream,
       options?: UploadOptions
     ): Promise<SanityAssetDocument | SanityImageAssetDocument>
 
@@ -1622,7 +1622,7 @@ export interface SanityClient {
      */
     upload(
       assetType: 'file',
-      body: File | Blob | Buffer | ReadableStream,
+      body: File | Blob | Buffer | NodeJS.ReadableStream,
       options?: UploadOptions
     ): Promise<SanityAssetDocument>
 
@@ -1635,7 +1635,7 @@ export interface SanityClient {
      */
     upload(
       assetType: 'image',
-      body: File | Blob | Buffer | ReadableStream,
+      body: File | Blob | Buffer | NodeJS.ReadableStream,
       options?: UploadOptions
     ): Promise<SanityImageAssetDocument>
 
