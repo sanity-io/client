@@ -1,0 +1,568 @@
+import type {Requester} from 'get-it'
+
+/**
+ * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future
+ * @internal
+ */
+export type FIXME = any // eslint-disable-line @typescript-eslint/no-explicit-any
+
+/** @public */
+export interface RequestOptions {
+  timeout?: number
+  token?: string
+  tag?: string
+  headers?: Record<string, string>
+  method?: string
+  query?: FIXME
+  body?: FIXME
+}
+
+/** @public */
+export interface ClientConfig {
+  projectId?: string
+  dataset?: string
+  useCdn?: boolean
+  token?: string
+  apiHost?: string
+  apiVersion?: string
+  proxy?: string
+  requestTagPrefix?: string
+  ignoreBrowserTokenWarning?: boolean
+  withCredentials?: boolean
+  allowReconfigure?: boolean
+  timeout?: number
+
+  /**
+   * @deprecated Don't use
+   */
+  useProjectHostname?: boolean
+
+  /**
+   * @deprecated Don't use
+   */
+  requester?: Requester
+}
+
+/** @public */
+export interface InitializedClientConfig extends ClientConfig {
+  // These are required in the initialized config
+  apiHost: string
+  apiVersion: string
+  useProjectHostname: boolean
+  useCdn: boolean
+  // These are added by the initConfig function
+  /**
+   * @deprecated Internal, don't use
+   */
+  isDefaultApi: boolean
+  /**
+   * @deprecated Internal, don't use
+   */
+  url: string
+  /**
+   * @deprecated Internal, don't use
+   */
+  cdnUrl: string
+}
+
+/** @public */
+export type AssetMetadataType =
+  | 'location'
+  | 'exif'
+  | 'image'
+  | 'palette'
+  | 'lqip'
+  | 'blurhash'
+  | 'none'
+
+/** @public */
+export interface UploadClientConfig {
+  /**
+   * Optional request tag for the upload
+   */
+  tag?: string
+
+  /**
+   * Whether or not to preserve the original filename (default: true)
+   */
+  preserveFilename?: boolean
+
+  /**
+   * Filename for this file (optional)
+   */
+  filename?: string
+
+  /**
+   * Milliseconds to wait before timing the request out
+   */
+  timeout?: number
+
+  /**
+   * Mime type of the file
+   */
+  contentType?: string
+
+  /**
+   * Array of metadata parts to extract from asset
+   */
+  extract?: AssetMetadataType[]
+
+  /**
+   * Optional freeform label for the asset. Generally not used.
+   */
+  label?: string
+
+  /**
+   * Optional title for the asset
+   */
+  title?: string
+
+  /**
+   * Optional description for the asset
+   */
+  description?: string
+
+  /**
+   * The credit to person(s) and/or organization(s) required by the supplier of the asset to be used when published
+   */
+  creditLine?: string
+
+  /**
+   * Source data (when the asset is from an external service)
+   */
+  source?: {
+    /**
+     * The (u)id of the asset within the source, i.e. 'i-f323r1E'
+     */
+    id: string
+
+    /**
+     * The name of the source, i.e. 'unsplash'
+     */
+    name: string
+
+    /**
+     * A url to where to find the asset, or get more info about it in the source
+     */
+    url?: string
+  }
+}
+
+/** @internal */
+export interface SanityReference {
+  _ref: string
+}
+
+/** @internal */
+export type SanityDocument<T extends Record<string, FIXME> = Record<string, FIXME>> = {
+  [P in keyof T]: T[P]
+} & {
+  _id: string
+  _rev: string
+  _type: string
+  _createdAt: string
+  _updatedAt: string
+}
+
+/** @internal */
+export interface SanityAssetDocument extends SanityDocument {
+  url: string
+  path: string
+  size: number
+  assetId: string
+  mimeType: string
+  sha1hash: string
+  extension: string
+  uploadId?: string
+  originalFilename?: string
+}
+
+/** @internal */
+export interface SanityImagePalette {
+  background: string
+  foreground: string
+  population: number
+  title: string
+}
+
+/** @internal */
+export interface SanityImageAssetDocument extends SanityAssetDocument {
+  metadata: {
+    _type: 'sanity.imageMetadata'
+    hasAlpha: boolean
+    isOpaque: boolean
+    lqip?: string
+    blurHash?: string
+    dimensions: {
+      _type: 'sanity.imageDimensions'
+      aspectRatio: number
+      height: number
+      width: number
+    }
+    palette?: {
+      _type: 'sanity.imagePalette'
+      darkMuted?: SanityImagePalette
+      darkVibrant?: SanityImagePalette
+      dominant?: SanityImagePalette
+      lightMuted?: SanityImagePalette
+      lightVibrant?: SanityImagePalette
+      muted?: SanityImagePalette
+      vibrant?: SanityImagePalette
+    }
+    image?: {
+      _type: 'sanity.imageExifTags'
+      [key: string]: FIXME
+    }
+    exif?: {
+      _type: 'sanity.imageExifMetadata'
+      [key: string]: FIXME
+    }
+  }
+}
+
+/** @public */
+export interface ErrorProps {
+  message: string
+  response: FIXME
+  statusCode: number
+  responseBody: FIXME
+  details: FIXME
+}
+
+/** @public */
+export type HttpRequest = {
+  defaultRequester: Requester
+  (options: RequestOptions, requester: Requester): ReturnType<Requester>
+}
+
+/** @internal */
+export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
+  url?: string
+  uri?: string
+  canUseCdn?: boolean
+  tag?: string
+}
+
+/** @public */
+export interface ProgressEvent {
+  type: 'progress'
+  stage: 'upload' | 'download'
+  percent: number
+  total?: number
+  loaded?: number
+  lengthComputable: boolean
+}
+
+/** @public */
+export interface ResponseEvent<T = unknown> {
+  type: 'response'
+  body: T
+  url: string
+  method: string
+  statusCode: number
+  statusMessage?: string
+  headers: Record<string, string>
+}
+
+/** @public */
+export type HttpRequestEvent<T = unknown> = ResponseEvent<T> | ProgressEvent
+
+/** @internal */
+export interface AuthProvider {
+  name: string
+  title: string
+  url: string
+}
+
+/** @internal */
+export type AuthProviderResponse = {providers: AuthProvider[]}
+
+/** @internal */
+export type DatasetAclMode = 'public' | 'private' | 'custom'
+
+/** @internal */
+export type DatasetResponse = {datasetName: string; aclMode: DatasetAclMode}
+/** @internal */
+export type DatasetsResponse = {name: string; aclMode: DatasetAclMode}[]
+
+/** @internal */
+export interface SanityProjectMember {
+  id: string
+  role: string
+  isRobot: boolean
+  isCurrentUser: boolean
+}
+
+/** @internal */
+export interface SanityProject {
+  id: string
+  displayName: string
+  studioHost: string | null
+  organizationId: string | null
+  isBlocked: boolean
+  isDisabled: boolean
+  isDisabledByUser: boolean
+  createdAt: string
+  pendingInvites?: number
+  maxRetentionDays?: number
+  members: SanityProjectMember[]
+  metadata: {
+    color?: string
+    externalStudioHost?: string
+  }
+}
+
+/** @internal */
+export interface SanityUser {
+  id: string
+  projectId: string
+  displayName: string
+  familyName: string | null
+  givenName: string | null
+  middleName: string | null
+  imageUrl: string | null
+  createdAt: string
+  updatedAt: string
+  isCurrentUser: boolean
+}
+
+/** @internal */
+export interface CurrentSanityUser {
+  id: string
+  name: string
+  email: string
+  profileImage: string | null
+  role: string
+}
+
+/** @public */
+export type SanityDocumentStub<T extends Record<string, FIXME> = Record<string, FIXME>> = {
+  [P in keyof T]: T[P]
+} & {
+  _type: string
+}
+
+/** @public */
+export type IdentifiedSanityDocumentStub<T extends Record<string, FIXME> = Record<string, FIXME>> =
+  {
+    [P in keyof T]: T[P]
+  } & {
+    _id: string
+  } & SanityDocumentStub
+
+/** @internal */
+export type InsertPatch =
+  | {before: string; items: FIXME[]}
+  | {after: string; items: FIXME[]}
+  | {replace: string; items: FIXME[]}
+
+// Note: this is actually incorrect/invalid, but implemented as-is for backwards compatibility
+/** @internal */
+export interface PatchOperations {
+  set?: {[key: string]: FIXME}
+  setIfMissing?: {[key: string]: FIXME}
+  diffMatchPatch?: {[key: string]: FIXME}
+  unset?: string[]
+  inc?: {[key: string]: number}
+  dec?: {[key: string]: number}
+  insert?: InsertPatch
+  ifRevisionID?: string
+}
+
+/** @public */
+export type QueryParams = {[key: string]: FIXME}
+/** @internal */
+export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
+/** @internal */
+export type PatchSelection = string | string[] | MutationSelection
+/** @internal */
+export type PatchMutationOperation = PatchOperations & MutationSelection
+
+/** @public */
+export type Mutation<R extends Record<string, FIXME> = Record<string, FIXME>> =
+  | {create: SanityDocumentStub<R>}
+  | {createOrReplace: IdentifiedSanityDocumentStub<R>}
+  | {createIfNotExists: IdentifiedSanityDocumentStub<R>}
+  | {delete: MutationSelection}
+  | {patch: PatchMutationOperation}
+
+/** @public */
+export type MutationEvent<R extends Record<string, FIXME> = Record<string, FIXME>> = {
+  type: 'mutation'
+  documentId: string
+  eventId: string
+  identity: string
+  mutations: Mutation[]
+  previousRev?: string
+  resultRev?: string
+  result?: SanityDocument<R>
+  previous?: SanityDocument<R> | null
+  effects?: {apply: unknown[]; revert: unknown[]}
+  timestamp: string
+  transactionId: string
+  transition: 'update' | 'appear' | 'disappear'
+  visibility: 'query' | 'transaction'
+}
+
+/** @public */
+export type ChannelErrorEvent = {
+  type: 'channelError'
+  message: string
+}
+
+/** @public */
+export type DisconnectEvent = {
+  type: 'disconnect'
+  reason: string
+}
+
+/** @public */
+export type ReconnectEvent = {
+  type: 'reconnect'
+}
+
+/** @public */
+export type WelcomeEvent = {
+  type: 'welcome'
+}
+
+/** @public */
+export type ListenEvent<R extends Record<string, FIXME>> =
+  | MutationEvent<R>
+  | ChannelErrorEvent
+  | DisconnectEvent
+  | ReconnectEvent
+  | WelcomeEvent
+
+/** @public */
+export type ListenEventName = 'mutation' | 'welcome' | 'reconnect'
+
+/** @public */
+export interface ListenOptions {
+  includeResult?: boolean
+  includePreviousRevision?: boolean
+  visibility?: 'sync' | 'async' | 'query'
+  events?: ListenEventName[]
+  effectFormat?: 'mendoza'
+  tag?: string
+}
+
+/** @internal */
+export type FilteredResponseQueryOptions = RequestOptions & {
+  filterResponse?: true
+}
+
+/** @internal */
+export type UnfilteredResponseQueryOptions = RequestOptions & {
+  filterResponse: false
+}
+
+/** @internal */
+export interface RawQueryResponse<R> {
+  q: string
+  ms: number
+  result: R
+}
+
+/** @internal */
+export type BaseMutationOptions = RequestOptions & {
+  visibility?: 'sync' | 'async' | 'deferred'
+  returnDocuments?: boolean
+  returnFirst?: boolean
+  dryRun?: boolean
+  autoGenerateArrayKeys?: boolean
+  skipCrossDatasetReferenceValidation?: boolean
+}
+
+/** @internal */
+export type FirstDocumentMutationOptions = BaseMutationOptions & {
+  returnFirst?: true
+  returnDocuments?: true
+}
+
+/** @internal */
+export type FirstDocumentIdMutationOptions = BaseMutationOptions & {
+  returnFirst?: true
+  returnDocuments: false
+}
+
+/** @internal */
+export type AllDocumentsMutationOptions = BaseMutationOptions & {
+  returnFirst: false
+  returnDocuments?: true
+}
+
+/** @internal */
+export type MutationOperation = 'create' | 'delete' | 'update' | 'none'
+
+/** @internal */
+export interface SingleMutationResult {
+  transactionId: string
+  documentId: string
+  results: {id: string; operation: MutationOperation}[]
+}
+
+/** @internal */
+export interface MultipleMutationResult {
+  transactionId: string
+  documentIds: string[]
+  results: {id: string; operation: MutationOperation}[]
+}
+
+/** @internal */
+export type AllDocumentIdsMutationOptions = BaseMutationOptions & {
+  returnFirst: false
+  returnDocuments: false
+}
+
+/** @internal */
+export type AttributeSet = {[key: string]: FIXME}
+
+/** @internal */
+export type TransactionFirstDocumentMutationOptions = BaseMutationOptions & {
+  returnFirst: true
+  returnDocuments: true
+}
+
+/** @internal */
+export type TransactionFirstDocumentIdMutationOptions = BaseMutationOptions & {
+  returnFirst: true
+  returnDocuments?: false
+}
+
+/** @internal */
+export type TransactionAllDocumentsMutationOptions = BaseMutationOptions & {
+  returnFirst?: false
+  returnDocuments: true
+}
+
+/** @internal */
+export type TransactionAllDocumentIdsMutationOptions = BaseMutationOptions & {
+  returnFirst?: false
+  returnDocuments?: false
+}
+
+/** @internal */
+export type TransactionMutationOptions =
+  | TransactionFirstDocumentMutationOptions
+  | TransactionFirstDocumentIdMutationOptions
+  | TransactionAllDocumentsMutationOptions
+  | TransactionAllDocumentIdsMutationOptions
+
+/** @internal */
+export interface RawRequestOptions {
+  url?: string
+  uri?: string
+  method?: string
+  token?: string
+  json?: boolean
+  tag?: string
+  useGlobalApi?: boolean
+  withCredentials?: boolean
+  query?: {[key: string]: string | string[]}
+  headers?: {[key: string]: string}
+  timeout?: number
+  proxy?: string
+  body?: FIXME
+  maxRedirects?: number
+}

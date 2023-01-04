@@ -1,43 +1,381 @@
 # @sanity/client
 
+[![npm stat](https://img.shields.io/npm/dm/@sanity/client.svg?style=flat-square)](https://npm-stat.com/charts.html?package=@sanity/client)
 [![npm version](https://img.shields.io/npm/v/@sanity/client.svg?style=flat-square)](https://www.npmjs.com/package/@sanity/client)
+[![gzip size][gzip-badge]][bundlephobia]
+[![size][size-badge]][bundlephobia]
 
-Javascript client for Sanity. Works in node.js and modern browsers (older browsers need a [Promise polyfill](https://www.sanity.io/help/js-client-promise-polyfill)).
+JavaScript client for Sanity. Works in modern browsers, as well as runtimes like [Node.js], [Bun], [Deno], and [Edge Runtime]
+
+## QuickStart
+
+Install the client with a package manager:
+
+```sh
+npm install @sanity/client
+```
+
+Import and create a new client instance, and use its methods to interact with your project's [Content Lake]. Below are some simple examples in plain JavaScript. Read further for more comprehensive documentation.
+
+```js
+// sanity.js
+import {createClient} from '@sanity/client'
+// Import using ESM URL imports in environments that supports it:
+// import {createClient} from 'https://esm.sh/@sanity/client'
+
+export const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  // token: process.env.SANITY_SECRET_TOKEN // Only if you want to update content with the client
+})
+
+// uses GROQ to query content: https://www.sanity.io/docs/groq
+export async function getPosts() {
+  const posts = await client.fetch('*[_type == "post"]')
+  return posts
+}
+
+export async function createPost(post: Post) {
+  const result = client.create(post)
+  return result
+}
+
+export async function updateDocumentTitle(_id, title) {
+  const result = client.patch(_id).set({title})
+  return result
+}
+```
+
+# Table of contents<!-- omit in toc -->
+
+- [QuickStart](#quickstart)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [API](#api)
+  - [Creating a client instance](#creating-a-client-instance)
+    - [ESM](#esm)
+    - [CommonJS](#commonjs)
+    - [TypeScript](#typescript)
+    - [Bun](#bun)
+    - [Deno](#deno)
+    - [Edge Runtime](#edge-runtime)
+    - [Browser ESM CDN](#browser-esm-cdn)
+    - [UMD](#umd)
+  - [Specifying API version](#specifying-api-version)
+  - [Performing queries](#performing-queries)
+  - [Listening to queries](#listening-to-queries)
+  - [Fetch a single document](#fetch-a-single-document)
+  - [Fetch multiple documents in one go](#fetch-multiple-documents-in-one-go)
+  - [Creating documents](#creating-documents)
+  - [Creating/replacing documents](#creatingreplacing-documents)
+  - [Creating if not already present](#creating-if-not-already-present)
+  - [Patch/update a document](#patchupdate-a-document)
+  - [Setting a field only if not already present](#setting-a-field-only-if-not-already-present)
+  - [Removing/unsetting fields](#removingunsetting-fields)
+  - [Incrementing/decrementing numbers](#incrementingdecrementing-numbers)
+  - [Patch a document only if revision matches](#patch-a-document-only-if-revision-matches)
+  - [Adding elements to an array](#adding-elements-to-an-array)
+  - [Appending/prepending elements to an array](#appendingprepending-elements-to-an-array)
+  - [Deleting an element from an array](#deleting-an-element-from-an-array)
+  - [Delete documents](#delete-documents)
+  - [Multiple mutations in a transaction](#multiple-mutations-in-a-transaction)
+  - [Clientless patches \& transactions](#clientless-patches--transactions)
+  - [Uploading assets](#uploading-assets)
+    - [Examples: Uploading assets from Node.js](#examples-uploading-assets-from-nodejs)
+    - [Examples: Uploading assets from the Browser](#examples-uploading-assets-from-the-browser)
+    - [Examples: Specify image metadata to extract](#examples-specify-image-metadata-to-extract)
+  - [Deleting an asset](#deleting-an-asset)
+  - [Mutation options](#mutation-options)
+  - [Get client configuration](#get-client-configuration)
+  - [Set client configuration](#set-client-configuration)
+- [Release new version](#release-new-version)
+- [License](#license)
+- [From `v4`](#from-v4)
 
 ## Requirements
 
-Sanity Client requires the JavaScript runtime to have a global ES6-compliant `Promise` available. If your runtime environment doesn't provide a spec compliant `Promise` implementation, we recommend using [native-promise-only](https://www.npmjs.com/package/native-promise-only), [es6-promise](https://www.npmjs.com/package/es6-promise) or another [spec-compliant](https://promisesaplus.com/implementations) implementation. See [this article](https://www.sanity.io/help/js-client-promise-polyfill) for more information.
+Sanity Client transpiles syntax for [modern browsers]. The JavaScript runtime must support ES6 features such as [class](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes), [rest parameters](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters), [spread syntax](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax) and more. Most modern web frameworks, [browsers][modern browsers], and developer tooling supports ES6 today.
+
+[For legacy ES5 environments we recommend v4.](https://github.com/sanity-io/client/tree/v4.0.0#sanityclient)
 
 ## Installation
 
-The client can be installed from npm:
+The client can be installed from [npm]:
 
-```
-npm install -g @sanity/client
+```sh
+npm install @sanity/client
+
+# Alternative package managers
+yarn add @sanity/client
+pnpm install @sanity/client
 ```
 
 ## API
 
+### Creating a client instance
+
+`const client = createClient(options)`
+
+Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. Setting a value for `useCdn` is encouraged. Typically you want to have it as `false` in development to always fetch the freshest content and `true` in production environments so that content is fetched from the distributed cache. [You can learn more about the API CDN here][api-cdn].
+
+#### [ESM](https://hacks.mozilla.org/2018/03/es-modules-a-cartoon-deep-dive/)
+
 ```js
-const sanityClient = require('@sanity/client')
-const client = sanityClient({
+import {createClient} from '@sanity/client'
+
+const client = createClient({
   projectId: 'your-project-id',
-  dataset: 'bikeshop',
-  apiVersion: '2021-03-25', // use current UTC date - see "specifying API version"!
-  token: 'sanity-auth-token', // or leave blank for unauthenticated usage
-  useCdn: true, // `false` if you want to ensure fresh data
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
-export default client
+const data = await client.fetch(`count(*)`)
+console.log(`Number of documents: ${data}`)
 ```
 
-`const client = sanityClient(options)`
+#### [CommonJS]
 
-Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. Setting a value for `useCdn` is encouraged.
+```js
+const {createClient} = require('@sanity/client')
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+})
+
+client
+  .fetch(`count(*)`)
+  .then((data) => console.log(`Number of documents: ${data}`))
+  .catch(console.error)
+```
+
+#### [TypeScript]
+
+```ts
+import {createClient, type ClientConfig} from '@sanity/client'
+
+const config: ClientConfig = {
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+}
+const client = createClient(config)
+
+const data = await client.fetch<number>(`count(*)`)
+// data is typed as `number`
+console.log(`Number of documents: ${data}`)
+```
+
+We're currently exploring typed GROQ queries that are runtime safe, and will share more when we've landed on a solution we're satisifed with.
+Until then you can achieve this using [Zod]:
+
+```ts
+import {createClient} from '@sanity/client'
+import {z} from 'zod'
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+})
+
+const schema = z.number()
+const data = schema.parse(await client.fetch(`count(*)`))
+// data is guaranteed to be `number`, or zod will throw an error
+console.log(`Number of documents: ${data}`)
+```
+
+Another alternative is [groqd].
+
+#### [Bun]
+
+```bash
+bun init
+bun add @sanity/client
+open index.ts
+```
+
+```ts
+// index.ts
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+})
+
+const data = await client.fetch<number>(`count(*)`)
+
+console.write(`Number of documents: ${data}`)
+```
+
+```bash
+bun run index.ts
+# Number of documents ${number}
+```
+
+#### [Deno]
+
+```bash
+deno init
+open main.ts
+```
+
+```ts
+// main.ts
+import {createClient} from 'https://esm.sh/@sanity/client'
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+})
+
+const data = await client.fetch<number>(`count(*)`)
+
+console.log(`Number of documents: ${data}`)
+```
+
+```bash
+deno run --allow-net --allow-env main.ts
+# Number of documents ${number}
+```
+
+#### [Edge Runtime]
+
+```bash
+npm install next
+```
+
+```ts
+// pages/api/total.ts
+import {createClient} from '@sanity/client'
+import type {NextRequest} from 'next/server'
+
+export const config = {
+  runtime: 'edge',
+}
+
+export default async function handler(req: NextRequest) {
+  const client = createClient({
+    projectId: 'your-project-id',
+    dataset: 'your-dataset-name',
+    useCdn: false, // set to `true` to fetch from edge cache
+    apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  })
+
+  const count = await client.fetch<number>(`count(*)`)
+  return new Response(JSON.stringify({count}), {
+    status: 200,
+    headers: {
+      'content-type': 'application/json',
+    },
+  })
+}
+```
+
+```bash
+npx next dev
+# Open http://localhost:3000/api/total
+# {"count": number}
+```
+
+#### Browser ESM CDN
+
+Using [esm.sh] you can either load the client using a `<script type="module">` tag:
+
+```html
+<script type="module">
+  import {createClient} from 'https://esm.sh/@sanity/client'
+
+  const client = createClient({
+    projectId: 'your-project-id',
+    dataset: 'your-dataset-name',
+    useCdn: false, // set to `true` to fetch from edge cache
+    apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  })
+
+  const data = await client.fetch(`count(*)`)
+  document.getElementById('results').innerText = `Number of documents: ${data}`
+</script>
+<div id="results"></div>
+```
+
+Or from anywhere using a dynamic `import()`:
+
+```js
+// You can run this snippet from your browser DevTools console.
+// Super handy when you're quickly testing out queries.
+const {createClient} = await import('https://esm.sh/@sanity/client')
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: false, // set to `true` to fetch from edge cache
+  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+})
+
+const data = await client.fetch(`count(*)`)
+console.log(`Number of documents: ${data}`)
+```
+
+#### [UMD][unpkg-dist]
+
+Loading the UMD script creates a `SanityClient` global that have the same exports as `import * as SanityClient from '@sanity/client'`:
+
+```html
+<script src="https://unpkg.com/@sanity/client"></script>
+<!-- Unminified build for debugging -->
+<!--<script src="https://unpkg.com/@sanity/client/umd/sanityClient.js"></script>-->
+<script>
+  const {createClient} = SanityClient
+
+  const client = createClient({
+    projectId: 'your-project-id',
+    dataset: 'your-dataset-name',
+    useCdn: false, // set to `true` to fetch from edge cache
+    apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  })
+
+  client.fetch(`count(*)`).then((data) => console.log(`Number of documents: ${data}`))
+</script>
+```
+
+The `require-unpkg` library lets you consume `npm` packages from `unpkg.com` similar to how `esm.sh` lets you `import()` anything:
+
+```html
+<div id="results"></div>
+<script src="https://unpkg.com/require-unpkg"></script>
+<script>
+  ;(async () => {
+    // const {createClient} = await require('@sanity/client')
+    const [$, {createClient}] = await require(['jquery', '@sanity/client'])
+
+    const client = createClient({
+      projectId: 'your-project-id',
+      dataset: 'your-dataset-name',
+      useCdn: false, // set to `true` to fetch from edge cache
+      apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+    })
+
+    const data = await client.fetch(`count(*)`)
+    $('#results').text(`Number of documents: ${data}`)
+  })()
+</script>
+```
 
 ### Specifying API version
 
-Sanity uses ISO dates (YYYY-MM-DD) in UTC timezone for versioning. The explanation for this can be found [in the documentation](http://sanity.io/docs/api-versioning)
+Sanity uses ISO dates (YYYY-MM-DD) in UTC timezone for versioning. The explanation for this can be found [in the documentation][api-versioning]
 
 In general, unless you know what API version you want to use, you'll want to statically set it to today's UTC date when starting a new project. By doing this, you'll get all the latest bugfixes and features, while locking the API to prevent breaking changes.
 
@@ -133,7 +471,7 @@ client.create(doc).then((res) => {
 })
 ```
 
-`client.create(doc)`  
+`client.create(doc)`
 `client.create(doc, mutationOptions)`
 
 Create a document. Argument is a plain JS object representing the document. It must contain a `_type` attribute. It _may_ contain an `_id`. If an ID is not specified, it will automatically be created.
@@ -155,7 +493,7 @@ client.createOrReplace(doc).then((res) => {
 })
 ```
 
-`client.createOrReplace(doc)`  
+`client.createOrReplace(doc)`
 `client.createOrReplace(doc, mutationOptions)`
 
 If you are not sure whether or not a document exists but want to overwrite it if it does, you can use the `createOrReplace()` method. When using this method, the document must contain an `_id` attribute.
@@ -175,7 +513,7 @@ client.createIfNotExists(doc).then((res) => {
 })
 ```
 
-`client.createIfNotExists(doc)`  
+`client.createIfNotExists(doc)`
 `client.createIfNotExists(doc, mutationOptions)`
 
 If you want to create a document if it does not already exist, but fall back without error if it does, you can use the `createIfNotExists()` method. When using this method, the document must contain an `_id` attribute.
@@ -284,7 +622,7 @@ client.patch('bike-123').unset(reviewsToRemove).commit()
 
 A single document can be deleted by specifying a document ID:
 
-`client.delete(docId)`  
+`client.delete(docId)`
 `client.delete(docId, mutationOptions)`
 
 ```js
@@ -372,27 +710,25 @@ A `patch` can be performed inline on a `transaction`.
 Transactions and patches can also be built outside the scope of a client:
 
 ```js
-const sanityClient = require('@sanity/client')
-const client = sanityClient({
+import {createClient, Patch, Transaction} from '@sanity/client'
+const client = createClient({
   projectId: 'your-project-id',
   dataset: 'bikeshop',
 })
 
 // Patches:
-const patch = new sanityClient.Patch('<documentId>')
+const patch = new Patch('<documentId>')
 client.mutate(patch.inc({count: 1}).unset(['visits']))
 
 // Transactions:
-const transaction = new sanityClient.Transaction()
-  .create({_id: '123', name: 'FooBike'})
-  .delete('someDocId')
+const transaction = new Transaction().create({_id: '123', name: 'FooBike'}).delete('someDocId')
 
 client.mutate(transaction)
 ```
 
-`const patch = new sanityClient.Patch(docId)`
+`const patch = new Patch(docId)`
 
-`const transaction = new sanityClient.Transaction()`
+`const transaction = new Transaction()`
 
 An important note on this approach is that you cannot call `commit()` on transactions or patches instantiated this way, instead you have to pass them to `client.mutate()`
 
@@ -541,3 +877,360 @@ Semantic release will only release on configured branches, so it is safe to run 
 ## License
 
 MIT © [Sanity.io](https://www.sanity.io/)
+
+# Migrate
+
+## From `v4`
+
+### No longer shipping `ES5`<!-- omit in toc -->
+
+The target is changed to [modern browsers] that supports `ES6` `class`, `{...rest}` syntax and more. You may need to update your bundler to a recent major version. Or you could configure your bundler to transpile `@sanity/client`, and `get-it`, which is the engine that powers `@sanity/client` and uses the same output target.
+
+### Node.js `v12` no longer supported<!-- omit in toc -->
+
+Upgrade to the [LTS release, or one of the Maintenance releases](https://github.com/nodejs/release#release-schedule).
+
+### The `default` export is replaced with the named export `createClient`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+```
+
+```ts
+import SanityClient from '@sanity/client'
+const client = new SanityClient()
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient()
+```
+
+### `client.assets.delete` is removed<!-- omit in toc -->
+
+Before:
+
+```ts
+client.assets.delete('image', 'abc123_foobar-123x123-png')
+client.assets.delete('image', 'image-abc123_foobar-123x123-png')
+client.assets.delete({_id: 'image-abc123_foobar-123x123-png'})
+```
+
+After:
+
+```ts
+client.delete('image-abc123_foobar-123x123-png')
+```
+
+### `client.assets.getImageUrl` is removed, replace with [`@sanity/image-url`](https://github.com/sanity-io/image-url)<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient({projectId: 'abc123', dataset: 'foo'})
+
+client.assets.getImageUrl('image-abc123_foobar-123x123-png')
+client.assets.getImageUrl('image-abc123_foobar-123x123-png', {auto: 'format'})
+client.assets.getImageUrl({_ref: 'image-abc123_foobar-123x123-png'})
+client.assets.getImageUrl({_ref: 'image-abc123_foobar-123x123-png'}, {auto: 'format'})
+```
+
+After:
+
+```bash
+npm install @sanity/image-url
+```
+
+```ts
+import imageUrlBuilder from '@sanity/image-url'
+const builder = imageUrlBuilder({projectId: 'abc123', dataset: 'foo'})
+const urlFor = (source) => builder.image(source)
+
+urlFor('image-abc123_foobar-123x123-png').url()
+urlFor('image-abc123_foobar-123x123-png').auto('format').url()
+urlFor({_ref: 'image-abc123_foobar-123x123-png'}).url()
+urlFor({_ref: 'image-abc123_foobar-123x123-png'}).auto('format').url()
+```
+
+### `SanityClient` static properties moved to named exports<!-- omit in toc -->
+
+Before:
+
+```ts
+import SanityClient from '@sanity/client'
+
+const {Patch, Transaction, ClientError, ServerError, requester} = SanityClient
+```
+
+After:
+
+```ts
+import {Patch, Transaction, ClientError, ServerError, requester} from '@sanity/client'
+```
+
+### `client.clientConfig` is removed, replace with `client.config()`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+console.log(client.clientConfig.projectId)
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient()
+
+console.log(client.config().projectId)
+```
+
+### `client.getUrl()` is removed<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient({projectId: 'abc123'})
+
+console.log(client.getUrl('/foo/bar') === 'https://abc123.api.sanity.io/v1/foo/bar')
+console.log(client.getUrl('/foo/bar', true) === 'https://abc123.apicdn.sanity.io/v1/foo/bar')
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient({projectId: 'abc123'})
+
+const getUrl = (uri: string, useCdn = false) => {
+  const config = client.config()
+  const base = useCdn ? config.cdnUrl : config.url
+  return `${base}/${uri.replace(/^\//, '')}`
+}
+
+console.log(getUrl('/foo/bar') === 'https://abc123.api.sanity.io/v1/foo/bar')
+console.log(getUrl('/foo/bar', true) === 'https://abc123.apicdn.sanity.io/v1/foo/bar')
+```
+
+### `client.getDataUrl()` is removed<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient({dataset: 'bikeshop'})
+
+console.log(client.getDataUrl('doc') === '/data/doc/bikeshop')
+console.log(client.getDataUrl('doc', 'bike-123') === '/data/doc/bikeshop/bike-123')
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient({dataset: 'bikeshop'})
+
+const getDataUrl = (operation: string, path?: string) => {
+  const {dataset} = client.config()
+  const baseUri = `/${operation}/${dataset}`
+  const uri = path ? `${baseUri}/${path}` : baseUri
+  return `/data${uri}`.replace(/\/($|\?)/, '$1')
+}
+
+console.log(getDataUrl('doc') === '/data/doc/bikeshop')
+console.log(getDataUrl('doc', 'bike-123') === '/data/doc/bikeshop/bike-123')
+```
+
+### `client.isPromiseAPI()` is removed, replace with an `instanceof` check<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+console.log(client.isPromiseAPI())
+console.log(client.clientConfig.isPromiseAPI)
+console.log(client.config().isPromiseAPI)
+```
+
+After:
+
+```ts
+import {createClient, SanityClient} from '@sanity/client'
+const client = createClient()
+
+console.log(client instanceof SanityClient)
+```
+
+### `client.observable.isObservableAPI()` is removed, replace with an `instanceof` check<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+console.log(client.observable.isObservableAPI())
+```
+
+After:
+
+```ts
+import {createClient, ObservableSanityClient} from '@sanity/client'
+const client = createClient()
+
+console.log(client.observable instanceof ObservableSanityClient)
+```
+
+### `client._requestObservable` is removed, replace with `client.observable.request`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+client._requestObservable({uri: '/ping'}).subscribe()
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient()
+
+client.observable.request({uri: '/ping'}).subscribe()
+```
+
+### `client._dataRequest` is removed, replace with `client.dataRequest`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+client._dataRequest(endpoint, body, options)
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient()
+
+client.dataRequest(endpoint, body, options)
+```
+
+### `client._create_` is removed, replace with one of `client.create`, `client.createIfNotExists` or `client.createOrReplace`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+client._create(doc, 'create', options)
+client._create(doc, 'createIfNotExists', options)
+client._create(doc, 'createOrReplace', options)
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient()
+
+client.create(doc, options)
+client.createIfNotExists(doc, options)
+client.createOrReplace(doc, options)
+```
+
+### `client.patch.replace` is removed, replace with `client.createOrReplace`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+client.patch('tropic-hab').replace({name: 'Tropical Habanero', ingredients: []}).commit()
+```
+
+After:
+
+```ts
+import {createClient} from '@sanity/client'
+const client = createClient()
+
+client.createOrReplace({
+  _id: 'tropic-hab',
+  _type: 'hotsauce',
+  name: 'Tropical Habanero',
+  ingredients: [],
+})
+```
+
+### `client.auth` is removed, replace with `client.request`<!-- omit in toc -->
+
+Before:
+
+```ts
+import createClient from '@sanity/client'
+const client = createClient()
+
+/**
+ * Fetch available login providers
+ */
+const loginProviders = await client.auth.getLoginProviders()
+/**
+ * Revoke the configured session/token
+ */
+await client.auth.logout()
+```
+
+After:
+
+```ts
+import {createclient, type AuthProviderResponse} from '@sanity/client'
+const client = createClient()
+
+/**
+ * Fetch available login providers
+ */
+const loginProviders = await client.request<AuthProviderResponse>({uri: '/auth/providers'})
+/**
+ * Revoke the configured session/token
+ */
+await client.request<void>({uri: '/auth/logout', method: 'POST'})
+```
+
+[modern browsers]: https://browsersl.ist/#q=%3E+0.2%25+and+supports+es6-module+and+supports+es6-module-dynamic-import+and+not+dead+and+not+IE+11
+[Deno]: https://deno.land/
+[Edge Runtime]: https://edge-runtime.vercel.sh/
+[Bun]: https://bun.sh/
+[gzip-badge]: https://img.shields.io/bundlephobia/minzip/@sanity/client?label=gzip%20size&style=flat-square
+[size-badge]: https://img.shields.io/bundlephobia/min/@sanity/client?label=size&style=flat-square
+[unpkg-dist]: https://unpkg.com/@sanity/client/umd/
+[bundlephobia]: https://bundlephobia.com/package/@sanity/client
+[esm.sh]: https://esm.sh
+[Node.js]: https://nodejs.org/en/
+[Content Lake]: https://www.sanity.io/docs/datastore
+[npm]: https://npmjs.com
+[api-cdn]: https://www.sanity.io/docs/api-cdn
+[CommonJS]: https://nodejs.org/api/modules.html#modules-commonjs-modules
+[TypeScript]: https://www.typescriptlang.org/
+[api-versioning]: http://sanity.io/docs/api-versioning
+[zod]: https://zod.dev/
+[groqd]: https://github.com/FormidableLabs/groqd#readme

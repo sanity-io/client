@@ -1,91 +1,7 @@
 {
   "name": "@sanity/client",
-  "version": "4.0.1",
+  "version": "5.0.0-esm.17",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
-  "type": "commonjs",
-  "main": "index.js",
-  "umd": "umd/sanityClient.min.js",
-  "unpkg": "umd/sanityClient.min.js",
-  "types": "./sanityClient.d.ts",
-  "exports": {
-    ".": {
-      "source": "./src/sanityClient.js",
-      "types": "./sanityClient.d.ts",
-      "browser": "./dist/sanityClient.browser.mjs",
-      "deno": "./dist/sanityClient.browser.mjs",
-      "default": "./lib/sanityClient.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "lib",
-    "umd",
-    "index.js",
-    "sanityClient.d.ts"
-  ],
-  "scripts": {
-    "rollup": "NODE_ENV=production rollup -c rollup.config.js",
-    "compile": "babel -d lib src",
-    "build": "npm run compile && npm run rollup && npm run minify && npm run esbuild:browser",
-    "esbuild": "esbuild src/sanityClient.js --bundle --sourcemap --external:get-it",
-    "esbuild-when-upstream-deps-works-in-deno-cloudflare-and-vercel": "esbuild src/sanityClient.js --bundle --sourcemap --external:rxjs --external:@sanity/eventsource --external:get-it --external:make-error",
-    "esbuild:browser": "npm run esbuild -- --format=esm --outfile=dist/sanityClient.browser.mjs --platform=browser",
-    "lint": "eslint .",
-    "clean": "rimraf dist lib coverage .nyc_output umd/*.js",
-    "typecheck": "tsc --lib es2015 --lib dom,es2015  --noEmit sanityClient.d.ts",
-    "coverage": "DEBUG=sanity NODE_ENV=test nyc --reporter=html --reporter=lcov --reporter=text npm test",
-    "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
-    "prepublishOnly": "npm run clean && npm run build",
-    "test": "NODE_ENV=test babel-tape-runner test/*.test.js",
-    "posttest": "npm run lint && npm run typecheck --strict"
-  },
-  "browser": {
-    "get-it": "get-it/lib",
-    "get-it/middleware": "get-it/lib/middleware",
-    "./src/http/nodeMiddleware.js": "./src/http/browserMiddleware.js",
-    "./lib/http/nodeMiddleware.js": "./lib/http/browserMiddleware.js"
-  },
-  "engines": {
-    "node": ">=12"
-  },
-  "dependencies": {
-    "@sanity/eventsource": "^4.0.0",
-    "get-it": "^7.0.2",
-    "make-error": "^1.3.6",
-    "rxjs": "^7.0.0"
-  },
-  "devDependencies": {
-    "@babel/cli": "^7.20.7",
-    "@babel/core": "^7.20.7",
-    "@babel/plugin-transform-object-assign": "^7.18.6",
-    "@babel/preset-env": "^7.20.2",
-    "@rollup/plugin-commonjs": "^24.0.0",
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "@sanity/semantic-release-preset": "^2.0.5",
-    "@types/node": "^18.11.18",
-    "babel-plugin-add-module-exports": "^1.0.4",
-    "babel-plugin-istanbul": "^6.1.1",
-    "babel-tape-runner": "^3.0.0",
-    "esbuild": "^0.16.12",
-    "eslint": "^8.31.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-config-sanity": "^6.0.0",
-    "nock": "^13.2.9",
-    "nyc": "^15.1.0",
-    "prettier": "^2.8.1",
-    "rimraf": "^3.0.2",
-    "rollup": "^3.9.1",
-    "sse-channel": "^4.0.0",
-    "tape": "^5.6.1",
-    "terser": "^5.16.1",
-    "typescript": "^4.9.4",
-    "xtend": "4.0.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sanity-io/client.git"
-  },
   "keywords": [
     "sanity",
     "cms",
@@ -96,22 +12,116 @@
     "fetch",
     "api"
   ],
-  "author": "Sanity.io <hello@sanity.io>",
-  "license": "MIT",
+  "homepage": "https://www.sanity.io/",
   "bugs": {
     "url": "https://github.com/sanity-io/client/issues"
   },
-  "homepage": "https://www.sanity.io/",
-  "nyc": {
-    "include": [
-      "src/**/*.js"
-    ],
-    "sourceMap": false
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/client.git"
   },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": {
+        "source": "./src/index.browser.ts",
+        "require": "./dist/index.browser.cjs",
+        "import": "./dist/index.browser.js"
+      },
+      "deno": "./dist/index.browser.js",
+      "worker": "./dist/index.browser.js",
+      "source": "./src/index.ts",
+      "require": "./dist/index.cjs",
+      "node": {
+        "import": "./dist/index.cjs.js",
+        "require": "./dist/index.cjs"
+      },
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "unpkg": "umd/sanityClient.min.js",
+  "module": "./dist/index.js",
+  "source": "./src/index.ts",
+  "browser": {
+    "./dist/index.cjs": "./dist/index.browser.cjs",
+    "./dist/index.js": "./dist/index.browser.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "umd"
+  ],
+  "scripts": {
+    "prebuild": "npm run clean",
+    "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
+    "clean": "npx rimraf dist coverage umd/*.js",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .cjs,.js,.ts --max-warnings 0",
+    "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
+    "prepublishOnly": "npm run build",
+    "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
+    "test": "vitest",
+    "test:browser": "npm test -- --config ./vitest.browser.config.ts",
+    "test:bun": "(cd runtimes/bun && bun wiptest)",
+    "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
+    "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
+    "posttest:deno:update_import_map": "npx prettier --write runtimes/deno/import_map.json",
+    "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
+    "test:node-runtimes": "node --test runtimes/node | npx faucet"
+  },
+  "browserslist": [
+    "> 0.2% and supports es6-module and supports es6-module-dynamic-import and not dead and not IE 11",
+    "maintained node versions"
+  ],
   "prettier": {
-    "semi": false,
-    "printWidth": 100,
     "bracketSpacing": false,
+    "printWidth": 100,
+    "semi": false,
     "singleQuote": true
+  },
+  "dependencies": {
+    "@sanity/eventsource": "^4",
+    "@types/node": "^18.11.18",
+    "get-it": "^8",
+    "rxjs": "^7"
+  },
+  "devDependencies": {
+    "@edge-runtime/types": "^2.0.3",
+    "@edge-runtime/vm": "^2.0.3",
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@sanity/pkg-utils": "^2.2.3",
+    "@sanity/semantic-release-preset": "^4.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.49.0",
+    "@typescript-eslint/parser": "^5.49.0",
+    "@vitest/coverage-c8": "^0.28.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-simple-import-sort": "^9.0.0",
+    "faucet": "^0.0.3",
+    "happy-dom": "^8.1.5",
+    "ls-engines": "^0.9.0",
+    "nock": "^13.3.0",
+    "prettier": "^2.8.3",
+    "prettier-plugin-packagejson": "^2.4.0",
+    "rimraf": "^4.1.2",
+    "rollup": "^3.11.0",
+    "sse-channel": "^4.0.0",
+    "terser": "^5.16.1",
+    "typescript": "^4.9.4",
+    "vitest": "^0.28.2",
+    "vitest-github-actions-reporter": "^0.9.0"
+  },
+  "engines": {
+    "node": ">=14.18"
   }
 }
