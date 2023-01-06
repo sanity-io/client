@@ -5,6 +5,7 @@ import Transaction from './transaction'
 import Patch from './patch'
 import listen from './listen'
 import {filter, map} from 'rxjs/operators'
+import {lastValueFrom} from 'rxjs'
 
 const excludeFalsey = (param, defValue) => {
   const value = typeof param === 'undefined' ? defValue : param
@@ -31,8 +32,6 @@ const indexBy = (docs, attr) =>
     return indexed
   }, Object.create(null))
 
-const toPromise = (observable) => observable.toPromise()
-
 const getQuerySizeLimit = 11264
 
 export default {
@@ -50,7 +49,7 @@ export default {
     const mapResponse = options.filterResponse === false ? (res) => res : (res) => res.result
 
     const observable = this._dataRequest('query', {query, params}, options).pipe(map(mapResponse))
-    return this.isPromiseAPI() ? toPromise(observable) : observable
+    return this.isPromiseAPI() ? lastValueFrom(observable) : observable
   },
 
   getDocument(id, opts = {}) {
@@ -60,7 +59,7 @@ export default {
       map((event) => event.body.documents && event.body.documents[0])
     )
 
-    return this.isPromiseAPI() ? toPromise(observable) : observable
+    return this.isPromiseAPI() ? lastValueFrom(observable) : observable
   },
 
   getDocuments(ids, opts = {}) {
@@ -73,7 +72,7 @@ export default {
       })
     )
 
-    return this.isPromiseAPI() ? toPromise(observable) : observable
+    return this.isPromiseAPI() ? lastValueFrom(observable) : observable
   },
 
   create(doc, options) {
@@ -116,7 +115,7 @@ export default {
   dataRequest(endpoint, body, options = {}) {
     const request = this._dataRequest(endpoint, body, options)
 
-    return this.isPromiseAPI() ? toPromise(request) : request
+    return this.isPromiseAPI() ? lastValueFrom(request) : request
   },
 
   _dataRequest(endpoint, body, options = {}) {

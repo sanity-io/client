@@ -1,6 +1,7 @@
 import queryString from '../http/queryString'
 import * as validators from '../validators'
 import {filter, map} from 'rxjs/operators'
+import {lastValueFrom} from 'rxjs'
 
 function AssetsClient(client) {
   this.client = client
@@ -83,12 +84,12 @@ Object.assign(AssetsClient.prototype, {
     })
 
     return this.client.isPromiseAPI()
-      ? observable
-          .pipe(
+      ? lastValueFrom(
+          observable.pipe(
             filter((event) => event.type === 'response'),
             map((event) => event.body.document)
           )
-          .toPromise()
+        )
       : observable
   },
 
