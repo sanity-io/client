@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.1](https://github.com/sanity-io/client/compare/v4.0.0...v4.0.1) (2023-01-06)
+
+### Bug Fixes
+
+- **deps:** upgrade rxjs to v7 ([#80](https://github.com/sanity-io/client/issues/80)) ([594b4e7](https://github.com/sanity-io/client/commit/594b4e76253345bbaa678093b91faa101e240aee))
+- use `NodeJS.ReadableStream` type for upload body type to prevent conflict with DOM `ReadableStream` ([#33](https://github.com/sanity-io/client/issues/33)) ([8cbfe0c](https://github.com/sanity-io/client/commit/8cbfe0cdf419c28b3fa1c0e897e08b94d54a2658))
+
 ## [4.0.0](https://github.com/sanity-io/client/compare/v3.4.1...v4.0.0) (2023-01-02)
 
 ### ⚠ BREAKING CHANGES
