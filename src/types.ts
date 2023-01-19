@@ -15,6 +15,7 @@ export interface RequestOptions {
   method?: string
   query?: FIXME
   body?: FIXME
+  signal?: AbortSignal
 }
 
 /** @public */
