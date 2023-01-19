@@ -846,6 +846,49 @@ The following options are available for mutations, and can be applied either as 
 - `dryRun` (`true|false`) - default `false`. If true, the mutation will be a dry run - the response will be identical to the one returned had this property been omitted or false (including error responses) but no documents will be affected.
 - `autoGenerateArrayKeys` (`true|false`) - default `false`. If true, the mutation API will automatically add `_key` attributes to objects in arrays that is missing them. This makes array operations more robust by having a unique key within the array available for selections, which helps prevent race conditions in real-time, collaborative editing.
 
+### Aborting a request
+
+Requests can be aborted (or cancelled) in two ways:
+
+#### 1. Abort a request by passing an [AbortSignal] with the request options
+
+Sanity Client supports the [AbortController] API and supports receiving an abort signal that can be used to cancel the request. Here's an example that will abort the request if it takes more than 200ms to complete:
+
+```js
+const abortController = new AbortController()
+
+// note the lack of await here
+const request = getClient().fetch('*[_type == "movie"]', {}, {signal: abortController.signal})
+
+// this will abort the request after 200ms
+setTimeout(() => abortController.abort(), 200)
+
+try {
+  const response = await request
+  //…
+} catch (error) {
+  if (error.name === 'AbortError') {
+    console.log('Request was aborted')
+  } else {
+    // rethrow in case of other errors
+    throw error
+  }
+}
+```
+
+#### 2. Cancel a request by unsubscribing from the Observable
+
+When using the Observable API (e.g. `client.observable.fetch()`), you can cancel the request by simply `unsubscribe` from the returned observable:
+
+```js
+const subscription = client.observable.fetch('*[_type == "movie"]').subscribe((result) => {
+  /* do something with the result */
+})
+
+// this will cancel the request
+subscription.unsubscribe()
+```
+
 ### Get client configuration
 
 ```js
@@ -1234,3 +1277,5 @@ await client.request<void>({uri: '/auth/logout', method: 'POST'})
 [api-versioning]: http://sanity.io/docs/api-versioning
 [zod]: https://zod.dev/
 [groqd]: https://github.com/FormidableLabs/groqd#readme
+[AbortSignal]: https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal
+[AbortController]: https://developer.mozilla.org/en-US/docs/Web/API/AbortController
