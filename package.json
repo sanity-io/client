@@ -62,7 +62,7 @@
     "@babel/preset-env": "^7.20.2",
     "@rollup/plugin-commonjs": "^24.0.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
-    "@sanity/semantic-release-preset": "^2.0.5",
+    "@sanity/semantic-release-preset": "^4.0.0",
     "@types/node": "^18.11.18",
     "babel-plugin-add-module-exports": "^1.0.4",
     "babel-plugin-istanbul": "^6.1.1",
