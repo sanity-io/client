@@ -4,7 +4,7 @@ import encode from '../src/data/encodeQueryString'
 
 test('can encode basic query without parameters', () => {
   const query = 'gamedb.game[maxPlayers == 64]'
-  expect(encode({query})).toEqual('?query=gamedb.game%5BmaxPlayers+%3D%3D+64%5D')
+  expect(encode({query})).toEqual('?query=gamedb.g ame%5BmaxPlayers+%3D%3D+64%5D')
 })
 
 test('can encode queries with basic numeric parameters', () => {
