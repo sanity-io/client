@@ -447,6 +447,31 @@ describe('client', async () => {
       }
     })
 
+    test.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
+      'can cancel request with an abort controller signal',
+      async () => {
+        expect.assertions(2)
+
+        nock(projectHost()).get(`/v1/data/query/foo?query=*`).delay(100).reply(200, {
+          ms: 123,
+          q: '*',
+          result: [],
+        })
+
+        const abortController = new AbortController()
+        const fetch = getClient().fetch('*', {}, {signal: abortController.signal})
+        await new Promise((resolve) => setTimeout(resolve, 10))
+
+        try {
+          abortController.abort()
+          await fetch
+        } catch (err: any) {
+          expect(err).toBeInstanceOf(Error)
+          expect(err.name, 'should throw AbortError').toBe('AbortError')
+        }
+      }
+    )
+
     test.skipIf(isEdge)('can query for single document', async () => {
       nock(projectHost())
         .get('/v1/data/doc/foo/abc123')

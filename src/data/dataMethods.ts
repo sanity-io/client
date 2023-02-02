@@ -1,4 +1,4 @@
-import {Observable} from 'rxjs'
+import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
 import getRequestOptions from '../http/requestOptions'
@@ -224,6 +224,7 @@ export function _dataRequest(
     token,
     tag,
     canUseCdn: isQuery,
+    signal: options.signal,
   }
 
   return _requestObservable(client, httpRequest, reqOptions).pipe(
@@ -307,10 +308,12 @@ export function _requestObservable<R>(
     })
   ) as RequestOptions
 
-  return new Observable<HttpRequestEvent<R>>((subscriber) =>
+  const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- the typings thinks it's optional because it's not required to specify it when calling createClient, but it's always defined in practice since SanityClient provides a default
     httpRequest(reqOptions, config.requester!).subscribe(subscriber)
   )
+
+  return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
 }
 
 /**
@@ -355,4 +358,51 @@ export function _getUrl(
   const {url, cdnUrl} = client.config()
   const base = canUseCdn ? cdnUrl : url
   return `${base}/${uri.replace(/^\//, '')}`
+}
+
+/**
+ * @internal
+ */
+function _withAbortSignal<T>(signal: AbortSignal): MonoTypeOperatorFunction<T> {
+  return (input) => {
+    return new Observable((observer) => {
+      const abort = () => observer.error(_createAbortError(signal))
+
+      if (signal && signal.aborted) {
+        abort()
+        return
+      }
+      const subscription = input.subscribe(observer)
+      signal.addEventListener('abort', abort)
+      return () => {
+        signal.removeEventListener('abort', abort)
+        subscription.unsubscribe()
+      }
+    })
+  }
+}
+// DOMException is supported on most modern browsers and Node.js 18+.
+// @see https://developer.mozilla.org/en-US/docs/Web/API/DOMException#browser_compatibility
+const isDomExceptionSupported = Boolean(globalThis.DOMException)
+
+/**
+ * @internal
+ * @param signal
+ * Original source copied from https://github.com/sindresorhus/ky/blob/740732c78aad97e9aec199e9871bdbf0ae29b805/source/errors/DOMException.ts
+ * TODO: When targeting Node.js 18, use `signal.throwIfAborted()` (https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/throwIfAborted)
+ */
+function _createAbortError(signal?: AbortSignal) {
+  /*
+  NOTE: Use DomException with AbortError name as specified in MDN docs (https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort)
+  > When abort() is called, the fetch() promise rejects with an Error of type DOMException, with name AbortError.
+  */
+  if (isDomExceptionSupported) {
+    return new DOMException(signal?.reason ?? 'The operation was aborted.', 'AbortError')
+  }
+
+  // DOMException not supported. Fall back to use of error and override name.
+  const error = new Error(signal?.reason ?? 'The operation was aborted.')
+  error.name = 'AbortError'
+
+  return error
 }
