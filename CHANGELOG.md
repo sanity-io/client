@@ -5,6 +5,17 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.1.0](https://github.com/sanity-io/client/compare/v5.0.0...v5.1.0) (2023-02-02)
+
+### Features
+
+- add support for AbortController ([#92](https://github.com/sanity-io/client/issues/92)) ([775b5b5](https://github.com/sanity-io/client/commit/775b5b5d9cbb3ea1a5f094868113623bf0a7f793))
+
+### Bug Fixes
+
+- make `@types/node` a dev dependency ([88a4cc1](https://github.com/sanity-io/client/commit/88a4cc11eef60f4a3364dc31aaa7916b12308c9f))
+- show a migration error when using the default export ([#105](https://github.com/sanity-io/client/issues/105)) ([adb582e](https://github.com/sanity-io/client/commit/adb582e0626d6cae44270fdc07a6157b1c36f2d1))
+
 ## [5.0.0](https://github.com/sanity-io/client/compare/v4.0.1...v5.0.0) (2023-02-02)
 
 ### ⚠ BREAKING CHANGES
