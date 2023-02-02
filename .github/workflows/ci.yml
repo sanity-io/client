@@ -108,7 +108,7 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm install
-      - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         name: Restore build output
         with:
           name: build-output
@@ -124,7 +124,7 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm install
-      - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         name: Restore build output
         with:
           name: build-output
@@ -140,7 +140,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         name: Restore build output
         with:
           name: build-output
@@ -159,7 +159,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         name: Restore build output
         with:
           name: build-output
@@ -179,7 +179,7 @@ jobs:
       - uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # v3
         with:
           node-version: lts/*
-      - uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # v3
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         name: Restore build output
         with:
           name: build-output
