@@ -3,11 +3,9 @@
 
 # Compiled files
 dist
-lib
 
-# Coverage directories used by tools like istanbul
+# Coverage directories used by tools like c8
 coverage
-.nyc_output
 
 # Dependency directories
 node_modules
