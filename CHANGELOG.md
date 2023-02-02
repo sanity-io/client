@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file. See
       +import {createClient} from '@sanity/client'
       ```
 
-  We're working on a codemod for this migration.
+[The migration guide outlines every breaking change and how to migrate your code](https://github.com/sanity-io/client#from-v4)
 
 ### Features
 
