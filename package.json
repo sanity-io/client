@@ -89,12 +89,12 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^4",
-    "@types/node": "^18.11.18",
     "get-it": "^8",
     "rxjs": "^7"
   },
   "devDependencies": {
     "@edge-runtime/types": "^2.0.3",
+    "@types/node": "^18.11.18",
     "@edge-runtime/vm": "^2.0.3",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
