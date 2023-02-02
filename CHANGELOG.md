@@ -22,10 +22,10 @@ All notable changes to this project will be documented in this file. See
 
 - We have removed the default export and replaced it with a named one:
 
-      ```diff
-      -import SanityClient from '@sanity/client'
-      +import {createClient} from '@sanity/client'
-      ```
+    ```diff
+    -import SanityClient from '@sanity/client'
+    +import {createClient} from '@sanity/client'
+    ```
 
 [The migration guide outlines every breaking change and how to migrate your code](https://github.com/sanity-io/client#from-v4)
 
