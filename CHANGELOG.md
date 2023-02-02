@@ -5,6 +5,23 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.0.0](https://github.com/sanity-io/client/compare/v4.0.1...v5.0.0) (2023-02-02)
+
+### ⚠ BREAKING CHANGES
+
+- We have removed the default export and replaced it with a named one:
+
+      ```diff
+      -import SanityClient from '@sanity/client'
+      +import {createClient} from '@sanity/client'
+      ```
+
+  We're working on a codemod for this migration.
+
+### Features
+
+- full Node.js ESM runtime support ([#86](https://github.com/sanity-io/client/issues/86)) ([bd9b247](https://github.com/sanity-io/client/commit/bd9b247f99ac513023581bfb1089b1892390d948)), closes [/github.com/sanity-io/client#from-v4](https://github.com/sanity-io//github.com/sanity-io/client/issues/from-v4)
+
 ## [4.0.1](https://github.com/sanity-io/client/compare/v4.0.0...v4.0.1) (2023-01-06)
 
 ### Bug Fixes
