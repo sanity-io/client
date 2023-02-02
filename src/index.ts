@@ -16,3 +16,5 @@ export const requester = httpRequest.defaultRequester
 
 /** @public */
 export const createClient = (config: ClientConfig) => new SanityClient(httpRequest, config)
+
+export {migrationNotice as default} from './migrationNotice'

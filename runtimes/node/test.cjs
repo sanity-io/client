@@ -29,4 +29,30 @@ test('top-level imports', async (t) => {
     const esm = Object.keys(await import('@sanity/client'))
     assert.deepEqual(cjs, esm)
   })
+
+  await t.test('throws a deprecation error on the default export', () => {
+    const {default: createClient} = require('@sanity/client')
+
+    assert.throws(
+      () => {
+        createClient()
+      },
+      {
+        name: /^TypeError$/,
+        message: /deprecated/,
+      }
+    )
+
+    const {default: SanityClient} = require('@sanity/client')
+
+    assert.throws(
+      () => {
+        new SanityClient()
+      },
+      {
+        name: /^TypeError$/,
+        message: /deprecated/,
+      }
+    )
+  })
 })
