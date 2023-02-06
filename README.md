@@ -48,7 +48,7 @@ export async function updateDocumentTitle(_id, title) {
 }
 ```
 
-# Table of contents<!-- omit in toc -->
+# Table of contents
 
 - [QuickStart](#quickstart)
 - [Requirements](#requirements)
@@ -88,6 +88,7 @@ export async function updateDocumentTitle(_id, title) {
     - [Examples: Specify image metadata to extract](#examples-specify-image-metadata-to-extract)
   - [Deleting an asset](#deleting-an-asset)
   - [Mutation options](#mutation-options)
+  - [Aborting a request](#aborting-a-request)
   - [Get client configuration](#get-client-configuration)
   - [Set client configuration](#set-client-configuration)
 - [Release new version](#release-new-version)
@@ -925,15 +926,15 @@ MIT © [Sanity.io](https://www.sanity.io/)
 
 ## From `v4`
 
-### No longer shipping `ES5`<!-- omit in toc -->
+### No longer shipping `ES5`
 
 The target is changed to [modern browsers] that supports `ES6` `class`, `{...rest}` syntax and more. You may need to update your bundler to a recent major version. Or you could configure your bundler to transpile `@sanity/client`, and `get-it`, which is the engine that powers `@sanity/client` and uses the same output target.
 
-### Node.js `v12` no longer supported<!-- omit in toc -->
+### Node.js `v12` no longer supported
 
 Upgrade to the [LTS release, or one of the Maintenance releases](https://github.com/nodejs/release#release-schedule).
 
-### The `default` export is replaced with the named export `createClient`<!-- omit in toc -->
+### The `default` export is replaced with the named export `createClient`
 
 Before:
 
@@ -954,7 +955,7 @@ import {createClient} from '@sanity/client'
 const client = createClient()
 ```
 
-### `client.assets.delete` is removed<!-- omit in toc -->
+### `client.assets.delete` is removed
 
 Before:
 
@@ -970,7 +971,7 @@ After:
 client.delete('image-abc123_foobar-123x123-png')
 ```
 
-### `client.assets.getImageUrl` is removed, replace with [`@sanity/image-url`](https://github.com/sanity-io/image-url)<!-- omit in toc -->
+### `client.assets.getImageUrl` is removed, replace with [`@sanity/image-url`](https://github.com/sanity-io/image-url)
 
 Before:
 
@@ -1001,7 +1002,7 @@ urlFor({_ref: 'image-abc123_foobar-123x123-png'}).url()
 urlFor({_ref: 'image-abc123_foobar-123x123-png'}).auto('format').url()
 ```
 
-### `SanityClient` static properties moved to named exports<!-- omit in toc -->
+### `SanityClient` static properties moved to named exports
 
 Before:
 
@@ -1017,7 +1018,7 @@ After:
 import {Patch, Transaction, ClientError, ServerError, requester} from '@sanity/client'
 ```
 
-### `client.clientConfig` is removed, replace with `client.config()`<!-- omit in toc -->
+### `client.clientConfig` is removed, replace with `client.config()`
 
 Before:
 
@@ -1037,7 +1038,7 @@ const client = createClient()
 console.log(client.config().projectId)
 ```
 
-### `client.getUrl()` is removed<!-- omit in toc -->
+### `client.getUrl()` is removed
 
 Before:
 
@@ -1065,7 +1066,7 @@ console.log(getUrl('/foo/bar') === 'https://abc123.api.sanity.io/v1/foo/bar')
 console.log(getUrl('/foo/bar', true) === 'https://abc123.apicdn.sanity.io/v1/foo/bar')
 ```
 
-### `client.getDataUrl()` is removed<!-- omit in toc -->
+### `client.getDataUrl()` is removed
 
 Before:
 
@@ -1094,7 +1095,7 @@ console.log(getDataUrl('doc') === '/data/doc/bikeshop')
 console.log(getDataUrl('doc', 'bike-123') === '/data/doc/bikeshop/bike-123')
 ```
 
-### `client.isPromiseAPI()` is removed, replace with an `instanceof` check<!-- omit in toc -->
+### `client.isPromiseAPI()` is removed, replace with an `instanceof` check
 
 Before:
 
@@ -1116,7 +1117,7 @@ const client = createClient()
 console.log(client instanceof SanityClient)
 ```
 
-### `client.observable.isObservableAPI()` is removed, replace with an `instanceof` check<!-- omit in toc -->
+### `client.observable.isObservableAPI()` is removed, replace with an `instanceof` check
 
 Before:
 
@@ -1136,7 +1137,7 @@ const client = createClient()
 console.log(client.observable instanceof ObservableSanityClient)
 ```
 
-### `client._requestObservable` is removed, replace with `client.observable.request`<!-- omit in toc -->
+### `client._requestObservable` is removed, replace with `client.observable.request`
 
 Before:
 
@@ -1156,7 +1157,7 @@ const client = createClient()
 client.observable.request({uri: '/ping'}).subscribe()
 ```
 
-### `client._dataRequest` is removed, replace with `client.dataRequest`<!-- omit in toc -->
+### `client._dataRequest` is removed, replace with `client.dataRequest`
 
 Before:
 
@@ -1176,7 +1177,7 @@ const client = createClient()
 client.dataRequest(endpoint, body, options)
 ```
 
-### `client._create_` is removed, replace with one of `client.create`, `client.createIfNotExists` or `client.createOrReplace`<!-- omit in toc -->
+### `client._create_` is removed, replace with one of `client.create`, `client.createIfNotExists` or `client.createOrReplace`
 
 Before:
 
@@ -1200,7 +1201,7 @@ client.createIfNotExists(doc, options)
 client.createOrReplace(doc, options)
 ```
 
-### `client.patch.replace` is removed, replace with `client.createOrReplace`<!-- omit in toc -->
+### `client.patch.replace` is removed, replace with `client.createOrReplace`
 
 Before:
 
@@ -1225,7 +1226,7 @@ client.createOrReplace({
 })
 ```
 
-### `client.auth` is removed, replace with `client.request`<!-- omit in toc -->
+### `client.auth` is removed, replace with `client.request`
 
 Before:
 
