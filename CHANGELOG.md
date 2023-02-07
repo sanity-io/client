@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.2.0](https://github.com/sanity-io/client/compare/v5.1.0...v5.2.0) (2023-02-07)
+
+### Features
+
+- add back `getUrl` & `getDataUrl` ([#110](https://github.com/sanity-io/client/issues/110)) ([6cfee72](https://github.com/sanity-io/client/commit/6cfee72c10f5d4b4b811ea431f5cc16dd7eaa690))
+
 ## [5.1.0](https://github.com/sanity-io/client/compare/v5.0.0...v5.1.0) (2023-02-02)
 
 ### Features
