@@ -1038,63 +1038,6 @@ const client = createClient()
 console.log(client.config().projectId)
 ```
 
-### `client.getUrl()` is removed
-
-Before:
-
-```ts
-import createClient from '@sanity/client'
-const client = createClient({projectId: 'abc123'})
-
-console.log(client.getUrl('/foo/bar') === 'https://abc123.api.sanity.io/v1/foo/bar')
-console.log(client.getUrl('/foo/bar', true) === 'https://abc123.apicdn.sanity.io/v1/foo/bar')
-```
-
-After:
-
-```ts
-import {createClient} from '@sanity/client'
-const client = createClient({projectId: 'abc123'})
-
-const getUrl = (uri: string, useCdn = false) => {
-  const config = client.config()
-  const base = useCdn ? config.cdnUrl : config.url
-  return `${base}/${uri.replace(/^\//, '')}`
-}
-
-console.log(getUrl('/foo/bar') === 'https://abc123.api.sanity.io/v1/foo/bar')
-console.log(getUrl('/foo/bar', true) === 'https://abc123.apicdn.sanity.io/v1/foo/bar')
-```
-
-### `client.getDataUrl()` is removed
-
-Before:
-
-```ts
-import createClient from '@sanity/client'
-const client = createClient({dataset: 'bikeshop'})
-
-console.log(client.getDataUrl('doc') === '/data/doc/bikeshop')
-console.log(client.getDataUrl('doc', 'bike-123') === '/data/doc/bikeshop/bike-123')
-```
-
-After:
-
-```ts
-import {createClient} from '@sanity/client'
-const client = createClient({dataset: 'bikeshop'})
-
-const getDataUrl = (operation: string, path?: string) => {
-  const {dataset} = client.config()
-  const baseUri = `/${operation}/${dataset}`
-  const uri = path ? `${baseUri}/${path}` : baseUri
-  return `/data${uri}`.replace(/\/($|\?)/, '$1')
-}
-
-console.log(getDataUrl('doc') === '/data/doc/bikeshop')
-console.log(getDataUrl('doc', 'bike-123') === '/data/doc/bikeshop/bike-123')
-```
-
 ### `client.isPromiseAPI()` is removed, replace with an `instanceof` check
 
 Before:
