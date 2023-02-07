@@ -617,8 +617,8 @@ export class ObservableSanityClient {
   /**
    * Get a Sanity API URL for the URI provided
    *
-   * @param uri URI/path to build URL for
-   * @param canUseCdn Whether or not to allow using the API CDN for this route
+   * @param uri - URI/path to build URL for
+   * @param canUseCdn - Whether or not to allow using the API CDN for this route
    */
   getUrl(uri: string, canUseCdn?: boolean): string {
     return dataMethods._getUrl(this, uri, canUseCdn)
@@ -627,8 +627,8 @@ export class ObservableSanityClient {
   /**
    * Get a Sanity API URL for the data operation and path provided
    *
-   * @param operation Data operation
-   * @param path Path to append
+   * @param operation - Data operation (eg `query`, `mutate`, `listen` or similar)
+   * @param path - Path to append after the operation
    */
   getDataUrl(operation: string, path?: string): string {
     return dataMethods._getDataUrl(this, operation, path)
@@ -1234,8 +1234,8 @@ export class SanityClient {
   /**
    * Get a Sanity API URL for the URI provided
    *
-   * @param uri URI/path to build URL for
-   * @param canUseCdn Whether or not to allow using the API CDN for this route
+   * @param uri - URI/path to build URL for
+   * @param canUseCdn - Whether or not to allow using the API CDN for this route
    */
   getUrl(uri: string, canUseCdn?: boolean): string {
     return dataMethods._getUrl(this, uri, canUseCdn)
@@ -1244,8 +1244,8 @@ export class SanityClient {
   /**
    * Get a Sanity API URL for the data operation and path provided
    *
-   * @param operation Data operation
-   * @param path Path to append
+   * @param operation - Data operation (eg `query`, `mutate`, `listen` or similar)
+   * @param path - Path to append after the operation
    */
   getDataUrl(operation: string, path?: string): string {
     return dataMethods._getDataUrl(this, operation, path)
