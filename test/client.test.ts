@@ -2312,4 +2312,25 @@ describe('client', async () => {
       }
     })
   })
+
+  describe('getUrl', () => {
+    test('can use getUrl() to get API-relative paths', () => {
+      expect(getClient().getUrl('/bar/baz')).toEqual(`${projectHost()}/v1/bar/baz`)
+    })
+
+    test('can use getUrl() to get API-relative paths (custom api version)', () => {
+      expect(getClient({apiVersion: '2019-01-29'}).getUrl('/bar/baz')).toEqual(
+        `${projectHost()}/v2019-01-29/bar/baz`
+      )
+    })
+  })
+
+  describe('getDataUrl', () => {
+    test('can use getDataUrl() to get API paths to a dataset', () => {
+      expect(getClient({dataset: 'bikeshop'}).getDataUrl('doc')).toBe('/data/doc/bikeshop')
+      expect(getClient({dataset: 'bikeshop'}).getDataUrl('doc', 'bike-123')).toBe(
+        '/data/doc/bikeshop/bike-123'
+      )
+    })
+  })
 })
