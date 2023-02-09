@@ -16,7 +16,7 @@ import type {
   SanityDocument,
   SingleMutationResult,
 } from '../types'
-import getSelection from '../util/getSelection'
+import {getSelection} from '../util/getSelection'
 import {validateInsert, validateObject} from '../validators'
 
 /** @internal */

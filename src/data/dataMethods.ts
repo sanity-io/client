@@ -1,7 +1,7 @@
 import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
-import getRequestOptions from '../http/requestOptions'
+import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   AllDocumentIdsMutationOptions,
@@ -25,10 +25,10 @@ import type {
   SingleMutationResult,
   UnfilteredResponseQueryOptions,
 } from '../types'
-import getSelection from '../util/getSelection'
+import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
-import encodeQueryString from './encodeQueryString'
+import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
 
@@ -301,7 +301,7 @@ export function _requestObservable<R>(
     options.query = {tag: validate.requestTag(tag), ...options.query}
   }
 
-  const reqOptions = getRequestOptions(
+  const reqOptions = requestOptions(
     config,
     Object.assign({}, options, {
       url: _getUrl(client, uri, useCdn),

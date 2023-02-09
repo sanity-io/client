@@ -4,7 +4,7 @@ import type {Any} from '../types'
 
 const projectHeader = 'X-Sanity-Project-ID'
 
-export default (config: Any, overrides: Any = {}): Omit<RequestOptions, 'url'> => {
+export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOptions, 'url'> {
   const headers: Any = {}
 
   const token = overrides.token || config.token

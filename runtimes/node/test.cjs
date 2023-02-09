@@ -30,6 +30,8 @@ test('top-level imports', async (t) => {
     assert.deepEqual(cjs, esm)
   })
 
+  // @TODO re-enable in v6
+  /*
   await t.test('throws a deprecation error on the default export', () => {
     const {default: createClient} = require('@sanity/client')
 
@@ -55,4 +57,5 @@ test('top-level imports', async (t) => {
       }
     )
   })
+  // */
 })

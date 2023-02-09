@@ -1,14 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import deprecatedClient, {
-  createClient,
-  Patch,
-  Transaction,
-  ClientError,
-  ServerError,
-  requester,
-} from '@sanity/client'
+import {createClient, Patch, Transaction, ClientError, ServerError, requester} from '@sanity/client'
 import pkg from '@sanity/client/package.json' assert {type: 'json'}
 
 test('top-level imports', async (t) => {
@@ -26,6 +19,8 @@ test('top-level imports', async (t) => {
     assert.equal(typeof version, 'string')
   })
 
+  // @TODO re-enable in v6
+  /*
   await t.test('throws a deprecation error on the default export', () => {
     assert.throws(
       () => {
@@ -47,4 +42,5 @@ test('top-level imports', async (t) => {
       }
     )
   })
+  // */
 })
