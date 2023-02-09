@@ -1,4 +1,4 @@
-import type {FIXME, InitializedClientConfig} from './types'
+import type {Any, InitializedClientConfig} from './types'
 
 const VALID_ASSET_TYPES = ['image', 'file']
 const VALID_INSERT_LOCATIONS = ['before', 'after', 'replace']
@@ -23,7 +23,7 @@ export const validateAssetType = (type: string) => {
   }
 }
 
-export const validateObject = (op: string, val: FIXME) => {
+export const validateObject = (op: string, val: Any) => {
   if (val === null || typeof val !== 'object' || Array.isArray(val)) {
     throw new Error(`${op}() takes an object of properties`)
   }
@@ -35,7 +35,7 @@ export const validateDocumentId = (op: string, id: string) => {
   }
 }
 
-export const requireDocumentId = (op: string, doc: Record<string, FIXME>) => {
+export const requireDocumentId = (op: string, doc: Record<string, Any>) => {
   if (!doc._id) {
     throw new Error(`${op}() requires that the document contains an ID ("_id" property)`)
   }
@@ -43,7 +43,7 @@ export const requireDocumentId = (op: string, doc: Record<string, FIXME>) => {
   validateDocumentId(op, doc._id)
 }
 
-export const validateInsert = (at: string, selector: string, items: FIXME[]) => {
+export const validateInsert = (at: string, selector: string, items: Any[]) => {
   const signature = 'insert(at, selector, items)'
   if (VALID_INSERT_LOCATIONS.indexOf(at) === -1) {
     const valid = VALID_INSERT_LOCATIONS.map((loc) => `"${loc}"`).join(', ')

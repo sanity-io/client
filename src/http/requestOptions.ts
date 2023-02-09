@@ -1,11 +1,11 @@
 import type {RequestOptions} from 'get-it'
 
-import type {FIXME} from '../types'
+import type {Any} from '../types'
 
 const projectHeader = 'X-Sanity-Project-ID'
 
-export default (config: FIXME, overrides: FIXME = {}): Omit<RequestOptions, 'url'> => {
-  const headers: FIXME = {}
+export default (config: Any, overrides: Any = {}): Omit<RequestOptions, 'url'> => {
+  const headers: Any = {}
 
   const token = overrides.token || config.token
   if (token) {

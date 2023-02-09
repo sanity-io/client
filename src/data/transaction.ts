@@ -3,7 +3,7 @@ import type {Observable} from 'rxjs'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   BaseMutationOptions,
-  FIXME,
+  Any,
   IdentifiedSanityDocumentStub,
   MultipleMutationResult,
   Mutation,
@@ -40,9 +40,7 @@ export class BaseTransaction {
    *
    * @param doc - Document to create. Requires a `_type` property.
    */
-  create<R extends Record<string, FIXME> = Record<string, FIXME>>(
-    doc: SanityDocumentStub<R>
-  ): this {
+  create<R extends Record<string, Any> = Record<string, Any>>(doc: SanityDocumentStub<R>): this {
     validators.validateObject('create', doc)
     return this._add({create: doc})
   }
@@ -53,7 +51,7 @@ export class BaseTransaction {
    *
    * @param doc - Document to create if it does not already exist. Requires `_id` and `_type` properties.
    */
-  createIfNotExists<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
     doc: IdentifiedSanityDocumentStub<R>
   ): this {
     const op = 'createIfNotExists'
@@ -68,7 +66,7 @@ export class BaseTransaction {
    *
    * @param doc - Document to create or replace. Requires `_id` and `_type` properties.
    */
-  createOrReplace<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
     doc: IdentifiedSanityDocumentStub<R>
   ): this {
     const op = 'createOrReplace'
@@ -89,7 +87,7 @@ export class BaseTransaction {
   }
 
   /**
-   * Gets the current transaction ID, if FIXME
+   * Gets the current transaction ID, if any
    */
   transactionId(): string | undefined
   /**
@@ -155,7 +153,7 @@ export class Transaction extends BaseTransaction {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME>>(
+  commit<R extends Record<string, Any>>(
     options: TransactionFirstDocumentMutationOptions
   ): Promise<SanityDocument<R>>
   /**
@@ -163,7 +161,7 @@ export class Transaction extends BaseTransaction {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME>>(
+  commit<R extends Record<string, Any>>(
     options: TransactionAllDocumentsMutationOptions
   ): Promise<SanityDocument<R>[]>
   /**
@@ -184,7 +182,7 @@ export class Transaction extends BaseTransaction {
    * @param options - Options for the mutation operation
    */
   commit(options?: BaseMutationOptions): Promise<MultipleMutationResult>
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options?:
       | TransactionFirstDocumentMutationOptions
       | TransactionAllDocumentsMutationOptions
@@ -202,7 +200,7 @@ export class Transaction extends BaseTransaction {
     }
 
     return this.#client.mutate<R>(
-      this.serialize() as FIXME,
+      this.serialize() as Any,
       Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
     )
   }
@@ -265,7 +263,7 @@ export class ObservableTransaction extends BaseTransaction {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME>>(
+  commit<R extends Record<string, Any>>(
     options: TransactionFirstDocumentMutationOptions
   ): Observable<SanityDocument<R>>
   /**
@@ -273,7 +271,7 @@ export class ObservableTransaction extends BaseTransaction {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME>>(
+  commit<R extends Record<string, Any>>(
     options: TransactionAllDocumentsMutationOptions
   ): Observable<SanityDocument<R>[]>
   /**
@@ -294,7 +292,7 @@ export class ObservableTransaction extends BaseTransaction {
    * @param options - Options for the mutation operation
    */
   commit(options?: BaseMutationOptions): Observable<MultipleMutationResult>
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options?:
       | TransactionFirstDocumentMutationOptions
       | TransactionAllDocumentsMutationOptions
@@ -312,7 +310,7 @@ export class ObservableTransaction extends BaseTransaction {
     }
 
     return this.#client.mutate<R>(
-      this.serialize() as FIXME,
+      this.serialize() as Any,
       Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
     )
   }

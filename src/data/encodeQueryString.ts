@@ -1,4 +1,4 @@
-import type {FIXME, QueryParams} from '../types'
+import type {Any, QueryParams} from '../types'
 
 export default ({
   query,
@@ -7,7 +7,7 @@ export default ({
 }: {
   query: string
   params?: QueryParams
-  options?: FIXME
+  options?: Any
 }) => {
   const searchParams = new URLSearchParams()
   // We generally want tag at the start of the query string

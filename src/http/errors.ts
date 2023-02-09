@@ -1,4 +1,4 @@
-import type {ErrorProps, FIXME} from '../types'
+import type {ErrorProps, Any} from '../types'
 
 /** @public */
 export class ClientError extends Error {
@@ -7,7 +7,7 @@ export class ClientError extends Error {
   responseBody: ErrorProps['responseBody']
   details: ErrorProps['details']
 
-  constructor(res: FIXME) {
+  constructor(res: Any) {
     const props = extractErrorProps(res)
     super(props.message)
     Object.assign(this, props)
@@ -21,21 +21,21 @@ export class ServerError extends Error {
   responseBody: ErrorProps['responseBody']
   details: ErrorProps['details']
 
-  constructor(res: FIXME) {
+  constructor(res: Any) {
     const props = extractErrorProps(res)
     super(props.message)
     Object.assign(this, props)
   }
 }
 
-function extractErrorProps(res: FIXME): ErrorProps {
+function extractErrorProps(res: Any): ErrorProps {
   const body = res.body
   const props = {
     response: res,
     statusCode: res.statusCode,
     responseBody: stringifyBody(body, res),
     message: '',
-    details: undefined as FIXME,
+    details: undefined as Any,
   }
 
   // API/Boom style errors ({statusCode, error, message})
@@ -56,12 +56,12 @@ function extractErrorProps(res: FIXME): ErrorProps {
   return props
 }
 
-function httpErrorMessage(res: FIXME) {
+function httpErrorMessage(res: Any) {
   const statusMessage = res.statusMessage ? ` ${res.statusMessage}` : ''
   return `${res.method}-request to ${res.url} resulted in HTTP ${res.statusCode}${statusMessage}`
 }
 
-function stringifyBody(body: FIXME, res: FIXME) {
+function stringifyBody(body: Any, res: Any) {
   const contentType = (res.headers['content-type'] || '').toLowerCase()
   const isJson = contentType.indexOf('application/json') !== -1
   return isJson ? JSON.stringify(body, null, 2) : body
