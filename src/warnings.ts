@@ -1,10 +1,10 @@
 import generateHelpUrl from './generateHelpUrl'
-import {FIXME} from './types'
+import {Any} from './types'
 import once from './util/once'
 
 const createWarningPrinter = (message: string[]) =>
   // eslint-disable-next-line no-console
-  once((...args: FIXME[]) => console.warn(message.join(' '), ...args))
+  once((...args: Any[]) => console.warn(message.join(' '), ...args))
 
 export const printCdnWarning = createWarningPrinter([
   'You are not using the Sanity CDN. That means your data is always fresh, but the CDN is faster and',

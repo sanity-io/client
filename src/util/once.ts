@@ -1,9 +1,9 @@
-import type {FIXME} from '../types'
+import type {Any} from '../types'
 
-export default (fn: FIXME) => {
+export default (fn: Any) => {
   let didCall = false
-  let returnValue: FIXME
-  return (...args: FIXME[]) => {
+  let returnValue: Any
+  return (...args: Any[]) => {
     if (didCall) {
       return returnValue
     }

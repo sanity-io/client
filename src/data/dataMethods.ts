@@ -10,7 +10,7 @@ import type {
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  FIXME,
+  Any,
   HttpRequest,
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,
@@ -32,7 +32,7 @@ import encodeQueryString from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
 
-const excludeFalsey = (param: FIXME, defValue: FIXME) => {
+const excludeFalsey = (param: Any, defValue: Any) => {
   const value = typeof param === 'undefined' ? defValue : param
   return param === false ? undefined : value
 }
@@ -48,10 +48,10 @@ const getMutationQuery = (options: BaseMutationOptions = {}) => {
   }
 }
 
-const isResponse = (event: FIXME) => event.type === 'response'
-const getBody = (event: FIXME) => event.body
+const isResponse = (event: Any) => event.type === 'response'
+const getBody = (event: Any) => event.body
 
-const indexBy = (docs: FIXME[], attr: FIXME) =>
+const indexBy = (docs: Any[], attr: Any) =>
   docs.reduce((indexed, doc) => {
     indexed[attr(doc)] = doc
     return indexed
@@ -68,13 +68,13 @@ export function _fetch<R, Q extends QueryParams>(
   options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {}
 ): Observable<RawQueryResponse<R> | R> {
   const mapResponse =
-    options.filterResponse === false ? (res: FIXME) => res : (res: FIXME) => res.result
+    options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
 
   return _dataRequest(client, httpRequest, 'query', {query, params}, options).pipe(map(mapResponse))
 }
 
 /** @internal */
-export function _getDocument<R extends Record<string, FIXME>>(
+export function _getDocument<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   id: string,
@@ -88,7 +88,7 @@ export function _getDocument<R extends Record<string, FIXME>>(
 }
 
 /** @internal */
-export function _getDocuments<R extends Record<string, FIXME>>(
+export function _getDocuments<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   ids: string[],
@@ -97,15 +97,15 @@ export function _getDocuments<R extends Record<string, FIXME>>(
   const options = {uri: _getDataUrl(client, 'doc', ids.join(',')), json: true, tag: opts.tag}
   return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
     filter(isResponse),
-    map((event: FIXME) => {
-      const indexed = indexBy(event.body.documents || [], (doc: FIXME) => doc._id)
+    map((event: Any) => {
+      const indexed = indexBy(event.body.documents || [], (doc: Any) => doc._id)
       return ids.map((id) => indexed[id] || null)
     })
   )
 }
 
 /** @internal */
-export function _createIfNotExists<R extends Record<string, FIXME>>(
+export function _createIfNotExists<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
@@ -123,7 +123,7 @@ export function _createIfNotExists<R extends Record<string, FIXME>>(
 }
 
 /** @internal */
-export function _createOrReplace<R extends Record<string, FIXME>>(
+export function _createOrReplace<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
@@ -141,7 +141,7 @@ export function _createOrReplace<R extends Record<string, FIXME>>(
 }
 
 /** @internal */
-export function _delete<R extends Record<string, FIXME>>(
+export function _delete<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   selection: string | MutationSelection,
@@ -164,7 +164,7 @@ export function _delete<R extends Record<string, FIXME>>(
 }
 
 /** @internal */
-export function _mutate<R extends Record<string, FIXME>>(
+export function _mutate<R extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
@@ -186,7 +186,7 @@ export function _mutate<R extends Record<string, FIXME>>(
       : mutations
 
   const muts = Array.isArray(mut) ? mut : [mut]
-  const transactionId = options && (options as FIXME).transactionId
+  const transactionId = options && (options as Any).transactionId
   return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
 }
 
@@ -197,9 +197,9 @@ export function _dataRequest(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   endpoint: string,
-  body: FIXME,
-  options: FIXME = {}
-): FIXME {
+  body: Any,
+  options: Any = {}
+): Any {
   const isMutation = endpoint === 'mutate'
   const isQuery = endpoint === 'query'
 
@@ -240,12 +240,12 @@ export function _dataRequest(
       if (options.returnDocuments) {
         return returnFirst
           ? results[0] && results[0].document
-          : results.map((mut: FIXME) => mut.document)
+          : results.map((mut: Any) => mut.document)
       }
 
       // Return a reduced subset
       const key = returnFirst ? 'documentId' : 'documentIds'
-      const ids = returnFirst ? results[0] && results[0].id : results.map((mut: FIXME) => mut.id)
+      const ids = returnFirst ? results[0] && results[0].id : results.map((mut: Any) => mut.id)
       return {
         transactionId: res.transactionId,
         results: results,
@@ -258,12 +258,12 @@ export function _dataRequest(
 /**
  * @internal
  */
-export function _create<R extends Record<string, FIXME>>(
+export function _create<R extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  doc: FIXME,
-  op: FIXME,
-  options: FIXME = {}
+  doc: Any,
+  op: Any,
+  options: Any = {}
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
@@ -322,11 +322,11 @@ export function _requestObservable<R>(
 export function _request<R>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  options: FIXME
+  options: Any
 ): Observable<R> {
   const observable = _requestObservable<R>(client, httpRequest, options).pipe(
-    filter((event: FIXME) => event.type === 'response'),
-    map((event: FIXME) => event.body)
+    filter((event: Any) => event.type === 'response'),
+    map((event: Any) => event.body)
   )
 
   return observable

@@ -1,10 +1,10 @@
-import type {FIXME} from '../types'
+import type {Any} from '../types'
 
-export default (obj: FIXME, defaults: FIXME) =>
+export default (obj: Any, defaults: Any) =>
   Object.keys(defaults)
     .concat(Object.keys(obj))
     .reduce((target, prop) => {
       target[prop] = typeof obj[prop] === 'undefined' ? defaults[prop] : obj[prop]
 
       return target
-    }, {} as FIXME)
+    }, {} as Any)

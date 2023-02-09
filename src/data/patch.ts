@@ -8,7 +8,7 @@ import type {
   BaseMutationOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  FIXME,
+  Any,
   MultipleMutationResult,
   PatchMutationOperation,
   PatchOperations,
@@ -99,7 +99,7 @@ export class BasePatch {
    * @param selector - JSONPath expression, eg `comments[-1]` or `blocks[_key=="abc123"]`
    * @param items - Array of items to insert/replace
    */
-  insert(at: 'before' | 'after' | 'replace', selector: string, items: FIXME[]): this {
+  insert(at: 'before' | 'after' | 'replace', selector: string, items: Any[]): this {
     validateInsert(at, selector, items)
     return this._assign('insert', {[at]: selector, items})
   }
@@ -110,7 +110,7 @@ export class BasePatch {
    * @param selector - Attribute/path to append to, eg `comments` or `person.hobbies`
    * @param items - Array of items to append to the array
    */
-  append(selector: string, items: FIXME[]): this {
+  append(selector: string, items: Any[]): this {
     return this.insert('after', `${selector}[-1]`, items)
   }
 
@@ -120,7 +120,7 @@ export class BasePatch {
    * @param selector - Attribute/path to prepend to, eg `comments` or `person.hobbies`
    * @param items - Array of items to prepend to the array
    */
-  prepend(selector: string, items: FIXME[]): this {
+  prepend(selector: string, items: Any[]): this {
     return this.insert('before', `${selector}[0]`, items)
   }
 
@@ -132,7 +132,7 @@ export class BasePatch {
    * @param deleteCount - An integer indicating the number of old array elements to remove.
    * @param items - The elements to add to the array, beginning at the start index. If you don't specify any elements, splice() will only remove elements from the array.
    */
-  splice(selector: string, start: number, deleteCount?: number, items?: FIXME[]): this {
+  splice(selector: string, start: number, deleteCount?: number, items?: Any[]): this {
     // Negative indexes doesn't mean the same in Sanity as they do in JS;
     // -1 means "actually at the end of the array", which allows inserting
     // at the end of the array without knowing its length. We therefore have
@@ -178,7 +178,7 @@ export class BasePatch {
     return this
   }
 
-  protected _assign(op: keyof PatchOperations, props: FIXME, merge = true): this {
+  protected _assign(op: keyof PatchOperations, props: Any, merge = true): this {
     validateObject(op, props)
     this.operations = Object.assign({}, this.operations, {
       [op]: Object.assign({}, (merge && this.operations[op]) || {}, props),
@@ -186,7 +186,7 @@ export class BasePatch {
     return this
   }
 
-  protected _set(op: keyof PatchOperations, props: FIXME): this {
+  protected _set(op: keyof PatchOperations, props: Any): this {
     return this._assign(op, props, false)
   }
 }
@@ -216,7 +216,7 @@ export class ObservablePatch extends BasePatch {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options: FirstDocumentMutationOptions
   ): Observable<SanityDocument<R>>
   /**
@@ -224,7 +224,7 @@ export class ObservablePatch extends BasePatch {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options: AllDocumentsMutationOptions
   ): Observable<SanityDocument<R>[]>
   /**
@@ -244,10 +244,10 @@ export class ObservablePatch extends BasePatch {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options?: BaseMutationOptions
   ): Observable<SanityDocument<R>>
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options?:
       | FirstDocumentMutationOptions
       | AllDocumentsMutationOptions
@@ -266,7 +266,7 @@ export class ObservablePatch extends BasePatch {
 
     const returnFirst = typeof this.selection === 'string'
     const opts = Object.assign({returnFirst, returnDocuments: true}, options)
-    return this.#client.mutate<R>({patch: this.serialize()} as FIXME, opts)
+    return this.#client.mutate<R>({patch: this.serialize()} as Any, opts)
   }
 }
 
@@ -290,7 +290,7 @@ export class Patch extends BasePatch {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options: FirstDocumentMutationOptions
   ): Promise<SanityDocument<R>>
   /**
@@ -298,7 +298,7 @@ export class Patch extends BasePatch {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options: AllDocumentsMutationOptions
   ): Promise<SanityDocument<R>[]>
   /**
@@ -318,10 +318,10 @@ export class Patch extends BasePatch {
    *
    * @param options - Options for the mutation operation
    */
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options?: BaseMutationOptions
   ): Promise<SanityDocument<R>>
-  commit<R extends Record<string, FIXME> = Record<string, FIXME>>(
+  commit<R extends Record<string, Any> = Record<string, Any>>(
     options?:
       | FirstDocumentMutationOptions
       | AllDocumentsMutationOptions
@@ -340,6 +340,6 @@ export class Patch extends BasePatch {
 
     const returnFirst = typeof this.selection === 'string'
     const opts = Object.assign({returnFirst, returnDocuments: true}, options)
-    return this.#client.mutate<R>({patch: this.serialize()} as FIXME, opts)
+    return this.#client.mutate<R>({patch: this.serialize()} as Any, opts)
   }
 }

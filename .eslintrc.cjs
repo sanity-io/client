@@ -16,7 +16,7 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'simple-import-sort', 'prettier'],
   rules: {
-    '@typescript-eslint/no-explicit-any': 'error', // use the FIXME alias instead
+    '@typescript-eslint/no-explicit-any': 'error', // use the Any alias instead
     '@typescript-eslint/member-delimiter-style': 'off',
     '@typescript-eslint/no-empty-interface': 'off',
     'simple-import-sort/imports': 'warn',

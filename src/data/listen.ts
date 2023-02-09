@@ -2,7 +2,7 @@ import polyfilledEventSource from '@sanity/eventsource'
 import {Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {FIXME, ListenEvent, ListenOptions, MutationEvent, QueryParams} from '../types'
+import type {Any, ListenEvent, ListenOptions, MutationEvent, QueryParams} from '../types'
 import defaults from '../util/defaults'
 import pick from '../util/pick'
 import {_getDataUrl} from './dataMethods'
@@ -34,7 +34,7 @@ const defaultOptions = {
  * @param options - Listener options
  * @internal
  */
-export function _listen<R extends Record<string, FIXME> = Record<string, FIXME>>(
+export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: QueryParams
@@ -47,14 +47,14 @@ export function _listen<R extends Record<string, FIXME> = Record<string, FIXME>>
  * @param options - Listener options
  * @internal
  */
-export function _listen<R extends Record<string, FIXME> = Record<string, FIXME>>(
+export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: QueryParams,
   options?: ListenOptions
 ): Observable<ListenEvent<R>>
 /** @internal */
-export function _listen<R extends Record<string, FIXME> = Record<string, FIXME>>(
+export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: QueryParams,
@@ -114,11 +114,11 @@ export function _listen<R extends Record<string, FIXME> = Record<string, FIXME>>
       }
     }
 
-    function onChannelError(err: FIXME) {
+    function onChannelError(err: Any) {
       observer.error(cooerceError(err))
     }
 
-    function onMessage(evt: FIXME) {
+    function onMessage(evt: Any) {
       const event = parseEvent(evt)
       return event instanceof Error ? observer.error(event) : observer.next(event)
     }
@@ -165,7 +165,7 @@ export function _listen<R extends Record<string, FIXME> = Record<string, FIXME>>
   })
 }
 
-function parseEvent(event: FIXME) {
+function parseEvent(event: Any) {
   try {
     const data = (event.data && JSON.parse(event.data)) || {}
     return Object.assign({type: event.type}, data)
@@ -174,7 +174,7 @@ function parseEvent(event: FIXME) {
   }
 }
 
-function cooerceError(err: FIXME) {
+function cooerceError(err: Any) {
   if (err instanceof Error) {
     return err
   }
@@ -183,7 +183,7 @@ function cooerceError(err: FIXME) {
   return evt instanceof Error ? evt : new Error(extractErrorMessage(evt))
 }
 
-function extractErrorMessage(err: FIXME) {
+function extractErrorMessage(err: Any) {
   if (!err.error) {
     return err.message || 'Unknown listener error'
   }

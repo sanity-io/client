@@ -1,7 +1,7 @@
-import {FIXME} from '../types'
+import {Any} from '../types'
 
-export default (obj: FIXME, props: FIXME) =>
-  props.reduce((selection: FIXME, prop: FIXME) => {
+export default (obj: Any, props: Any) =>
+  props.reduce((selection: Any, prop: Any) => {
     if (typeof obj[prop] === 'undefined') {
       return selection
     }

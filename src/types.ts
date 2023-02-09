@@ -4,7 +4,7 @@ import type {Requester} from 'get-it'
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future
  * @internal
  */
-export type FIXME = any // eslint-disable-line @typescript-eslint/no-explicit-any
+export type Any = any // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /** @public */
 export interface RequestOptions {
@@ -13,8 +13,8 @@ export interface RequestOptions {
   tag?: string
   headers?: Record<string, string>
   method?: string
-  query?: FIXME
-  body?: FIXME
+  query?: Any
+  body?: Any
   signal?: AbortSignal
 }
 
@@ -155,7 +155,7 @@ export interface SanityReference {
 }
 
 /** @internal */
-export type SanityDocument<T extends Record<string, FIXME> = Record<string, FIXME>> = {
+export type SanityDocument<T extends Record<string, Any> = Record<string, Any>> = {
   [P in keyof T]: T[P]
 } & {
   _id: string
@@ -212,11 +212,11 @@ export interface SanityImageAssetDocument extends SanityAssetDocument {
     }
     image?: {
       _type: 'sanity.imageExifTags'
-      [key: string]: FIXME
+      [key: string]: Any
     }
     exif?: {
       _type: 'sanity.imageExifMetadata'
-      [key: string]: FIXME
+      [key: string]: Any
     }
   }
 }
@@ -224,10 +224,10 @@ export interface SanityImageAssetDocument extends SanityAssetDocument {
 /** @public */
 export interface ErrorProps {
   message: string
-  response: FIXME
+  response: Any
   statusCode: number
-  responseBody: FIXME
-  details: FIXME
+  responseBody: Any
+  details: Any
 }
 
 /** @public */
@@ -337,32 +337,31 @@ export interface CurrentSanityUser {
 }
 
 /** @public */
-export type SanityDocumentStub<T extends Record<string, FIXME> = Record<string, FIXME>> = {
+export type SanityDocumentStub<T extends Record<string, Any> = Record<string, Any>> = {
   [P in keyof T]: T[P]
 } & {
   _type: string
 }
 
 /** @public */
-export type IdentifiedSanityDocumentStub<T extends Record<string, FIXME> = Record<string, FIXME>> =
-  {
-    [P in keyof T]: T[P]
-  } & {
-    _id: string
-  } & SanityDocumentStub
+export type IdentifiedSanityDocumentStub<T extends Record<string, Any> = Record<string, Any>> = {
+  [P in keyof T]: T[P]
+} & {
+  _id: string
+} & SanityDocumentStub
 
 /** @internal */
 export type InsertPatch =
-  | {before: string; items: FIXME[]}
-  | {after: string; items: FIXME[]}
-  | {replace: string; items: FIXME[]}
+  | {before: string; items: Any[]}
+  | {after: string; items: Any[]}
+  | {replace: string; items: Any[]}
 
 // Note: this is actually incorrect/invalid, but implemented as-is for backwards compatibility
 /** @internal */
 export interface PatchOperations {
-  set?: {[key: string]: FIXME}
-  setIfMissing?: {[key: string]: FIXME}
-  diffMatchPatch?: {[key: string]: FIXME}
+  set?: {[key: string]: Any}
+  setIfMissing?: {[key: string]: Any}
+  diffMatchPatch?: {[key: string]: Any}
   unset?: string[]
   inc?: {[key: string]: number}
   dec?: {[key: string]: number}
@@ -371,7 +370,7 @@ export interface PatchOperations {
 }
 
 /** @public */
-export type QueryParams = {[key: string]: FIXME}
+export type QueryParams = {[key: string]: Any}
 /** @internal */
 export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
 /** @internal */
@@ -380,7 +379,7 @@ export type PatchSelection = string | string[] | MutationSelection
 export type PatchMutationOperation = PatchOperations & MutationSelection
 
 /** @public */
-export type Mutation<R extends Record<string, FIXME> = Record<string, FIXME>> =
+export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {create: SanityDocumentStub<R>}
   | {createOrReplace: IdentifiedSanityDocumentStub<R>}
   | {createIfNotExists: IdentifiedSanityDocumentStub<R>}
@@ -388,7 +387,7 @@ export type Mutation<R extends Record<string, FIXME> = Record<string, FIXME>> =
   | {patch: PatchMutationOperation}
 
 /** @public */
-export type MutationEvent<R extends Record<string, FIXME> = Record<string, FIXME>> = {
+export type MutationEvent<R extends Record<string, Any> = Record<string, Any>> = {
   type: 'mutation'
   documentId: string
   eventId: string
@@ -428,7 +427,7 @@ export type WelcomeEvent = {
 }
 
 /** @public */
-export type ListenEvent<R extends Record<string, FIXME>> =
+export type ListenEvent<R extends Record<string, Any>> =
   | MutationEvent<R>
   | ChannelErrorEvent
   | DisconnectEvent
@@ -517,7 +516,7 @@ export type AllDocumentIdsMutationOptions = BaseMutationOptions & {
 }
 
 /** @internal */
-export type AttributeSet = {[key: string]: FIXME}
+export type AttributeSet = {[key: string]: Any}
 
 /** @internal */
 export type TransactionFirstDocumentMutationOptions = BaseMutationOptions & {
@@ -564,6 +563,6 @@ export interface RawRequestOptions {
   headers?: {[key: string]: string}
   timeout?: number
   proxy?: string
-  body?: FIXME
+  body?: Any
   maxRedirects?: number
 }

@@ -4,7 +4,7 @@ import {filter, map} from 'rxjs/operators'
 import {_requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
-  FIXME,
+  Any,
   HttpRequest,
   HttpRequestEvent,
   ResponseEvent,
@@ -122,7 +122,7 @@ export class AssetsClient {
     const observable = _upload(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
-        filter((event: FIXME) => event.type === 'response'),
+        filter((event: Any) => event.type === 'response'),
         map(
           (event) =>
             (event as ResponseEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>)
@@ -152,7 +152,7 @@ function _upload(
   const assetEndpoint = assetType === 'image' ? 'images' : 'files'
   const options = optionsFromFile(opts, body)
   const {tag, label, title, description, creditLine, filename, source} = options
-  const query: FIXME = {
+  const query: Any = {
     label,
     title,
     description,
@@ -176,7 +176,7 @@ function _upload(
   })
 }
 
-function optionsFromFile(opts: Record<string, FIXME>, file: FIXME) {
+function optionsFromFile(opts: Record<string, Any>, file: Any) {
   if (typeof window === 'undefined' || !(file instanceof window.File)) {
     return opts
   }
