@@ -6,11 +6,11 @@ import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
+  Any,
   BaseMutationOptions,
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  Any,
   HttpRequest,
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,

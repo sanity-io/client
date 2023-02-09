@@ -2,8 +2,8 @@ import type {Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
-  BaseMutationOptions,
   Any,
+  BaseMutationOptions,
   IdentifiedSanityDocumentStub,
   MultipleMutationResult,
   Mutation,

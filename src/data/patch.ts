@@ -4,11 +4,11 @@ import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
+  Any,
   AttributeSet,
   BaseMutationOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  Any,
   MultipleMutationResult,
   PatchMutationOperation,
   PatchOperations,

@@ -11,12 +11,12 @@ import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClien
 import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
+  Any,
   BaseMutationOptions,
   ClientConfig,
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  Any as Any,
   HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,

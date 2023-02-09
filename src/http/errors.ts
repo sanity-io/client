@@ -1,4 +1,4 @@
-import type {ErrorProps, Any} from '../types'
+import type {Any, ErrorProps} from '../types'
 
 /** @public */
 export class ClientError extends Error {
