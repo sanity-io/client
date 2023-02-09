@@ -1,6 +1,6 @@
 import type {MutationSelection} from '../types'
 
-export default function getSelection(sel: unknown): MutationSelection {
+export function getSelection(sel: unknown): MutationSelection {
   if (typeof sel === 'string' || Array.isArray(sel)) {
     return {id: sel}
   }

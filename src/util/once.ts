@@ -1,6 +1,6 @@
 import type {Any} from '../types'
 
-export default (fn: Any) => {
+export function once(fn: Any) {
   let didCall = false
   let returnValue: Any
   return (...args: Any[]) => {

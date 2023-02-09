@@ -1,6 +1,6 @@
 import type {Any, QueryParams} from '../types'
 
-export default ({
+export const encodeQueryString = ({
   query,
   params = {},
   options = {},

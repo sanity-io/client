@@ -1,4 +1,4 @@
-import generateHelpUrl from './generateHelpUrl'
+import {generateHelpUrl} from './generateHelpUrl'
 import type {ClientConfig, InitializedClientConfig} from './types'
 import * as validate from './validators'
 import * as warnings from './warnings'

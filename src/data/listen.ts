@@ -4,9 +4,9 @@ import {Observable} from 'rxjs'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {Any, ListenEvent, ListenOptions, MutationEvent, QueryParams} from '../types'
 import defaults from '../util/defaults'
-import pick from '../util/pick'
+import {pick} from '../util/pick'
 import {_getDataUrl} from './dataMethods'
-import encodeQueryString from './encodeQueryString'
+import {encodeQueryString} from './encodeQueryString'
 
 // Limit is 16K for a _request_, eg including headers. Have to account for an
 // unknown range of headers, but an average EventSource request from Chrome seems

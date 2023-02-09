@@ -1,6 +1,6 @@
-import generateHelpUrl from './generateHelpUrl'
+import {generateHelpUrl} from './generateHelpUrl'
 import {Any} from './types'
-import once from './util/once'
+import {once} from './util/once'
 
 const createWarningPrinter = (message: string[]) =>
   // eslint-disable-next-line no-console
@@ -23,4 +23,8 @@ export const printBrowserTokenWarning = createWarningPrinter([
 export const printNoApiVersionSpecifiedWarning = createWarningPrinter([
   'Using the Sanity client without specifying an API version is deprecated.',
   `See ${generateHelpUrl('js-client-api-version')}`,
+])
+
+export const printNoDefaultExport = createWarningPrinter([
+  'The default export of @sanity/client has been deprecated. Use the named export `createClient` instead',
 ])
