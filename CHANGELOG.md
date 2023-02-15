@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.2.1](https://github.com/sanity-io/client/compare/v5.2.0...v5.2.1) (2023-02-15)
+
+### Bug Fixes
+
+- add support for using the default export ([#117](https://github.com/sanity-io/client/issues/117)) ([1b1fb16](https://github.com/sanity-io/client/commit/1b1fb16371ad323f7bd05d2086acea8a5bdd8237))
+- use `Any` for explicit any ([#115](https://github.com/sanity-io/client/issues/115)) ([d588cf6](https://github.com/sanity-io/client/commit/d588cf6cfb90145b988dee6a9b5d7512a64e0a30))
+
 ## [5.2.0](https://github.com/sanity-io/client/compare/v5.1.0...v5.2.0) (2023-02-07)
 
 ### Features
