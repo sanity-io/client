@@ -67,7 +67,16 @@ export interface ClientConfig {
    */
   requester?: Requester
 
+  /**
+   * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
+   */
   resultSourceMap?: boolean
+
+  /**
+   * Experimental, requires apiHost: 'https://api.sanity.work'.
+   * @alpha
+   */
+  scope?: 'published' | 'previewDrafts'
 }
 
 /** @public */

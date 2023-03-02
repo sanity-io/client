@@ -306,6 +306,10 @@ export function _requestObservable<R>(
     options.query = {resultSourceMap: true, ...options.query}
   }
 
+  if (config.scope) {
+    options.query = {scope: config.scope, ...options.query}
+  }
+
   const reqOptions = requestOptions(
     config,
     Object.assign({}, options, {
