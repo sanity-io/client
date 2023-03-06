@@ -93,11 +93,11 @@
     "rxjs": "^7"
   },
   "devDependencies": {
-    "@edge-runtime/types": "^2.0.7",
-    "@edge-runtime/vm": "^2.1.1",
+    "@edge-runtime/types": "^2.0.8",
+    "@edge-runtime/vm": "^2.1.2",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
-    "@sanity/pkg-utils": "^2.2.6",
+    "@sanity/pkg-utils": "^2.2.8",
     "@sanity/semantic-release-preset": "^4.0.0",
     "@types/node": "^18.14.6",
     "@typescript-eslint/eslint-plugin": "^5.54.0",
@@ -113,7 +113,7 @@
     "nock": "^13.3.0",
     "prettier": "^2.8.4",
     "prettier-plugin-packagejson": "^2.4.3",
-    "rimraf": "^4.1.2",
+    "rimraf": "^4.3.0",
     "rollup": "^3.18.0",
     "sse-channel": "^4.0.0",
     "terser": "^5.16.5",
