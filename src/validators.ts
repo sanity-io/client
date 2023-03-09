@@ -30,7 +30,7 @@ export const validateObject = (op: string, val: Any) => {
 }
 
 export const validateDocumentId = (op: string, id: string) => {
-  if (typeof id !== 'string' || !/^[a-z0-9_.-]+$/i.test(id)) {
+  if (typeof id !== 'string' || !/^[a-z0-9_][a-z0-9_.-]{0,127}$/i.test(id) || id.includes('..')) {
     throw new Error(`${op}(): "${id}" is not a valid document ID`)
   }
 }
