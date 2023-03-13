@@ -12,7 +12,7 @@ jobs:
     name: bun install
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+      - uses: actions/checkout@v3
       - uses: antongolub/action-setup-bun@cae75ff7a1b635e9cc79bf0bc5c6302b43b29989 # v1
       - run: bun install
       - uses: EndBug/add-and-commit@61a88be553afe4206585b31aa72387c64295d08b # v9
