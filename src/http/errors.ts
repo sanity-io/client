@@ -1,5 +1,7 @@
 import type {Any, ErrorProps, MutationError} from '../types'
 
+const MAX_ITEMS_IN_ERROR_MESSAGE = 5
+
 /** @public */
 export class ClientError extends Error {
   response: ErrorProps['response']
@@ -48,12 +50,12 @@ function extractErrorProps(res: Any): ErrorProps {
   if (isMutationError(body)) {
     const allItems = body.error.items || []
     const items = allItems
-      .slice(0, 5)
+      .slice(0, MAX_ITEMS_IN_ERROR_MESSAGE)
       .map((item) => item.error?.description)
       .filter(Boolean)
     let itemsStr = items.length ? `:\n- ${items.join('\n- ')}` : ''
-    if (allItems.length > 5) {
-      itemsStr += `\n...and ${allItems.length - 5} more`
+    if (allItems.length > MAX_ITEMS_IN_ERROR_MESSAGE) {
+      itemsStr += `\n...and ${allItems.length - MAX_ITEMS_IN_ERROR_MESSAGE} more`
     }
     props.message = `${body.error.description}${itemsStr}`
     props.details = body.error
