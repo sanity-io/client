@@ -5,6 +5,17 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.3.0](https://github.com/sanity-io/client/compare/v5.2.2...v5.3.0) (2023-03-13)
+
+### Features
+
+- include mutation error items in error message ([#148](https://github.com/sanity-io/client/issues/148)) ([193f45e](https://github.com/sanity-io/client/commit/193f45e6ab3efa0a53aafd86acca6f04149d4172))
+
+### Bug Fixes
+
+- correct document ID validation ([#149](https://github.com/sanity-io/client/issues/149)) ([b5799c9](https://github.com/sanity-io/client/commit/b5799c9a7dcc588bb6fb51941a297a0bb8200751))
+- **deps:** update devdependencies (non-major) ([#137](https://github.com/sanity-io/client/issues/137)) ([13c9fe4](https://github.com/sanity-io/client/commit/13c9fe4f2860ab07be247fea54dff0352eec30de))
+
 ## [5.2.2](https://github.com/sanity-io/client/compare/v5.2.1...v5.2.2) (2023-02-21)
 
 ### Bug Fixes
