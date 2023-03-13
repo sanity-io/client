@@ -2271,6 +2271,74 @@ describe('client', async () => {
       expect(error.stack!.includes(body.message)).toBeTruthy()
     })
 
+    test('mutation error includes items in message', () => {
+      const body = {
+        error: {
+          type: 'mutationError',
+          description: 'Mutation(s) failed with 1 error(s)',
+          items: [
+            {
+              error: {
+                description: 'Malformed document ID: "#some_invalid-id!"',
+                type: 'validationError',
+                value: {Kind: {string_value: '#some_invalid-id!'}},
+              },
+            },
+          ],
+        },
+      }
+      const error = new ClientError({statusCode: 400, headers: {}, body})
+      expect(error.message).toMatchInlineSnapshot(`
+        "Mutation(s) failed with 1 error(s):
+        - Malformed document ID: \\"#some_invalid-id!\\""
+      `)
+    })
+
+    test('mutation error includes at most 5 items in message', () => {
+      const body = {
+        error: {
+          type: 'mutationError',
+          description: 'Mutation(s) failed with 6 error(s)',
+          items: [
+            {error: {description: 'Malformed document ID: "#some_invalid-id!"'}},
+            {error: {description: 'Malformed document ID: "@ruby_bird@"'}},
+            {error: {description: 'Malformed document ID: "!cant_contain_that"'}},
+            {error: {description: 'Malformed document ID: "what$about!this?"'}},
+            {error: {description: 'Malformed document ID: "%so_many_percent%"'}},
+            {error: {description: 'Malformed document ID: "{last_and_least}"'}},
+          ],
+        },
+      }
+      const error = new ClientError({statusCode: 400, headers: {}, body})
+      expect(error.message).toMatchInlineSnapshot(`
+        "Mutation(s) failed with 6 error(s):
+        - Malformed document ID: \\"#some_invalid-id!\\"
+        - Malformed document ID: \\"@ruby_bird@\\"
+        - Malformed document ID: \\"!cant_contain_that\\"
+        - Malformed document ID: \\"what$about!this?\\"
+        - Malformed document ID: \\"%so_many_percent%\\"
+        ...and 1 more"
+      `)
+    })
+
+    test('mutation error gracefully drops invalid items', () => {
+      const body = {
+        error: {
+          type: 'mutationError',
+          description: 'Mutation(s) failed with 2 error(s)',
+          items: [
+            {not: {the: {expected: 'type'}}},
+            {error: {description: 'Malformed document ID: "#some_invalid-id!"'}},
+          ],
+        },
+      }
+      const error = new ClientError({statusCode: 400, headers: {}, body})
+      expect(error.message).toMatchInlineSnapshot(`
+        "Mutation(s) failed with 2 error(s):
+        - Malformed document ID: \\"#some_invalid-id!\\""
+      `)
+    })
+
     test('exposes ClientError', () => {
       expect(typeof ClientError).toEqual('function')
       const error = new ClientError({statusCode: 400, headers: {}, body: {}})

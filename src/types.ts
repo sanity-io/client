@@ -566,3 +566,28 @@ export interface RawRequestOptions {
   body?: Any
   maxRedirects?: number
 }
+
+/** @internal */
+export interface ApiError {
+  error: string
+  message: string
+  statusCode: number
+}
+
+/** @internal */
+export interface MutationError {
+  error: {
+    type: 'mutationError'
+    description: string
+    items?: MutationErrorItem[]
+  }
+}
+
+/** @internal */
+export interface MutationErrorItem {
+  error: {
+    type: string
+    description: string
+    value?: unknown
+  }
+}

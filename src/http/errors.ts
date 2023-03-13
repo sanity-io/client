@@ -1,4 +1,6 @@
-import type {Any, ErrorProps} from '../types'
+import type {Any, ErrorProps, MutationError} from '../types'
+
+const MAX_ITEMS_IN_ERROR_MESSAGE = 5
 
 /** @public */
 export class ClientError extends Error {
@@ -44,6 +46,22 @@ function extractErrorProps(res: Any): ErrorProps {
     return props
   }
 
+  // Mutation errors (specifically)
+  if (isMutationError(body)) {
+    const allItems = body.error.items || []
+    const items = allItems
+      .slice(0, MAX_ITEMS_IN_ERROR_MESSAGE)
+      .map((item) => item.error?.description)
+      .filter(Boolean)
+    let itemsStr = items.length ? `:\n- ${items.join('\n- ')}` : ''
+    if (allItems.length > MAX_ITEMS_IN_ERROR_MESSAGE) {
+      itemsStr += `\n...and ${allItems.length - MAX_ITEMS_IN_ERROR_MESSAGE} more`
+    }
+    props.message = `${body.error.description}${itemsStr}`
+    props.details = body.error
+    return props
+  }
+
   // Query/database errors ({error: {description, other, arb, props}})
   if (body.error && body.error.description) {
     props.message = body.error.description
@@ -54,6 +72,19 @@ function extractErrorProps(res: Any): ErrorProps {
   // Other, more arbitrary errors
   props.message = body.error || body.message || httpErrorMessage(res)
   return props
+}
+
+function isMutationError(body: Any): body is MutationError {
+  return (
+    isPlainObject(body) &&
+    isPlainObject(body.error) &&
+    body.error.type === 'mutationError' &&
+    typeof body.error.description === 'string'
+  )
+}
+
+function isPlainObject(obj: Any): obj is Record<string, unknown> {
+  return typeof obj === 'object' && obj !== null && !Array.isArray(obj)
 }
 
 function httpErrorMessage(res: Any) {
