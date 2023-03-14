@@ -97,7 +97,7 @@
     "@edge-runtime/vm": "^2.1.2",
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
-    "@sanity/pkg-utils": "^2.2.8",
+    "@sanity/pkg-utils": "^2.2.10",
     "@sanity/semantic-release-preset": "^4.0.0",
     "@types/node": "^18.15.1",
     "@typescript-eslint/eslint-plugin": "^5.54.1",
