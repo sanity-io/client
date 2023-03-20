@@ -88,9 +88,9 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@sanity/eventsource": "^4",
-    "get-it": "^8",
-    "rxjs": "^7"
+    "@sanity/eventsource": "4",
+    "get-it": "8",
+    "rxjs": "7"
   },
   "devDependencies": {
     "@edge-runtime/types": "^2.0.8",
