@@ -19,7 +19,7 @@ describe('Client config warnings', async () => {
     )
   })
 
-  test.skipIf(isEdge)('warns if in browser on localhost and a token is provided', () => {
+  test('warns if in browser on localhost and a token is provided', () => {
     const restoreWindow = global.window
     global.window = {location: {hostname: 'localhost'}} as any
     createClient({projectId: 'abc123', useCdn: false, token: 'foo', apiVersion: '1'})

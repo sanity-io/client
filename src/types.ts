@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-empty-interface
 import type {Requester} from 'get-it'
 
 /**
@@ -5,6 +6,14 @@ import type {Requester} from 'get-it'
  * @internal
  */
 export type Any = any // eslint-disable-line @typescript-eslint/no-explicit-any
+
+declare global {
+  // Declare empty stub interfaces for environments where "dom" lib is not included
+  interface File {}
+}
+
+/** @public */
+export type UploadBody = File | Blob | Buffer | NodeJS.ReadableStream
 
 /** @public */
 export interface RequestOptions {
