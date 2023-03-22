@@ -21,4 +21,4 @@ jobs:
       - uses: dessant/lock-threads@c1b35aecc5cdb1a34539d14196df55838bb2f836 # v4
         with:
           issue-inactive-days: 0
-          pr-inactive-days: 0
+          pr-inactive-days: 7
