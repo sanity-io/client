@@ -130,10 +130,10 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     }
 
     function unsubscribe() {
-      es.removeEventListener('error', onError, false)
-      es.removeEventListener('channelError', onChannelError, false)
-      es.removeEventListener('disconnect', onDisconnect, false)
-      listenFor.forEach((type: string) => es.removeEventListener(type, onMessage, false))
+      es.removeEventListener('error', onError)
+      es.removeEventListener('channelError', onChannelError)
+      es.removeEventListener('disconnect', onDisconnect)
+      listenFor.forEach((type: string) => es.removeEventListener(type, onMessage))
       es.close()
     }
 
@@ -145,10 +145,10 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
 
     function getEventSource() {
       const evs = new EventSource(uri, esOptions)
-      evs.addEventListener('error', onError, false)
-      evs.addEventListener('channelError', onChannelError, false)
-      evs.addEventListener('disconnect', onDisconnect, false)
-      listenFor.forEach((type: string) => evs.addEventListener(type, onMessage, false))
+      evs.addEventListener('error', onError)
+      evs.addEventListener('channelError', onChannelError)
+      evs.addEventListener('disconnect', onDisconnect)
+      listenFor.forEach((type: string) => evs.addEventListener(type, onMessage))
       return evs
     }
 
