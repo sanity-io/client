@@ -88,7 +88,7 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@sanity/eventsource": "4",
+    "@sanity/eventsource": "5",
     "get-it": "8",
     "rxjs": "7"
   },
