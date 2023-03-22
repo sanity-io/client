@@ -10,6 +10,7 @@ import type {
   ResponseEvent,
   SanityAssetDocument,
   SanityImageAssetDocument,
+  UploadBody,
   UploadClientConfig,
 } from '../types'
 import * as validators from '../validators'
@@ -32,7 +33,7 @@ export class ObservableAssetsClient {
    */
   upload(
     assetType: 'file',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
 
@@ -45,7 +46,7 @@ export class ObservableAssetsClient {
    */
   upload(
     assetType: 'image',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
   /**
@@ -57,12 +58,12 @@ export class ObservableAssetsClient {
    */
   upload(
     assetType: 'file' | 'image',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
   upload(
     assetType: 'file' | 'image',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
@@ -87,7 +88,7 @@ export class AssetsClient {
    */
   upload(
     assetType: 'file',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Promise<SanityAssetDocument>
   /**
@@ -99,7 +100,7 @@ export class AssetsClient {
    */
   upload(
     assetType: 'image',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Promise<SanityImageAssetDocument>
   /**
@@ -111,12 +112,12 @@ export class AssetsClient {
    */
   upload(
     assetType: 'file' | 'image',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Promise<SanityAssetDocument | SanityImageAssetDocument>
   upload(
     assetType: 'file' | 'image',
-    body: File | Blob | Buffer | NodeJS.ReadableStream,
+    body: UploadBody,
     options?: UploadClientConfig
   ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
     const observable = _upload(this.#client, this.#httpRequest, assetType, body, options)
@@ -137,7 +138,7 @@ function _upload(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   assetType: 'image' | 'file',
-  body: File | Blob | Buffer | NodeJS.ReadableStream,
+  body: UploadBody,
   opts: UploadClientConfig = {}
 ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
   validators.validateAssetType(assetType)
