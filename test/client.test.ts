@@ -1713,7 +1713,9 @@ describe('client', async () => {
     })
   })
 
-  describe.skipIf(isEdge)('LISTENERS', () => {
+  // nock doesn't support mocking `fetch` yet, which is used by event-source-polyfill, and thus we have to skip for now when `isNode` is false
+  // https://github.com/nock/nock/issues/2183
+  describe.skipIf(isEdge || !isNode)('LISTENERS', () => {
     test('listeners connect to listen endpoint, emits events', async () => {
       expect.assertions(1)
 
