@@ -178,7 +178,7 @@ function _upload(
 }
 
 function optionsFromFile(opts: Record<string, Any>, file: Any) {
-  if (typeof window === 'undefined' || !(file instanceof window.File)) {
+  if (typeof File === 'undefined' || !(file instanceof File)) {
     return opts
   }
 

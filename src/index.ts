@@ -26,3 +26,6 @@ export default function deprecatedCreateClient(config: ClientConfig) {
   printNoDefaultExport()
   return new SanityClient(httpRequest, config)
 }
+
+/** @alpha */
+export {adapter as unstable__adapter, environment as unstable__environment} from 'get-it'

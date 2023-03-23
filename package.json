@@ -33,6 +33,7 @@
         "import": "./dist/index.browser.js"
       },
       "deno": "./dist/index.browser.js",
+      "edge-light": "./dist/index.browser.js",
       "worker": "./dist/index.browser.js",
       "source": "./src/index.ts",
       "require": "./dist/index.cjs",
@@ -89,7 +90,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "5",
-    "get-it": "8",
+    "get-it": "^8.1",
     "rxjs": "7"
   },
   "devDependencies": {
@@ -98,11 +99,11 @@
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@sanity/pkg-utils": "^2.2.13",
-    "@sanity/semantic-release-preset": "^4.0.1",
-    "@types/node": "^18.15.3",
-    "@typescript-eslint/eslint-plugin": "^5.56.0",
-    "@typescript-eslint/parser": "^5.56.0",
-    "@vitest/coverage-c8": "^0.29.5",
+    "@sanity/semantic-release-preset": "^4.1.0",
+    "@types/node": "^18.15.10",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "@vitest/coverage-c8": "^0.29.8",
     "eslint": "^8.36.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
@@ -111,14 +112,14 @@
     "happy-dom": "^8.9.0",
     "ls-engines": "^0.9.0",
     "nock": "^13.3.0",
-    "prettier": "^2.8.5",
+    "prettier": "^2.8.7",
     "prettier-plugin-packagejson": "^2.4.3",
-    "rimraf": "^4.4.0",
-    "rollup": "^3.20.0",
+    "rimraf": "^4.4.1",
+    "rollup": "^3.20.2",
     "sse-channel": "^4.0.0",
-    "terser": "^5.16.6",
+    "terser": "^5.16.8",
     "typescript": "^5.0.2",
-    "vitest": "^0.29.6",
+    "vitest": "^0.29.8",
     "vitest-github-actions-reporter": "^0.10.0"
   },
   "engines": {

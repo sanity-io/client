@@ -13,6 +13,6 @@ export default defineConfig({
     alias: {'@sanity/client': pkg.exports['.'].browser.source},
   },
   resolve: {
-    conditions: ['browser'],
+    conditions: ['browser', 'module', 'import'],
   },
 })
