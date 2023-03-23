@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.3.2](https://github.com/sanity-io/client/compare/v5.3.1...v5.3.2) (2023-03-23)
+
+### Bug Fixes
+
+- declare `File` for envs without `lib.dom` ([#175](https://github.com/sanity-io/client/issues/175)) ([1e9cb5e](https://github.com/sanity-io/client/commit/1e9cb5ea4bde338f35f30e59722d56e32eccc3a1))
+
 ## [5.3.1](https://github.com/sanity-io/client/compare/v5.3.0...v5.3.1) (2023-03-22)
 
 ### Bug Fixes
