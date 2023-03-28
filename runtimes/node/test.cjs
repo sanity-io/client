@@ -25,8 +25,8 @@ test('top-level imports', async (t) => {
   })
 
   await t.test('the same named exports are used as ESM', async () => {
-    const cjs = Object.keys(require('@sanity/client'))
-    const esm = Object.keys(await import('@sanity/client'))
+    const cjs = Object.keys(require('@sanity/client')).sort()
+    const esm = Object.keys(await import('@sanity/client')).sort()
     assert.deepEqual(cjs, esm)
   })
 
