@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.4.0](https://github.com/sanity-io/client/compare/v5.3.2...v5.4.0) (2023-03-28)
+
+### Features
+
+- add `edge-light` export condition ([#176](https://github.com/sanity-io/client/issues/176)) ([501e7b6](https://github.com/sanity-io/client/commit/501e7b646d5d93f46849529b4d2d9cecd3b8a4a2))
+
 ## [5.3.2](https://github.com/sanity-io/client/compare/v5.3.1...v5.3.2) (2023-03-23)
 
 ### Bug Fixes
