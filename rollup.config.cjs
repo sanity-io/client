@@ -8,6 +8,8 @@ module.exports = {
     file: 'umd/sanityClient.js',
     format: 'umd',
     name: 'SanityClient',
+    dynamicImportInCjs: false,
+    inlineDynamicImports: true,
   },
   plugins: [nodeResolve({browser: true}), commonjs()],
 }

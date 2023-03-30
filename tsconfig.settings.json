@@ -21,6 +21,7 @@
     "skipLibCheck": true,
 
     // Module resolution
+    "module": "esnext",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,

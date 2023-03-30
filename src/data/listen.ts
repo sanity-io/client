@@ -1,4 +1,3 @@
-import polyfilledEventSource from '@sanity/eventsource'
 import {Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
@@ -12,7 +11,6 @@ import {encodeQueryString} from './encodeQueryString'
 // unknown range of headers, but an average EventSource request from Chrome seems
 // to have around 700 bytes of cruft, so let us account for 1.2K to be "safe"
 const MAX_URL_LENGTH = 16000 - 1200
-const EventSource = polyfilledEventSource
 
 const possibleOptions = [
   'includePreviousRevision',
@@ -86,7 +84,15 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   }
 
   return new Observable((observer) => {
-    let es = getEventSource()
+    let es: InstanceType<typeof import('@sanity/eventsource')>
+    getEventSource()
+      .then((eventSource) => {
+        es = eventSource
+      })
+      .catch((reason) => {
+        observer.error(reason)
+        stop()
+      })
     let reconnectTimer: NodeJS.Timeout
     let stopped = false
 
@@ -107,7 +113,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
       // automatically, in which case it sets readyState to `CONNECTING`, but in some cases
       // (like when a laptop lid is closed), it closes the connection. In these cases we need
       // to explicitly reconnect.
-      if (es.readyState === EventSource.CLOSED) {
+      if (es.readyState === es.CLOSED) {
         unsubscribe()
         clearTimeout(reconnectTimer)
         reconnectTimer = setTimeout(open, 100)
@@ -130,6 +136,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     }
 
     function unsubscribe() {
+      if (!es) return
       es.removeEventListener('error', onError)
       es.removeEventListener('channelError', onChannelError)
       es.removeEventListener('disconnect', onDisconnect)
@@ -143,7 +150,8 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
       }
     }
 
-    function getEventSource() {
+    async function getEventSource(): Promise<InstanceType<typeof import('@sanity/eventsource')>> {
+      const {default: EventSource} = await import('@sanity/eventsource')
       const evs = new EventSource(uri, esOptions)
       evs.addEventListener('error', onError)
       evs.addEventListener('channelError', onChannelError)
@@ -153,7 +161,14 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     }
 
     function open() {
-      es = getEventSource()
+      getEventSource()
+        .then((eventSource) => {
+          es = eventSource
+        })
+        .catch((reason) => {
+          observer.error(reason)
+          stop()
+        })
     }
 
     function stop() {
