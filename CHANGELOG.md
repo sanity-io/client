@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.4.1](https://github.com/sanity-io/client/compare/v5.4.0...v5.4.1) (2023-03-30)
+
+### Bug Fixes
+
+- **listen:** lazy init event source ([#181](https://github.com/sanity-io/client/issues/181)) ([a84ee1c](https://github.com/sanity-io/client/commit/a84ee1ceb3e8cf49ea5b60d227240803efbd2548))
+
 ## [5.4.0](https://github.com/sanity-io/client/compare/v5.3.2...v5.4.0) (2023-03-28)
 
 ### Features

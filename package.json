@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "5.4.1-lazy-event-source.0",
+  "version": "5.4.1",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
