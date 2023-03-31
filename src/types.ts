@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-empty-interface
+
 import type {Requester} from 'get-it'
 
 /**
@@ -65,6 +66,8 @@ export interface ClientConfig {
    * @deprecated Don't use
    */
   requester?: Requester
+
+  resultSourceMap?: boolean
 }
 
 /** @public */
@@ -470,21 +473,22 @@ export interface ListenOptions {
   tag?: string
 }
 
-/** @internal */
+/** @public */
 export type FilteredResponseQueryOptions = RequestOptions & {
   filterResponse?: true
 }
 
-/** @internal */
+/** @public */
 export type UnfilteredResponseQueryOptions = RequestOptions & {
   filterResponse: false
 }
 
-/** @internal */
+/** @public */
 export interface RawQueryResponse<R> {
   q: string
   ms: number
   result: R
+  resultSourceMap: ContentSourceMap
 }
 
 /** @internal */
@@ -614,4 +618,77 @@ export interface MutationErrorItem {
     description: string
     value?: unknown
   }
+}
+
+/**
+ * DocumentValueSource is a path to a value within a document
+ * @public
+ */
+export interface ContentSourceMapDocumentValueSource {
+  type: 'documentValue'
+  // index location of the document
+  document: number
+  // index location of the path
+  path: number
+}
+/**
+ * When a value is not from a source, its a literal
+ * @public
+ */
+export interface ContentSourceMapLiteralSource {
+  type: 'literal'
+}
+/**
+ * When a field source is unknown
+ * @public
+ */
+export interface ContentSourceMapUnknownSource {
+  type: 'unknown'
+}
+/** @public */
+export type ContentSourceMapSource =
+  | ContentSourceMapDocumentValueSource
+  | ContentSourceMapLiteralSource
+  | ContentSourceMapUnknownSource
+/**
+ * ValueMapping is a mapping when for value that is from a single source value
+ * It may refer to a field within a document or a literal value
+ * @public
+ */
+export interface ContentSourceMapValueMapping {
+  type: 'value'
+  // source of the value
+  source: ContentSourceMapSource
+}
+/** @public */
+export type ContentSourceMapMapping = ContentSourceMapValueMapping
+
+/** @public */
+export type ContentSourceMapMappings = Record<string, ContentSourceMapMapping>
+
+/** @public */
+export interface ContentSourceMapDocument {
+  _id: string
+}
+
+/** @public */
+export interface ContentSourceMapRemoteDocument extends ContentSourceMapDocument {
+  _projectId: string
+  _dataset: string
+}
+
+/** @public */
+export type ContentSourceMapDocuments = (
+  | ContentSourceMapDocument
+  | ContentSourceMapRemoteDocument
+)[]
+
+/** @public */
+export type ContentSourceMapPaths = string[]
+
+/** @public */
+export interface ContentSourceMap {
+  mappings: ContentSourceMapMappings
+  documents: ContentSourceMapDocuments
+  paths: ContentSourceMapPaths
 }

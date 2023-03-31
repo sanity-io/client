@@ -302,6 +302,10 @@ export function _requestObservable<R>(
     options.query = {tag: validate.requestTag(tag), ...options.query}
   }
 
+  if (config.resultSourceMap) {
+    options.query = {resultSourceMap: true, ...options.query}
+  }
+
   const reqOptions = requestOptions(
     config,
     Object.assign({}, options, {
