@@ -481,6 +481,7 @@ export type BaseMutationOptions = RequestOptions & {
   dryRun?: boolean
   autoGenerateArrayKeys?: boolean
   skipCrossDatasetReferenceValidation?: boolean
+  transactionId?: string
 }
 
 /** @internal */

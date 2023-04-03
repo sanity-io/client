@@ -187,7 +187,7 @@ export function _mutate<R extends Record<string, Any>>(
   }
 
   const muts = Array.isArray(mut) ? mut : [mut]
-  const transactionId = options && (options as Any).transactionId
+  const transactionId = (options && options.transactionId) || undefined
   return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
 }
 
