@@ -177,13 +177,14 @@ export function _mutate<R extends Record<string, Any>>(
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
-  const mut =
-    mutations instanceof Patch ||
-    mutations instanceof ObservablePatch ||
-    mutations instanceof Transaction ||
-    mutations instanceof ObservableTransaction
-      ? mutations.serialize()
-      : mutations
+  let mut: Mutation | Mutation[]
+  if (mutations instanceof Patch || mutations instanceof ObservablePatch) {
+    mut = {patch: mutations.serialize()}
+  } else if (mutations instanceof Transaction || mutations instanceof ObservableTransaction) {
+    mut = mutations.serialize()
+  } else {
+    mut = mutations
+  }
 
   const muts = Array.isArray(mut) ? mut : [mut]
   const transactionId = options && (options as Any).transactionId

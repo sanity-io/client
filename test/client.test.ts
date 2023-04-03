@@ -1458,6 +1458,19 @@ describe('client', async () => {
       expect(() => patch.dec({bar: 2}).commit()).toThrow(/client.*mutate/i)
     })
 
+    test.skipIf(isEdge)('patch can be created without client and passed to mutate()', async () => {
+      const patch = new Patch('foo').dec({count: 1})
+
+      const mutations = [{patch: {id: 'foo', dec: {count: 1}}}]
+      nock(projectHost())
+        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          mutations,
+        })
+        .reply(200, {results: [{id: 'foo', operation: 'update'}]})
+
+      await expect(getClient().mutate(patch)).resolves.not.toThrow()
+    })
+
     // eslint-disable-next-line no-warning-comments
     // @TODO investigate why this fails on Edge Runtime
     test.skipIf(isEdge)('can manually call clone on patch', () => {
