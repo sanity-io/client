@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.4.2](https://github.com/sanity-io/client/compare/v5.4.1...v5.4.2) (2023-04-03)
+
+### Bug Fixes
+
+- **mutate:** reflect support for providing transaction id in typings ([#187](https://github.com/sanity-io/client/issues/187)) ([b7ad302](https://github.com/sanity-io/client/commit/b7ad302d80ce90574e3d52875f3af67c65e683eb))
+- **mutate:** serialize clientless patches correctly ([#186](https://github.com/sanity-io/client/issues/186)) ([b635dff](https://github.com/sanity-io/client/commit/b635dffc9073d6452735a6128c344b924b58d599))
+
 ## [5.4.1](https://github.com/sanity-io/client/compare/v5.4.0...v5.4.1) (2023-03-30)
 
 ### Bug Fixes
