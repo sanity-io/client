@@ -917,6 +917,24 @@ describe('client', async () => {
       await expect(getClient().mutate(mutations, {tag: 'foobar'})).resolves.not.toThrow()
     })
 
+    test.skipIf(isEdge)('mutate() accepts transaction id', async () => {
+      const mutations = [{delete: {id: 'abc123'}}]
+
+      nock(projectHost())
+        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          mutations,
+          transactionId: 'spec-ific',
+        })
+        .reply(200, {
+          transactionId: 'spec-ific',
+          results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+        })
+
+      await expect(
+        getClient().mutate(mutations, {transactionId: 'spec-ific'})
+      ).resolves.not.toThrow()
+    })
+
     test.skipIf(isEdge)('mutate() accepts `autoGenerateArrayKeys`', async () => {
       const mutations = [
         {
