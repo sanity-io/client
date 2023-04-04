@@ -75,7 +75,8 @@ export const initConfig = (
 
   newConfig.apiVersion = `${newConfig.apiVersion}`.replace(/^v/, '')
   newConfig.isDefaultApi = newConfig.apiHost === defaultConfig.apiHost
-  newConfig.useCdn = Boolean(newConfig.useCdn) && !newConfig.withCredentials
+  // If `useCdn` is undefined, we treat it as `true`
+  newConfig.useCdn = newConfig.useCdn !== false && !newConfig.withCredentials
 
   validateApiVersion(newConfig.apiVersion)
 

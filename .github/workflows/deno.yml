@@ -38,4 +38,3 @@ jobs:
           labels: 🤖 bot
           title: 'chore(deno): update import_map.json'
           token: ${{ steps.generate-token.outputs.token }}
-

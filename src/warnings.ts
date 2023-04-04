@@ -7,10 +7,9 @@ const createWarningPrinter = (message: string[]) =>
   once((...args: Any[]) => console.warn(message.join(' '), ...args))
 
 export const printCdnWarning = createWarningPrinter([
-  'You are not using the Sanity CDN. That means your data is always fresh, but the CDN is faster and',
-  `cheaper. Think about it! For more info, see ${generateHelpUrl('js-client-cdn-configuration')} `,
-  'To hide this warning, please set the `useCdn` option to either `true` or `false` when creating',
-  'the client.',
+  `Since you haven't set a value for \`useCdn\`, we will deliver content using our`,
+  `global, edge-cached API-CDN. If you wish to have content delivered faster, set`,
+  `\`useCdn: false\` to use the Live API. Note: You may incur higher costs using the live API.`,
 ])
 
 export const printBrowserTokenWarning = createWarningPrinter([
@@ -26,5 +25,5 @@ export const printNoApiVersionSpecifiedWarning = createWarningPrinter([
 ])
 
 export const printNoDefaultExport = createWarningPrinter([
-  'The default export of @sanity/client has been deprecated. Use the named export `createClient` instead',
+  'The default export of @sanity/client has been deprecated. Use the named export `createClient` instead.',
 ])

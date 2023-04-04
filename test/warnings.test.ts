@@ -15,7 +15,7 @@ describe('Client config warnings', async () => {
   test('warns if useCdn is not given', () => {
     createClient({projectId: 'abc123', apiVersion: '1'})
     expect(warn).toHaveBeenCalledWith(
-      'You are not using the Sanity CDN. That means your data is always fresh, but the CDN is faster and cheaper. Think about it! For more info, see https://www.sanity.io/help/js-client-cdn-configuration  To hide this warning, please set the `useCdn` option to either `true` or `false` when creating the client.'
+      "Since you haven't set a value for `useCdn`, we will deliver content using our global, edge-cached API-CDN. If you wish to have content delivered faster, set `useCdn: false` to use the Live API. Note: You may incur higher costs using the live API."
     )
   })
 
