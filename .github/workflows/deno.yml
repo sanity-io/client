@@ -32,7 +32,7 @@ jobs:
       - uses: peter-evans/create-pull-request@5b4a9f6a9e2af26e5f02351490b90d01eb8ec1e5 # v5
         with:
           author: github-actions <41898282+github-actions[bot]@users.noreply.github.com>
-          body: I ran `npm run test:deno:update_import_map` 👨‍💻
+          body: I ran `npm run test:deno:update_import_map` 🧑‍💻
           branch: actions/maintain-import-map
           commit-message: 'chore(deno): update import_map.json'
           labels: 🤖 bot
