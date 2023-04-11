@@ -58,9 +58,6 @@ jobs:
         # It makes sense to also test the oldest, and latest, versions of Node.js, on ubuntu-only since it's the fastest CI runner
         include:
           - os: ubuntu-latest
-            # Test the oldest LTS release of Node that's still receiving bugfixes and security patches, versions older than that have reached End-of-Life
-            node: lts/-2
-          - os: ubuntu-latest
             # Also test the previous LTS release
             node: lts/-1
           - os: ubuntu-latest
@@ -140,7 +137,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
+      - uses: actions/download-artifactv3
         name: Restore build output
         with:
           name: build-output
