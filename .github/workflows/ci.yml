@@ -137,7 +137,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifactv3
+      - uses: actions/download-artifact@v3
         name: Restore build output
         with:
           name: build-output
