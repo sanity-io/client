@@ -134,7 +134,7 @@ describe('client', async () => {
     })
 
     test('throws if no projectId is set', () => {
-      expect(createClient).toThrow(/projectId/)
+      expect(() => createClient({})).toThrow(/projectId/)
     })
 
     test('throws on invalid project ids', () => {
