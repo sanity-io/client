@@ -284,6 +284,57 @@ describe('client', async () => {
       const project = await client.projects.getById('n1f7y')
       expect(project).toEqual(doc)
     })
+
+    test.each([429, 502, 503])('automatically retries %d', async (code) => {
+      const doc: Partial<SanityProject> = {
+        id: 'n1f7y',
+        displayName: 'Movies Unlimited',
+        studioHost: 'movies',
+        members: [
+          {
+            id: 'someuserid',
+            role: 'administrator',
+            isCurrentUser: true,
+            isRobot: false,
+          },
+        ],
+      }
+      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(200, doc)
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      const project = await client.projects.getById('n1f7y')
+      expect(project).toEqual(doc)
+    })
+
+    test.each([429, 502, 503])('can be configured to not retry %d', async (code) => {
+      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+      const client = createClient({
+        useProjectHostname: false,
+        apiHost: `https://${apiHost}`,
+        maxRetries: 0,
+      })
+
+      expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
+    })
+
+    test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {
+      for (let i = 0; i < 5; i++) {
+        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+      }
+
+      const client = createClient({
+        useProjectHostname: false,
+        apiHost: `https://${apiHost}`,
+        retryDelay() {
+          return 100
+        },
+      })
+      expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
+    })
   })
 
   describe('DATASETS', () => {
@@ -1064,6 +1115,37 @@ describe('client', async () => {
 
       // Again, just... don't do this.
       const query = `*[_type == "beer" && (${clause.join(' || ')})]`
+
+      nock(projectHost())
+        .filteringRequestBody(/.*/, '*')
+        .post('/v1/data/query/foo', '*')
+        .reply(200, {
+          ms: 123,
+          q: query,
+          result: [{_id: 'njgNkngskjg', rating: 5}],
+        })
+
+      const res = await getClient().fetch(query, params)
+      expect(res.length, 'length should match').toEqual(1)
+      expect(res[0].rating, 'data should match').toEqual(5)
+    })
+
+    test.skipIf(isEdge).each([429, 502, 503])('retries %d even if they are POST', async (code) => {
+      // Please dont ever do this. Just... don't.
+      const clause: string[] = []
+      const params: Record<string, string> = {}
+      for (let i = 1766; i <= 2016; i++) {
+        clause.push(`title == $beerName${i}`)
+        params[`beerName${i}`] = `some beer ${i}`
+      }
+
+      // Again, just... don't do this.
+      const query = `*[_type == "beer" && (${clause.join(' || ')})]`
+
+      nock(projectHost())
+        .filteringRequestBody(/.*/, '*')
+        .post('/v1/data/query/foo', '*')
+        .reply(code, {})
 
       nock(projectHost())
         .filteringRequestBody(/.*/, '*')
