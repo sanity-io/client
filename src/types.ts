@@ -42,6 +42,19 @@ export interface ClientConfig {
   allowReconfigure?: boolean
   timeout?: number
 
+  /** Number of retries for requests. Defaults to 5. */
+  maxRetries?: number
+
+  /**
+   * The amount of time, in milliseconds, to wait before retrying, given an attemptNumber (starting at 0).
+   *
+   * Defaults to exponential back-off, starting at 100ms, doubling for each attempt, together with random
+   * jitter between 0 and 100 milliseconds. More specifically the following algorithm is used:
+   *
+   *   Delay = 100 * 2^attemptNumber + randomNumberBetween0and100
+   */
+  retryDelay?: (attemptNumber: number) => number
+
   /**
    * @deprecated Don't use
    */
