@@ -11,7 +11,7 @@ export * from './SanityClient'
 export * from './types'
 
 // Set the http client to use for requests, and its environment specific middleware
-const httpRequest = defineHttpRequest(envMiddleware, {maxRetries: 0})
+const httpRequest = defineHttpRequest(envMiddleware, {})
 /** @public */
 export const requester = httpRequest.defaultRequester
 
@@ -19,7 +19,7 @@ export const requester = httpRequest.defaultRequester
 export const createClient = (config: ClientConfig) =>
   new SanityClient(
     defineHttpRequest(envMiddleware, {
-      maxRetries: config.maxRetries || 5,
+      maxRetries: config.maxRetries,
       retryDelay: config.retryDelay,
     }),
     config
