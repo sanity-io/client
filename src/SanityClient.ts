@@ -1210,22 +1210,25 @@ export class SanityClient {
   }
 
   /**
-   * DEPRECATED: Perform an HTTP request against the Sanity API
+   * Perform a request against the Sanity API
+   * NOTE: Only use this for Sanity API endpoints, not for your own APIs!
    *
-   * @deprecated Use your own request library!
    * @param options - Request options
+   * @returns Promise resolving to the response body
    */
   request<R = Any>(options: RawRequestOptions): Promise<R> {
     return lastValueFrom(dataMethods._request<R>(this, this.#httpRequest, options))
   }
 
   /**
-   * DEPRECATED: Perform an HTTP request a `/data` sub-endpoint
+   * Perform an HTTP request a `/data` sub-endpoint
+   * NOTE: Considered internal, thus marked as deprecated. Use `request` instead.
    *
-   * @deprecated Use your own request library!
+   * @deprecated - Use `request()` or your own HTTP library instead
    * @param endpoint - Endpoint to hit (mutate, query etc)
    * @param body - Request body
    * @param options - Request options
+   * @internal
    */
   dataRequest(endpoint: string, body: unknown, options?: BaseMutationOptions): Promise<Any> {
     return lastValueFrom(dataMethods._dataRequest(this, this.#httpRequest, endpoint, body, options))
