@@ -2235,21 +2235,21 @@ describe('client', async () => {
   })
 
   describe.skipIf(isEdge)('CDN API USAGE', () => {
-    test('will use live API by default', async () => {
+    test('will use CDN API by default', async () => {
       const client = createClient({projectId: 'abc123', dataset: 'foo'})
 
       const response = {result: []}
-      nock('https://abc123.api.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
+      nock('https://abc123.apicdn.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
 
       const docs = await client.fetch('*')
       expect(docs.length).toEqual(0)
     })
 
-    test('will use CDN API if told to', async () => {
-      const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+    test('will use live API if told to', async () => {
+      const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: false})
 
       const response = {result: []}
-      nock('https://abc123.apicdn.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
+      nock('https://abc123.api.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
 
       const docs = await client.fetch('*')
       expect(docs.length).toEqual(0)
@@ -2286,6 +2286,7 @@ describe('client', async () => {
         projectId: 'abc123',
         dataset: 'foo',
         token: 'foo',
+        useCdn: false,
       })
 
       const reqheaders = {foo: 'bar'}

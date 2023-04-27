@@ -26,7 +26,7 @@ import {createClient} from '@sanity/client'
 export const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
   // token: process.env.SANITY_SECRET_TOKEN // Only if you want to update content with the client
 })
@@ -93,7 +93,9 @@ export async function updateDocumentTitle(_id, title) {
   - [Set client configuration](#set-client-configuration)
 - [Release new version](#release-new-version)
 - [License](#license)
-- [From `v4`](#from-v4)
+- [Migrate](#migrate)
+  - [From `v5`](#from-v5)
+  - [From `v4`](#from-v4)
 
 ## Requirements
 
@@ -119,7 +121,7 @@ pnpm install @sanity/client
 
 `const client = createClient(options)`
 
-Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. Setting a value for `useCdn` is encouraged. Typically you want to have it as `false` in development to always fetch the freshest content and `true` in production environments so that content is fetched from the distributed cache. [You can learn more about the API CDN here][api-cdn].
+Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. [We encourage setting `useCdn` to either `true` or `false`.](https://www.sanity.io/help/js-client-cdn-configuration) The default is `true`. If you're not sure which option to choose we recommend starting with `true` and revise later if you find that you require uncached content. [Our awesome Slack community can help guide you on how to avoid stale data tailored to your tech stack and architecture.](https://slack.sanity.io/)
 
 #### [ESM](https://hacks.mozilla.org/2018/03/es-modules-a-cartoon-deep-dive/)
 
@@ -129,7 +131,7 @@ import {createClient} from '@sanity/client'
 const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
@@ -145,7 +147,7 @@ const {createClient} = require('@sanity/client')
 const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
@@ -163,7 +165,7 @@ import {createClient, type ClientConfig} from '@sanity/client'
 const config: ClientConfig = {
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 }
 const client = createClient(config)
@@ -183,7 +185,7 @@ import {z} from 'zod'
 const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
@@ -210,7 +212,7 @@ import {createClient} from '@sanity/client'
 const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
@@ -238,7 +240,7 @@ import {createClient} from 'https://esm.sh/@sanity/client'
 const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
@@ -271,7 +273,7 @@ export default async function handler(req: NextRequest) {
   const client = createClient({
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
-    useCdn: false, // set to `true` to fetch from edge cache
+    useCdn: true, // set to `false` to bypass the edge cache
     apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
   })
 
@@ -302,7 +304,7 @@ Using [esm.sh] you can either load the client using a `<script type="module">` t
   const client = createClient({
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
-    useCdn: false, // set to `true` to fetch from edge cache
+    useCdn: true, // set to `false` to bypass the edge cache
     apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
   })
 
@@ -321,7 +323,7 @@ const {createClient} = await import('https://esm.sh/@sanity/client')
 const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  useCdn: false, // set to `true` to fetch from edge cache
+  useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
@@ -343,7 +345,7 @@ Loading the UMD script creates a `SanityClient` global that have the same export
   const client = createClient({
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
-    useCdn: false, // set to `true` to fetch from edge cache
+    useCdn: true, // set to `false` to bypass the edge cache
     apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
   })
 
@@ -364,7 +366,7 @@ The `require-unpkg` library lets you consume `npm` packages from `unpkg.com` sim
     const client = createClient({
       projectId: 'your-project-id',
       dataset: 'your-dataset-name',
-      useCdn: false, // set to `true` to fetch from edge cache
+      useCdn: true, // set to `false` to bypass the edge cache
       apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
     })
 
@@ -923,6 +925,23 @@ Semantic release will only release on configured branches, so it is safe to run 
 MIT © [Sanity.io](https://www.sanity.io/)
 
 # Migrate
+
+## From `v5`
+
+### The default `useCdn` is changed to `true`
+
+It was previously `false`. If you were relying on the default being `false` you can continue using the live API by setting it in the constructor:
+
+```diff
+import {createClient} from '@sanity/client'
+
+export const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  apiVersion: '2023-03-12',
++ useCdn: false, // set to `true` to use the edge cache
+})
+```
 
 ## From `v4`
 

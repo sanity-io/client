@@ -31,6 +31,7 @@ export interface RequestOptions {
 export interface ClientConfig {
   projectId?: string
   dataset?: string
+  /** @defaultValue true */
   useCdn?: boolean
   token?: string
   apiHost?: string
