@@ -27,7 +27,7 @@ export const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
   // token: process.env.SANITY_SECRET_TOKEN // Only if you want to update content with the client
 })
 
@@ -65,6 +65,7 @@ export async function updateDocumentTitle(_id, title) {
     - [UMD](#umd)
   - [Specifying API version](#specifying-api-version)
   - [Performing queries](#performing-queries)
+  - [Fetching Content Source Maps](#fetching-content-source-maps)
   - [Listening to queries](#listening-to-queries)
   - [Fetch a single document](#fetch-a-single-document)
   - [Fetch multiple documents in one go](#fetch-multiple-documents-in-one-go)
@@ -132,7 +133,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
 const data = await client.fetch(`count(*)`)
@@ -148,7 +149,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
 client
@@ -166,7 +167,7 @@ const config: ClientConfig = {
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 }
 const client = createClient(config)
 
@@ -186,7 +187,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
 const schema = z.number()
@@ -213,7 +214,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
 const data = await client.fetch<number>(`count(*)`)
@@ -241,7 +242,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
 const data = await client.fetch<number>(`count(*)`)
@@ -274,7 +275,7 @@ export default async function handler(req: NextRequest) {
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
     useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+    apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
   })
 
   const count = await client.fetch<number>(`count(*)`)
@@ -305,7 +306,7 @@ Using [esm.sh] you can either load the client using a `<script type="module">` t
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
     useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+    apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
   })
 
   const data = await client.fetch(`count(*)`)
@@ -324,7 +325,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
 })
 
 const data = await client.fetch(`count(*)`)
@@ -346,7 +347,7 @@ Loading the UMD script creates a `SanityClient` global that have the same export
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
     useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+    apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
   })
 
   client.fetch(`count(*)`).then((data) => console.log(`Number of documents: ${data}`))
@@ -367,7 +368,7 @@ The `require-unpkg` library lets you consume `npm` packages from `unpkg.com` sim
       projectId: 'your-project-id',
       dataset: 'your-dataset-name',
       useCdn: true, // set to `false` to bypass the edge cache
-      apiVersion: '2022-01-12', // use current date (YYYY-MM-DD) to target the latest API version
+      apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
     })
 
     const data = await client.fetch(`count(*)`)
@@ -403,6 +404,60 @@ client.fetch(query, params).then((bikes) => {
 `client.fetch(query, params = {})`
 
 Perform a query using the given parameters (if any).
+
+### Fetching Content Source Maps
+
+Content Source Maps annotate fragments in your query results with metadata about its origin: the field, document, and dataset it originated from.
+
+> **Note**
+>
+> [Content Source Maps][content-source-maps-intro] are available [as an API][content-source-maps] for select [Sanity enterprise customers][enterprise-cta]. [Contact our sales team for more information.][sales-cta]
+
+A high level API using Content Source Maps for [Visual editing][visual-editing] is also available in [`@sanity/preview-kit/client`][preview-kit-client]. It offers both a turn-key solution and a flexible API for custom experiences.
+
+Read the [Content Source Maps introduction][content-source-maps-intro] before diving in, and keep the [Content Source Maps reference][content-source-maps] handy.
+
+Enabling Content Source Maps is a two-step process:
+
+1. Update your client configuration with `resultSourceMap`.
+
+   ```js
+   import {createClient} from '@sanity/client'
+
+   const client = createClient({
+     projectId: 'your-project-id',
+     dataset: 'your-dataset-name',
+     useCdn: true, // set to `false` to bypass the edge cache
+     apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+     resultSourceMap: true, // tells the API to start sending source maps, if available
+   })
+   ```
+
+2. On `client.fetch` calls add `{filterResponse: false}` to return the full response on queries.
+
+   ```js
+   // Before
+   // const result = await client.fetch(query, params)
+
+   // After adding `filterResponse: false`
+   const {result, resultSourceMap} = await client.fetch(query, params, {filterResponse: false})
+   // Build something cool with the source map
+   console.log(resultSourceMap)
+   ```
+
+Once enabled, the `resultSourceMap` property will always exist on the response, given your `apiVersion` is recent enough. If there is no source map, it will be an empty object. There's also a TypeScript definition for it:
+
+```ts
+import type {ContentSourceMapping} from '@sanity/client'
+
+const {result, resultSourceMap} = await client.fetch(query, params, {filterResponse: false})
+
+function useContentSourceMap(resultSourceMap: ContentSourceMapping): unknown {
+  // Sky's the limit
+}
+
+useContentSourceMap(resultSourceMap)
+```
 
 ### Listening to queries
 
@@ -1242,3 +1297,9 @@ await client.request<void>({uri: '/auth/logout', method: 'POST'})
 [groqd]: https://github.com/FormidableLabs/groqd#readme
 [AbortSignal]: https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal
 [AbortController]: https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+[visual-editing]: https://www.sanity.io/docs/vercel-visual-editing?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
+[content-source-maps]: https://www.sanity.io/docs/content-source-maps?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
+[content-source-maps-intro]: https://www.sanity.io/blog/content-source-maps-announce?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
+[preview-kit-client]: https://github.com/sanity-io/preview-kit#sanitypreview-kitclient
+[sales-cta]: https://www.sanity.io/contact/sales?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
+[enterprise-cta]: https://www.sanity.io/enterprise?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch

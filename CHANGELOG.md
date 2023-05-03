@@ -5,6 +5,34 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.0.0](https://github.com/sanity-io/client/compare/v5.4.2...v6.0.0) (2023-05-03)
+
+### ⚠ BREAKING CHANGES
+
+- `useCdn` is now set to `true` by default. Our CDN ensures your content has reliably, world-wide delivery by caching queries made from your front-end. If you require fresh data for every query, perhaps for testing purposes, add `useCdn: false` to your configuration.
+- Client will now automatically retry all GET/HEAD requests as well as queries if the server responds with a 429, 502 or 503 status code - as well as on socket/DNS errors. Previously, the client would immediately throw an error. If you have application-level retry code, you should either disable the retrying in the client by passing `{maxRetries: 0}`, or remove the custom retry code and potentially alter the `retryDelay` and `maxRetries` options to match your wanted behavior.
+
+[The migration guide outlines every breaking change and how to migrate your code](https://github.com/sanity-io/client#from-v5)
+
+### Introducing Content Source Maps
+
+> **Note**
+>
+> Content Source Maps are available for select [Sanity enterprise customers](https://www.sanity.io/enterprise?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch). [Contact our sales team for more information.](https://www.sanity.io/contact/sales?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch)
+
+![](https://i.imgur.com/wt95U5Q.jpg)
+
+Content Source Maps are an optional layer of contextual metadata sent with queries to enable use cases such as [Visual Editing](https://www.sanity.io/blog/visual-editing-sanity-vercel?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch), tracing content lineage, and more. Our implementation of Content Source Maps are based on an [open standard posted on GitHub](https://github.com/sanity-io/content-source-maps), and you can read [the API documentation here](https://#https://www.sanity.io/docs/content-source-maps?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch). To get started with Content Source Maps, check out the documentation in the README file.
+
+### Features
+
+- add automatic retrying of 429, 502, 503 (#199)
+
+### Bug Fixes
+
+- make useCdn use true by default (#191)
+- undeprecate request() (#205)
+
 ## [5.4.2](https://github.com/sanity-io/client/compare/v5.4.1...v5.4.2) (2023-04-03)
 
 ### Bug Fixes
