@@ -66,7 +66,6 @@ jobs:
         # The `build` job already runs the testing suite in ubuntu and lts/*
         exclude:
           - os: ubuntu-latest
-            # Test the oldest LTS release of Node that's still receiving bugfixes and security patches, versions older than that have reached End-of-Life
             node: lts/*
     steps:
       - uses: actions/checkout@v3
