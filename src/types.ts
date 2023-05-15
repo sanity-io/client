@@ -35,6 +35,7 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
+  perspective?: 'previewDrafts' | 'published' | 'all'
   apiHost?: string
   apiVersion?: string
   proxy?: string
@@ -67,6 +68,9 @@ export interface ClientConfig {
    */
   requester?: Requester
 
+  /**
+   * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
+   */
   resultSourceMap?: boolean
 }
 
