@@ -5,6 +5,16 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.0](https://github.com/sanity-io/client/compare/v6.0.1...v6.1.0) (2023-05-15)
+
+### Features
+
+- add `perspective` parameter ([#224](https://github.com/sanity-io/client/issues/224)) ([61f36de](https://github.com/sanity-io/client/commit/61f36deb5b9d76e1ec7621d70ce9be0a8d05c3ae))
+
+### Bug Fixes
+
+- apply `resultSourceMap` parameter only to queries ([#225](https://github.com/sanity-io/client/issues/225)) ([dac8ea6](https://github.com/sanity-io/client/commit/dac8ea64f506b41d4dbfb4364e598739438efe6d))
+
 ## [6.0.1](https://github.com/sanity-io/client/compare/v6.0.0...v6.0.1) (2023-05-03)
 
 ### Bug Fixes
