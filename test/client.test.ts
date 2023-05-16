@@ -13,7 +13,7 @@ import {
 } from '@sanity/client'
 import {of as observableOf} from 'rxjs'
 import {filter} from 'rxjs/operators'
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 
 const apiHost = 'api.sanity.url'
 const defaultProjectId = 'bf1942'
@@ -334,6 +334,33 @@ describe('client', async () => {
         },
       })
       expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
+    })
+
+    test.each([429, 502, 503])('retries requests %d', async (code) => {
+      const userObj = {
+        role: null,
+        id: 'pabc123',
+        name: 'Mannen i Gata',
+        email: 'some@email.com',
+      }
+
+      for (let i = 0; i < 5; i++) {
+        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
+        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
+        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
+        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
+        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(200, userObj)
+      }
+
+      const fn = vi.fn().mockReturnValue(100)
+      const client = createClient({
+        apiVersion: '2023-03-25',
+        useProjectHostname: false,
+        apiHost: `https://${apiHost}`,
+        retryDelay: fn,
+      })
+      await expect(client.request({url: '/users/me'})).resolves.toEqual(userObj)
+      expect(fn).toHaveBeenCalledTimes(4)
     })
   })
 
