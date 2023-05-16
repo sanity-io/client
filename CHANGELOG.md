@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.1](https://github.com/sanity-io/client/compare/v6.1.0...v6.1.1) (2023-05-16)
+
+### Bug Fixes
+
+- prevent crash when using `url` option instead of `uri` ([#231](https://github.com/sanity-io/client/issues/231)) ([573c1bd](https://github.com/sanity-io/client/commit/573c1bddb67ae6b94d8ba0e3ad154b530d54274a))
+
 ## [6.1.0](https://github.com/sanity-io/client/compare/v6.0.1...v6.1.0) (2023-05-15)
 
 ### Features
