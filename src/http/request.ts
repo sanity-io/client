@@ -66,7 +66,8 @@ function shouldRetry(err: any, attempt: number, options: any) {
   // By default `retry.shouldRetry` doesn't retry on server errors so we add our own logic.
 
   const isSafe = options.method === 'GET' || options.method === 'HEAD'
-  const isQuery = options.uri.startsWith('/data/query')
+  const uri = options.uri || options.url
+  const isQuery = uri.startsWith('/data/query')
   const isRetriableResponse =
     err.response &&
     (err.response.statusCode === 429 ||
