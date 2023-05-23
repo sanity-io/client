@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.2](https://github.com/sanity-io/client/compare/v6.1.1...v6.1.2) (2023-05-23)
+
+### Bug Fixes
+
+- update `RawQueryResponse` response type properties ([#232](https://github.com/sanity-io/client/issues/232)) ([5eb0272](https://github.com/sanity-io/client/commit/5eb027255207d55c648d257329980bc2533c268c))
+
 ## [6.1.1](https://github.com/sanity-io/client/compare/v6.1.0...v6.1.1) (2023-05-16)
 
 ### Bug Fixes
