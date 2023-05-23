@@ -402,7 +402,7 @@ describe('client', async () => {
         .get(`/v1/data/query/foo?query=${qs}`)
         .reply(200, {
           ms: 123,
-          q: query,
+          query: query,
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -421,13 +421,13 @@ describe('client', async () => {
         .get(`/v1/data/query/foo?query=${qs}`)
         .reply(200, {
           ms: 123,
-          q: query,
+          query: query,
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
       const res = await getClient().fetch(query, params, {filterResponse: false})
       expect(res.ms, 'should include timing info').toBe(123)
-      expect(res.q, 'should include query').toBe(query)
+      expect(res.query, 'should include query').toBe(query)
       expect(res.result.length, 'length should match').toBe(1)
       expect(res.result[0].rating, 'data should match').toBe(5)
     })
@@ -437,7 +437,7 @@ describe('client', async () => {
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
         .reply(200, {
           ms: 123,
-          q: '*',
+          query: '*',
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -451,7 +451,7 @@ describe('client', async () => {
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
         .reply(200, {
           ms: 123,
-          q: '*',
+          query: '*',
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -465,7 +465,7 @@ describe('client', async () => {
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
         .reply(200, {
           ms: 123,
-          q: '*',
+          query: '*',
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -532,7 +532,7 @@ describe('client', async () => {
 
         nock(projectHost()).get(`/v1/data/query/foo?query=*`).delay(100).reply(200, {
           ms: 123,
-          q: '*',
+          query: '*',
           result: [],
         })
 
@@ -1122,7 +1122,7 @@ describe('client', async () => {
         .query({query, ...qParams})
         .reply(200, {
           ms: 123,
-          q: query,
+          query: query,
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -1148,7 +1148,7 @@ describe('client', async () => {
         .post('/v1/data/query/foo', '*')
         .reply(200, {
           ms: 123,
-          q: query,
+          query: query,
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -1179,7 +1179,7 @@ describe('client', async () => {
         .post('/v1/data/query/foo', '*')
         .reply(200, {
           ms: 123,
-          q: query,
+          query: query,
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
@@ -1206,7 +1206,7 @@ describe('client', async () => {
           .post('/v1/data/query/foo?tag=myapp.silly-query', '*')
           .reply(200, {
             ms: 123,
-            q: query,
+            query: query,
             result: [{_id: 'njgNkngskjg', rating: 5}],
           })
 
@@ -1233,7 +1233,7 @@ describe('client', async () => {
         .post('/v1/data/query/foo', '*')
         .reply(200, {
           ms: 123,
-          q: query,
+          query: query,
           result: [{_id: 'njgNkngskjg', rating: 5}],
         })
 
