@@ -489,10 +489,10 @@ export type UnfilteredResponseQueryOptions = RequestOptions & {
 
 /** @public */
 export interface RawQueryResponse<R> {
-  q: string
+  query: string
   ms: number
   result: R
-  resultSourceMap: ContentSourceMap
+  resultSourceMap?: ContentSourceMap
 }
 
 /** @internal */
