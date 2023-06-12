@@ -29,13 +29,16 @@ export interface RequestOptions {
 }
 
 /** @public */
+export type ClientPerspective = 'previewDrafts' | 'published' | 'raw'
+
+/** @public */
 export interface ClientConfig {
   projectId?: string
   dataset?: string
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
-  perspective?: 'previewDrafts' | 'published' | 'raw'
+  perspective?: ClientPerspective
   apiHost?: string
   apiVersion?: string
   proxy?: string
