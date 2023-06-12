@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.3](https://github.com/sanity-io/client/compare/v6.1.2...v6.1.3) (2023-06-12)
+
+### Bug Fixes
+
+- add `ClientPerspective` type export ([4c8664d](https://github.com/sanity-io/client/commit/4c8664d7673771c3960648d2f8317942e22fbd1c))
+- update `perspective` typings ([74a02f8](https://github.com/sanity-io/client/commit/74a02f85cb344418757d19ab50d22dcf21526fd6))
+
 ## [6.1.2](https://github.com/sanity-io/client/compare/v6.1.1...v6.1.2) (2023-05-23)
 
 ### Bug Fixes
