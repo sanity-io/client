@@ -307,7 +307,7 @@ export function _requestObservable<R>(
     if (config.resultSourceMap) {
       options.query = {resultSourceMap: true, ...options.query}
     }
-    if (typeof config.perspective === 'string' && config.perspective !== 'all') {
+    if (typeof config.perspective === 'string' && config.perspective !== 'raw') {
       options.query = {perspective: config.perspective, ...options.query}
     }
   }

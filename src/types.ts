@@ -35,7 +35,7 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
-  perspective?: 'previewDrafts' | 'published' | 'all'
+  perspective?: 'previewDrafts' | 'published' | 'raw'
   apiHost?: string
   apiVersion?: string
   proxy?: string
@@ -193,6 +193,10 @@ export type SanityDocument<T extends Record<string, Any> = Record<string, Any>> 
   _type: string
   _createdAt: string
   _updatedAt: string
+  /**
+   * Present when `perspective` is set to `previewDrafts`
+   */
+  _originalId?: string
 }
 
 /** @internal */
