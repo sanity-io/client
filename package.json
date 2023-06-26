@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.1.7",
+  "version": "6.2.0-fetch.6",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -71,6 +71,7 @@
     "prepublishOnly": "npm run build",
     "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
     "test": "vitest",
+    "type-check": "tsc --noEmit",
     "test:browser": "npm test -- --config ./vitest.browser.config.ts",
     "test:bun": "(cd runtimes/bun && bun wiptest)",
     "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
@@ -91,7 +92,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
-    "get-it": "^8.1.0",
+    "get-it": "^8.2.0",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {

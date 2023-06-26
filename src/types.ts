@@ -28,6 +28,15 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
+/**
+ * Options for the native `fetch` feature, used by the Next.js app-router
+ * @public
+ */
+export interface RequestFetchOptions<T = 'next'> {
+  cache?: RequestInit['cache']
+  next?: T extends keyof RequestInit ? RequestInit[T] : never
+}
+
 /** @public */
 export type ClientPerspective = 'previewDrafts' | 'published' | 'raw'
 
@@ -76,6 +85,10 @@ export interface ClientConfig {
    * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
    */
   resultSourceMap?: boolean
+  /**
+   * Experimental, opts-in to using native `fetch` as transport in order to make full use of React Server Components
+   */
+  fetch?: RequestFetchOptions | boolean
 }
 
 /** @public */
@@ -486,12 +499,18 @@ export interface ListenOptions {
 }
 
 /** @public */
-export type FilteredResponseQueryOptions = RequestOptions & {
+export type ResponseQueryOptions<T = 'next'> = RequestOptions & {
+  cache?: RequestInit['cache']
+  next?: T extends keyof RequestInit ? RequestInit[T] : never
+}
+
+/** @public */
+export type FilteredResponseQueryOptions = ResponseQueryOptions & {
   filterResponse?: true
 }
 
 /** @public */
-export type UnfilteredResponseQueryOptions = RequestOptions & {
+export type UnfilteredResponseQueryOptions = ResponseQueryOptions & {
   filterResponse: false
 }
 
