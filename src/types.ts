@@ -38,6 +38,7 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
+  /** @defaultValue 'raw' */
   perspective?: ClientPerspective
   apiHost?: string
   apiVersion?: string
