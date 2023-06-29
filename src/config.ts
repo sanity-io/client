@@ -48,6 +48,17 @@ export const initConfig = (
     throw new Error('Configuration must contain `projectId`')
   }
 
+  if (
+    'encodeSourceMapAtPath' in newConfig ||
+    'encodeSourceMap' in newConfig ||
+    'studioUrl' in newConfig ||
+    'logger' in newConfig
+  ) {
+    throw new Error(
+      `It looks like you're using options meant for '@sanity/preview-kit/client', such as 'encodeSourceMapAtPath', 'encodeSourceMap', 'studioUrl' and 'logger'. Make sure you're using the right import.`
+    )
+  }
+
   const isBrowser = typeof window !== 'undefined' && window.location && window.location.hostname
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 

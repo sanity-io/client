@@ -137,6 +137,30 @@ describe('client', async () => {
       expect(() => createClient({})).toThrow(/projectId/)
     })
 
+    test('throws if encodeSourceMapAtPath is provided', () => {
+      // @ts-expect-error - we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', encodeSourceMapAtPath: () => true})).toThrow(
+        /encodeSourceMapAtPath/
+      )
+    })
+
+    test('throws if encodeSourceMap is provided', () => {
+      // @ts-expect-error - we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', encodeSourceMap: true})).toThrow(
+        /encodeSourceMap/
+      )
+    })
+
+    test('throws if studioUrl is provided', () => {
+      // @ts-expect-error - we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', studioUrl: '/studio'})).toThrow(/studioUrl/)
+    })
+
+    test('throws if logger is provided', () => {
+      // @ts-expect-error - we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', logger: console})).toThrow(/logger/)
+    })
+
     test('throws on invalid project ids', () => {
       expect(() => createClient({projectId: '*foo*'})).toThrow(/projectId.*?can only contain/i)
     })
