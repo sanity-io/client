@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.6](https://github.com/sanity-io/client/compare/v6.1.5...v6.1.6) (2023-07-04)
+
+### Bug Fixes
+
+- add GROQ query params when large POST queries ([#255](https://github.com/sanity-io/client/issues/255)) ([4e7a5de](https://github.com/sanity-io/client/commit/4e7a5deb51098293200f97ccabc12a40194dde39))
+
 ## [6.1.5](https://github.com/sanity-io/client/compare/v6.1.4...v6.1.5) (2023-06-29)
 
 ### Bug Fixes
