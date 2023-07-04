@@ -303,7 +303,10 @@ export function _requestObservable<R>(
   }
 
   // GROQ query-only parameters
-  if (['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && uri.indexOf('/data/query/') === 0) {
+  if (
+    ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
+    uri.indexOf('/data/query/') === 0
+  ) {
     if (config.resultSourceMap) {
       options.query = {resultSourceMap: true, ...options.query}
     }
