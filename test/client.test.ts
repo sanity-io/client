@@ -470,6 +470,27 @@ describe('client', async () => {
       expect(res[0].rating, 'data should match').toBe(5)
     })
 
+    test.skipIf(isEdge)(
+      'can query for documents with resultSourceMap and perspective',
+      async () => {
+        nock(projectHost())
+          .get(`/v1/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
+          .reply(200, {
+            ms: 123,
+            query: '*',
+            result: [{_id: 'njgNkngskjg', rating: 5}],
+          })
+
+        const client = getClient({
+          resultSourceMap: true,
+          perspective: 'previewDrafts',
+        })
+        const res = await client.fetch('*', {})
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      }
+    )
+
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
       nock(projectHost())
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
@@ -1235,6 +1256,38 @@ describe('client', async () => {
           })
 
         const res = await getClient().fetch(query, params, {tag: 'myapp.silly-query'})
+        expect(res.length, 'length should match').toEqual(1)
+        expect(res[0].rating, 'data should match').toEqual(5)
+      }
+    )
+
+    test.skipIf(isEdge)(
+      'uses POST for long queries, but puts resultSourceMap and perspective as query params',
+      async () => {
+        const clause: string[] = []
+        const params: Record<string, string> = {}
+        for (let i = 1766; i <= 2016; i++) {
+          clause.push(`title == $beerName${i}`)
+          params[`beerName${i}`] = `some beer ${i}`
+        }
+
+        // Again, just... don't do this.
+        const query = `*[_type == "beer" && (${clause.join(' || ')})]`
+
+        nock(projectHost())
+          .filteringRequestBody(/.*/, '*')
+          .post('/v1/data/query/foo?resultSourceMap=true&perspective=previewDrafts', '*')
+          .reply(200, {
+            ms: 123,
+            query: query,
+            result: [{_id: 'njgNkngskjg', rating: 5}],
+          })
+
+        const client = getClient({
+          perspective: 'previewDrafts',
+          resultSourceMap: true,
+        })
+        const res = await client.fetch(query, params)
         expect(res.length, 'length should match').toEqual(1)
         expect(res[0].rating, 'data should match').toEqual(5)
       }
