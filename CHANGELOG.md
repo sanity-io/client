@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.7](https://github.com/sanity-io/client/compare/v6.1.6...v6.1.7) (2023-07-07)
+
+### Bug Fixes
+
+- validate `perspective` config ([#252](https://github.com/sanity-io/client/issues/252)) ([d6e0630](https://github.com/sanity-io/client/commit/d6e06309dbe29a4a3a85373e4635f538510051b2))
+
 ## [6.1.6](https://github.com/sanity-io/client/compare/v6.1.5...v6.1.6) (2023-07-04)
 
 ### Bug Fixes
