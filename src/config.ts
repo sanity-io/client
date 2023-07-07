@@ -1,5 +1,5 @@
 import {generateHelpUrl} from './generateHelpUrl'
-import type {ClientConfig, InitializedClientConfig} from './types'
+import type {ClientConfig, ClientPerspective, InitializedClientConfig} from './types'
 import * as validate from './validators'
 import * as warnings from './warnings'
 
@@ -27,6 +27,19 @@ export const validateApiVersion = function validateApiVersion(apiVersion: string
   }
 }
 
+export const validateApiPerspective = function validateApiPerspective(perspective: string) {
+  switch (perspective as ClientPerspective) {
+    case 'previewDrafts':
+    case 'published':
+    case 'raw':
+      return
+    default:
+      throw new TypeError(
+        'Invalid API perspective string, expected `published`, `previewDrafts` or `raw`'
+      )
+  }
+}
+
 export const initConfig = (
   config: Partial<ClientConfig>,
   prevConfig: Partial<ClientConfig>
@@ -46,6 +59,10 @@ export const initConfig = (
 
   if (projectBased && !newConfig.projectId) {
     throw new Error('Configuration must contain `projectId`')
+  }
+
+  if (typeof newConfig.perspective === 'string') {
+    validateApiPerspective(newConfig.perspective)
   }
 
   if (

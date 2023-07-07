@@ -161,6 +161,22 @@ describe('client', async () => {
       expect(() => createClient({projectId: 'abc123', logger: console})).toThrow(/logger/)
     })
 
+    test('throws on invalid perspective', () => {
+      expect(() => createClient({projectId: 'abc123', perspective: 'published'})).not.toThrow(
+        /Invalid API perspective/
+      )
+      expect(() => createClient({projectId: 'abc123', perspective: 'previewDrafts'})).not.toThrow(
+        /Invalid API perspective/
+      )
+      expect(() => createClient({projectId: 'abc123', perspective: 'raw'})).not.toThrow(
+        /Invalid API perspective/
+      )
+      // @ts-expect-error -- we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', perspective: 'preview drafts'})).toThrow(
+        /Invalid API perspective/
+      )
+    })
+
     test('throws on invalid project ids', () => {
       expect(() => createClient({projectId: '*foo*'})).toThrow(/projectId.*?can only contain/i)
     })
