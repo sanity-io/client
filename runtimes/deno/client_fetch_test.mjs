@@ -10,8 +10,8 @@ const query = /* groq */ `count(*[studioVersion == 3])`
 Deno.test('native fetch', async () => {
   const res = await fetch(
     `https://${projectId}.apicdn.sanity.io/${apiVersion}/data/query/${dataset}?query=${encodeURIComponent(
-      query
-    )}`
+      query,
+    )}`,
   )
   const {result: data} = await res.json()
   assert(Number.isInteger(data))

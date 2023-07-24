@@ -32,7 +32,7 @@ export function defineHttpRequest(
   {
     maxRetries = 5,
     retryDelay,
-  }: {maxRetries?: number; retryDelay?: (attemptNumber: number) => number}
+  }: {maxRetries?: number; retryDelay?: (attemptNumber: number) => number},
 ): HttpRequest {
   const request = getIt([
     maxRetries > 0

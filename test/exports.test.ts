@@ -19,11 +19,11 @@ describe('pkg.exports["."]', () => {
   test.skip('default exports should not be used', async () => {
     await expect(
       import('../src/index'),
-      `src/index.ts shouldn't have a default export`
+      `src/index.ts shouldn't have a default export`,
     ).resolves.not.toHaveProperty('default')
     await expect(
       import('../src/index.browser'),
-      `src/index.browser.ts shouldn't have a default export`
+      `src/index.browser.ts shouldn't have a default export`,
     ).resolves.not.toHaveProperty('default')
   })
 })

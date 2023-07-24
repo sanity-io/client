@@ -15,7 +15,7 @@ describe('Client config warnings', async () => {
   test('warns if useCdn is not given', () => {
     createClient({projectId: 'abc123', apiVersion: '1'})
     expect(warn).toHaveBeenCalledWith(
-      "Since you haven't set a value for `useCdn`, we will deliver content using our global, edge-cached API-CDN. If you wish to have content delivered faster, set `useCdn: false` to use the Live API. Note: You may incur higher costs using the live API."
+      "Since you haven't set a value for `useCdn`, we will deliver content using our global, edge-cached API-CDN. If you wish to have content delivered faster, set `useCdn: false` to use the Live API. Note: You may incur higher costs using the live API.",
     )
   })
 
@@ -24,7 +24,7 @@ describe('Client config warnings', async () => {
     global.window = {location: {hostname: 'localhost'}} as any
     createClient({projectId: 'abc123', useCdn: false, token: 'foo', apiVersion: '1'})
     expect(warn).toHaveBeenCalledWith(
-      'You have configured Sanity client to use a token in the browser. This may cause unintentional security issues. See https://www.sanity.io/help/js-client-browser-token for more information and how to hide this warning.'
+      'You have configured Sanity client to use a token in the browser. This may cause unintentional security issues. See https://www.sanity.io/help/js-client-browser-token for more information and how to hide this warning.',
     )
     global.window = restoreWindow
   })
