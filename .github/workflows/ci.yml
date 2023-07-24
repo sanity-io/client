@@ -159,7 +159,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output
-      - uses: antongolub/action-setup-bun@cae75ff7a1b635e9cc79bf0bc5c6302b43b29989 # v1
+      - uses: antongolub/action-setup-bun@cd8fde41d342e75098c67856ffc9c6cf6c1217e6 # v1
       - run: npm run test:bun
 
   node-runtimes:
