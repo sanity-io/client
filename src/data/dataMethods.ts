@@ -323,7 +323,6 @@ export function _requestObservable<R>(
   ) as RequestOptions
 
   const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- the typings thinks it's optional because it's not required to specify it when calling createClient, but it's always defined in practice since SanityClient provides a default
     httpRequest(reqOptions, config.requester!).subscribe(subscriber),
   )
 

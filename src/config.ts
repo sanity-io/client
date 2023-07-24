@@ -86,7 +86,6 @@ export const initConfig = (
   }
 
   if (projectBased) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- the nullability here is wrong, as line 48 throws an error if it's undefined
     validate.projectId(newConfig.projectId!)
   }
 
