@@ -28,7 +28,7 @@ describe('dataMethods', async () => {
 
     test('can use getUrl() to get API-relative paths (custom api version)', () => {
       expect(dataMethods._getUrl(getClient({apiVersion: '2019-01-29'}), '/bar/baz')).toEqual(
-        `${projectHost()}/v2019-01-29/bar/baz`
+        `${projectHost()}/v2019-01-29/bar/baz`,
       )
     })
   })

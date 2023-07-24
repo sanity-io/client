@@ -35,7 +35,7 @@ const defaultOptions = {
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
-  params?: QueryParams
+  params?: QueryParams,
 ): Observable<MutationEvent<R>>
 /**
  * Set up a listener that will be notified when mutations occur on documents matching the provided query/filter.
@@ -49,14 +49,14 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: QueryParams,
-  options?: ListenOptions
+  options?: ListenOptions,
 ): Observable<ListenEvent<R>>
 /** @internal */
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: QueryParams,
-  opts: ListenOptions = {}
+  opts: ListenOptions = {},
 ): Observable<MutationEvent<R> | ListenEvent<R>> {
   const {url, token, withCredentials, requestTagPrefix} = this.config()
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag

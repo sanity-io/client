@@ -91,7 +91,7 @@ describe.skipIf(typeof EdgeRuntime === 'string')('.listen()', () => {
           channel!.close()
         })
       },
-      {token: 'foobar'}
+      {token: 'foobar'},
     )
 
     try {
@@ -199,7 +199,7 @@ describe.skipIf(typeof EdgeRuntime === 'string')('.listen()', () => {
         client.listen(`*{"foo":"${pad}"`).subscribe({
           error: (err) => {
             expect(err.message, 'should have passed error message').toBe(
-              'Query too large for listener'
+              'Query too large for listener',
             )
 
             resolve()

@@ -35,14 +35,14 @@ export const validateApiPerspective = function validateApiPerspective(perspectiv
       return
     default:
       throw new TypeError(
-        'Invalid API perspective string, expected `published`, `previewDrafts` or `raw`'
+        'Invalid API perspective string, expected `published`, `previewDrafts` or `raw`',
       )
   }
 }
 
 export const initConfig = (
   config: Partial<ClientConfig>,
-  prevConfig: Partial<ClientConfig>
+  prevConfig: Partial<ClientConfig>,
 ): InitializedClientConfig => {
   const specifiedConfig = Object.assign({}, prevConfig, config)
   if (!specifiedConfig.apiVersion) {
@@ -72,7 +72,7 @@ export const initConfig = (
     'logger' in newConfig
   ) {
     throw new Error(
-      `It looks like you're using options meant for '@sanity/preview-kit/client', such as 'encodeSourceMapAtPath', 'encodeSourceMap', 'studioUrl' and 'logger'. Make sure you're using the right import.`
+      `It looks like you're using options meant for '@sanity/preview-kit/client', such as 'encodeSourceMapAtPath', 'encodeSourceMap', 'studioUrl' and 'logger'. Make sure you're using the right import.`,
     )
   }
 

@@ -68,7 +68,7 @@ describe('client', async () => {
       expect(
         client.config().projectId,
 
-        'returned object does not mutate client config'
+        'returned object does not mutate client config',
       ).toEqual('abc123')
     })
 
@@ -79,7 +79,7 @@ describe('client', async () => {
       expect(
         client.observable.config().projectId,
 
-        'Observable API gets reconfigured'
+        'Observable API gets reconfigured',
       ).toEqual('def456')
     })
 
@@ -127,7 +127,7 @@ describe('client', async () => {
       expect(
         newClient.config().projectId,
 
-        'existing config cloned'
+        'existing config cloned',
       ).toEqual(client.config().projectId)
       expect(newClient.config().dataset, 'modified properties are set').toEqual('abc321')
       expect(() => newClient.config({projectId: 'bar'})).toThrow(/reconfigure/)
@@ -140,14 +140,14 @@ describe('client', async () => {
     test('throws if encodeSourceMapAtPath is provided', () => {
       // @ts-expect-error - we want to test that it throws an error
       expect(() => createClient({projectId: 'abc123', encodeSourceMapAtPath: () => true})).toThrow(
-        /encodeSourceMapAtPath/
+        /encodeSourceMapAtPath/,
       )
     })
 
     test('throws if encodeSourceMap is provided', () => {
       // @ts-expect-error - we want to test that it throws an error
       expect(() => createClient({projectId: 'abc123', encodeSourceMap: true})).toThrow(
-        /encodeSourceMap/
+        /encodeSourceMap/,
       )
     })
 
@@ -163,17 +163,17 @@ describe('client', async () => {
 
     test('throws on invalid perspective', () => {
       expect(() => createClient({projectId: 'abc123', perspective: 'published'})).not.toThrow(
-        /Invalid API perspective/
+        /Invalid API perspective/,
       )
       expect(() => createClient({projectId: 'abc123', perspective: 'previewDrafts'})).not.toThrow(
-        /Invalid API perspective/
+        /Invalid API perspective/,
       )
       expect(() => createClient({projectId: 'abc123', perspective: 'raw'})).not.toThrow(
-        /Invalid API perspective/
+        /Invalid API perspective/,
       )
       // @ts-expect-error -- we want to test that it throws an error
       expect(() => createClient({projectId: 'abc123', perspective: 'preview drafts'})).toThrow(
-        /Invalid API perspective/
+        /Invalid API perspective/,
       )
     })
 
@@ -183,19 +183,19 @@ describe('client', async () => {
 
     test('throws on invalid dataset names', () => {
       expect(() => createClient({projectId: 'abc123', dataset: '*foo*'})).toThrow(
-        /Datasets can only contain/i
+        /Datasets can only contain/i,
       )
     })
 
     test('throws on invalid request tag prefix', () => {
       expect(() =>
-        createClient({projectId: 'abc123', dataset: 'foo', requestTagPrefix: 'no#shot'})
+        createClient({projectId: 'abc123', dataset: 'foo', requestTagPrefix: 'no#shot'}),
       ).toThrow(/tag can only contain alphanumeric/i)
     })
 
     test('accepts alias in dataset field', () => {
       expect(() => createClient({projectId: 'abc123', dataset: '~alias'})).not.toThrow(
-        /Datasets can only contain/i
+        /Datasets can only contain/i,
       )
     })
 
@@ -211,9 +211,9 @@ describe('client', async () => {
         nock(projectHost()).get('/v2019-01-29/ping').reply(200, {pong: true})
 
         await expect(
-          getClient({apiVersion: '2019-01-29'}).request({uri: '/ping'})
+          getClient({apiVersion: '2019-01-29'}).request({uri: '/ping'}),
         ).resolves.toMatchObject({pong: true})
-      }
+      },
     )
 
     test.skipIf(isEdge)('observable requests are lazy', async () => {
@@ -504,7 +504,7 @@ describe('client', async () => {
         const res = await client.fetch('*', {})
         expect(res.length, 'length should match').toBe(1)
         expect(res[0].rating, 'data should match').toBe(5)
-      }
+      },
     )
 
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
@@ -579,7 +579,7 @@ describe('client', async () => {
       } catch (err: any) {
         expect(err, 'should be error').toBeInstanceOf(Error)
         expect(err.message, 'should contain error description').toContain(
-          response.error.description
+          response.error.description,
         )
         expect(err.details.column, 'error should have details object').toBe(response.error.column)
         expect(err.details.line, 'error should have details object').toBe(response.error.line)
@@ -608,7 +608,7 @@ describe('client', async () => {
           expect(err).toBeInstanceOf(Error)
           expect(err.name, 'should throw AbortError').toBe('AbortError')
         }
-      }
+      },
     )
 
     test.skipIf(isEdge)('can query for single document', async () => {
@@ -634,7 +634,7 @@ describe('client', async () => {
 
       await expect(
         getClient().getDocument('abc123', {tag: 'some.tag'}),
-        'data should match'
+        'data should match',
       ).resolves.toMatchObject({
         mood: 'lax',
       })
@@ -708,7 +708,7 @@ describe('client', async () => {
           expect(err, 'should be error').toBeInstanceOf(Error)
           expect(err.message, 'should contain status code').toContain('HTTP 400')
         }
-      }
+      },
     )
 
     test.skipIf(isEdge)('populates response body on errors', async () => {
@@ -727,7 +727,7 @@ describe('client', async () => {
 
     test('throws if trying to perform data request without dataset', () => {
       expect(() => createClient({projectId: 'foo'}).fetch('blah')).toThrowError(
-        /dataset.*?must be provided/
+        /dataset.*?must be provided/,
       )
     })
 
@@ -759,7 +759,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {
           transactionId: '123abc',
@@ -781,7 +781,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?tag=dino.import&returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {
           transactionId: '123abc',
@@ -835,7 +835,7 @@ describe('client', async () => {
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&autoGenerateArrayKeys=true&visibility=sync',
           {
             mutations: [{create: doc}],
-          }
+          },
         )
         .reply(200, {
           transactionId: 'abc123',
@@ -861,7 +861,7 @@ describe('client', async () => {
           '/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync',
           {
             mutations: [{create: doc}],
-          }
+          },
         )
         .reply(200, {
           transactionId: 'abc123',
@@ -884,7 +884,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {
           transactionId: '123abc',
@@ -927,7 +927,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
 
@@ -951,7 +951,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
@@ -963,7 +963,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {transactionId: 'abc123'})
 
@@ -975,7 +975,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?tag=delete.abc&returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
@@ -989,7 +989,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {transactionId: 'abc123'})
 
@@ -1046,7 +1046,7 @@ describe('client', async () => {
           '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync',
           {
             mutations,
-          }
+          },
         )
         .reply(200, {
           transactionId: 'foo',
@@ -1070,7 +1070,7 @@ describe('client', async () => {
         })
 
       await expect(
-        getClient().mutate(mutations, {transactionId: 'spec-ific'})
+        getClient().mutate(mutations, {transactionId: 'spec-ific'}),
       ).resolves.not.toThrow()
     })
 
@@ -1088,7 +1088,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync&autoGenerateArrayKeys=true',
-          {mutations}
+          {mutations},
         )
         .reply(200, {
           transactionId: 'foo',
@@ -1096,7 +1096,7 @@ describe('client', async () => {
         })
 
       await expect(
-        getClient().mutate(mutations, {autoGenerateArrayKeys: true})
+        getClient().mutate(mutations, {autoGenerateArrayKeys: true}),
       ).resolves.not.toThrow()
     })
 
@@ -1108,7 +1108,7 @@ describe('client', async () => {
           '/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync',
           {
             mutations,
-          }
+          },
         )
         .reply(200, {
           transactionId: 'foo',
@@ -1124,7 +1124,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync&skipCrossDatasetReferenceValidation=true',
-          {mutations}
+          {mutations},
         )
         .reply(200, {
           transactionId: 'foo',
@@ -1132,7 +1132,7 @@ describe('client', async () => {
         })
 
       await expect(
-        getClient().mutate(mutations, {tag: 'foobar', skipCrossDatasetReferenceValidation: true})
+        getClient().mutate(mutations, {tag: 'foobar', skipCrossDatasetReferenceValidation: true}),
       ).resolves.not.toThrow()
     })
 
@@ -1146,7 +1146,7 @@ describe('client', async () => {
             '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync',
             {
               mutations,
-            }
+            },
           )
           .reply(200, {
             transactionId: 'foo',
@@ -1159,9 +1159,9 @@ describe('client', async () => {
             skipCrossDatasetReferenceValidation: undefined,
             returnDocuments: undefined,
             autoGenerateArrayKeys: undefined,
-          })
+          }),
         ).resolves.not.toThrow()
-      }
+      },
     )
 
     test.skipIf(isEdge)('uses GET for queries below limit', async () => {
@@ -1274,7 +1274,7 @@ describe('client', async () => {
         const res = await getClient().fetch(query, params, {tag: 'myapp.silly-query'})
         expect(res.length, 'length should match').toEqual(1)
         expect(res[0].rating, 'data should match').toEqual(5)
-      }
+      },
     )
 
     test.skipIf(isEdge)(
@@ -1306,7 +1306,7 @@ describe('client', async () => {
         const res = await client.fetch(query, params)
         expect(res.length, 'length should match').toEqual(1)
         expect(res[0].rating, 'data should match').toEqual(5)
-      }
+      },
     )
 
     test.skipIf(isEdge)('uses POST for long queries also towards CDN', async () => {
@@ -1397,7 +1397,7 @@ describe('client', async () => {
         getClient()
           .patch('abc123')
           .unset('bitter' as any)
-          .serialize()
+          .serialize(),
       ).toThrow(/non-array given/)
     })
 
@@ -1419,19 +1419,19 @@ describe('client', async () => {
       expect(() =>
         getClient()
           .patch('abc123')
-          .insert('bitter' as any, 'sel', ['raf'])
+          .insert('bitter' as any, 'sel', ['raf']),
       ).toThrow(/one of: "before", "after", "replace"/)
 
       expect(() =>
         getClient()
           .patch('abc123')
-          .insert('before', 123 as any, ['raf'])
+          .insert('before', 123 as any, ['raf']),
       ).toThrow(/must be a string/)
 
       expect(() =>
         getClient()
           .patch('abc123')
-          .insert('before', 'prop', 'blah' as any)
+          .insert('before', 'prop', 'blah' as any),
       ).toThrow(/must be an array/)
     })
 
@@ -1484,7 +1484,7 @@ describe('client', async () => {
       expect(() =>
         getClient()
           .patch(123 as any)
-          .serialize()
+          .serialize(),
       ).toThrow(/unknown selection/i)
     })
 
@@ -1505,19 +1505,19 @@ describe('client', async () => {
     test('all patch methods throw on non-objects being passed as argument', () => {
       const patch = getClient().patch('abc123')
       expect(() => patch.set(null as any), 'set throws').toThrow(
-        /set\(\) takes an object of properties/
+        /set\(\) takes an object of properties/,
       )
       expect(() => patch.setIfMissing('foo' as any), 'setIfMissing throws').toThrow(
-        /setIfMissing\(\) takes an object of properties/
+        /setIfMissing\(\) takes an object of properties/,
       )
       expect(() => patch.inc('foo' as any), 'inc throws').toThrow(
-        /inc\(\) takes an object of properties/
+        /inc\(\) takes an object of properties/,
       )
       expect(() => patch.dec('foo' as any), 'dec throws').toThrow(
-        /dec\(\) takes an object of properties/
+        /dec\(\) takes an object of properties/,
       )
       expect(() => patch.diffMatchPatch('foo' as any), 'diffMatchPatch throws').toThrow(
-        /diffMatchPatch\(\) takes an object of properties/
+        /diffMatchPatch\(\) takes an object of properties/,
       )
     })
 
@@ -1550,7 +1550,7 @@ describe('client', async () => {
           .set({visited: true})
           .commit({returnDocuments: false, tag: 'company.setvisited'})
         expect(res.transactionId, 'applies given patch').toEqual('blatti')
-      }
+      },
     )
 
     test.skipIf(isEdge)(
@@ -1568,7 +1568,7 @@ describe('client', async () => {
           .set({visited: true})
           .commit({returnDocuments: false, autoGenerateArrayKeys: true})
         expect(res.transactionId, 'applies given patch').toEqual('blatti')
-      }
+      },
     )
 
     test.skipIf(isEdge)('executes patch with given token override commit() is called', async () => {
@@ -1591,7 +1591,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {
           transactionId: 'blatti',
@@ -1621,7 +1621,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(400)
 
@@ -1661,7 +1661,7 @@ describe('client', async () => {
     test('patch has toJSON() which serializes patch', () => {
       const patch = getClient().patch('abc123').inc({count: 1})
       expect(JSON.parse(JSON.stringify(patch))).toEqual(
-        JSON.parse(JSON.stringify({id: 'abc123', inc: {count: 1}}))
+        JSON.parse(JSON.stringify({id: 'abc123', inc: {count: 1}})),
       )
     })
 
@@ -1669,7 +1669,7 @@ describe('client', async () => {
       const patch = new Patch('foo.bar')
       expect(
         patch.inc({foo: 1}).dec({bar: 2}).serialize(),
-        'patch should work without context'
+        'patch should work without context',
       ).toEqual({id: 'foo.bar', inc: {foo: 1}, dec: {bar: 2}})
     })
 
@@ -1704,7 +1704,7 @@ describe('client', async () => {
     test('can apply ifRevisionId constraint', () => {
       expect(
         getClient().patch('abc123').inc({count: 1}).ifRevisionId('someRev').serialize(),
-        'patch should be able to apply ifRevisionId constraint'
+        'patch should be able to apply ifRevisionId constraint',
       ).toEqual({id: 'abc123', inc: {count: 1}, ifRevisionID: 'someRev'})
     })
   })
@@ -1733,7 +1733,7 @@ describe('client', async () => {
 
       expect(
         combined.serialize(),
-        'combined transaction should have both create and delete ops'
+        'combined transaction should have both create and delete ops',
       ).toEqual([{create: {_type: 'document', count: 1}}, {delete: {id: 'foobar'}}])
     })
 
@@ -1806,7 +1806,7 @@ describe('client', async () => {
           .transaction()
           .patch('moofoo', (() => {
             /* intentional noop */
-          }) as any)
+          }) as any),
       ).toThrow(/must return the patch/)
     })
 
@@ -1854,20 +1854,20 @@ describe('client', async () => {
           .create({_type: 'bar', name: 'Toronado'})
           .commit({tag: 'sfcraft.createbar'})
         expect(res.transactionId, 'applies given transaction').toEqual('blatti')
-      }
+      },
     )
 
     test('throws when passing incorrect input to transaction operations', () => {
       const trans = getClient().transaction()
       expect(() => trans.create('foo' as any), 'throws on create()').toThrow(/object of prop/)
       expect(() => trans.createIfNotExists('foo' as any), 'throws on createIfNotExists()').toThrow(
-        /object of prop/
+        /object of prop/,
       )
       expect(() => trans.createOrReplace('foo' as any), 'throws on createOrReplace()').toThrow(
-        /object of prop/
+        /object of prop/,
       )
       expect(() => trans.delete({id: 'moofoo'} as any), 'throws on delete()').toThrow(
-        /not a valid document ID/
+        /not a valid document ID/,
       )
     })
 
@@ -1875,11 +1875,11 @@ describe('client', async () => {
       const trans = getClient().transaction()
       expect(
         () => trans.createIfNotExists({_type: 'movie', a: 1} as any),
-        'throws on createIfNotExists()'
+        'throws on createIfNotExists()',
       ).toThrow(/contains an ID/)
       expect(
         () => trans.createOrReplace({_type: 'movie', a: 1} as any),
-        'throws on createOrReplace()'
+        'throws on createOrReplace()',
       ).toThrow(/contains an ID/)
     })
 
@@ -1896,14 +1896,14 @@ describe('client', async () => {
     test('transaction has toJSON() which serializes patch', () => {
       const trans = getClient().transaction().create({_type: 'document', count: 1})
       expect(JSON.parse(JSON.stringify(trans))).toEqual(
-        JSON.parse(JSON.stringify([{create: {_type: 'document', count: 1}}]))
+        JSON.parse(JSON.stringify([{create: {_type: 'document', count: 1}}])),
       )
     })
 
     test('Transaction is available on client and can be used without instantiated client', () => {
       const trans = new Transaction()
       expect(trans.delete('barfoo').serialize(), 'transaction should work without context').toEqual(
-        [{delete: {id: 'barfoo'}}]
+        [{delete: {id: 'barfoo'}}],
       )
     })
 
@@ -1921,7 +1921,7 @@ describe('client', async () => {
           .reply(200, {results: [{id: 'foo', operation: 'delete'}]})
 
         await expect(getClient().mutate(trx)).resolves.not.toThrow()
-      }
+      },
     )
 
     test('transaction commit() throws if called without a client', () => {
@@ -2010,7 +2010,7 @@ describe('client', async () => {
 
       nock(projectHost())
         .get(
-          '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true'
+          '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
         .reply(200, response, {
           'cache-control': 'no-cache',
@@ -2054,7 +2054,7 @@ describe('client', async () => {
 
       nock(projectHost())
         .get(
-          '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true'
+          '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
         .reply(200, response, {
           'cache-control': 'no-cache',
@@ -2209,7 +2209,7 @@ describe('client', async () => {
       const document = await getClient({requestTagPrefix: 'galaxy'}).assets.upload(
         'image',
         fs.createReadStream(fixturePath),
-        {tag: 'images'}
+        {tag: 'images'},
       )
       expect(document.url).toEqual('https://some.asset.url')
     })
@@ -2242,7 +2242,7 @@ describe('client', async () => {
       const document = await getClient().assets.upload(
         'image',
         fs.createReadStream(fixturePath),
-        options
+        options,
       )
       expect(document.url).toEqual('https://some.asset.url')
     })
@@ -2260,7 +2260,7 @@ describe('client', async () => {
       const document = await getClient().assets.upload(
         'image',
         fs.createReadStream(fixturePath),
-        options
+        options,
       )
       expect(document.url).toEqual('https://some.asset.url')
     })
@@ -2330,7 +2330,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
 
@@ -2603,7 +2603,7 @@ describe('client', async () => {
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody
+          expectedBody,
         )
         .times(6)
         .replyWithError(new Error('Something went wrong'))
@@ -2624,7 +2624,7 @@ describe('client', async () => {
 
     test('can use getUrl() to get API-relative paths (custom api version)', () => {
       expect(getClient({apiVersion: '2019-01-29'}).getUrl('/bar/baz')).toEqual(
-        `${projectHost()}/v2019-01-29/bar/baz`
+        `${projectHost()}/v2019-01-29/bar/baz`,
       )
     })
   })
@@ -2633,7 +2633,7 @@ describe('client', async () => {
     test('can use getDataUrl() to get API paths to a dataset', () => {
       expect(getClient({dataset: 'bikeshop'}).getDataUrl('doc')).toBe('/data/doc/bikeshop')
       expect(getClient({dataset: 'bikeshop'}).getDataUrl('doc', 'bike-123')).toBe(
-        '/data/doc/bikeshop/bike-123'
+        '/data/doc/bikeshop/bike-123',
       )
     })
   })

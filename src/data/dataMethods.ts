@@ -65,7 +65,7 @@ export function _fetch<R, Q extends QueryParams>(
   httpRequest: HttpRequest,
   query: string,
   params?: Q,
-  options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {}
+  options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
 ): Observable<RawQueryResponse<R> | R> {
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
@@ -78,12 +78,12 @@ export function _getDocument<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   id: string,
-  opts: {tag?: string} = {}
+  opts: {tag?: string} = {},
 ): Observable<SanityDocument<R> | undefined> {
   const options = {uri: _getDataUrl(client, 'doc', id), json: true, tag: opts.tag}
   return _requestObservable<SanityDocument<R> | undefined>(client, httpRequest, options).pipe(
     filter(isResponse),
-    map((event) => event.body.documents && event.body.documents[0])
+    map((event) => event.body.documents && event.body.documents[0]),
   )
 }
 
@@ -92,7 +92,7 @@ export function _getDocuments<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   ids: string[],
-  opts: {tag?: string} = {}
+  opts: {tag?: string} = {},
 ): Observable<(SanityDocument<R> | null)[]> {
   const options = {uri: _getDataUrl(client, 'doc', ids.join(',')), json: true, tag: opts.tag}
   return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
@@ -100,7 +100,7 @@ export function _getDocuments<R extends Record<string, Any>>(
     map((event: Any) => {
       const indexed = indexBy(event.body.documents || [], (doc: Any) => doc._id)
       return ids.map((id) => indexed[id] || null)
-    })
+    }),
   )
 }
 
@@ -114,7 +114,7 @@ export function _createIfNotExists<R extends Record<string, Any>>(
     | AllDocumentsMutationOptions
     | BaseMutationOptions
     | FirstDocumentIdMutationOptions
-    | FirstDocumentMutationOptions
+    | FirstDocumentMutationOptions,
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
@@ -132,7 +132,7 @@ export function _createOrReplace<R extends Record<string, Any>>(
     | AllDocumentsMutationOptions
     | BaseMutationOptions
     | FirstDocumentIdMutationOptions
-    | FirstDocumentMutationOptions
+    | FirstDocumentMutationOptions,
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
@@ -150,7 +150,7 @@ export function _delete<R extends Record<string, Any>>(
     | AllDocumentsMutationOptions
     | BaseMutationOptions
     | FirstDocumentIdMutationOptions
-    | FirstDocumentMutationOptions
+    | FirstDocumentMutationOptions,
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
@@ -159,7 +159,7 @@ export function _delete<R extends Record<string, Any>>(
     httpRequest,
     'mutate',
     {mutations: [{delete: getSelection(selection)}]},
-    options
+    options,
   )
 }
 
@@ -173,7 +173,7 @@ export function _mutate<R extends Record<string, Any>>(
     | AllDocumentsMutationOptions
     | BaseMutationOptions
     | FirstDocumentIdMutationOptions
-    | FirstDocumentMutationOptions
+    | FirstDocumentMutationOptions,
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
@@ -199,7 +199,7 @@ export function _dataRequest(
   httpRequest: HttpRequest,
   endpoint: string,
   body: Any,
-  options: Any = {}
+  options: Any = {},
 ): Any {
   const isMutation = endpoint === 'mutate'
   const isQuery = endpoint === 'query'
@@ -252,7 +252,7 @@ export function _dataRequest(
         results: results,
         [key]: ids,
       }
-    })
+    }),
   )
 }
 
@@ -264,7 +264,7 @@ export function _create<R extends Record<string, Any>>(
   httpRequest: HttpRequest,
   doc: Any,
   op: Any,
-  options: Any = {}
+  options: Any = {},
 ): Observable<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
@@ -279,7 +279,7 @@ export function _create<R extends Record<string, Any>>(
 export function _requestObservable<R>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  options: RequestObservableOptions
+  options: RequestObservableOptions,
 ): Observable<HttpRequestEvent<R>> {
   const uri = options.url || (options.uri as string)
   const config = client.config()
@@ -319,12 +319,12 @@ export function _requestObservable<R>(
     config,
     Object.assign({}, options, {
       url: _getUrl(client, uri, useCdn),
-    })
+    }),
   ) as RequestOptions
 
   const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- the typings thinks it's optional because it's not required to specify it when calling createClient, but it's always defined in practice since SanityClient provides a default
-    httpRequest(reqOptions, config.requester!).subscribe(subscriber)
+    httpRequest(reqOptions, config.requester!).subscribe(subscriber),
   )
 
   return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
@@ -336,11 +336,11 @@ export function _requestObservable<R>(
 export function _request<R>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  options: Any
+  options: Any,
 ): Observable<R> {
   const observable = _requestObservable<R>(client, httpRequest, options).pipe(
     filter((event: Any) => event.type === 'response'),
-    map((event: Any) => event.body)
+    map((event: Any) => event.body),
   )
 
   return observable
@@ -352,7 +352,7 @@ export function _request<R>(
 export function _getDataUrl(
   client: SanityClient | ObservableSanityClient,
   operation: string,
-  path?: string
+  path?: string,
 ): string {
   const config = client.config()
   const catalog = validators.hasDataset(config)
@@ -367,7 +367,7 @@ export function _getDataUrl(
 export function _getUrl(
   client: SanityClient | ObservableSanityClient,
   uri: string,
-  canUseCdn = false
+  canUseCdn = false,
 ): string {
   const {url, cdnUrl} = client.config()
   const base = canUseCdn ? cdnUrl : url

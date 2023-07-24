@@ -19,12 +19,12 @@ export class ObservableUsersClient {
    * @param id - User ID of the user to fetch. If `me` is provided, a minimal response including the users role is returned.
    */
   getById<T extends 'me' | string>(
-    id: T
+    id: T,
   ): Observable<T extends 'me' ? CurrentSanityUser : SanityUser> {
     return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
       this.#client,
       this.#httpRequest,
-      {uri: `/users/${id}`}
+      {uri: `/users/${id}`},
     )
   }
 }
@@ -44,12 +44,12 @@ export class UsersClient {
    * @param id - User ID of the user to fetch. If `me` is provided, a minimal response including the users role is returned.
    */
   getById<T extends 'me' | string>(
-    id: T
+    id: T,
   ): Promise<T extends 'me' ? CurrentSanityUser : SanityUser> {
     return lastValueFrom(
       _request<T extends 'me' ? CurrentSanityUser : SanityUser>(this.#client, this.#httpRequest, {
         uri: `/users/${id}`,
-      })
+      }),
     )
   }
 }
