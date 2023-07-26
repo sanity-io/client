@@ -69,8 +69,13 @@ export function _fetch<R, Q extends QueryParams>(
 ): Observable<RawQueryResponse<R> | R> {
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
+  const {cache, next, ...opts} = options
+  const reqOpts =
+    typeof cache !== 'undefined' || typeof next !== 'undefined'
+      ? {...opts, fetch: {cache, next}}
+      : opts
 
-  return _dataRequest(client, httpRequest, 'query', {query, params}, options).pipe(map(mapResponse))
+  return _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts).pipe(map(mapResponse))
 }
 
 /** @internal */
@@ -226,6 +231,7 @@ export function _dataRequest(
     tag,
     canUseCdn: isQuery,
     signal: options.signal,
+    fetch: options.fetch,
   }
 
   return _requestObservable(client, httpRequest, reqOptions).pipe(

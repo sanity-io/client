@@ -29,5 +29,9 @@ export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOp
     proxy: overrides.proxy || config.proxy,
     json: true,
     withCredentials,
+    fetch:
+      typeof overrides.fetch === 'object' && typeof config.fetch === 'object'
+        ? {...config.fetch, ...overrides.fetch}
+        : overrides.fetch || config.fetch,
   })
 }
