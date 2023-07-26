@@ -23,6 +23,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read # for checkout
+
 jobs:
   build:
     name: Build, lint and test coverage
@@ -184,6 +187,11 @@ jobs:
       - run: npm run test:node-runtimes
 
   release:
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
     needs: [build, test, deno-runtime, bun-runtime, edge-runtime, browser-runtime, node-runtimes]
     # only run if opt-in during workflow_dispatch
     if: github.event.inputs.release == 'true'
