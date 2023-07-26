@@ -44,7 +44,7 @@ export class ProjectsClient {
    */
   list(): Promise<SanityProject[]> {
     return lastValueFrom(
-      _request<SanityProject[]>(this.#client, this.#httpRequest, {uri: '/projects'})
+      _request<SanityProject[]>(this.#client, this.#httpRequest, {uri: '/projects'}),
     )
   }
 
@@ -55,7 +55,7 @@ export class ProjectsClient {
    */
   getById(projectId: string): Promise<SanityProject> {
     return lastValueFrom(
-      _request<SanityProject>(this.#client, this.#httpRequest, {uri: `/projects/${projectId}`})
+      _request<SanityProject>(this.#client, this.#httpRequest, {uri: `/projects/${projectId}`}),
     )
   }
 }

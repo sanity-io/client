@@ -22,7 +22,7 @@ export const createClient = (config: ClientConfig) =>
       maxRetries: config.maxRetries,
       retryDelay: config.retryDelay,
     }),
-    config
+    config,
   )
 
 /**

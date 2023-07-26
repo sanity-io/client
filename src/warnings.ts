@@ -15,7 +15,7 @@ export const printCdnWarning = createWarningPrinter([
 export const printBrowserTokenWarning = createWarningPrinter([
   'You have configured Sanity client to use a token in the browser. This may cause unintentional security issues.',
   `See ${generateHelpUrl(
-    'js-client-browser-token'
+    'js-client-browser-token',
   )} for more information and how to hide this warning.`,
 ])
 

@@ -198,7 +198,7 @@ export class ObservablePatch extends BasePatch {
   constructor(
     selection: PatchSelection,
     operations?: PatchOperations,
-    client?: ObservableSanityClient
+    client?: ObservableSanityClient,
   ) {
     super(selection, operations)
     this.#client = client
@@ -217,7 +217,7 @@ export class ObservablePatch extends BasePatch {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any> = Record<string, Any>>(
-    options: FirstDocumentMutationOptions
+    options: FirstDocumentMutationOptions,
   ): Observable<SanityDocument<R>>
   /**
    * Commit the patch, returning an observable that produces an array of the mutated documents
@@ -225,7 +225,7 @@ export class ObservablePatch extends BasePatch {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any> = Record<string, Any>>(
-    options: AllDocumentsMutationOptions
+    options: AllDocumentsMutationOptions,
   ): Observable<SanityDocument<R>[]>
   /**
    * Commit the patch, returning an observable that produces a mutation result object
@@ -245,7 +245,7 @@ export class ObservablePatch extends BasePatch {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any> = Record<string, Any>>(
-    options?: BaseMutationOptions
+    options?: BaseMutationOptions,
   ): Observable<SanityDocument<R>>
   commit<R extends Record<string, Any> = Record<string, Any>>(
     options?:
@@ -253,14 +253,14 @@ export class ObservablePatch extends BasePatch {
       | AllDocumentsMutationOptions
       | FirstDocumentIdMutationOptions
       | AllDocumentIdsMutationOptions
-      | BaseMutationOptions
+      | BaseMutationOptions,
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     if (!this.#client) {
       throw new Error(
         'No `client` passed to patch, either provide one or pass the ' +
-          'patch to a clients `mutate()` method'
+          'patch to a clients `mutate()` method',
       )
     }
 
@@ -291,7 +291,7 @@ export class Patch extends BasePatch {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any> = Record<string, Any>>(
-    options: FirstDocumentMutationOptions
+    options: FirstDocumentMutationOptions,
   ): Promise<SanityDocument<R>>
   /**
    * Commit the patch, returning a promise that resolves to an array of the mutated documents
@@ -299,7 +299,7 @@ export class Patch extends BasePatch {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any> = Record<string, Any>>(
-    options: AllDocumentsMutationOptions
+    options: AllDocumentsMutationOptions,
   ): Promise<SanityDocument<R>[]>
   /**
    * Commit the patch, returning a promise that resolves to a mutation result object
@@ -319,7 +319,7 @@ export class Patch extends BasePatch {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any> = Record<string, Any>>(
-    options?: BaseMutationOptions
+    options?: BaseMutationOptions,
   ): Promise<SanityDocument<R>>
   commit<R extends Record<string, Any> = Record<string, Any>>(
     options?:
@@ -327,14 +327,14 @@ export class Patch extends BasePatch {
       | AllDocumentsMutationOptions
       | FirstDocumentIdMutationOptions
       | AllDocumentIdsMutationOptions
-      | BaseMutationOptions
+      | BaseMutationOptions,
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     if (!this.#client) {
       throw new Error(
         'No `client` passed to patch, either provide one or pass the ' +
-          'patch to a clients `mutate()` method'
+          'patch to a clients `mutate()` method',
       )
     }
 

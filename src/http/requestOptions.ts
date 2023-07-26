@@ -19,7 +19,7 @@ export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOp
   const withCredentials = Boolean(
     typeof overrides.withCredentials === 'undefined'
       ? config.token || config.withCredentials
-      : overrides.withCredentials
+      : overrides.withCredentials,
   )
 
   const timeout = typeof overrides.timeout === 'undefined' ? config.timeout : overrides.timeout

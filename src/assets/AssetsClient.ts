@@ -34,7 +34,7 @@ export class ObservableAssetsClient {
   upload(
     assetType: 'file',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
 
   /**
@@ -47,7 +47,7 @@ export class ObservableAssetsClient {
   upload(
     assetType: 'image',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
   /**
    * Uploads a file or an image asset to the configured dataset
@@ -59,12 +59,12 @@ export class ObservableAssetsClient {
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
@@ -89,7 +89,7 @@ export class AssetsClient {
   upload(
     assetType: 'file',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Promise<SanityAssetDocument>
   /**
    * Uploads an image asset to the configured dataset
@@ -101,7 +101,7 @@ export class AssetsClient {
   upload(
     assetType: 'image',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Promise<SanityImageAssetDocument>
   /**
    * Uploads a file or an image asset to the configured dataset
@@ -113,12 +113,12 @@ export class AssetsClient {
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Promise<SanityAssetDocument | SanityImageAssetDocument>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
-    options?: UploadClientConfig
+    options?: UploadClientConfig,
   ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
     const observable = _upload(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
@@ -127,9 +127,9 @@ export class AssetsClient {
         map(
           (event) =>
             (event as ResponseEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>)
-              .body.document
-        )
-      )
+              .body.document,
+        ),
+      ),
     )
   }
 }
@@ -139,7 +139,7 @@ function _upload(
   httpRequest: HttpRequest,
   assetType: 'image' | 'file',
   body: UploadBody,
-  opts: UploadClientConfig = {}
+  opts: UploadClientConfig = {},
 ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
   validators.validateAssetType(assetType)
 
@@ -187,6 +187,6 @@ function optionsFromFile(opts: Record<string, Any>, file: Any) {
       filename: opts.preserveFilename === false ? undefined : file.name,
       contentType: file.type,
     },
-    opts
+    opts,
   )
 }

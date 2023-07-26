@@ -68,7 +68,7 @@ export class DatasetsClient {
    */
   create(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
     return lastValueFrom(
-      _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options)
+      _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options),
     )
   }
 
@@ -80,7 +80,7 @@ export class DatasetsClient {
    */
   edit(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
     return lastValueFrom(
-      _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options)
+      _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options),
     )
   }
 
@@ -98,7 +98,7 @@ export class DatasetsClient {
    */
   list(): Promise<DatasetsResponse> {
     return lastValueFrom(
-      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets'})
+      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets'}),
     )
   }
 }
@@ -108,7 +108,7 @@ function _modify<R = unknown>(
   httpRequest: HttpRequest,
   method: 'DELETE' | 'PATCH' | 'PUT',
   name: string,
-  options?: {aclMode?: DatasetAclMode}
+  options?: {aclMode?: DatasetAclMode},
 ) {
   validate.dataset(name)
   return _request<R>(client, httpRequest, {method, uri: `/datasets/${name}`, body: options})

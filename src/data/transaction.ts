@@ -52,7 +52,7 @@ export class BaseTransaction {
    * @param doc - Document to create if it does not already exist. Requires `_id` and `_type` properties.
    */
   createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
-    doc: IdentifiedSanityDocumentStub<R>
+    doc: IdentifiedSanityDocumentStub<R>,
   ): this {
     const op = 'createIfNotExists'
     validators.validateObject(op, doc)
@@ -67,7 +67,7 @@ export class BaseTransaction {
    * @param doc - Document to create or replace. Requires `_id` and `_type` properties.
    */
   createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
-    doc: IdentifiedSanityDocumentStub<R>
+    doc: IdentifiedSanityDocumentStub<R>,
   ): this {
     const op = 'createOrReplace'
     validators.validateObject(op, doc)
@@ -154,7 +154,7 @@ export class Transaction extends BaseTransaction {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any>>(
-    options: TransactionFirstDocumentMutationOptions
+    options: TransactionFirstDocumentMutationOptions,
   ): Promise<SanityDocument<R>>
   /**
    * Commit the transaction, returning a promise that resolves to an array of the mutated documents
@@ -162,7 +162,7 @@ export class Transaction extends BaseTransaction {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any>>(
-    options: TransactionAllDocumentsMutationOptions
+    options: TransactionAllDocumentsMutationOptions,
   ): Promise<SanityDocument<R>[]>
   /**
    * Commit the transaction, returning a promise that resolves to a mutation result object
@@ -188,20 +188,20 @@ export class Transaction extends BaseTransaction {
       | TransactionAllDocumentsMutationOptions
       | TransactionFirstDocumentIdMutationOptions
       | TransactionAllDocumentIdsMutationOptions
-      | BaseMutationOptions
+      | BaseMutationOptions,
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     if (!this.#client) {
       throw new Error(
         'No `client` passed to transaction, either provide one or pass the ' +
-          'transaction to a clients `mutate()` method'
+          'transaction to a clients `mutate()` method',
       )
     }
 
     return this.#client.mutate<R>(
       this.serialize() as Any,
-      Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
+      Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {}),
     )
   }
 
@@ -264,7 +264,7 @@ export class ObservableTransaction extends BaseTransaction {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any>>(
-    options: TransactionFirstDocumentMutationOptions
+    options: TransactionFirstDocumentMutationOptions,
   ): Observable<SanityDocument<R>>
   /**
    * Commit the transaction, returning an observable that produces an array of the mutated documents
@@ -272,7 +272,7 @@ export class ObservableTransaction extends BaseTransaction {
    * @param options - Options for the mutation operation
    */
   commit<R extends Record<string, Any>>(
-    options: TransactionAllDocumentsMutationOptions
+    options: TransactionAllDocumentsMutationOptions,
   ): Observable<SanityDocument<R>[]>
   /**
    * Commit the transaction, returning an observable that produces a mutation result object
@@ -298,20 +298,20 @@ export class ObservableTransaction extends BaseTransaction {
       | TransactionAllDocumentsMutationOptions
       | TransactionFirstDocumentIdMutationOptions
       | TransactionAllDocumentIdsMutationOptions
-      | BaseMutationOptions
+      | BaseMutationOptions,
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     if (!this.#client) {
       throw new Error(
         'No `client` passed to transaction, either provide one or pass the ' +
-          'transaction to a clients `mutate()` method'
+          'transaction to a clients `mutate()` method',
       )
     }
 
     return this.#client.mutate<R>(
       this.serialize() as Any,
-      Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {})
+      Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {}),
     )
   }
 
@@ -332,7 +332,7 @@ export class ObservableTransaction extends BaseTransaction {
   patch(patch: ObservablePatch): this
   patch(
     patchOrDocumentId: ObservablePatch | string,
-    patchOps?: ObservablePatchBuilder | PatchOperations
+    patchOps?: ObservablePatchBuilder | PatchOperations,
   ): this {
     const isBuilder = typeof patchOps === 'function'
     const isPatch =
