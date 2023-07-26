@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.2.0](https://github.com/sanity-io/client/compare/v6.1.7...v6.2.0) (2023-07-26)
+
+### Features
+
+- support `fetch` for Next.js `app-router` ([#249](https://github.com/sanity-io/client/issues/249)) ([0aa4c6d](https://github.com/sanity-io/client/commit/0aa4c6dd9e7ec5cebc9847f7a5e0101a9c4a316d))
+
 ## [6.1.7](https://github.com/sanity-io/client/compare/v6.1.6...v6.1.7) (2023-07-07)
 
 ### Bug Fixes
