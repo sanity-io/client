@@ -14,10 +14,18 @@ export class ObservableProjectsClient {
   }
 
   /**
-   * Fetch a list of projects the authenticated user has access to
+   * Fetch a list of projects the authenticated user has access to.
+   *
+   * @param options - Options for the list request
+   * @param options.includeMembers - Whether to include members in the response (default: true)
    */
-  list(): Observable<SanityProject[]> {
-    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri: '/projects'})
+  list(options?: {includeMembers?: true}): Observable<SanityProject[]>
+  list(options?: {includeMembers?: false}): Observable<Omit<SanityProject, 'members'>[]>
+  list(options?: {
+    includeMembers?: boolean
+  }): Observable<SanityProject[] | Omit<SanityProject, 'members'>[]> {
+    const uri = options?.includeMembers === false ? '/projects?includeMembers=false' : '/projects'
+    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri})
   }
 
   /**
@@ -40,12 +48,16 @@ export class ProjectsClient {
   }
 
   /**
-   * Fetch a list of projects the authenticated user has access to
+   * Fetch a list of projects the authenticated user has access to.
+   *
+   * @param options - Options for the list request
+   * @param options.includeMembers - Whether to include members in the response (default: true)
    */
-  list(): Promise<SanityProject[]> {
-    return lastValueFrom(
-      _request<SanityProject[]>(this.#client, this.#httpRequest, {uri: '/projects'}),
-    )
+  list(options?: {includeMembers?: true}): Promise<SanityProject[]>
+  list(options?: {includeMembers?: false}): Promise<Omit<SanityProject, 'members'>[]>
+  list(options?: {includeMembers?: boolean}): Promise<SanityProject[]> {
+    const uri = options?.includeMembers === false ? '/projects?includeMembers=false' : '/projects'
+    return lastValueFrom(_request<SanityProject[]>(this.#client, this.#httpRequest, {uri}))
   }
 
   /**
