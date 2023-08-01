@@ -287,6 +287,51 @@ describe('client', async () => {
       expect(projects[0].id, 'should have project id').toBe('foo')
     })
 
+    test('can request list of projects with members', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects')
+        .times(2)
+        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      let projects = await client.projects.list({includeMembers: true})
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+
+      projects = await client.projects.list({includeMembers: undefined})
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+    })
+
+    test('can request list of projects without members', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects?includeMembers=false')
+        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      const projects = await client.projects.list({includeMembers: false})
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+      expect(projects[0]).not.toHaveProperty('members')
+
+      // @ts-expect-error - `members` should not be part of type when using `includeMembers: false`
+      expect(projects[0].members, 'should not have "members" prop').toBeUndefined()
+    })
+
+    test('can request list of projects, ignoring non-false `includeMembers` option', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects')
+        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+
+      // @ts-expect-error - `includeMembers` should be a boolean if specified
+      const projects = await client.projects.list({includeMembers: 'nope'})
+
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+    })
+
     test('can request list of projects (custom api version)', async () => {
       nock(`https://${apiHost}`)
         .get('/v2019-01-29/projects')
