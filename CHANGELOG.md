@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.3.0](https://github.com/sanity-io/client/compare/v6.2.0...v6.3.0) (2023-08-01)
+
+### Features
+
+- **projects:** `includeMembers` option on `projects.list()` ([#273](https://github.com/sanity-io/client/issues/273)) ([5f14eaf](https://github.com/sanity-io/client/commit/5f14eaf9229f5750bf674efebe2885a985476b7a))
+
 ## [6.2.0](https://github.com/sanity-io/client/compare/v6.1.7...v6.2.0) (2023-07-26)
 
 ### Features
