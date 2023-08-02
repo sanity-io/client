@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.0](https://github.com/sanity-io/client/compare/v6.3.0...v6.4.0) (2023-08-02)
+
+### Features
+
+- limit the number of connections open in Node.js ([#271](https://github.com/sanity-io/client/issues/271)) ([7d3d537](https://github.com/sanity-io/client/commit/7d3d53793f976127fad85d75e307d007f7cc8ae5))
+
 ## [6.3.0](https://github.com/sanity-io/client/compare/v6.2.0...v6.3.0) (2023-08-01)
 
 ### Features
