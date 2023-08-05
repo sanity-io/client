@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.4.0",
+  "version": "6.4.1-rsc.1",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -29,9 +29,10 @@
       "types": "./dist/index.d.ts",
       "browser": {
         "source": "./src/index.browser.ts",
-        "require": "./dist/index.browser.cjs",
-        "import": "./dist/index.browser.js"
+        "import": "./dist/index.browser.js",
+        "require": "./dist/index.browser.cjs"
       },
+      "react-server": "./dist/index.browser.js",
       "deno": "./dist/index.browser.js",
       "edge": "./dist/index.browser.js",
       "edge-light": "./dist/index.browser.js",
@@ -39,8 +40,8 @@
       "source": "./src/index.ts",
       "require": "./dist/index.cjs",
       "node": {
-        "import": "./dist/index.cjs.js",
-        "require": "./dist/index.cjs"
+        "module": "./dist/index.js",
+        "import": "./dist/index.cjs.js"
       },
       "import": "./dist/index.js",
       "default": "./dist/index.js"
@@ -78,6 +79,7 @@
     "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
     "posttest:deno:update_import_map": "npx prettier --write runtimes/deno/import_map.json",
     "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
+    "test:react-server": "npm test -- --config vitest.react-server.config.ts",
     "test:node-runtimes": "node --test runtimes/node | npx faucet"
   },
   "browserslist": [
@@ -92,7 +94,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
-    "get-it": "^8.3.0",
+    "get-it": "9.0.0-rsc.3",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
@@ -100,7 +102,7 @@
     "@edge-runtime/vm": "^3.0.4",
     "@rollup/plugin-commonjs": "^25.0.3",
     "@rollup/plugin-node-resolve": "^15.1.0",
-    "@sanity/pkg-utils": "^2.3.12",
+    "@sanity/pkg-utils": "^2.3.13-canary.1",
     "@sanity/semantic-release-preset": "^4.1.2",
     "@types/node": "^20.4.8",
     "@typescript-eslint/eslint-plugin": "^6.2.1",

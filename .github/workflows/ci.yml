@@ -81,6 +81,8 @@ jobs:
       - run: npm install
       - run: npx ls-engines
       - run: npm run coverage
+      # Only run the RSC testing suite if native `fetch` is available
+      - run: node -e "fetch" && npm run test:react-server || true
 
   prod-deps:
     name: Cache production dependencies
