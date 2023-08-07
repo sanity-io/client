@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.2](https://github.com/sanity-io/client/compare/v6.4.1...v6.4.2) (2023-08-07)
+
+### Bug Fixes
+
+- support Gatsby v5 ([ef24109](https://github.com/sanity-io/client/commit/ef241090ee2679a1ba438e1e80c88dcac9627245)), closes [#206](https://github.com/sanity-io/client/issues/206)
+
 ## [6.4.1](https://github.com/sanity-io/client/compare/v6.4.0...v6.4.1) (2023-08-07)
 
 ### Bug Fixes
