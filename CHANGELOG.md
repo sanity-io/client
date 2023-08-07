@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.3](https://github.com/sanity-io/client/compare/v6.4.2...v6.4.3) (2023-08-07)
+
+### Bug Fixes
+
+- add `react-server` export condition ([3a81261](https://github.com/sanity-io/client/commit/3a81261975e55ef2afe48596288d0d0e95db17bd))
+
 ## [6.4.2](https://github.com/sanity-io/client/compare/v6.4.1...v6.4.2) (2023-08-07)
 
 ### Bug Fixes
