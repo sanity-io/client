@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.1](https://github.com/sanity-io/client/compare/v6.4.0...v6.4.1) (2023-08-07)
+
+### Bug Fixes
+
+- add `node.module` export condition ([6ec1d7e](https://github.com/sanity-io/client/commit/6ec1d7ebfff30a166b8b70316cac02e6077ecfb0))
+
 ## [6.4.0](https://github.com/sanity-io/client/compare/v6.3.0...v6.4.0) (2023-08-02)
 
 ### Features
