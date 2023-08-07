@@ -29,8 +29,8 @@
       "types": "./dist/index.d.ts",
       "browser": {
         "source": "./src/index.browser.ts",
-        "require": "./dist/index.browser.cjs",
-        "import": "./dist/index.browser.js"
+        "import": "./dist/index.browser.js",
+        "require": "./dist/index.browser.cjs"
       },
       "deno": "./dist/index.browser.js",
       "edge": "./dist/index.browser.js",
@@ -39,8 +39,8 @@
       "source": "./src/index.ts",
       "require": "./dist/index.cjs",
       "node": {
-        "import": "./dist/index.cjs.js",
-        "require": "./dist/index.cjs"
+        "module": "./dist/index.js",
+        "import": "./dist/index.cjs.js"
       },
       "import": "./dist/index.js",
       "default": "./dist/index.js"
@@ -100,7 +100,7 @@
     "@edge-runtime/vm": "^3.0.4",
     "@rollup/plugin-commonjs": "^25.0.3",
     "@rollup/plugin-node-resolve": "^15.1.0",
-    "@sanity/pkg-utils": "^2.3.12",
+    "@sanity/pkg-utils": "^2.4.0",
     "@sanity/semantic-release-preset": "^4.1.2",
     "@types/node": "^20.4.8",
     "@typescript-eslint/eslint-plugin": "^6.2.1",
