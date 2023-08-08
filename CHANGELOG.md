@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.4](https://github.com/sanity-io/client/compare/v6.4.3...v6.4.4) (2023-08-08)
+
+### Bug Fixes
+
+- restore React Native compatibility ([#286](https://github.com/sanity-io/client/issues/286)) ([dd1cb97](https://github.com/sanity-io/client/commit/dd1cb97330f46a2475a139d4cf3e87084d6be031))
+
 ## [6.4.3](https://github.com/sanity-io/client/compare/v6.4.2...v6.4.3) (2023-08-07)
 
 ### Bug Fixes
