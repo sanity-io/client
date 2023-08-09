@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.4.4",
+  "version": "6.4.5-canary.3",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -32,6 +32,7 @@
         "import": "./dist/index.browser.js",
         "require": "./dist/index.browser.cjs"
       },
+      "react-native": "./dist/index.browser.native.cjs",
       "react-server": "./dist/index.browser.js",
       "deno": "./dist/index.browser.js",
       "edge": "./dist/index.browser.js",
@@ -52,6 +53,7 @@
   "unpkg": "umd/sanityClient.min.js",
   "module": "./dist/index.js",
   "source": "./src/index.ts",
+  "react-native": "./dist/index.browser.native.cjs",
   "browser": {
     "./dist/index.cjs": "./dist/index.browser.cjs",
     "./dist/index.js": "./dist/index.browser.js"
@@ -93,7 +95,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
-    "get-it": "^8.4.1",
+    "get-it": "^8.4.2",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
@@ -122,6 +124,7 @@
     "sse-channel": "^4.0.0",
     "terser": "^5.19.2",
     "typescript": "^5.1.6",
+    "url-search-params-polyfill": "^8.2.4",
     "vitest": "^0.34.1",
     "vitest-github-actions-reporter": "^0.10.0"
   },
