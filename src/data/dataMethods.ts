@@ -316,10 +316,10 @@ export function _requestObservable<R>(
     ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
     uri.indexOf('/data/query/') === 0
   ) {
-    if (config.resultSourceMap || options.resultSourceMap) {
+    if (options.resultSourceMap ?? config.resultSourceMap) {
       options.query = {resultSourceMap: true, ...options.query}
     }
-    const perspective = config.perspective || options.perspective
+    const perspective = options.perspective || config.perspective
     if (typeof perspective === 'string' && perspective !== 'raw') {
       validateApiPerspective(perspective)
       options.query = {perspective, ...options.query}

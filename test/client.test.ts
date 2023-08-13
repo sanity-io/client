@@ -574,6 +574,24 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)(
+      'setting resultSourceMap and perspective on client.fetch overrides the config',
+      async () => {
+        nock(projectHost())
+          .get(`/v1/data/query/foo?query=*&perspective=published`)
+          .reply(200, {
+            ms: 123,
+            query: '*',
+            result: [{_id: 'njgNkngskjg', rating: 5}],
+          })
+
+        const client = getClient({resultSourceMap: true, perspective: 'previewDrafts'})
+        const res = await client.fetch('*', {}, {resultSourceMap: false, perspective: 'published'})
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
       nock(projectHost())
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
