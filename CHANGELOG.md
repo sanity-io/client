@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.6](https://github.com/sanity-io/client/compare/v6.4.5...v6.4.6) (2023-08-13)
+
+### Bug Fixes
+
+- **client.fetch:** allow setting `perspective` and `resultSourceMap` on fetch ([18eedfd](https://github.com/sanity-io/client/commit/18eedfdd820567b263ef5d82972fd2f7afea49cf))
+
 ## [6.4.5](https://github.com/sanity-io/client/compare/v6.4.4...v6.4.5) (2023-08-09)
 
 ### Bug Fixes
