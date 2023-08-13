@@ -552,6 +552,28 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)(
+      'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
+      async () => {
+        nock(projectHost())
+          .get(`/v1/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
+          .reply(200, {
+            ms: 123,
+            query: '*',
+            result: [{_id: 'njgNkngskjg', rating: 5}],
+          })
+
+        const client = getClient({})
+        const res = await client.fetch(
+          '*',
+          {},
+          {resultSourceMap: true, perspective: 'previewDrafts'},
+        )
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
       nock(projectHost())
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)

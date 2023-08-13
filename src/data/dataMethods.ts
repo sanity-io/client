@@ -1,6 +1,7 @@
 import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
+import {validateApiPerspective} from '../config'
 import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
@@ -229,6 +230,8 @@ export function _dataRequest(
     headers,
     token,
     tag,
+    perspective: options.perspective,
+    resultSourceMap: options.resultSourceMap,
     canUseCdn: isQuery,
     signal: options.signal,
     fetch: options.fetch,
@@ -313,11 +316,13 @@ export function _requestObservable<R>(
     ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
     uri.indexOf('/data/query/') === 0
   ) {
-    if (config.resultSourceMap) {
+    if (config.resultSourceMap || options.resultSourceMap) {
       options.query = {resultSourceMap: true, ...options.query}
     }
-    if (typeof config.perspective === 'string' && config.perspective !== 'raw') {
-      options.query = {perspective: config.perspective, ...options.query}
+    const perspective = config.perspective || options.perspective
+    if (typeof perspective === 'string' && perspective !== 'raw') {
+      validateApiPerspective(perspective)
+      options.query = {perspective, ...options.query}
     }
   }
 
