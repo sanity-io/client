@@ -29,6 +29,7 @@ import type {
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
+import {printCdnPreviewDraftsWarning} from '../warnings'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
@@ -300,7 +301,7 @@ export function _requestObservable<R>(
       ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && uri.indexOf('/data/') === 0
       : options.canUseCdn
 
-  const useCdn = config.useCdn && canUseCdn
+  let useCdn = config.useCdn && canUseCdn
 
   const tag =
     options.tag && config.requestTagPrefix
@@ -323,6 +324,11 @@ export function _requestObservable<R>(
     if (typeof perspective === 'string' && perspective !== 'raw') {
       validateApiPerspective(perspective)
       options.query = {perspective, ...options.query}
+      // If the perspective is set to `previewDrafts` we can't use the CDN, the API will throw
+      if (perspective === 'previewDrafts' && useCdn) {
+        useCdn = false
+        printCdnPreviewDraftsWarning()
+      }
     }
   }
 
