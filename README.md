@@ -58,6 +58,7 @@ export async function updateDocumentTitle(_id, title) {
     - [ESM](#esm)
     - [CommonJS](#commonjs)
     - [TypeScript](#typescript)
+    - [Next.js App Router](#nextjs-app-router)
     - [Bun](#bun)
     - [Deno](#deno)
     - [Edge Runtime](#edge-runtime)
@@ -200,6 +201,43 @@ console.log(`Number of documents: ${data}`)
 ```
 
 Another alternative is [groqd].
+
+#### [Next.js App Router](https://nextjs.org/docs/app/building-your-application/data-fetching/fetching-caching-and-revalidating#fetching-data-on-the-server-with-fetch)
+
+```tsx
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  useCdn: true, // set to `false` to bypass the edge cache
+  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+})
+
+export default async function ReactServerComponent() {
+  const data = await client.fetch<number>(
+    `count(*[_type == "page"])`,
+    {},
+    {
+      // You can set any of the `cache` and `next` options as you would on a standard `fetch` call
+      cache: 'force-cache',
+      next: {tags: ['pages']},
+    },
+  )
+
+  return <h1>Number of pages: {data}</h1>
+}
+```
+
+The `cache` and `next` options are documented in the [Next.js documentation](https://nextjs.org/docs/app/api-reference/functions/fetch#fetchurl-options).
+Since [request memoization](https://nextjs.org/docs/app/building-your-application/caching#request-memoization) is supported it's unnecessary to use [the `React.cache`](https://nextjs.org/docs/app/building-your-application/caching#react-cache-function) API.
+To [opt-out of memoization](https://nextjs.org/docs/app/building-your-application/caching#opting-out), set the `signal` property:
+
+```tsx
+const {signal} = new AbortController()
+// By passing `signal` this request will not be memoized and `now()` will execute for every React Server Component that runs this query
+const data = await client.fetch<number>(`{"dynamic": now()}`, {}, {signal})
+```
 
 #### [Bun]
 
