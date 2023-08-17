@@ -70,7 +70,12 @@ export function _fetch<R, Q extends QueryParams>(
 ): Observable<RawQueryResponse<R> | R> {
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
-  const {cache, next, ...opts} = options
+  const {cache, next, ...opts} = {
+    // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
+    // This is necessary in React Server Components to avoid opting out of Request Memoization.
+    useAbortSignal: typeof options.signal !== 'undefined',
+    ...options,
+  }
   const reqOpts =
     typeof cache !== 'undefined' || typeof next !== 'undefined'
       ? {...opts, fetch: {cache, next}}
@@ -235,6 +240,7 @@ export function _dataRequest(
     canUseCdn: isQuery,
     signal: options.signal,
     fetch: options.fetch,
+    useAbortSignal: options.useAbortSignal,
   }
 
   return _requestObservable(client, httpRequest, reqOptions).pipe(
