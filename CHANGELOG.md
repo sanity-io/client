@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.7](https://github.com/sanity-io/client/compare/v6.4.6...v6.4.7) (2023-08-17)
+
+### Bug Fixes
+
+- don't set `signal` on `fetch` unless provided to `client.fetch` ([#298](https://github.com/sanity-io/client/issues/298)) ([e1d5210](https://github.com/sanity-io/client/commit/e1d5210a438ea0adfd6acb872f48e2a672c2d1b1))
+
 ## [6.4.6](https://github.com/sanity-io/client/compare/v6.4.5...v6.4.6) (2023-08-13)
 
 ### Bug Fixes
