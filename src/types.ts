@@ -86,7 +86,7 @@ export interface ClientConfig {
    */
   resultSourceMap?: boolean
   /**
-   * Experimental, opts-in to using native `fetch` as transport in order to make full use of React Server Components
+   *@deprecated set `cache` and `next` options on `client.fetch` instead
    */
   fetch?: RequestFetchOptions | boolean
 }
