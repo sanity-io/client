@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.9](https://github.com/sanity-io/client/compare/v6.4.8...v6.4.9) (2023-08-18)
+
+### Bug Fixes
+
+- set `useCdn: false` automatically when `perspective: 'previewDrafts'` ([#299](https://github.com/sanity-io/client/issues/299)) ([0cb98cf](https://github.com/sanity-io/client/commit/0cb98cffb18a217b9c08ed6bd55fce351e0e766c))
+
 ## [6.4.8](https://github.com/sanity-io/client/compare/v6.4.7...v6.4.8) (2023-08-18)
 
 ### Bug Fixes
