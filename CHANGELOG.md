@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.8](https://github.com/sanity-io/client/compare/v6.4.7...v6.4.8) (2023-08-18)
+
+### Bug Fixes
+
+- **docs:** add Next.js App Router example ([#300](https://github.com/sanity-io/client/issues/300)) ([d0d432c](https://github.com/sanity-io/client/commit/d0d432c1abdba66dbf806adc5d4cce582f6763e3))
+
 ## [6.4.7](https://github.com/sanity-io/client/compare/v6.4.6...v6.4.7) (2023-08-17)
 
 ### Bug Fixes
