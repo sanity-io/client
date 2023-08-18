@@ -12,6 +12,11 @@ export const printCdnWarning = createWarningPrinter([
   `\`useCdn: false\` to use the Live API. Note: You may incur higher costs using the live API.`,
 ])
 
+export const printCdnPreviewDraftsWarning = createWarningPrinter([
+  `The Sanity client is configured with the \`perspective\` set to \`previewDrafts\`, which doesn't support the API-CDN.`,
+  `The Live API will be used instead. Set \`useCdn: false\` in your configuration to hide this warning.`,
+])
+
 export const printBrowserTokenWarning = createWarningPrinter([
   'You have configured Sanity client to use a token in the browser. This may cause unintentional security issues.',
   `See ${generateHelpUrl(

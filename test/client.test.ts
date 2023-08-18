@@ -552,6 +552,26 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)('automatically useCdn false if perspective is previewDrafts', async () => {
+      nock('https://abc123.api.sanity.io')
+        .get(`/v1/data/query/foo?query=*&perspective=previewDrafts`)
+        .reply(200, {
+          ms: 123,
+          query: '*',
+          result: [{_id: 'njgNkngskjg', rating: 5}],
+        })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'foo',
+        useCdn: true,
+        perspective: 'previewDrafts',
+      })
+      const res = await client.fetch('*', {})
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
     test.skipIf(isEdge)(
       'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
       async () => {
@@ -587,6 +607,24 @@ describe('client', async () => {
 
         const client = getClient({resultSourceMap: true, perspective: 'previewDrafts'})
         const res = await client.fetch('*', {}, {resultSourceMap: false, perspective: 'published'})
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'setting a perspective previewDrafts override on client.fetch sets useCdn to false',
+      async () => {
+        nock('https://abc123.api.sanity.io')
+          .get(`/v1/data/query/foo?query=*&perspective=previewDrafts`)
+          .reply(200, {
+            ms: 123,
+            query: '*',
+            result: [{_id: 'njgNkngskjg', rating: 5}],
+          })
+
+        const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+        const res = await client.fetch('*', {}, {perspective: 'previewDrafts'})
         expect(res.length, 'length should match').toBe(1)
         expect(res[0].rating, 'data should match').toBe(5)
       },
