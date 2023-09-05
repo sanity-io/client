@@ -10,6 +10,7 @@ import {
   type SanityProject,
   ServerError,
   Transaction,
+  QueryParams,
 } from '@sanity/client'
 import {of as observableOf} from 'rxjs'
 import {filter} from 'rxjs/operators'

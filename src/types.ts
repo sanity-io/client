@@ -422,8 +422,10 @@ export interface PatchOperations {
   ifRevisionID?: string
 }
 
+type QueryParamLiteral = number | string | boolean | null
+
 /** @public */
-export type QueryParams = {[key: string]: Any}
+export type QueryParams = {[key: string]: QueryParamLiteral | QueryParamLiteral[]}
 /** @internal */
 export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
 /** @internal */
