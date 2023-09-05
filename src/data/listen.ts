@@ -29,8 +29,8 @@ const defaultOptions = {
  *
  * @param query - GROQ-filter to listen to changes for
  * @param params - Optional query parameters
- * @param options - Listener options
- * @internal
+ * @param options - Optional listener options
+ * @public
  */
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
@@ -42,8 +42,8 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
  *
  * @param query - GROQ-filter to listen to changes for
  * @param params - Optional query parameters
- * @param options - Listener options
- * @internal
+ * @param options - Optional listener options
+ * @public
  */
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
@@ -51,7 +51,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   params?: QueryParams,
   options?: ListenOptions,
 ): Observable<ListenEvent<R>>
-/** @internal */
+/** @public */
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,

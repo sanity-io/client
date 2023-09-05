@@ -439,42 +439,154 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {delete: MutationSelection}
   | {patch: PatchMutationOperation}
 
-/** @public */
+/**
+ * A mutation was performed. Note that when updating multiple documents in a transaction,
+ * each document affected will get a separate mutation event.
+ *
+ * @public
+ */
 export type MutationEvent<R extends Record<string, Any> = Record<string, Any>> = {
   type: 'mutation'
+
+  /**
+   * The ID of the document that was affected
+   */
   documentId: string
+
+  /**
+   * A unique ID for this event
+   */
   eventId: string
+
+  /**
+   * The user ID of the user that performed the mutation
+   */
   identity: string
+
+  /**
+   * An array of mutations that were performed. Note that this can differ slightly from the
+   * mutations sent to the server, as the server may perform some mutations automatically.
+   */
   mutations: Mutation[]
+
+  /**
+   * The revision ID of the document before the mutation was performed
+   */
   previousRev?: string
+
+  /**
+   * The revision ID of the document after the mutation was performed
+   */
   resultRev?: string
+
+  /**
+   * The document as it looked after the mutation was performed. This is only included if
+   * the listener was configured with `includeResult: true`.
+   */
   result?: SanityDocument<R>
+
+  /**
+   * The document as it looked before the mutation was performed. This is only included if
+   * the listener was configured with `includePreviousRevision: true`.
+   */
   previous?: SanityDocument<R> | null
+
+  /**
+   * The effects of the mutation, if the listener was configured with `effectFormat: 'mendoza'`.
+   * Object with `apply` and `revert` arrays, see {@link https://github.com/sanity-io/mendoza}.
+   */
   effects?: {apply: unknown[]; revert: unknown[]}
+
+  /**
+   * A timestamp for when the mutation was performed
+   */
   timestamp: string
+
+  /**
+   * The transaction ID for the mutation
+   */
   transactionId: string
+
+  /**
+   * The type of transition the document went through.
+   *
+   * - `update` means the document was previously part of the subscribed set of documents,
+   *   and still is.
+   * - `appear` means the document was not previously part of the subscribed set of documents,
+   *   but is now. This can happen both on create or if updating to a state where it now matches
+   *   the filter provided to the listener.
+   * - `disappear` means the document was previously part of the subscribed set of documents,
+   *   but is no longer. This can happen both on delete or if updating to a state where it no
+   *   longer matches the filter provided to the listener.
+   */
   transition: 'update' | 'appear' | 'disappear'
+
+  /**
+   * Whether the change that triggered this event is visible to queries (query) or only to
+   * subsequent transactions (transaction). The listener client can specify a preferred visibility
+   * through the `visibility` parameter on the listener, but this is only on a best-effort basis,
+   * and may yet not be accurate.
+   */
   visibility: 'query' | 'transaction'
+
+  /**
+   * The total number of events that will be sent for this transaction.
+   * Note that this may differ from the amount of _documents_ affected by the transaction, as this
+   * number only includes the documents that matches the given filter.
+   *
+   * This can be useful if you need to perform changes to all matched documents atomically,
+   * eg you would wait for `transactionTotalEvents` events with the same `transactionId` before
+   * applying the changes locally.
+   */
+  transactionTotalEvents: number
+
+  /**
+   * The index of this event within the transaction. Note that events may be delivered out of order,
+   * and that the index is zero-based.
+   */
+  transactionCurrentEvent: number
 }
 
-/** @public */
+/**
+ * An error occurred. This is different from a network-level error (which will be emitted as 'error').
+ * Possible causes are things such as malformed filters, non-existant datasets or similar.
+ *
+ * @public
+ */
 export type ChannelErrorEvent = {
   type: 'channelError'
   message: string
 }
 
-/** @public */
+/**
+ * The listener has been told to explicitly disconnect and not reconnect.
+ * This is a rare situation, but may occur if the API knows reconnect attempts will fail,
+ * eg in the case of a deleted dataset, a blocked project or similar events.
+ *
+ * Note that this is not treated as an error on the observable, but will complete the observable.
+ *
+ * @public
+ */
 export type DisconnectEvent = {
   type: 'disconnect'
   reason: string
 }
 
-/** @public */
+/**
+ * The listener has been disconnected, and a reconnect attempt is scheduled.
+ *
+ * @public
+ */
 export type ReconnectEvent = {
   type: 'reconnect'
 }
 
-/** @public */
+/**
+ * The listener has been established, and will start receiving events.
+ * Note that this is also emitted upon _reconnection_.
+ *
+ * @public
+ */
 export type WelcomeEvent = {
   type: 'welcome'
 }
@@ -488,15 +600,65 @@ export type ListenEvent<R extends Record<string, Any>> =
   | WelcomeEvent
 
 /** @public */
-export type ListenEventName = 'mutation' | 'welcome' | 'reconnect'
+export type ListenEventName =
+  /** A mutation was performed */
+  | 'mutation'
+  /** The listener has been (re)established */
+  | 'welcome'
+  /** The listener has been disconnected, and a reconnect attempt is scheduled */
+  | 'reconnect'
 
 /** @public */
 export interface ListenOptions {
+  /**
+   * Whether or not to include the resulting document in addition to the mutations performed.
+   * If you do not need the actual document, set this to `false` to reduce bandwidth usage.
+   * The result will be available on the `.result` property of the events.
+   * @defaultValue `true`
+   */
   includeResult?: boolean
+
+  /**
+   * Whether or not to include the document as it looked before the mutation event.
+   * The previous revision will be available on the `.previous` property of the events,
+   * and may be `null` in the case of a new document.
+   * @defaultValue `false`
+   */
   includePreviousRevision?: boolean
-  visibility?: 'sync' | 'async' | 'query'
+
+  /**
+   * Whether events should be sent as soon as a transaction has been committed (`transaction`, default),
+   * or only after they are available for queries (query). Note that this is on a best-effort basis,
+   * and listeners with `query` may in certain cases (notably with deferred transactions) receive events
+   * that are not yet visible to queries.
+   *
+   * @defaultValue `'transaction'`
+   */
+  visibility?: 'transaction' | 'query'
+
+  /**
+   * Array of event names to include in the observable. By default, only mutation events are included.
+   *
+   * @defaultValue `['mutation']`
+   */
   events?: ListenEventName[]
+
+  /**
+   * Format of "effects", eg the resulting changes of a mutation.
+   * Currently only `mendoza` is supported, and (if set) will include `apply` and `revert` arrays
+   * in the mutation events under the `effects` property.
+   *
+   * See {@link https://github.com/sanity-io/mendoza | The mendoza docs} for more info
+   *
+   * @defaultValue `undefined`
+   */
   effectFormat?: 'mendoza'
+
+  /**
+   * Optional request tag for the listener. Use to identify the request in logs.
+   *
+   * @defaultValue `undefined`
+   */
   tag?: string
 }
 
