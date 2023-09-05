@@ -70,7 +70,7 @@
     "prepublishOnly": "npm run build",
     "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
     "test": "vitest",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit && vitest typecheck",
     "test:browser": "npm test -- --config ./vitest.browser.config.ts",
     "test:bun": "(cd runtimes/bun && bun wiptest)",
     "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
@@ -120,8 +120,8 @@
     "sse-channel": "^4.0.0",
     "terser": "^5.19.4",
     "typescript": "^5.2.2",
-    "vitest": "^0.34.3",
-    "vitest-github-actions-reporter": "^0.10.0"
+    "vitest": "0.34.3",
+    "vitest-github-actions-reporter": "0.10.0"
   },
   "engines": {
     "node": ">=14.18"

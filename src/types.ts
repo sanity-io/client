@@ -680,6 +680,79 @@ export type UnfilteredResponseQueryOptions = ResponseQueryOptions & {
   filterResponse: false
 }
 
+/**
+ * Stricter typing of the response from `client.fetch`, intended to be used by type inference libraries and tooling that
+ * delivers runtime safety in production.
+ *
+ * @example
+ * It's not designed to be used directly in application code, in fact that would be the most annoying way to query Content Lake in a runtime safe way:
+ * ```ts
+ * import type {StrictUnknownQueryResponseResult} from '@sanity/client'
+ * const query = '*[_type == "product"]'
+ * const response = client.fetch<StrictUnknownQueryResponseResult>(query)
+ * // Response is now strictly typed, without any knowledge of the dataset or what the GROQ query might return.
+ * // The GROQ query is asking for an array of documents that have `_type` = "product", but TypeScript doesn't know that, 
+ * // `query` is `string` and so the type accounts for anything that GROQ supports, which means you might have any JSON valid data in the response.
+ * // \@ts-expect-error -- TS doesn't know the api will always return an array, so it errors
+ * console.log(response.length)
+ * // It needs a runtime check to ensure it's an array
+ * if (Array.isArray(response)) console.log(response.length)
+ * ```
+ * 
+ * @example
+ * How's it intended to be used? By libraries that delivers end-to-end GROQ runtime type safety.
+ * For example in an imaginary TypeScript language service plugin that can look at your `sanity.config.ts`:
+ * ```ts
+ * import { defineConfig } from 'sanity'
+
+*  export default defineConfig({
+*    projectId: '...',
+*    dataset: '...',
+*    schema: {
+*      types: [
+*        {
+*          name: 'page',
+*          title: 'Page',
+*          type: 'document',
+*          fields: [
+*            {
+*              name: 'title',
+*              title: 'Title',
+*              type: 'string',
+*            },
+*          ],
+*        },
+*      ],
+*    },
+*  })
+ * ```
+ * And use that to infer typings:
+ * ```ts
+ * import {createClient} from '@sanity/client'
+ * 
+ * const client = createClient()
+ * const response = client.fetch('*[_type == "page"]')
+ * // all is well, if title exists the schema says it's a string
+ * response.map(page => page.title?.toUpperCase())
+ * // IDE flags an error, the `author` property isn't defined in the schema so it could be any JSON valid value.
+ * response.map(page => page.author?.toUpperCase())
+ * // Maybe this is by design because `author` is coming from an external source, and not from entering it in the Studio interface,
+ * // the IDE plugin returns `StrictUnknownQueryResponseResult` and you have to handle it manually:
+ * response.map(page => typeof page.author === 'string' ? page.author.toUpperCase() : 'UNKNOWN')
+ * ```
+ * If the imaginary IDE extension returned `any` or `unknown` instead of `StrictUnknownQueryResponseResult` it opens up a lot of 
+ * possibilities where it would fail silently and instead error at runtime.
+ * 
+ * @public
+ */
+export type StrictUnknownQueryResponseResult =
+  | string
+  | number
+  | boolean
+  | null
+  | {[key: string]: StrictUnknownQueryResponseResult | undefined}
+  | StrictUnknownQueryResponseResult[]
+
 /** @public */
 export interface RawQueryResponse<R> {
   query: string

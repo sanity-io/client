@@ -39,6 +39,7 @@ jobs:
       - run: npm ci
       - run: npx ls-engines
       - run: npm run prepublishOnly
+      - run: npm run type-check
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
