@@ -586,11 +586,39 @@ export class ObservableSanityClient {
   /**
    * Create a new buildable patch of operations to perform
    *
-   * @param documentId - Document ID(s) to patch
+   * @param documentId - Document ID to patch
    * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
    */
-  patch(documentId: PatchSelection, operations?: PatchOperations): ObservablePatch {
-    return new ObservablePatch(documentId, operations, this)
+  patch(documentId: string, operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param documentIds - Array of document IDs to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentIds: string[], operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - An object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: MutationSelection, operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - Document ID, an array of document IDs, or an object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: PatchSelection, operations?: PatchOperations): ObservablePatch {
+    return new ObservablePatch(selection, operations, this)
   }
 
   /**
@@ -1191,8 +1219,36 @@ export class SanityClient {
   /**
    * Create a new buildable patch of operations to perform
    *
-   * @param documentId - Document ID(s)to patch
+   * @param documentId - Document ID to patch
    * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentId: string, operations?: PatchOperations): Patch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param documentIds - Array of document IDs to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentIds: string[], operations?: PatchOperations): Patch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - An object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: MutationSelection, operations?: PatchOperations): Patch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - Document ID, an array of document IDs, or an object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
    */
   patch(documentId: PatchSelection, operations?: PatchOperations): Patch {
     return new Patch(documentId, operations, this)
