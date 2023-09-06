@@ -5,6 +5,12 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.10](https://github.com/sanity-io/client/compare/v6.4.9...v6.4.10) (2023-09-06)
+
+### Bug Fixes
+
+- **esm:** support `nuxt-module-build` ([#318](https://github.com/sanity-io/client/issues/318)) ([d279283](https://github.com/sanity-io/client/commit/d279283d4298b5ae532f9262f32f5489b3fb71b8))
+
 ## [6.4.9](https://github.com/sanity-io/client/compare/v6.4.8...v6.4.9) (2023-08-18)
 
 ### Bug Fixes
