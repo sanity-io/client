@@ -605,9 +605,8 @@ export class ObservableSanityClient {
   }
 
   /**
-   * DEPRECATED: Perform an HTTP request against the Sanity API
+   * Perform an HTTP request against the Sanity API
    *
-   * @deprecated Use your own request library!
    * @param options - Request options
    */
   request<R = Any>(options: RawRequestOptions): Observable<R> {
