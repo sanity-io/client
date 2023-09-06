@@ -65,9 +65,10 @@ jobs:
           - os: ubuntu-latest
             # Also test the previous LTS release
             node: lts/-1
-          - os: ubuntu-latest
-            # Test the actively developed version that will become the latest LTS release next October
-            node: current
+          # @TODO re-enable after the nightly builds work with vitest once again
+          # - os: ubuntu-latest
+          #   # Test the actively developed version that will become the latest LTS release next October
+          #   node: current
         # The `build` job already runs the testing suite in ubuntu and lts/*
         exclude:
           - os: ubuntu-latest

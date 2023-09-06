@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.4.9",
+  "version": "6.4.10",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -40,10 +40,8 @@
       "source": "./src/index.ts",
       "require": "./dist/index.cjs",
       "node": {
-        "module": "./dist/index.js",
         "import": "./dist/index.cjs.js"
       },
-      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
@@ -118,7 +116,7 @@
     "prettier": "^3.0.3",
     "prettier-plugin-packagejson": "^2.4.5",
     "rimraf": "^5.0.1",
-    "rollup": "^3.28.1",
+    "rollup": "^3.29.0",
     "sse-channel": "^4.0.0",
     "terser": "^5.19.4",
     "typescript": "^5.2.2",
