@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.11](https://github.com/sanity-io/client/compare/v6.4.10...v6.4.11) (2023-09-06)
+
+### Bug Fixes
+
+- adjust incorrect listener `visibility` option type ([#317](https://github.com/sanity-io/client/issues/317)) ([92ac2a6](https://github.com/sanity-io/client/commit/92ac2a6879b1f92cb756fc7b54a04fd98e38f81e))
+- remove deprecated annotation for the request method ([#320](https://github.com/sanity-io/client/issues/320)) ([8d8f0e2](https://github.com/sanity-io/client/commit/8d8f0e24d9ddf2e5e41f213e9c4f49ae287dd061))
+
 ## [6.4.10](https://github.com/sanity-io/client/compare/v6.4.9...v6.4.10) (2023-09-06)
 
 ### Bug Fixes
