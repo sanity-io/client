@@ -15,7 +15,7 @@ jobs:
     name: deno run update_import_map.ts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           cache: npm

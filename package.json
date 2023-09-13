@@ -72,7 +72,7 @@
     "test": "vitest",
     "type-check": "tsc --noEmit",
     "test:browser": "npm test -- --config ./vitest.browser.config.ts",
-    "test:bun": "(cd runtimes/bun && bun wiptest)",
+    "test:bun": "bun test runtimes/bun",
     "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
     "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
     "posttest:deno:update_import_map": "npx prettier --write runtimes/deno/import_map.json",
