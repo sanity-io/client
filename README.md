@@ -1165,13 +1165,6 @@ client.config({dataset: 'newDataset'})
 
 Set client configuration. Required options are `projectId` and `dataset`.
 
-## Release new version
-
-Run ["CI & Release" workflow](https://github.com/sanity-io/client/actions/workflows/ci.yml).
-Make sure to select the main branch and check "Release new version".
-
-Semantic release will only release on configured branches, so it is safe to run release on any branch.
-
 ## License
 
 MIT © [Sanity.io](https://www.sanity.io/)

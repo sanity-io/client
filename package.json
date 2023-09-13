@@ -100,7 +100,6 @@
     "@rollup/plugin-commonjs": "^25.0.4",
     "@rollup/plugin-node-resolve": "^15.2.1",
     "@sanity/pkg-utils": "^2.4.8",
-    "@sanity/semantic-release-preset": "^4.1.4",
     "@types/node": "^20.6.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
@@ -125,9 +124,5 @@
   },
   "engines": {
     "node": ">=14.18"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
   }
 }
