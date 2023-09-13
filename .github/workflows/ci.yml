@@ -32,7 +32,7 @@ jobs:
     name: Build, lint and test coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           cache: npm
@@ -75,7 +75,7 @@ jobs:
           - os: ubuntu-latest
             node: lts/*
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           cache: npm
@@ -88,7 +88,7 @@ jobs:
     name: Cache production dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - id: prod-deps
         uses: actions/cache@v3
         with:
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           cache: npm
@@ -121,7 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           cache: npm
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, prod-deps]
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         name: Install only production dependencies
         with:
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, prod-deps]
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         name: Install only production dependencies
         with:
@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, prod-deps]
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
       - uses: actions/cache@v3
         name: Install only production dependencies
         with:
@@ -199,7 +199,7 @@ jobs:
     if: github.event.inputs.release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4
+      - uses: actions/checkout@v4
         with:
           # Need to fetch entire commit history to
           # analyze every commit since last release
