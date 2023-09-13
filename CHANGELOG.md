@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.4.12](https://github.com/sanity-io/client/compare/v6.4.11...v6.4.12) (2023-09-13)
+
+
+### Bug Fixes
+
+* setup release-please ([#330](https://github.com/sanity-io/client/issues/330)) ([b20b109](https://github.com/sanity-io/client/commit/b20b109e0a4ec95c967e5f794d6dbf93550877de))
+
 ## [6.4.11](https://github.com/sanity-io/client/compare/v6.4.10...v6.4.11) (2023-09-06)
 
 ### Bug Fixes
