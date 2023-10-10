@@ -44,6 +44,26 @@
       },
       "default": "./dist/index.js"
     },
+    "./csm": {
+      "types": "./dist/csm.d.ts",
+      "source": "./src/csm/index.ts",
+      "require": "./dist/csm.cjs",
+      "node": {
+        "import": "./dist/csm.cjs.js"
+      },
+      "import": "./dist/csm.js",
+      "default": "./dist/csm.js"
+    },
+    "./stega": {
+      "types": "./dist/stega.d.ts",
+      "source": "./src/stega/index.ts",
+      "require": "./dist/stega.cjs",
+      "node": {
+        "import": "./dist/stega.cjs.js"
+      },
+      "import": "./dist/stega.js",
+      "default": "./dist/stega.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -55,6 +75,16 @@
     "./dist/index.js": "./dist/index.browser.js"
   },
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "csm": [
+        "./dist/csm.d.ts"
+      ],
+      "stega": [
+        "./dist/stega.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist",
     "src",
@@ -91,7 +121,9 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
+    "@vercel/stega": "0.1.0",
     "get-it": "^8.4.3",
+    "lodash.isplainobject": "^4.0.6",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
@@ -100,6 +132,7 @@
     "@rollup/plugin-commonjs": "^25.0.4",
     "@rollup/plugin-node-resolve": "^15.2.1",
     "@sanity/pkg-utils": "^2.4.8",
+    "@types/lodash.isplainobject": "^4.0.7",
     "@types/node": "^20.6.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
