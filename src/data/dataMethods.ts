@@ -314,7 +314,7 @@ export function _requestObservable<R>(
       ? [config.requestTagPrefix, options.tag].join('.')
       : options.tag || config.requestTagPrefix
 
-  if (tag) {
+  if (tag && options.tag !== null) {
     options.query = {tag: validate.requestTag(tag), ...options.query}
   }
 
