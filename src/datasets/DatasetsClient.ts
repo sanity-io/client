@@ -49,7 +49,6 @@ export class ObservableDatasetsClient {
   list(): Observable<DatasetsResponse> {
     return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
       uri: '/datasets',
-      tag: null,
     })
   }
 }
@@ -101,7 +100,7 @@ export class DatasetsClient {
    */
   list(): Promise<DatasetsResponse> {
     return lastValueFrom(
-      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets', tag: null}),
+      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets'}),
     )
   }
 }
