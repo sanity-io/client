@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.5.0](https://github.com/sanity-io/client/compare/v6.4.12...v6.5.0) (2023-10-10)
+
+
+### Features
+
+* allow passing null as tag to explicitly disable it ([#348](https://github.com/sanity-io/client/issues/348)) ([2698bde](https://github.com/sanity-io/client/commit/2698bdee034d36d8ff59c9984bf6069a385af850))
+
 ## [6.4.12](https://github.com/sanity-io/client/compare/v6.4.11...v6.4.12) (2023-09-13)
 
 
