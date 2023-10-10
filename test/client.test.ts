@@ -450,29 +450,31 @@ describe('client', async () => {
   })
 
   describe('DATASETS', () => {
+    const dsClient = getClient({requestTagPrefix: 'test'})
+
     test('throws when trying to create dataset with invalid name', () => {
-      expect(() => getClient().datasets.create('*foo*')).toThrow(/Datasets can only contain/i)
+      expect(() => dsClient.datasets.create('*foo*')).toThrow(/Datasets can only contain/i)
     })
 
     test('throws when trying to delete dataset with invalid name', () => {
-      expect(() => getClient().datasets.delete('*foo*')).toThrow(/Datasets can only contain/i)
+      expect(() => dsClient.datasets.delete('*foo*')).toThrow(/Datasets can only contain/i)
     })
 
     test.skipIf(isEdge)('can create dataset', async () => {
       nock(projectHost()).put('/v1/datasets/bar').reply(200)
-      await expect(getClient().datasets.create('bar')).resolves.not.toThrow()
+      await expect(dsClient.datasets.create('bar')).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('can delete dataset', async () => {
       nock(projectHost()).delete('/v1/datasets/bar').reply(200)
-      await expect(getClient().datasets.delete('bar')).resolves.not.toThrow()
+      await expect(dsClient.datasets.delete('bar')).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('can list datasets', async () => {
       nock(projectHost())
         .get('/v1/datasets')
         .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
-      await expect(getClient().datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
+      await expect(dsClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
     })
   })
 
