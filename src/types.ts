@@ -864,12 +864,19 @@ export type ContentSourceMapMapping = ContentSourceMapValueMapping
 export type ContentSourceMapMappings = Record<string, ContentSourceMapMapping>
 
 /** @public */
-export interface ContentSourceMapDocument {
+export interface ContentSourceMapDocumentBase {
   _id: string
+  _type: string
 }
 
 /** @public */
-export interface ContentSourceMapRemoteDocument extends ContentSourceMapDocument {
+export interface ContentSourceMapDocument extends ContentSourceMapDocumentBase {
+  _projectId?: undefined
+  _dataset?: undefined
+}
+
+/** @public */
+export interface ContentSourceMapRemoteDocument extends ContentSourceMapDocumentBase {
   _projectId: string
   _dataset: string
 }
