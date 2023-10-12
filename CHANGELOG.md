@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.6.0](https://github.com/sanity-io/client/compare/v6.5.0...v6.6.0) (2023-10-12)
+
+
+### Features
+
+* **types:** add `_type` to `ContentSourceMapDocuments` ([#358](https://github.com/sanity-io/client/issues/358)) ([1acf6c5](https://github.com/sanity-io/client/commit/1acf6c5a111ad311ffc935956c064c87c51ad53c))
+
 ## [6.5.0](https://github.com/sanity-io/client/compare/v6.4.12...v6.5.0) (2023-10-10)
 
 
