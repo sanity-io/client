@@ -4,6 +4,7 @@ import path from 'node:path'
 import {
   type ClientConfig,
   ClientError,
+  ContentSourceMap,
   createClient,
   type DatasetsResponse,
   Patch,
@@ -479,19 +480,45 @@ describe('client', async () => {
   })
 
   describe('DATA', () => {
+    const result = [{_id: 'njgNkngskjg', rating: 5}]
+    const resultSourceMap = {
+      documents: [
+        {
+          _id: 'njgNkngskjg',
+          _type: 'beer',
+        },
+      ],
+      paths: ["$['_id']", "$['rating']"],
+      mappings: {
+        "$[0]['_id']": {
+          source: {
+            document: 0,
+            path: 0,
+            type: 'documentValue',
+          },
+          type: 'value',
+        },
+        "$[0]['rating']": {
+          source: {
+            document: 0,
+            path: 1,
+            type: 'documentValue',
+          },
+          type: 'value',
+        },
+      },
+    } satisfies ContentSourceMap
     test.skipIf(isEdge)('can query for documents', async () => {
       const query = 'beerfiesta.beer[.title == $beerName]'
       const params = {beerName: 'Headroom Double IPA'}
       const qs =
         'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=${qs}`)
-        .reply(200, {
-          ms: 123,
-          query: query,
-          result: [{_id: 'njgNkngskjg', rating: 5}],
-        })
+      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
+        ms: 123,
+        query: query,
+        result,
+      })
 
       const res = await getClient().fetch(query, params)
       expect(res.length, 'length should match').toBe(1)
@@ -504,13 +531,11 @@ describe('client', async () => {
       const qs =
         'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=${qs}`)
-        .reply(200, {
-          ms: 123,
-          query: query,
-          result: [{_id: 'njgNkngskjg', rating: 5}],
-        })
+      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
+        ms: 123,
+        query: query,
+        result,
+      })
 
       const res = await getClient().fetch(query, params, {filterResponse: false})
       expect(res.ms, 'should include timing info').toBe(123)
@@ -520,13 +545,11 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for documents with request tag', async () => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
-        .reply(200, {
-          ms: 123,
-          query: '*',
-          result: [{_id: 'njgNkngskjg', rating: 5}],
-        })
+      nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
+        ms: 123,
+        query: '*',
+        result,
+      })
 
       const res = await getClient().fetch('*', {}, {tag: 'mycompany.syncjob'})
       expect(res.length, 'length should match').toBe(1)
@@ -537,14 +560,16 @@ describe('client', async () => {
       'can query for documents with resultSourceMap and perspective',
       async () => {
         nock(projectHost())
-          .get(`/v1/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
+          .get(`/vX/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
           .reply(200, {
             ms: 123,
             query: '*',
-            result: [{_id: 'njgNkngskjg', rating: 5}],
+            result,
+            resultSourceMap,
           })
 
         const client = getClient({
+          apiVersion: 'X',
           resultSourceMap: true,
           perspective: 'previewDrafts',
         })
@@ -560,7 +585,7 @@ describe('client', async () => {
         .reply(200, {
           ms: 123,
           query: '*',
-          result: [{_id: 'njgNkngskjg', rating: 5}],
+          result,
         })
 
       const client = createClient({
@@ -578,14 +603,15 @@ describe('client', async () => {
       'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
       async () => {
         nock(projectHost())
-          .get(`/v1/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
+          .get(`/vX/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
           .reply(200, {
             ms: 123,
             query: '*',
-            result: [{_id: 'njgNkngskjg', rating: 5}],
+            result,
+            resultSourceMap,
           })
 
-        const client = getClient({})
+        const client = getClient({apiVersion: 'X'})
         const res = await client.fetch(
           '*',
           {},
@@ -599,15 +625,18 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'setting resultSourceMap and perspective on client.fetch overrides the config',
       async () => {
-        nock(projectHost())
-          .get(`/v1/data/query/foo?query=*&perspective=published`)
-          .reply(200, {
-            ms: 123,
-            query: '*',
-            result: [{_id: 'njgNkngskjg', rating: 5}],
-          })
+        nock(projectHost()).get(`/vX/data/query/foo?query=*&perspective=published`).reply(200, {
+          ms: 123,
+          query: '*',
+          result,
+          resultSourceMap,
+        })
 
-        const client = getClient({resultSourceMap: true, perspective: 'previewDrafts'})
+        const client = getClient({
+          apiVersion: 'X',
+          resultSourceMap: true,
+          perspective: 'previewDrafts',
+        })
         const res = await client.fetch('*', {}, {resultSourceMap: false, perspective: 'published'})
         expect(res.length, 'length should match').toBe(1)
         expect(res[0].rating, 'data should match').toBe(5)
@@ -622,7 +651,7 @@ describe('client', async () => {
           .reply(200, {
             ms: 123,
             query: '*',
-            result: [{_id: 'njgNkngskjg', rating: 5}],
+            result,
           })
 
         const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
@@ -633,13 +662,11 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
-        .reply(200, {
-          ms: 123,
-          query: '*',
-          result: [{_id: 'njgNkngskjg', rating: 5}],
-        })
+      nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
+        ms: 123,
+        query: '*',
+        result,
+      })
 
       expect(() => {
         getClient().fetch('*', {}, {tag: 'mycompany syncjob ok'})
@@ -647,13 +674,11 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can use a tag-prefixed client', async () => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`)
-        .reply(200, {
-          ms: 123,
-          query: '*',
-          result: [{_id: 'njgNkngskjg', rating: 5}],
-        })
+      nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
+        ms: 123,
+        query: '*',
+        result,
+      })
 
       const res = await getClient({requestTagPrefix: 'mycompany'}).fetch('*', {}, {tag: 'syncjob'})
       expect(res.length, 'length should match').toBe(1)
@@ -1309,7 +1334,7 @@ describe('client', async () => {
         .reply(200, {
           ms: 123,
           query: query,
-          result: [{_id: 'njgNkngskjg', rating: 5}],
+          result,
         })
 
       const res = await getClient().fetch(query, params)
@@ -1335,7 +1360,7 @@ describe('client', async () => {
         .reply(200, {
           ms: 123,
           query: query,
-          result: [{_id: 'njgNkngskjg', rating: 5}],
+          result,
         })
 
       const res = await getClient().fetch(query, params)
@@ -1366,7 +1391,7 @@ describe('client', async () => {
         .reply(200, {
           ms: 123,
           query: query,
-          result: [{_id: 'njgNkngskjg', rating: 5}],
+          result,
         })
 
       const res = await getClient().fetch(query, params)
@@ -1393,7 +1418,7 @@ describe('client', async () => {
           .reply(200, {
             ms: 123,
             query: query,
-            result: [{_id: 'njgNkngskjg', rating: 5}],
+            result,
           })
 
         const res = await getClient().fetch(query, params, {tag: 'myapp.silly-query'})
@@ -1417,14 +1442,16 @@ describe('client', async () => {
 
         nock(projectHost())
           .filteringRequestBody(/.*/, '*')
-          .post('/v1/data/query/foo?resultSourceMap=true&perspective=previewDrafts', '*')
+          .post('/vX/data/query/foo?resultSourceMap=true&perspective=previewDrafts', '*')
           .reply(200, {
             ms: 123,
             query: query,
-            result: [{_id: 'njgNkngskjg', rating: 5}],
+            result,
+            resultSourceMap,
           })
 
         const client = getClient({
+          apiVersion: 'X',
           perspective: 'previewDrafts',
           resultSourceMap: true,
         })
@@ -1452,7 +1479,7 @@ describe('client', async () => {
         .reply(200, {
           ms: 123,
           query: query,
-          result: [{_id: 'njgNkngskjg', rating: 5}],
+          result,
         })
 
       const res = await client.fetch(query, params)
