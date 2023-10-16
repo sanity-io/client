@@ -1092,7 +1092,7 @@ client.delete('image-abc123_someAssetId-500x500-png').then((result) => {
 
 ### Mutation options
 
-The following options are available for mutations, and can be applied either as the second argument to `create()`, `createOrReplace`, `createIfNotExist`, `delete()` and `mutate()` - or as an argument to the `commit()` method on patches and transactions.
+The following options are available for mutations, and can be applied either as the second argument to `create()`, `createOrReplace`, `createIfNotExists`, `delete()` and `mutate()` - or as an argument to the `commit()` method on patches and transactions.
 
 - `visibility` (`'sync'|'async'|'deferred'`) - default `'sync'`
   - `sync`: request will not return until the requested changes are visible to subsequent queries.
