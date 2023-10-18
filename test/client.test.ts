@@ -274,6 +274,15 @@ describe('client', async () => {
         })
       })
     })
+
+    test('uses default fallback if apiHost is undefined', () => {
+      const client = createClient({
+        ...clientConfig,
+        apiHost: undefined,
+      })
+
+      expect(client.config().apiHost).toBe('https://api.sanity.io')
+    })
   })
 
   describe.skipIf(isEdge)('PROJECTS', () => {
