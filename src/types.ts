@@ -84,7 +84,7 @@ export interface ClientConfig {
   /**
    * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
    */
-  resultSourceMap?: boolean
+  resultSourceMap?: boolean | 'withKeyArraySelector'
   /**
    *@deprecated set `cache` and `next` options on `client.fetch` instead
    */

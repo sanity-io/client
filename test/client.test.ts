@@ -579,6 +579,31 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)(
+      'can query for documents with resultSourceMap=withKeyArraySelector and perspective',
+      async () => {
+        nock(projectHost())
+          .get(
+            `/vX/data/query/foo?query=*&resultSourceMap=withKeyArraySelector&perspective=previewDrafts`,
+          )
+          .reply(200, {
+            ms: 123,
+            query: '*',
+            result,
+            resultSourceMap,
+          })
+
+        const client = getClient({
+          apiVersion: 'X',
+          resultSourceMap: 'withKeyArraySelector',
+          perspective: 'previewDrafts',
+        })
+        const res = await client.fetch('*', {})
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
     test.skipIf(isEdge)('automatically useCdn false if perspective is previewDrafts', async () => {
       nock('https://abc123.api.sanity.io')
         .get(`/v1/data/query/foo?query=*&perspective=previewDrafts`)
