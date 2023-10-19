@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.7.0](https://github.com/sanity-io/client/compare/v6.6.0...v6.7.0) (2023-10-19)
+
+
+### Features
+
+* support `resultSourceMap=withKeyArraySelector` ([#363](https://github.com/sanity-io/client/issues/363)) ([d528e99](https://github.com/sanity-io/client/commit/d528e99f7f25077e9acc9909a642af352782359c))
+
 ## [6.6.0](https://github.com/sanity-io/client/compare/v6.5.0...v6.6.0) (2023-10-12)
 
 
