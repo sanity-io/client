@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           cache: npm
           node-version: lts/*
@@ -62,7 +62,7 @@ jobs:
             node: lts/*
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           cache: npm
           node-version: ${{ matrix.node }}
@@ -81,7 +81,7 @@ jobs:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - if: steps.prod-deps.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
       - if: steps.prod-deps.outputs.cache-hit != 'true'
@@ -92,7 +92,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           cache: npm
           node-version: lts/*
@@ -108,7 +108,7 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           cache: npm
           node-version: lts/*
@@ -165,7 +165,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
       - uses: actions/download-artifact@v3
