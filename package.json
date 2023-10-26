@@ -109,7 +109,7 @@
     "eslint-plugin-prettier": "^5.0.1",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "faucet": "^0.0.4",
-    "happy-dom": "^12.9.1",
+    "happy-dom": "^12.10.1",
     "ls-engines": "^0.9.0",
     "nock": "^13.3.6",
     "prettier": "^3.0.3",
