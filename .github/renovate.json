@@ -5,7 +5,9 @@
     {
       "matchPackageNames": ["get-it"],
       "rangeStrategy": "bump",
-      "semanticCommitType": "fix"
+      "semanticCommitType": "fix",
+      "groupName": null,
+      "groupSlug": null
     }
   ]
 }
