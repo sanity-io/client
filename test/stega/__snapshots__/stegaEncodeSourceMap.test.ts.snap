@@ -1,0 +1,307 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`resolveEditUrl '/' > decode all 1`] = `
+[
+  "/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[_key==\\"d8fa6d59e49b\\"].children[_key==\\"6a057cf2fb310\\"].text",
+  "/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key==\\"cee5fbb69da2\\"].alt",
+  "/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title",
+  "/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=title",
+  "/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[_key==\\"60b5ed16f4cc\\"].children[_key==\\"0ebc1c5b37350\\"].text",
+  "/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[_key==\\"5d457324f980\\"].children[_key==\\"ad7206c98f29\\"].text",
+  "/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[_key==\\"782db3651957\\"].children[_key==\\"cbd1965e0d78\\"].text",
+  "/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=media[_key==\\"55659c72ec46\\"].alt",
+  "/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=title",
+  "/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[_key==\\"94e937616df1\\"].children[_key==\\"d53c7c4c3314\\"].text",
+  "/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[_key==\\"65f554bf0220\\"].children[_key==\\"633d1506e24f\\"].text",
+  "/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[_key==\\"7c6bbc4dc6c9\\"].children[_key==\\"4f27de6e55d8\\"].text",
+  "/intent/edit/id=c9de5527-ebd9-4f90-8c30-a26e3439ca2d;type=product;path=title",
+  "/intent/edit/id=c9de5527-ebd9-4f90-8c30-a26e3439ca2d;type=product;path=description[_key==\\"85cce8f03c3c\\"].children[_key==\\"1689e57dff090\\"].text",
+  "/intent/edit/id=e1bf9f1f-efdb-4105-8c26-6b64f897e9c1;type=product;path=description[_key==\\"b61f8576b42b\\"].children[_key==\\"625afd80ca530\\"].text",
+  "/intent/edit/id=e1bf9f1f-efdb-4105-8c26-6b64f897e9c1;type=product;path=title",
+  "/intent/edit/id=siteSettings;type=siteSettings;path=title",
+  "/intent/edit/id=siteSettings;type=siteSettings;path=copyrightText",
+]
+`;
+
+exports[`resolveEditUrl '/' > logger.error 1`] = `[]`;
+
+exports[`resolveEditUrl '/' > logger.log 1`] = `
+[
+  [
+    "[@sanity/client/stega]: Encoding source map into result",
+  ],
+  [
+    "[@sanity/client/stega]: Paths encoded: 18, skipped: 80",
+  ],
+  [
+    "[@sanity/client/stega]: Table of encoded paths",
+  ],
+  [
+    "[@sanity/client/stega]: List of skipped paths",
+    [
+      "description[]._key",
+      "description[]._type",
+      "description[].style",
+      "slug.current",
+      "slug._type",
+      "media[]._type",
+      "media[]._key",
+      "media[].asset._ref",
+      "media[].asset._type",
+      "_id",
+    ],
+  ],
+]
+`;
+
+exports[`resolveEditUrl '/' > logger.table 1`] = `
+[
+  [
+    [
+      {
+        "length": 377,
+        "path": "description[_key==\\"d8fa6d59e49b\\"].children[_key==\\"6a057cf2fb310\\"].text",
+        "value": "After revisiting one...",
+      },
+      {
+        "length": 37,
+        "path": "media[_key==\\"cee5fbb69da2\\"].alt",
+        "value": "A Scandi minimal lam...",
+      },
+      {
+        "length": 31,
+        "path": "title",
+        "value": "Akoyas - the greates...",
+      },
+      {
+        "length": 7,
+        "path": "title",
+        "value": "All sew",
+      },
+      {
+        "length": 132,
+        "path": "description[_key==\\"60b5ed16f4cc\\"].children[_key==\\"0ebc1c5b37350\\"].text",
+        "value": "All sew, our modular...",
+      },
+      {
+        "length": 0,
+        "path": "description[_key==\\"5d457324f980\\"].children[_key==\\"ad7206c98f29\\"].text",
+        "value": "",
+      },
+      {
+        "length": 12,
+        "path": "description[_key==\\"782db3651957\\"].children[_key==\\"cbd1965e0d78\\"].text",
+        "value": "Another row.",
+      },
+      {
+        "length": 30,
+        "path": "media[_key==\\"55659c72ec46\\"].alt",
+        "value": "A glorious lamp pend...",
+      },
+      {
+        "length": 4,
+        "path": "title",
+        "value": "Test",
+      },
+      {
+        "length": 143,
+        "path": "description[_key==\\"94e937616df1\\"].children[_key==\\"d53c7c4c3314\\"].text",
+        "value": "asldkmsa ldkmasdlka ...",
+      },
+      {
+        "length": 0,
+        "path": "description[_key==\\"65f554bf0220\\"].children[_key==\\"633d1506e24f\\"].text",
+        "value": "",
+      },
+      {
+        "length": 6,
+        "path": "description[_key==\\"7c6bbc4dc6c9\\"].children[_key==\\"4f27de6e55d8\\"].text",
+        "value": "okokok",
+      },
+      {
+        "length": 16,
+        "path": "title",
+        "value": "AllSew Reclaimed",
+      },
+      {
+        "length": 131,
+        "path": "description[_key==\\"85cce8f03c3c\\"].children[_key==\\"1689e57dff090\\"].text",
+        "value": "Allsew, our modular,...",
+      },
+      {
+        "length": 209,
+        "path": "description[_key==\\"b61f8576b42b\\"].children[_key==\\"625afd80ca530\\"].text",
+        "value": "Meet Ripple, a new s...",
+      },
+      {
+        "length": 13,
+        "path": "title",
+        "value": "Ripple Sconce",
+      },
+      {
+        "length": 4,
+        "path": "title",
+        "value": "acme",
+      },
+      {
+        "length": 33,
+        "path": "copyrightText",
+        "value": "acme © 2023 — all ri...",
+      },
+    ],
+  ],
+]
+`;
+
+exports[`resolveEditUrl 'https://test.sanity.studio' > decode all 1`] = `
+[
+  "https://test.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[_key==\\"d8fa6d59e49b\\"].children[_key==\\"6a057cf2fb310\\"].text",
+  "https://test.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key==\\"cee5fbb69da2\\"].alt",
+  "https://test.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title",
+  "https://test.sanity.studio/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=title",
+  "https://test.sanity.studio/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[_key==\\"60b5ed16f4cc\\"].children[_key==\\"0ebc1c5b37350\\"].text",
+  "https://test.sanity.studio/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[_key==\\"5d457324f980\\"].children[_key==\\"ad7206c98f29\\"].text",
+  "https://test.sanity.studio/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[_key==\\"782db3651957\\"].children[_key==\\"cbd1965e0d78\\"].text",
+  "https://test.sanity.studio/intent/edit/id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=media[_key==\\"55659c72ec46\\"].alt",
+  "https://test.sanity.studio/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=title",
+  "https://test.sanity.studio/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[_key==\\"94e937616df1\\"].children[_key==\\"d53c7c4c3314\\"].text",
+  "https://test.sanity.studio/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[_key==\\"65f554bf0220\\"].children[_key==\\"633d1506e24f\\"].text",
+  "https://test.sanity.studio/intent/edit/id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[_key==\\"7c6bbc4dc6c9\\"].children[_key==\\"4f27de6e55d8\\"].text",
+  "https://test.sanity.studio/intent/edit/id=c9de5527-ebd9-4f90-8c30-a26e3439ca2d;type=product;path=title",
+  "https://test.sanity.studio/intent/edit/id=c9de5527-ebd9-4f90-8c30-a26e3439ca2d;type=product;path=description[_key==\\"85cce8f03c3c\\"].children[_key==\\"1689e57dff090\\"].text",
+  "https://test.sanity.studio/intent/edit/id=e1bf9f1f-efdb-4105-8c26-6b64f897e9c1;type=product;path=description[_key==\\"b61f8576b42b\\"].children[_key==\\"625afd80ca530\\"].text",
+  "https://test.sanity.studio/intent/edit/id=e1bf9f1f-efdb-4105-8c26-6b64f897e9c1;type=product;path=title",
+  "https://test.sanity.studio/intent/edit/id=siteSettings;type=siteSettings;path=title",
+  "https://test.sanity.studio/intent/edit/id=siteSettings;type=siteSettings;path=copyrightText",
+]
+`;
+
+exports[`resolveEditUrl 'https://test.sanity.studio' > logger.error 1`] = `[]`;
+
+exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
+[
+  [
+    "[@sanity/client/stega]: Encoding source map into result",
+  ],
+  [
+    "[@sanity/client/stega]: Paths encoded: 18, skipped: 80",
+  ],
+  [
+    "[@sanity/client/stega]: Table of encoded paths",
+  ],
+  [
+    "[@sanity/client/stega]: List of skipped paths",
+    [
+      "description[]._key",
+      "description[]._type",
+      "description[].style",
+      "slug.current",
+      "slug._type",
+      "media[]._type",
+      "media[]._key",
+      "media[].asset._ref",
+      "media[].asset._type",
+      "_id",
+    ],
+  ],
+]
+`;
+
+exports[`resolveEditUrl 'https://test.sanity.studio' > logger.table 1`] = `
+[
+  [
+    [
+      {
+        "length": 377,
+        "path": "description[_key==\\"d8fa6d59e49b\\"].children[_key==\\"6a057cf2fb310\\"].text",
+        "value": "After revisiting one...",
+      },
+      {
+        "length": 37,
+        "path": "media[_key==\\"cee5fbb69da2\\"].alt",
+        "value": "A Scandi minimal lam...",
+      },
+      {
+        "length": 31,
+        "path": "title",
+        "value": "Akoyas - the greates...",
+      },
+      {
+        "length": 7,
+        "path": "title",
+        "value": "All sew",
+      },
+      {
+        "length": 132,
+        "path": "description[_key==\\"60b5ed16f4cc\\"].children[_key==\\"0ebc1c5b37350\\"].text",
+        "value": "All sew, our modular...",
+      },
+      {
+        "length": 0,
+        "path": "description[_key==\\"5d457324f980\\"].children[_key==\\"ad7206c98f29\\"].text",
+        "value": "",
+      },
+      {
+        "length": 12,
+        "path": "description[_key==\\"782db3651957\\"].children[_key==\\"cbd1965e0d78\\"].text",
+        "value": "Another row.",
+      },
+      {
+        "length": 30,
+        "path": "media[_key==\\"55659c72ec46\\"].alt",
+        "value": "A glorious lamp pend...",
+      },
+      {
+        "length": 4,
+        "path": "title",
+        "value": "Test",
+      },
+      {
+        "length": 143,
+        "path": "description[_key==\\"94e937616df1\\"].children[_key==\\"d53c7c4c3314\\"].text",
+        "value": "asldkmsa ldkmasdlka ...",
+      },
+      {
+        "length": 0,
+        "path": "description[_key==\\"65f554bf0220\\"].children[_key==\\"633d1506e24f\\"].text",
+        "value": "",
+      },
+      {
+        "length": 6,
+        "path": "description[_key==\\"7c6bbc4dc6c9\\"].children[_key==\\"4f27de6e55d8\\"].text",
+        "value": "okokok",
+      },
+      {
+        "length": 16,
+        "path": "title",
+        "value": "AllSew Reclaimed",
+      },
+      {
+        "length": 131,
+        "path": "description[_key==\\"85cce8f03c3c\\"].children[_key==\\"1689e57dff090\\"].text",
+        "value": "Allsew, our modular,...",
+      },
+      {
+        "length": 209,
+        "path": "description[_key==\\"b61f8576b42b\\"].children[_key==\\"625afd80ca530\\"].text",
+        "value": "Meet Ripple, a new s...",
+      },
+      {
+        "length": 13,
+        "path": "title",
+        "value": "Ripple Sconce",
+      },
+      {
+        "length": 4,
+        "path": "title",
+        "value": "acme",
+      },
+      {
+        "length": 33,
+        "path": "copyrightText",
+        "value": "acme © 2023 — all ri...",
+      },
+    ],
+  ],
+]
+`;

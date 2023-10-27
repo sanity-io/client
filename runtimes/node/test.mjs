@@ -1,7 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import {createClient, Patch, Transaction, ClientError, ServerError, requester} from '@sanity/client'
+import createLegacyClient from '@sanity/client'
+import {
+  createClient,
+  SanityClient,
+  Patch,
+  Transaction,
+  ClientError,
+  ServerError,
+  requester,
+} from '@sanity/client'
 import pkg from '@sanity/client/package.json' assert {type: 'json'}
 
 test('top-level imports', async (t) => {
@@ -43,4 +52,29 @@ test('top-level imports', async (t) => {
     )
   })
   // */
+})
+
+test('createClient and the deprecated sanityClient default export are equivalent', async (t) => {
+  await t.test('createClient instanceof SanityClient', () => {
+    assert.equal(
+      createClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        useCdn: true,
+        apiVersion: '2023-11-01',
+      }) instanceof SanityClient,
+      true,
+    )
+  })
+  await t.test('createLegacyClient instanceof SanityClient', () => {
+    assert.equal(
+      createLegacyClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        useCdn: true,
+        apiVersion: '2023-11-01',
+      }) instanceof SanityClient,
+      true,
+    )
+  })
 })

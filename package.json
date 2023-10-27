@@ -44,6 +44,33 @@
       },
       "default": "./dist/index.js"
     },
+    "./csm": {
+      "types": "./dist/csm.d.ts",
+      "source": "./src/csm/index.ts",
+      "import": "./dist/csm.js",
+      "require": "./dist/csm.cjs",
+      "default": "./dist/csm.js"
+    },
+    "./stega": {
+      "types": "./dist/stega.d.ts",
+      "browser": {
+        "source": "./src/stega/index.browser.ts",
+        "import": "./dist/stega.browser.js",
+        "require": "./dist/stega.browser.cjs"
+      },
+      "react-server": "./dist/stega.browser.js",
+      "deno": "./dist/stega.browser.js",
+      "edge": "./dist/stega.browser.js",
+      "edge-light": "./dist/stega.browser.js",
+      "worker": "./dist/stega.browser.js",
+      "source": "./src/stega/index.ts",
+      "require": "./dist/stega.cjs",
+      "node": {
+        "import": "./dist/stega.cjs.js"
+      },
+      "import": "./dist/stega.js",
+      "default": "./dist/stega.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -52,9 +79,21 @@
   "source": "./src/index.ts",
   "browser": {
     "./dist/index.cjs": "./dist/index.browser.cjs",
-    "./dist/index.js": "./dist/index.browser.js"
+    "./dist/index.js": "./dist/index.browser.js",
+    "./dist/stega.cjs": "./dist/stega.browser.cjs",
+    "./dist/stega.js": "./dist/stega.browser.js"
   },
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "csm": [
+        "./dist/csm.d.ts"
+      ],
+      "stega": [
+        "./dist/stega.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist",
     "src",
@@ -91,6 +130,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
+    "@vercel/stega": "0.1.0",
     "get-it": "^8.4.4",
     "rxjs": "^7.0.0"
   },

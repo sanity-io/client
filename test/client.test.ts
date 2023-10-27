@@ -162,6 +162,16 @@ describe('client', async () => {
       expect(() => createClient({projectId: 'abc123', logger: console})).toThrow(/logger/)
     })
 
+    test('throws if stega is provided', () => {
+      // @ts-expect-error - we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', stega: {}})).toThrow(/stega/)
+    })
+
+    test('allows stega to be explicitly undefined', () => {
+      // @ts-expect-error - we want to test that it throws an error
+      expect(() => createClient({projectId: 'abc123', stega: undefined})).not.toThrow()
+    })
+
     test('throws on invalid perspective', () => {
       expect(() => createClient({projectId: 'abc123', perspective: 'published'})).not.toThrow(
         /Invalid API perspective/,

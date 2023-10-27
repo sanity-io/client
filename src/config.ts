@@ -76,6 +76,12 @@ export const initConfig = (
     )
   }
 
+  if ('stega' in newConfig && newConfig['stega'] !== undefined) {
+    throw new Error(
+      `It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'undefined'.`,
+    )
+  }
+
   const isBrowser = typeof window !== 'undefined' && window.location && window.location.hostname
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 

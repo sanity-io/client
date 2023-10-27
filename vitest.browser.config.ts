@@ -10,7 +10,11 @@ export default defineConfig({
   test: {
     ...sharedConfig,
     environment: 'happy-dom',
-    alias: {'@sanity/client': pkg.exports['.'].browser.source},
+    alias: {
+      '@sanity/client/csm': pkg.exports['./csm'].source,
+      '@sanity/client/stega': pkg.exports['./stega'].browser.source,
+      '@sanity/client': pkg.exports['.'].browser.source,
+    },
   },
   resolve: {
     conditions: ['browser', 'module', 'import'],

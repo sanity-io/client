@@ -11,7 +11,11 @@ export const sharedConfig: UserConfig['test'] = {
   // Enable rich PR failed test annotation on the CI
   reporters: process.env.GITHUB_ACTIONS ? ['default', new GithubActionsReporter()] : 'default',
   // Allow switching test runs from using the source TS or compiled ESM
-  alias: {'@sanity/client': pkg.exports['.'].source},
+  alias: {
+    '@sanity/client/csm': pkg.exports['./csm'].source,
+    '@sanity/client/stega': pkg.exports['./stega'].source,
+    '@sanity/client': pkg.exports['.'].source,
+  },
 }
 
 export default defineConfig({
