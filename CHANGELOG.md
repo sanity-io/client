@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.7.1](https://github.com/sanity-io/client/compare/v6.7.0...v6.7.1) (2023-11-05)
+
+
+### Bug Fixes
+
+* **deps:** update non-major ([#379](https://github.com/sanity-io/client/issues/379)) ([86222fe](https://github.com/sanity-io/client/commit/86222feb2de3244b8582e5e6a6f626667e1deeda))
+
 ## [6.7.0](https://github.com/sanity-io/client/compare/v6.6.0...v6.7.0) (2023-10-19)
 
 
