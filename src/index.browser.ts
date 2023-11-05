@@ -1,38 +1,20 @@
+import defineCreateClientExports, {ClientConfig, SanityClient} from './defineCreateClient'
+import {defineDeprecatedCreateClient} from './defineDeprecatedCreateClient'
 import envMiddleware from './http/browserMiddleware'
-import {defineHttpRequest} from './http/request'
-import {SanityClient} from './SanityClient'
-import type {ClientConfig} from './types'
-import {printNoDefaultExport} from './warnings'
 
-export * from './data/patch'
-export * from './data/transaction'
-export {ClientError, ServerError} from './http/errors'
-export * from './SanityClient'
-export * from './types'
+export * from './defineCreateClient'
 
-// Set the http client to use for requests, and its environment specific middleware
-const httpRequest = defineHttpRequest(envMiddleware, {})
-/** @public */
-export const requester = httpRequest.defaultRequester
+const exp = defineCreateClientExports<SanityClient, ClientConfig>(envMiddleware, SanityClient)
 
 /** @public */
-export const createClient = (config: ClientConfig) =>
-  new SanityClient(
-    defineHttpRequest(envMiddleware, {
-      maxRetries: config.maxRetries,
-      retryDelay: config.retryDelay,
-    }),
-    config,
-  )
+export const requester = exp.requester
+
+/** @public */
+export const createClient = exp.createClient
 
 /**
  * @public
  * @deprecated Use the named export `createClient` instead of the `default` export
  */
-export default function deprecatedCreateClient(config: ClientConfig) {
-  printNoDefaultExport()
-  return new SanityClient(httpRequest, config)
-}
-
-/** @alpha */
-export {adapter as unstable__adapter, environment as unstable__environment} from 'get-it'
+const deprecatedCreateClient = defineDeprecatedCreateClient(createClient)
+export default deprecatedCreateClient
