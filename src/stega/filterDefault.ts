@@ -79,6 +79,7 @@ const denylist = new Set([
   'rgb',
   'rgba',
   'route',
+  'secret',
   'slug',
   'status',
   'tag',
