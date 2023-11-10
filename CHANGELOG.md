@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.0](https://github.com/sanity-io/client/compare/v6.7.1...v6.8.0) (2023-11-10)
+
+
+### Features
+
+* **experimental:** add CSM and stega utils ([3e7ecdd](https://github.com/sanity-io/client/commit/3e7ecdd95e61ab0a71537b5fe4cfcaaac1ec3510))
+
 ## [6.7.1](https://github.com/sanity-io/client/compare/v6.7.0...v6.7.1) (2023-11-05)
 
 
