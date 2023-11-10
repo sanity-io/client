@@ -61,6 +61,7 @@ const denylist = new Set([
   'format',
   'gid',
   'hex',
+  'href',
   'hsl',
   'hsla',
   'icon',
