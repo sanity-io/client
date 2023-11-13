@@ -1,8 +1,6 @@
 import {type ContentSourceMap, resolveEditUrl} from '@sanity/client/csm'
 import {expect, test} from 'vitest'
 
-const projectId = 'abc123'
-const dataset = 'production'
 const mock = {
   query:
     '{\n  "products": *[_type == "product" && defined(slug.current)]{\n    _id,\n    title,\n    description,\n    slug,\n    "media": media[0]\n  },\n  "siteSettings": *[_id == "siteSettings"][0]{\n    title,\n    copyrightText\n  }\n}',
@@ -503,19 +501,19 @@ const cases = [
     path: 'products[0].title',
     studioUrl: 'https://test.sanity.studio',
     expected:
-      'https://test.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title?baseUrl=https://test.sanity.studio&projectId=production&dataset=abc123&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=title',
+      'https://test.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title?baseUrl=https://test.sanity.studio&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=title',
   },
   {
     path: 'products[0].media.alt',
     studioUrl: '/',
     expected:
-      '/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt?baseUrl=/&projectId=production&dataset=abc123&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=media[_key=="cee5fbb69da2"].alt',
+      '/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=media[_key=="cee5fbb69da2"].alt',
   },
   {
     path: 'products[0].description[0].children[0].text',
     studioUrl: '/',
     expected:
-      '/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[0].children[0].text?baseUrl=/&projectId=production&dataset=abc123&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=description[0].children[0].text',
+      '/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[0].children[0].text?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=description[0].children[0].text',
   },
 ]
 
@@ -524,8 +522,6 @@ test.each(cases)('resolveEditUrl $path', ({path, studioUrl, expected}) => {
   expect(
     decodeURIComponent(
       resolveEditUrl({
-        projectId,
-        dataset,
         studioUrl,
         resultSourceMap,
         resultPath: path,
