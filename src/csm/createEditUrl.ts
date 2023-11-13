@@ -32,7 +32,9 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   // eslint-disable-next-line no-warning-comments
   // @TODO allow passing draft prefixed IDs, to better open the right perspective mode
   const id = getPublishedId(_id)
-  const stringifiedPath = studioPath.toString(jsonPathToStudioPath(path))
+  const stringifiedPath = Array.isArray(path)
+    ? studioPath.toString(jsonPathToStudioPath(path))
+    : path
 
   // eslint-disable-next-line no-warning-comments
   // @TODO Using searchParams as a temporary workaround until `@sanity/overlays` can decode state from the path reliably
