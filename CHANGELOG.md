@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.1](https://github.com/sanity-io/client/compare/v6.8.0...v6.8.1) (2023-11-10)
+
+
+### Bug Fixes
+
+* **stega:** add `href` to `denyList` ([2886ae8](https://github.com/sanity-io/client/commit/2886ae80919fa0f9a4359101522ed4088983e035))
+* **stega:** add `secret` to `denyList` ([a2c22d2](https://github.com/sanity-io/client/commit/a2c22d2493ed7e33b7d2d25fa5b8c3b59dd23e2d))
+
 ## [6.8.0](https://github.com/sanity-io/client/compare/v6.7.1...v6.8.0) (2023-11-10)
 
 
