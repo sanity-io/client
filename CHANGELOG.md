@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.5](https://github.com/sanity-io/client/compare/v6.8.4...v6.8.5) (2023-11-13)
+
+
+### Bug Fixes
+
+* add missing `resultSourceMap` typings ([cddd331](https://github.com/sanity-io/client/commit/cddd33105edd1b1d02317fc1e3da07911fa78c08))
+
 ## [6.8.4](https://github.com/sanity-io/client/compare/v6.8.3...v6.8.4) (2023-11-13)
 
 
