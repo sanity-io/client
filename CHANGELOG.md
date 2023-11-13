@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.4](https://github.com/sanity-io/client/compare/v6.8.3...v6.8.4) (2023-11-13)
+
+
+### Bug Fixes
+
+* **csm:** don't apply `tool` to `baseUrl` ([a836c7c](https://github.com/sanity-io/client/commit/a836c7c68b062ddc61824c33e969a06f9ac5a49a))
+
 ## [6.8.3](https://github.com/sanity-io/client/compare/v6.8.2...v6.8.3) (2023-11-13)
 
 
