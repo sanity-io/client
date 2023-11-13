@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.3](https://github.com/sanity-io/client/compare/v6.8.2...v6.8.3) (2023-11-13)
+
+
+### Bug Fixes
+
+* **csm:** allow passing a string `path` ([c6c27b8](https://github.com/sanity-io/client/commit/c6c27b893e4d05abc822fc0bd006ecf8da40234f))
+
 ## [6.8.2](https://github.com/sanity-io/client/compare/v6.8.1...v6.8.2) (2023-11-13)
 
 
