@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.2](https://github.com/sanity-io/client/compare/v6.8.1...v6.8.2) (2023-11-13)
+
+
+### Bug Fixes
+
+* **csm:** remove optional intent resolve parameters ([00b5ffa](https://github.com/sanity-io/client/commit/00b5ffa1bde8f6d33eb060a8582f58c01e8a4968))
+* **csm:** remove unused intent resolve parameters ([#397](https://github.com/sanity-io/client/issues/397)) ([00b5ffa](https://github.com/sanity-io/client/commit/00b5ffa1bde8f6d33eb060a8582f58c01e8a4968))
+
 ## [6.8.1](https://github.com/sanity-io/client/compare/v6.8.0...v6.8.1) (2023-11-10)
 
 
