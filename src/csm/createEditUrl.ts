@@ -55,10 +55,10 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   if (workspace) {
     segments.push(workspace)
   }
-  if (tool) {
-    segments.push(tool)
-  }
   const routerParams = [`id=${id}`, `type=${type}`, `path=${encodeURIComponent(stringifiedPath)}`]
+  if (tool) {
+    routerParams.push(`tool=${tool}`)
+  }
   segments.push('intent', 'edit', `${routerParams.join(';')}?${searchParams}`)
   return segments.join('/') as unknown as `${StudioBaseUrl}${EditIntentUrl}`
 }

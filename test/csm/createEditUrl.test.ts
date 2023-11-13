@@ -14,7 +14,7 @@ const cases = [
     context: {baseUrl, workspace, tool, id, type},
     path: parseJsonPath("$['foo'][?(@._key=='section-1')][0]['baz'][?(@._key=='section-2')]"),
     expected:
-      'https://test.sanity.studio/staging/content/intent/edit/id=homepage;type=page;path=foo[_key=="section-1"][0].baz[_key=="section-2"]?baseUrl=https://test.sanity.studio&id=homepage&type=page&path=foo[_key=="section-1"][0].baz[_key=="section-2"]&workspace=staging&tool=content',
+      'https://test.sanity.studio/staging/intent/edit/id=homepage;type=page;path=foo[_key=="section-1"][0].baz[_key=="section-2"];tool=content?baseUrl=https://test.sanity.studio&id=homepage&type=page&path=foo[_key=="section-1"][0].baz[_key=="section-2"]&workspace=staging&tool=content',
   },
   {
     context: {baseUrl: '/', id, type},
@@ -26,7 +26,7 @@ const cases = [
     context: {baseUrl: '/', workspace, tool, id, type},
     path: parseJsonPath("$['foo'][?(@._key=='section-1')][0]"),
     expected:
-      '/staging/content/intent/edit/id=homepage;type=page;path=foo[_key=="section-1"][0]?baseUrl=/&id=homepage&type=page&path=foo[_key=="section-1"][0]&workspace=staging&tool=content',
+      '/staging/intent/edit/id=homepage;type=page;path=foo[_key=="section-1"][0];tool=content?baseUrl=/&id=homepage&type=page&path=foo[_key=="section-1"][0]&workspace=staging&tool=content',
   },
 ]
 
