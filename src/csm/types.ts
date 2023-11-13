@@ -63,8 +63,6 @@ export type EditIntentUrl = `/intent/edit/id=${string};type=${string};path=${str
 /** @internal */
 export interface CreateEditUrlOptions {
   baseUrl: string
-  projectId: string
-  dataset: string
   workspace?: string
   tool?: string
   id: string
@@ -73,8 +71,7 @@ export interface CreateEditUrlOptions {
 }
 
 /** @alpha */
-export interface ResolveEditInfoOptions
-  extends Pick<CreateEditUrlOptions, 'projectId' | 'dataset'> {
+export interface ResolveEditInfoOptions {
   studioUrl: StudioUrl | ResolveStudioUrl
   resultSourceMap: ContentSourceMap
   resultPath: ContentSourceMapParsedPath

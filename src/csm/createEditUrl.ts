@@ -7,8 +7,6 @@ import type {CreateEditUrlOptions, EditIntentUrl, StudioBaseUrl} from './types'
 export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}${EditIntentUrl}` {
   const {
     baseUrl,
-    projectId,
-    dataset,
     workspace: _workspace = 'default',
     tool: _tool = 'default',
     id: _id,
@@ -18,12 +16,6 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
 
   if (!baseUrl) {
     throw new Error('baseUrl is required')
-  }
-  if (!projectId) {
-    throw new Error('projectId is required')
-  }
-  if (!dataset) {
-    throw new Error('dataset is required')
   }
   if (!path) {
     throw new Error('path is required')
@@ -46,8 +38,6 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   // @TODO Using searchParams as a temporary workaround until `@sanity/overlays` can decode state from the path reliably
   const searchParams = new URLSearchParams({
     baseUrl,
-    projectId,
-    dataset,
     id,
     type,
     path: stringifiedPath,

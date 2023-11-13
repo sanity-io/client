@@ -5,8 +5,6 @@ import {defaultStegaConfig} from '../../src/stega/config'
 import {stegaEncodeSourceMap} from '../../src/stega/stegaEncodeSourceMap'
 import type {ContentSourceMap, Logger} from '../../src/stega/types'
 
-const projectId = 'abc123'
-const dataset = 'production'
 const mock = {
   query:
     '{\n  "products": *[_type == "product" && defined(slug.current)]{\n    _id,\n    title,\n    description,\n    slug,\n    "media": media[0]\n  },\n  "siteSettings": *[_id == "siteSettings"][0]{\n    title,\n    copyrightText\n  }\n}',
@@ -517,18 +515,13 @@ test.each(cases)('resolveEditUrl $studioUrl', ({studioUrl}) => {
     log: vi.fn(),
     table: vi.fn(),
   } satisfies Logger
-  const encoded = stegaEncodeSourceMap(
-    mock.result,
-    mock.resultSourceMap,
-    {
-      enabled: true,
-      studioUrl,
-      filter: defaultStegaConfig.filter!,
-      vercelStegaCombineSkip: defaultStegaConfig.vercelStegaCombineSkip!,
-      logger,
-    },
-    {projectId, dataset},
-  )
+  const encoded = stegaEncodeSourceMap(mock.result, mock.resultSourceMap, {
+    enabled: true,
+    studioUrl,
+    filter: defaultStegaConfig.filter!,
+    vercelStegaCombineSkip: defaultStegaConfig.vercelStegaCombineSkip!,
+    logger,
+  })
   expect(
     vercelStegaDecodeAll(JSON.stringify(encoded)).map(
       ({href}: any) => decodeURIComponent(href).split('?')[0],

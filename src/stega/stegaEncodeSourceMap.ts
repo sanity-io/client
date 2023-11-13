@@ -20,7 +20,6 @@ export function stegaEncodeSourceMap<Result = unknown>(
   result: Result,
   resultSourceMap: ContentSourceMap | undefined,
   config: InitializedStegaConfig,
-  clientConfig: {projectId: string | undefined; dataset: string | undefined},
 ): Result {
   const {filter, vercelStegaCombineSkip, logger, enabled} = config
   if (!enabled) {
@@ -47,14 +46,6 @@ export function stegaEncodeSourceMap<Result = unknown>(
   const report: Record<'encoded' | 'skipped', {path: string; length: number; value: string}[]> = {
     encoded: [],
     skipped: [],
-  }
-
-  const {projectId, dataset} = clientConfig
-  if (!projectId) {
-    throw new Error('Missing projectId')
-  }
-  if (!dataset) {
-    throw new Error('Missing dataset')
   }
 
   const resultWithStega = encodeIntoResult(
@@ -93,12 +84,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
           : config.studioUrl!,
       )
       if (!baseUrl) return value
-      const {
-        _id: id,
-        _type: type,
-        _dataset = clientConfig.projectId,
-        _projectId = clientConfig.dataset,
-      } = sourceDocument
+      const {_id: id, _type: type} = sourceDocument
 
       return vercelStegaCombine(
         value,
@@ -106,8 +92,6 @@ export function stegaEncodeSourceMap<Result = unknown>(
           origin: 'sanity.io',
           href: createEditUrl({
             baseUrl,
-            projectId: _projectId!,
-            dataset: _dataset!,
             workspace,
             tool,
             id,

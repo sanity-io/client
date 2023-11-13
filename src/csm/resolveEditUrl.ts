@@ -7,12 +7,10 @@ import type {ResolveEditUrlOptions} from './types'
 export function resolveEditUrl(
   options: ResolveEditUrlOptions,
 ): ReturnType<typeof createEditUrl> | undefined {
-  const {projectId, dataset, resultSourceMap, studioUrl} = options
+  const {resultSourceMap, studioUrl} = options
   const resultPath = studioPathToJsonPath(options.resultPath)
 
   const editInfo = resolveEditInfo({
-    projectId,
-    dataset,
     resultPath,
     resultSourceMap,
     studioUrl,

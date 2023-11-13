@@ -127,11 +127,7 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
       .pipe(
         map((res: Any) => {
           const {result: _result, resultSourceMap} = res as RawQueryResponse<R>
-          const {projectId, dataset} = this.config()
-          const result = stegaEncodeSourceMap(_result, resultSourceMap, this.stegaConfig, {
-            projectId,
-            dataset,
-          })
+          const result = stegaEncodeSourceMap(_result, resultSourceMap, this.stegaConfig)
           return originalFilterResponse ? result : {...res, result}
         }),
       )
@@ -255,11 +251,7 @@ export class SanityStegaClient extends SanityClient {
       )
       .then((res: Any) => {
         const {result: _result, resultSourceMap} = res as RawQueryResponse<R>
-        const {projectId, dataset} = this.config()
-        const result = stegaEncodeSourceMap(_result, resultSourceMap, this.stegaConfig, {
-          projectId,
-          dataset,
-        })
+        const result = stegaEncodeSourceMap(_result, resultSourceMap, this.stegaConfig)
         return originalFilterResponse ? result : {...res, result}
       })
   }
