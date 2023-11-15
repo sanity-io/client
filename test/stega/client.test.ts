@@ -175,13 +175,13 @@ describe('@sanity/client', () => {
         },
       }),
     ).toThrowErrorMatchingInlineSnapshot(
-      '"It looks like you\'re using options meant for \'@sanity/client/stega\'. Make sure you\'re using the right import. Or set \'stega\' in \'createClient\' to \'false\'."',
+      "\"It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.\"",
     )
     expect(() =>
       // @ts-expect-error - we want to test that it throws an error
       createCoreClient({projectId: 'abc123', stega: null}),
     ).toThrowErrorMatchingInlineSnapshot(
-      '"It looks like you\'re using options meant for \'@sanity/client/stega\'. Make sure you\'re using the right import. Or set \'stega\' in \'createClient\' to \'false\'."',
+      "\"It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.\"",
     )
   })
   test('allows passing stega: undefined', () => {
@@ -210,7 +210,7 @@ describe('@sanity/client', () => {
         stega: true,
       }),
     ).toThrowErrorMatchingInlineSnapshot(
-      '"It looks like you\'re using options meant for \'@sanity/client/stega\'. Make sure you\'re using the right import. Or set \'stega\' in \'createClient\' to \'false\'."',
+      "\"It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.\"",
     )
   })
 })
