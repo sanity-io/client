@@ -50,19 +50,10 @@ export interface StegaConfig {
    * Specify a `console.log` compatible logger to see debug logs, which keys are encoded and which are not.
    */
   logger?: Logger
-
-  /**
-   * Override the `skip` parameter in `vercelStegaCombine`
-   * @defaultValue `'auto'`
-   */
-  vercelStegaCombineSkip?: 'auto' | boolean
 }
 
 /** @public */
-export type StegaConfigRequiredKeys = Extract<
-  keyof StegaConfig,
-  'enabled' | 'filter' | 'vercelStegaCombineSkip'
->
+export type StegaConfigRequiredKeys = Extract<keyof StegaConfig, 'enabled' | 'filter'>
 
 /** @public */
 export type InitializedStegaConfig = Omit<StegaConfig, StegaConfigRequiredKeys> &
