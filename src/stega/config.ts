@@ -11,7 +11,7 @@ export function splitConfig(config: ClientStegaConfig): {
   stegaConfig: StegaConfig
 } {
   const {stega = {}, ...clientConfig} = config
-  return {clientConfig, stegaConfig: stega}
+  return {clientConfig, stegaConfig: typeof stega === 'boolean' ? {enabled: stega} : stega}
 }
 
 export const initStegaConfig = (

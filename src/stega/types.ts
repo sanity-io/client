@@ -61,7 +61,7 @@ export type InitializedStegaConfig = Omit<StegaConfig, StegaConfigRequiredKeys> 
 
 /** @public */
 export interface ClientStegaConfig extends ClientConfig {
-  stega?: StegaConfig
+  stega?: StegaConfig | boolean
 }
 
 /** @public */

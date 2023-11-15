@@ -52,9 +52,8 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
       return {...super.config(), stega: {...this.stegaConfig}}
     }
 
-    super.config(newConfig)
-
-    const {stegaConfig} = splitConfig(newConfig)
+    const {clientConfig, stegaConfig} = splitConfig(newConfig)
+    super.config(clientConfig)
 
     this.stegaConfig = initStegaConfig(stegaConfig, this.stegaConfig || {})
     return this
@@ -66,7 +65,16 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityStegaClient {
-    return new ObservableSanityStegaClient(this.#httpRequest, {...this.config(), ...newConfig})
+    const thisConfig = this.config()
+    const {stegaConfig} = splitConfig(newConfig || {})
+    return new ObservableSanityStegaClient(this.#httpRequest, {
+      ...thisConfig,
+      ...newConfig,
+      stega: {
+        ...(thisConfig.stega || {}),
+        ...(stegaConfig || {}),
+      },
+    })
   }
 
   /**
@@ -177,9 +185,8 @@ export class SanityStegaClient extends SanityClient {
       return {...super.config(), stega: {...this.stegaConfig}}
     }
 
-    super.config(newConfig)
-
-    const {stegaConfig} = splitConfig(newConfig)
+    const {clientConfig, stegaConfig} = splitConfig(newConfig)
+    super.config(clientConfig)
 
     this.stegaConfig = initStegaConfig(stegaConfig, {...(this.stegaConfig || {})})
     return this
@@ -191,7 +198,16 @@ export class SanityStegaClient extends SanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientStegaConfig>): SanityStegaClient {
-    return new SanityStegaClient(this.#httpRequest, {...this.config(), ...newConfig})
+    const thisConfig = this.config()
+    const {stegaConfig} = splitConfig(newConfig || {})
+    return new SanityStegaClient(this.#httpRequest, {
+      ...thisConfig,
+      ...newConfig,
+      stega: {
+        ...(thisConfig.stega || {}),
+        ...(stegaConfig || {}),
+      },
+    })
   }
 
   /**

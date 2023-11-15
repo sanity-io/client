@@ -1,3 +1,4 @@
+import {createClient as createCoreClient} from '@sanity/client'
 import {
   ClientStegaConfig,
   ContentSourceMap,
@@ -32,6 +33,51 @@ describe('@sanity/client/stega', async () => {
   test('createClient returns a SanityStegaClient instance', () => {
     const client = createClient({projectId: 'foo', dataset: 'bar'})
     expect(client).toBeInstanceOf(SanityStegaClient)
+  })
+
+  test('config() returns a stega config property', () => {
+    const client = createClient({projectId: 'foo', dataset: 'bar'})
+    expect(client.config().stega).toMatchInlineSnapshot(`
+      {
+        "enabled": false,
+        "filter": [Function],
+      }
+    `)
+  })
+
+  test('withConfig merges stega', () => {
+    const client = createClient({projectId: 'foo', dataset: 'bar', stega: {studioUrl: '/studio'}})
+    expect(client.withConfig({stega: {enabled: true}}).config().stega.studioUrl).toBe('/studio')
+  })
+
+  test('the stega option accepts booleans as a shortcut to toggle `enabled`', () => {
+    const client1 = createClient({
+      projectId: 'foo',
+      dataset: 'bar',
+      stega: {enabled: true, studioUrl: '/studio'},
+    })
+    expect(client1.withConfig({stega: false}).config().stega.enabled).toBe(false)
+    const client2 = createClient({
+      projectId: 'foo',
+      dataset: 'bar',
+      stega: {enabled: false, studioUrl: '/studio'},
+    })
+    expect(client2.withConfig({stega: true}).config().stega.enabled).toBe(true)
+  })
+
+  test('config merges stega', () => {
+    const client = createClient({projectId: 'foo', dataset: 'bar', stega: {studioUrl: '/studio'}})
+    expect(client.config({stega: {enabled: true}}).config().stega.studioUrl).toBe('/studio')
+  })
+
+  test('the stega option accepts booleans as a shortcut to toggle `enabled`', () => {
+    const client = createClient({
+      projectId: 'foo',
+      dataset: 'bar',
+      stega: {enabled: true, studioUrl: '/studio'},
+    })
+    expect(client.config({stega: false}).config().stega.enabled).toBe(false)
+    expect(client.config({stega: true}).config().stega.enabled).toBe(true)
   })
 
   test.skipIf(isEdge)('it returns stega strings in the response', async () => {
@@ -115,5 +161,56 @@ describe('@sanity/client/stega', async () => {
         },
       ]
     `)
+  })
+})
+
+describe('@sanity/client', () => {
+  test('throws an error if trying to use stega options that should use the stega client', () => {
+    expect(() =>
+      createCoreClient({
+        projectId: 'abc123',
+        // @ts-expect-error - we want to test that it throws an error
+        stega: {
+          enabled: true,
+        },
+      }),
+    ).toThrowErrorMatchingInlineSnapshot(
+      '"It looks like you\'re using options meant for \'@sanity/client/stega\'. Make sure you\'re using the right import. Or set \'stega\' in \'createClient\' to \'false\'."',
+    )
+    expect(() =>
+      // @ts-expect-error - we want to test that it throws an error
+      createCoreClient({projectId: 'abc123', stega: null}),
+    ).toThrowErrorMatchingInlineSnapshot(
+      '"It looks like you\'re using options meant for \'@sanity/client/stega\'. Make sure you\'re using the right import. Or set \'stega\' in \'createClient\' to \'false\'."',
+    )
+  })
+  test('allows passing stega: undefined', () => {
+    expect(() =>
+      createCoreClient({
+        projectId: 'abc123',
+        // @ts-expect-error - we want to test that it throws an error
+        stega: undefined,
+      }),
+    ).not.toThrow()
+  })
+  test('allows passing stega: false', () => {
+    expect(() =>
+      createCoreClient({
+        projectId: 'abc123',
+        // @ts-expect-error - we want to test that it throws an error
+        stega: false,
+      }),
+    ).not.toThrow()
+  })
+  test('disallows passing stega: true', () => {
+    expect(() =>
+      createCoreClient({
+        projectId: 'abc123',
+        // @ts-expect-error - we want to test that it throws an error
+        stega: true,
+      }),
+    ).toThrowErrorMatchingInlineSnapshot(
+      '"It looks like you\'re using options meant for \'@sanity/client/stega\'. Make sure you\'re using the right import. Or set \'stega\' in \'createClient\' to \'false\'."',
+    )
   })
 })
