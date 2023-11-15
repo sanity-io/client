@@ -21,7 +21,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
   resultSourceMap: ContentSourceMap | undefined,
   config: InitializedStegaConfig,
 ): Result {
-  const {filter, vercelStegaCombineSkip, logger, enabled} = config
+  const {filter, logger, enabled} = config
   if (!enabled) {
     const msg = "config.enabled must be true, don't call this function otherwise"
     logger?.error?.(`[@sanity/client/stega]: ${msg}`, {result, resultSourceMap, config})
@@ -99,7 +99,8 @@ export function stegaEncodeSourceMap<Result = unknown>(
             path: sourcePath,
           }),
         },
-        vercelStegaCombineSkip,
+        // We use custom logic to determine if we should skip encoding
+        false,
       )
     },
   )

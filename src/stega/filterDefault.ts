@@ -1,6 +1,11 @@
 import type {FilterDefault} from './types'
 
-export const filterDefault: FilterDefault = ({sourcePath}) => {
+export const filterDefault: FilterDefault = ({sourcePath, value}) => {
+  // Skips encoding on URL or Date strings, similar to the `skip: 'auto'` parameter in vercelStegaCombine()
+  if (isValidDate(value) || isValidURL(value)) {
+    return false
+  }
+
   const endPath = sourcePath.at(-1)
   // Never encode slugs
   if (sourcePath.at(-2) === 'slug' && endPath === 'current') {
@@ -93,3 +98,16 @@ const denylist = new Set([
   'variant',
   'website',
 ])
+
+function isValidDate(dateString: string) {
+  return Number.isNaN(Number(dateString)) ? Boolean(Date.parse(dateString)) : false
+}
+
+function isValidURL(url: string) {
+  try {
+    new URL(url, url.startsWith('/') ? 'https://acme.com' : undefined)
+  } catch {
+    return false
+  }
+  return true
+}

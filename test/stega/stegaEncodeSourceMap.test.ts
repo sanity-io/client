@@ -519,7 +519,6 @@ test.each(cases)('resolveEditUrl $studioUrl', ({studioUrl}) => {
     enabled: true,
     studioUrl,
     filter: defaultStegaConfig.filter!,
-    vercelStegaCombineSkip: defaultStegaConfig.vercelStegaCombineSkip!,
     logger,
   })
   expect(

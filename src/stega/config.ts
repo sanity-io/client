@@ -4,7 +4,6 @@ import type {ClientStegaConfig, InitializedStegaConfig, StegaConfig} from './typ
 export const defaultStegaConfig: StegaConfig = {
   enabled: false,
   filter: (props) => props.filterDefault(props),
-  vercelStegaCombineSkip: 'auto',
 }
 
 export function splitConfig(config: ClientStegaConfig): {
