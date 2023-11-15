@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.6](https://github.com/sanity-io/client/compare/v6.8.5...v6.8.6) (2023-11-15)
+
+
+### Bug Fixes
+
+* **stega:** merge stega options in `.config()` and `.withConfig()` ([ef2d282](https://github.com/sanity-io/client/commit/ef2d282cd3558c8705cd64ebb162012502692f04))
+* **stega:** remove the `vercelStegaCombineSkip` option ([07b343c](https://github.com/sanity-io/client/commit/07b343c2263dd49404186f48e1e76b769a316626))
+
 ## [6.8.5](https://github.com/sanity-io/client/compare/v6.8.4...v6.8.5) (2023-11-13)
 
 
