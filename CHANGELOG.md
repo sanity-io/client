@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.8.6](https://github.com/sanity-io/client/compare/v6.8.5...v6.8.6) (2023-11-15)
+
+
+### Bug Fixes
+
+* **stega:** remove the `vercelStegaCombineSkip` option ([345184d](https://github.com/sanity-io/client/commit/345184d0b66f8a787e394205c5da5e7a32d4f6f6))
+
 ## [6.8.5](https://github.com/sanity-io/client/compare/v6.8.4...v6.8.5) (2023-11-13)
 
 
