@@ -69,6 +69,11 @@ export function _fetch<R, Q extends QueryParams>(
   params?: Q,
   options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
 ): Observable<RawQueryResponse<R> | R> {
+  if ('stega' in options && options['stega'] !== undefined && options['stega'] !== false) {
+    throw new Error(
+      `It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'fetch' to 'false'.`,
+    )
+  }
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
   const {cache, next, ...opts} = {
