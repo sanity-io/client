@@ -12,19 +12,9 @@ import type {
   RawQueryResponse,
   UnfilteredResponseQueryOptions,
 } from '../types'
-import {
-  defaultStegaConfig,
-  initStegaConfig,
-  splitConfig,
-  splitStegaConfigFromFetchOptions,
-} from './config'
+import {defaultStegaConfig, initStegaConfig, splitConfig} from './config'
 import {stegaEncodeSourceMap} from './stegaEncodeSourceMap'
-import {
-  ClientStegaConfig,
-  InitializedClientStegaConfig,
-  InitializedStegaConfig,
-  StegaConfig,
-} from './types'
+import {ClientStegaConfig, InitializedClientStegaConfig, InitializedStegaConfig} from './types'
 
 /** @public */
 export class ObservableSanityStegaClient extends ObservableSanityClient {
@@ -110,7 +100,7 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
   fetch<R = Any, Q = QueryParams>(
     query: string,
     params: Q | undefined,
-    options: FilteredResponseQueryOptions & {stega?: boolean | StegaConfig},
+    options: FilteredResponseQueryOptions,
   ): Observable<R>
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -122,20 +112,14 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
   fetch<R = Any, Q = QueryParams>(
     query: string,
     params: Q | undefined,
-    options: UnfilteredResponseQueryOptions & {stega?: boolean | StegaConfig},
+    options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<R>>
   fetch<R, Q extends QueryParams>(
     query: string,
     params?: Q,
-    _options: (FilteredResponseQueryOptions | UnfilteredResponseQueryOptions) & {
-      stega?: boolean | StegaConfig
-    } = {},
+    options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
   ): Observable<RawQueryResponse<R> | R> {
-    const {stegaConfig, fetchOptions: options} = splitStegaConfigFromFetchOptions(
-      _options,
-      this.stegaConfig,
-    )
-    if (!stegaConfig.enabled) {
+    if (!this.stegaConfig.enabled) {
       return super.fetch<R, Q>(query, params, options as Any)
     }
     const {filterResponse: originalFilterResponse = true} = options
@@ -151,7 +135,7 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
       .pipe(
         map((res: Any) => {
           const {result: _result, resultSourceMap} = res as RawQueryResponse<R>
-          const result = stegaEncodeSourceMap(_result, resultSourceMap, stegaConfig)
+          const result = stegaEncodeSourceMap(_result, resultSourceMap, this.stegaConfig)
           return originalFilterResponse ? result : {...res, result}
         }),
       )
@@ -249,7 +233,7 @@ export class SanityStegaClient extends SanityClient {
   fetch<R = Any, Q = QueryParams>(
     query: string,
     params: Q | undefined,
-    options: FilteredResponseQueryOptions & {stega?: boolean | StegaConfig},
+    options: FilteredResponseQueryOptions,
   ): Promise<R>
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -261,20 +245,14 @@ export class SanityStegaClient extends SanityClient {
   fetch<R = Any, Q = QueryParams>(
     query: string,
     params: Q | undefined,
-    options: UnfilteredResponseQueryOptions & {stega?: boolean | StegaConfig},
+    options: UnfilteredResponseQueryOptions,
   ): Promise<RawQueryResponse<R>>
   fetch<R, Q extends QueryParams>(
     query: string,
     params?: Q,
-    _options: (FilteredResponseQueryOptions | UnfilteredResponseQueryOptions) & {
-      stega?: boolean | StegaConfig
-    } = {},
+    options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
   ): Promise<RawQueryResponse<R> | R> {
-    const {stegaConfig, fetchOptions: options} = splitStegaConfigFromFetchOptions(
-      _options,
-      this.stegaConfig,
-    )
-    if (!stegaConfig.enabled) {
+    if (!this.stegaConfig.enabled) {
       return super.fetch<R, Q>(query, params, options as Any)
     }
     const {filterResponse: originalFilterResponse = true} = options
@@ -289,7 +267,7 @@ export class SanityStegaClient extends SanityClient {
       )
       .then((res: Any) => {
         const {result: _result, resultSourceMap} = res as RawQueryResponse<R>
-        const result = stegaEncodeSourceMap(_result, resultSourceMap, stegaConfig)
+        const result = stegaEncodeSourceMap(_result, resultSourceMap, this.stegaConfig)
         return originalFilterResponse ? result : {...res, result}
       })
   }

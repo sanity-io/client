@@ -1,8 +1,4 @@
-import type {
-  ClientConfig,
-  FilteredResponseQueryOptions,
-  UnfilteredResponseQueryOptions,
-} from '../types'
+import type {ClientConfig} from '../types'
 import type {ClientStegaConfig, InitializedStegaConfig, StegaConfig} from './types'
 
 export const defaultStegaConfig: StegaConfig = {
@@ -56,21 +52,4 @@ export const initStegaConfig = (
   }
 
   return newConfig
-}
-
-export function splitStegaConfigFromFetchOptions(
-  options: (FilteredResponseQueryOptions | UnfilteredResponseQueryOptions) & {
-    stega?: boolean | StegaConfig
-  },
-  initializedStegaConfig: InitializedStegaConfig,
-): {
-  fetchOptions: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions
-  stegaConfig: InitializedStegaConfig
-} {
-  const {stega = {}, ...fetchOptions} = options
-  const stegaConfig = initStegaConfig(
-    typeof stega === 'boolean' ? {enabled: stega} : stega,
-    initializedStegaConfig,
-  )
-  return {fetchOptions, stegaConfig}
 }
