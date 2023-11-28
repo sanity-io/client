@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.9.0](https://github.com/sanity-io/client/compare/v6.8.6...v6.9.0) (2023-11-28)
+
+
+### Features
+
+* **stega:** allow setting `stega` options on `client.fetch` ([#419](https://github.com/sanity-io/client/issues/419)) ([d38afd8](https://github.com/sanity-io/client/commit/d38afd8535e287678445b5bb64d83166fb8a602b))
+
 ## [6.8.6](https://github.com/sanity-io/client/compare/v6.8.5...v6.8.6) (2023-11-15)
 
 
