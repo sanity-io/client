@@ -607,9 +607,10 @@ Which changes the result to be:
 Content Source Maps annotate fragments in your query results with metadata about its origin: the field, document, and dataset it originated from.
 
 > [!IMPORTANT]  
-> Content Source Maps are supported only in versions `2021-03-25` or later of the Content Lake API.
+>
+> Content Source Maps are supported in the Content Lake API versions `2021-03-25` and later.
 
-Read the [Content Source Maps introduction][content-source-maps-intro] before diving in, and keep the [Content Source Maps reference][content-source-maps] handy.
+Before diving in, review the [Content Source Maps introduction][content-source-maps-intro] and keep the [Content Source Maps reference][content-source-maps] within reach for a quick lookup.
 
 Enabling Content Source Maps is a two-step process:
 
@@ -639,7 +640,8 @@ Enabling Content Source Maps is a two-step process:
    console.log(resultSourceMap)
    ```
 
-Once enabled, the `resultSourceMap` property will always exist on the response, given your `apiVersion` is `2021-03-25` or later. If there is no source map, it will be an empty object. There's also a TypeScript definition for it:
+If your `apiVersion` is `2021-03-25` or later,  the `resultSourceMap` property will always exist in the response after enabling it. If there is no source map, `resultSourceMap` is an empty object.  
+This is the corresponding TypeScript definition:
 
 ```ts
 import type {ContentSourceMapping} from '@sanity/client'
@@ -663,41 +665,41 @@ import {createClient} from '@sanity/client/stega'
 const client = createClient({
   // ...base config options
   stega: {
-    // If you use Vercel Visual Editing then it makes sense to always enable it on Preview deployments
+    // If you use Vercel Visual Editing, we recommend enabling it for Preview deployments
     enabled: process.env.VERCEL_ENV === 'preview',
-    // Required: Set it to relative or absolute URL of your Sanity Studio
+    // Required: Set it to the relative or absolute URL of your Sanity Studio instance
     studioUrl: '/studio', // or 'https://your-project-name.sanity.studio'
-    // For resolving Cross Dataset References you can pass a function returning a URL
+    // To resolve Cross Dataset References, pass a function returning a URL
     studioUrl: (sourceDocument: ContentSourceMapDocument | ContentSourceMapRemoteDocument) => {
-      // If `sourceDocument` has a projectId and dataset, then it's a Cross Dataset Reference
+      // If `sourceDocument` has a projectId and a dataset, then it's a Cross Dataset Reference
       if (source._projectId && source._dataset) {
         return 'https://acme-global.sanity.studio'
       }
       return 'https://acme-store.sanity.studio'
     },
     // If your Studio has Workspaces: https://www.sanity.io/docs/workspaces
-    // And your Cross Dataset References are available in a workspace then you can return an object to let the client setup the URL
+    // and if your Cross Dataset References are available in a workspace, you can return an object to let the client set up the URL
     studioUrl: (sourceDocument) => {
       // This organization has a single studio with everything organized in workspaces
       const baseUrl = 'https://acme.sanity.studio'
-      // If `sourceDocument` has a projectId and dataset, then it's a Cross Dataset Reference
+      // If `sourceDocument` has a projectId and a dataset, then it's a Cross Dataset Reference
       if (source._projectId && source._dataset) {
         return {baseUrl, workspace: 'global'}
       }
       return {baseUrl, workspace: 'store'}
     },
 
-    // Optional, control what fields have stega payloads
+    // Optional, to control which fields have stega payloads
     filter: (props) => {
       const {resultPath, sourcePath, sourceDocument, value} = props
       if (sourcePath[0] === 'externalurl') {
         return false
       }
-      // The default behavior is packaged into `filterDefault`, allowing you enable encoding fields that are skipped by default
+      // The default behavior is packaged into `filterDefault`, allowing you to enable encoding fields that are skipped by default
       return props.filterDefault(props)
     },
 
-    // Optional, logs what's encoded and what isn't
+    // Optional, to log what's encoded and what isn't
     // logger: console,
   },
 })
@@ -760,13 +762,13 @@ const result = {
 const studioUrl = 'https://your-project-name.sanity.studio'
 
 resolveEditUrl({
-  // The URL resolver needs to know the base URL of your Sanity Studio
+  // The URL resolver requires the base URL of your Sanity Studio instance
   studioUrl,
-  // And a Content Source Map for the query result you want to create an edit intent link for
+  // It also requires a Content Source Map for the query result you want to create an edit intent link for
   resultSourceMap,
-  // The path to the field you want to edit, you can pass a string
+  // The path to the field you want to edit. You can pass a string
   resultPath: 'pictures[0].alt',
-  // Or an array of segments
+  // or an array of segments
   resultPath: ['pictures', 0, 'alt'],
 })
 // ^? 'https://your-project-name.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=author;path=pictures[_key=="cee5fbb69da2"].alt'
