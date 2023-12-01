@@ -606,13 +606,11 @@ Which changes the result to be:
 
 Content Source Maps annotate fragments in your query results with metadata about its origin: the field, document, and dataset it originated from.
 
-> **Note**
+> [!IMPORTANT]  
 >
-> [Content Source Maps][content-source-maps-intro] are available [as an API][content-source-maps] for select [Sanity enterprise customers][enterprise-cta]. [Contact our sales team for more information.][sales-cta]
+> Content Source Maps are supported in the Content Lake API versions `2021-03-25` and later.
 
-A high level API using Content Source Maps for [Visual editing][visual-editing] is also available in [`@sanity/preview-kit/client`][preview-kit-client]. It offers both a turn-key solution and a flexible API for custom experiences.
-
-Read the [Content Source Maps introduction][content-source-maps-intro] before diving in, and keep the [Content Source Maps reference][content-source-maps] handy.
+Before diving in, review the [Content Source Maps introduction][content-source-maps-intro] and keep the [Content Source Maps reference][content-source-maps] within reach for a quick lookup.
 
 Enabling Content Source Maps is a two-step process:
 
@@ -625,7 +623,7 @@ Enabling Content Source Maps is a two-step process:
      projectId: 'your-project-id',
      dataset: 'your-dataset-name',
      useCdn: true, // set to `false` to bypass the edge cache
-     apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+     apiVersion: '2021-03-25', // use current date (YYYY-MM-DD) to target the latest API version
      resultSourceMap: true, // tells the API to start sending source maps, if available
    })
    ```
@@ -642,7 +640,8 @@ Enabling Content Source Maps is a two-step process:
    console.log(resultSourceMap)
    ```
 
-Once enabled, the `resultSourceMap` property will always exist on the response, given your `apiVersion` is recent enough. If there is no source map, it will be an empty object. There's also a TypeScript definition for it:
+If your `apiVersion` is `2021-03-25` or later,  the `resultSourceMap` property will always exist in the response after enabling it. If there is no source map, `resultSourceMap` is an empty object.  
+This is the corresponding TypeScript definition:
 
 ```ts
 import type {ContentSourceMapping} from '@sanity/client'
@@ -654,6 +653,125 @@ function useContentSourceMap(resultSourceMap: ContentSourceMapping): unknown {
 }
 
 useContentSourceMap(resultSourceMap)
+```
+
+#### Using [Visual editing][visual-editing] with steganography
+
+A turnkey integration with [Visual editing][visual-editing] is available in [`@sanity/client/stega`]. It creates edit intent links for all the string values in your query result, using [steganography](https://npmjs.com/package/@vercel/stega) under the hood.
+
+```ts
+import {createClient} from '@sanity/client/stega'
+
+const client = createClient({
+  // ...base config options
+  stega: {
+    // If you use Vercel Visual Editing, we recommend enabling it for Preview deployments
+    enabled: process.env.VERCEL_ENV === 'preview',
+    // Required: Set it to the relative or absolute URL of your Sanity Studio instance
+    studioUrl: '/studio', // or 'https://your-project-name.sanity.studio'
+    // To resolve Cross Dataset References, pass a function returning a URL
+    studioUrl: (sourceDocument: ContentSourceMapDocument | ContentSourceMapRemoteDocument) => {
+      // If `sourceDocument` has a projectId and a dataset, then it's a Cross Dataset Reference
+      if (source._projectId && source._dataset) {
+        return 'https://acme-global.sanity.studio'
+      }
+      return 'https://acme-store.sanity.studio'
+    },
+    // If your Studio has Workspaces: https://www.sanity.io/docs/workspaces
+    // and if your Cross Dataset References are available in a workspace, you can return an object to let the client set up the URL
+    studioUrl: (sourceDocument) => {
+      // This organization has a single studio with everything organized in workspaces
+      const baseUrl = 'https://acme.sanity.studio'
+      // If `sourceDocument` has a projectId and a dataset, then it's a Cross Dataset Reference
+      if (source._projectId && source._dataset) {
+        return {baseUrl, workspace: 'global'}
+      }
+      return {baseUrl, workspace: 'store'}
+    },
+
+    // Optional, to control which fields have stega payloads
+    filter: (props) => {
+      const {resultPath, sourcePath, sourceDocument, value} = props
+      if (sourcePath[0] === 'externalurl') {
+        return false
+      }
+      // The default behavior is packaged into `filterDefault`, allowing you to enable encoding fields that are skipped by default
+      return props.filterDefault(props)
+    },
+
+    // Optional, to log what's encoded and what isn't
+    // logger: console,
+  },
+})
+
+// Disable on demand
+client.config({stega: {enabled: false}})
+
+// New client with different stega settings
+const debugClient = client.withConfig({
+  stega: {studioUrl: 'https://your-project-name.sanity.studio', logger: console},
+})
+```
+
+Removing stega from part of the result:
+
+```ts
+import {vercelStegaCleanAll} from '@sanity/client/stega'
+const result = await client.fetch('*[_type == "video"][0]')
+
+// Remove stega from the payload sent to a third party library
+const videoAsset = vercelStegaCleanAll(result.videoAsset)
+```
+
+#### Creating Studio edit intent links
+
+If you want to create an edit link to something that isn't a string, or a field that isn't rendered directly, like a `slug` used in a URL but not rendered on the page, you can use the `resolveEditUrl` function.
+
+```ts
+import {createClient} from '@sanity/client' // or '@sanity/client/stega'
+import {resolveEditUrl} from '@sanity/client/csm'
+
+const client = createClient({
+  // ... standard client config
+  // Required: the new 'withKeyArraySelector' option is used here instead of 'true' so that links to array items and portable text are stable even if the array is reordered
+  resultSourceMap: 'withKeyArraySelector',
+})
+const {result, resultSourceMap} = await client.fetch(
+  `*[_type == "author" && slug.current == $slug][0]{name, pictures}`,
+  {slug: 'john-doe'},
+  // Required, otherwise you can't access `resultSourceMap`
+  {filterResponse: false},
+)
+
+// The `result` looks like this:
+const result = {
+  name: 'John Doe',
+  pictures: [
+    {
+      _type: 'image',
+      alt: 'A picture of exactly what you think someone named John Doe would look like',
+      _key: 'cee5fbb69da2',
+      asset: {
+        _ref: 'image-a75b03fdd5b5fa36947bf2b776a542e0c940f682-1000x1500-jpg',
+        _type: 'reference',
+      },
+    },
+  ],
+}
+
+const studioUrl = 'https://your-project-name.sanity.studio'
+
+resolveEditUrl({
+  // The URL resolver requires the base URL of your Sanity Studio instance
+  studioUrl,
+  // It also requires a Content Source Map for the query result you want to create an edit intent link for
+  resultSourceMap,
+  // The path to the field you want to edit. You can pass a string
+  resultPath: 'pictures[0].alt',
+  // or an array of segments
+  resultPath: ['pictures', 0, 'alt'],
+})
+// ^? 'https://your-project-name.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=author;path=pictures[_key=="cee5fbb69da2"].alt'
 ```
 
 ### Listening to queries
@@ -1490,6 +1608,3 @@ await client.request<void>({uri: '/auth/logout', method: 'POST'})
 [visual-editing]: https://www.sanity.io/docs/vercel-visual-editing?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
 [content-source-maps]: https://www.sanity.io/docs/content-source-maps?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
 [content-source-maps-intro]: https://www.sanity.io/blog/content-source-maps-announce?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
-[preview-kit-client]: https://github.com/sanity-io/preview-kit#sanitypreview-kitclient
-[sales-cta]: https://www.sanity.io/contact/sales?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
-[enterprise-cta]: https://www.sanity.io/enterprise?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
