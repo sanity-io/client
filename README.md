@@ -606,7 +606,7 @@ Which changes the result to be:
 
 Content Source Maps annotate fragments in your query results with metadata about its origin: the field, document, and dataset it originated from.
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 >
 > Content Source Maps are supported in the Content Lake API versions `2021-03-25` and later.
 
@@ -640,7 +640,7 @@ Enabling Content Source Maps is a two-step process:
    console.log(resultSourceMap)
    ```
 
-If your `apiVersion` is `2021-03-25` or later,  the `resultSourceMap` property will always exist in the response after enabling it. If there is no source map, `resultSourceMap` is an empty object.  
+If your `apiVersion` is `2021-03-25` or later, the `resultSourceMap` property will always exist in the response after enabling it. If there is no source map, `resultSourceMap` is an empty object.  
 This is the corresponding TypeScript definition:
 
 ```ts
