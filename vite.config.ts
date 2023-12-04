@@ -12,9 +12,9 @@ export const sharedConfig: UserConfig['test'] = {
   reporters: process.env.GITHUB_ACTIONS ? ['default', new GithubActionsReporter()] : 'default',
   // Allow switching test runs from using the source TS or compiled ESM
   alias: {
-    '@sanity/client/csm': pkg.exports['./csm'].source,
-    '@sanity/client/stega': pkg.exports['./stega'].source,
-    '@sanity/client': pkg.exports['.'].source,
+    '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
+    '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
+    '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
   },
 }
 

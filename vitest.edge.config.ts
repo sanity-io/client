@@ -11,9 +11,10 @@ export default defineConfig({
     ...sharedConfig,
     environment: 'edge-runtime',
     alias: {
-      '@sanity/client/csm': pkg.exports['./csm'].source,
-      '@sanity/client/stega': pkg.exports['./stega'].browser.source,
-      '@sanity/client': pkg.exports['.'].browser.source,
+      '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
+      '@sanity/client/stega': new URL(pkg.exports['./stega'].browser.source, import.meta.url)
+        .pathname,
+      '@sanity/client': new URL(pkg.exports['.'].browser.source, import.meta.url).pathname,
     },
   },
   resolve: {

@@ -2713,7 +2713,7 @@ describe('client', async () => {
       const error = new ClientError({statusCode: 400, headers: {}, body})
       expect(error.message).toMatchInlineSnapshot(`
         "Mutation(s) failed with 1 error(s):
-        - Malformed document ID: \\"#some_invalid-id!\\""
+        - Malformed document ID: "#some_invalid-id!""
       `)
     })
 
@@ -2735,11 +2735,11 @@ describe('client', async () => {
       const error = new ClientError({statusCode: 400, headers: {}, body})
       expect(error.message).toMatchInlineSnapshot(`
         "Mutation(s) failed with 6 error(s):
-        - Malformed document ID: \\"#some_invalid-id!\\"
-        - Malformed document ID: \\"@ruby_bird@\\"
-        - Malformed document ID: \\"!cant_contain_that\\"
-        - Malformed document ID: \\"what$about!this?\\"
-        - Malformed document ID: \\"%so_many_percent%\\"
+        - Malformed document ID: "#some_invalid-id!"
+        - Malformed document ID: "@ruby_bird@"
+        - Malformed document ID: "!cant_contain_that"
+        - Malformed document ID: "what$about!this?"
+        - Malformed document ID: "%so_many_percent%"
         ...and 1 more"
       `)
     })
@@ -2758,7 +2758,7 @@ describe('client', async () => {
       const error = new ClientError({statusCode: 400, headers: {}, body})
       expect(error.message).toMatchInlineSnapshot(`
         "Mutation(s) failed with 2 error(s):
-        - Malformed document ID: \\"#some_invalid-id!\\""
+        - Malformed document ID: "#some_invalid-id!""
       `)
     })
 
