@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.9.3](https://github.com/sanity-io/client/compare/v6.9.2...v6.9.3) (2023-12-07)
+
+
+### Bug Fixes
+
+* **stega:** add `mode=presentation` to edit intent links ([8f062e1](https://github.com/sanity-io/client/commit/8f062e16711dfe24f1fa697050b3b89b14cd16c8))
+
 ## [6.9.2](https://github.com/sanity-io/client/compare/v6.9.1...v6.9.2) (2023-12-07)
 
 
