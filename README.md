@@ -771,7 +771,7 @@ resolveEditUrl({
   // or an array of segments
   resultPath: ['pictures', 0, 'alt'],
 })
-// ^? 'https://your-project-name.sanity.studio/intent/edit/id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=author;path=pictures[_key=="cee5fbb69da2"].alt'
+// ^? 'https://your-project-name.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=author;path=pictures[_key=="cee5fbb69da2"].alt'
 ```
 
 ### Listening to queries

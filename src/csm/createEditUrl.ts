@@ -55,7 +55,12 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   if (workspace) {
     segments.push(workspace)
   }
-  const routerParams = [`id=${id}`, `type=${type}`, `path=${encodeURIComponent(stringifiedPath)}`]
+  const routerParams = [
+    'mode=presentation',
+    `id=${id}`,
+    `type=${type}`,
+    `path=${encodeURIComponent(stringifiedPath)}`,
+  ]
   if (tool) {
     routerParams.push(`tool=${tool}`)
   }

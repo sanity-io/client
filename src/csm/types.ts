@@ -58,7 +58,8 @@ export type ResolveStudioUrl = (sourceDocument: ContentSourceMapDocuments[number
 export type StudioPathLike = Path | string
 
 /** @alpha */
-export type EditIntentUrl = `/intent/edit/id=${string};type=${string};path=${string}`
+export type EditIntentUrl =
+  `/intent/edit/mode=presentation;id=${string};type=${string};path=${string}`
 
 /** @internal */
 export interface CreateEditUrlOptions {

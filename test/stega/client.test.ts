@@ -145,18 +145,18 @@ describe('@sanity/client/stega', async () => {
     expect(vercelStegaSplit(res[0].title).cleaned).toBe(result[0].title)
     expect(vercelStegaDecode(res[0].title)).toMatchInlineSnapshot(`
       {
-        "href": "/studio/intent/edit/id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title",
+        "href": "/studio/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title",
         "origin": "sanity.io",
       }
     `)
     expect(vercelStegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
       [
         {
-          "href": "/studio/intent/edit/id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title",
+          "href": "/studio/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title",
           "origin": "sanity.io",
         },
         {
-          "href": "/studio/intent/edit/id=njgNkngskjg;type=beer;path=country?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=country",
+          "href": "/studio/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=country?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=country",
           "origin": "sanity.io",
         },
       ]
