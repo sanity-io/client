@@ -10,6 +10,7 @@ const exp = defineCreateClientExports<SanityStegaClient, ClientStegaConfig>(
   SanityStegaClient,
 )
 
+export type {ObservableSanityClient, SanityClient} from './shared'
 export * from './shared'
 
 /** @public */

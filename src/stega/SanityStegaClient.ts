@@ -2,7 +2,10 @@ import {Observable} from 'rxjs'
 import {map} from 'rxjs/operators'
 
 import {defaultConfig} from '../config'
-import {ObservableSanityClient, SanityClient} from '../SanityClient'
+import {
+  ObservableSanityClient as INTERNAL_DO_NOT_USE_DIRECTLY_ObservableSanityClient,
+  SanityClient as INTERNAL_DO_NOT_USE_DIRECTLY_SanityClient,
+} from '../SanityClient'
 import type {
   Any,
   ClientConfig,
@@ -17,7 +20,7 @@ import {stegaEncodeSourceMap} from './stegaEncodeSourceMap'
 import {ClientStegaConfig, InitializedClientStegaConfig, InitializedStegaConfig} from './types'
 
 /** @public */
-export class ObservableSanityStegaClient extends ObservableSanityClient {
+export class ObservableSanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_ObservableSanityClient {
   /**
    * Private properties
    */
@@ -143,7 +146,7 @@ export class ObservableSanityStegaClient extends ObservableSanityClient {
 }
 
 /** @public */
-export class SanityStegaClient extends SanityClient {
+export class SanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_SanityClient {
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
    */
@@ -271,4 +274,9 @@ export class SanityStegaClient extends SanityClient {
         return originalFilterResponse ? result : {...res, result}
       })
   }
+}
+
+export type {
+  INTERNAL_DO_NOT_USE_DIRECTLY_ObservableSanityClient,
+  INTERNAL_DO_NOT_USE_DIRECTLY_SanityClient,
 }
