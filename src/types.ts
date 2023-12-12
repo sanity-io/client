@@ -292,6 +292,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   url?: string
   uri?: string
   canUseCdn?: boolean
+  useCdn?: boolean
   tag?: string
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
@@ -668,6 +669,7 @@ export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
   resultSourceMap?: boolean | 'withKeyArraySelector'
   cache?: RequestInit['cache']
   next?: T extends keyof RequestInit ? RequestInit[T] : never
+  useCdn?: boolean
 }
 
 /** @public */

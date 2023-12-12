@@ -696,6 +696,32 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)('allow overriding useCdn to false on client.fetch', async () => {
+      nock('https://abc123.api.sanity.io').get(`/v1/data/query/foo?query=*`).reply(200, {
+        ms: 123,
+        query: '*',
+        result,
+      })
+
+      const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+      const res = await client.fetch('*', {}, {useCdn: false})
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)('allow overriding useCdn to true on client.fetch', async () => {
+      nock('https://abc123.apicdn.sanity.io').get(`/v1/data/query/foo?query=*`).reply(200, {
+        ms: 123,
+        query: '*',
+        result,
+      })
+
+      const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: false})
+      const res = await client.fetch('*', {}, {useCdn: true})
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
       nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
         ms: 123,

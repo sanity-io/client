@@ -247,6 +247,7 @@ export function _dataRequest(
     signal: options.signal,
     fetch: options.fetch,
     useAbortSignal: options.useAbortSignal,
+    useCdn: options.useCdn,
   }
 
   return _requestObservable(client, httpRequest, reqOptions).pipe(
@@ -312,7 +313,7 @@ export function _requestObservable<R>(
       ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && uri.indexOf('/data/') === 0
       : options.canUseCdn
 
-  let useCdn = config.useCdn && canUseCdn
+  let useCdn = (options.useCdn ?? config.useCdn) && canUseCdn
 
   const tag =
     options.tag && config.requestTagPrefix
