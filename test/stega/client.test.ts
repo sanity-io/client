@@ -5,7 +5,12 @@ import {
   createClient,
   SanityStegaClient,
 } from '@sanity/client/stega'
-import {vercelStegaDecode, vercelStegaDecodeAll, vercelStegaSplit} from '@vercel/stega'
+import {
+  vercelStegaCombine,
+  vercelStegaDecode,
+  vercelStegaDecodeAll,
+  vercelStegaSplit,
+} from '@vercel/stega'
 import {describe, expect, test} from 'vitest'
 
 const apiHost = 'api.sanity.url'
@@ -162,6 +167,17 @@ describe('@sanity/client/stega', async () => {
           },
         ]
       `)
+    })
+
+    test.skipIf(isEdge)('it strips stega strings from params', async () => {
+      nock(projectHost())
+        .get(`/v1/data/query/foo?query=${qs}&resultSourceMap=withKeyArraySelector`)
+        .reply(200, {ms: 123, query, result, resultSourceMap})
+
+      const res = await getClient({stega: {enabled: true, studioUrl: '/studio'}}).fetch(query, {
+        id: vercelStegaCombine(params.id, JSON.stringify({origin: 'sanity.io', href: '/studio'})),
+      })
+      expect(res.length, 'length should match').toBe(1)
     })
   })
 
