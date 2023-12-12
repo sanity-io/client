@@ -23,6 +23,7 @@ import {
 } from './config'
 import {stegaEncodeSourceMap} from './stegaEncodeSourceMap'
 import {ClientStegaConfig, InitializedClientStegaConfig, InitializedStegaConfig} from './types'
+import {vercelStegaCleanAll} from './vercelStegaCleanAll'
 
 /** @public */
 export class ObservableSanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_ObservableSanityClient {
@@ -124,13 +125,14 @@ export class ObservableSanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_Ob
   ): Observable<RawQueryResponse<R>>
   fetch<R, Q extends QueryParams>(
     query: string,
-    params?: Q,
+    _params?: Q,
     _options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
   ): Observable<RawQueryResponse<R> | R> {
     const {stegaConfig, fetchOptions: options} = splitStegaConfigFromFetchOptions(
       _options,
       this.stegaConfig,
     )
+    const params = _params ? vercelStegaCleanAll(_params) : _params
     if (!stegaConfig.enabled) {
       return super.fetch<R, Q>(query, params, options as Any)
     }
@@ -261,13 +263,14 @@ export class SanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_SanityClient
   ): Promise<RawQueryResponse<R>>
   fetch<R, Q extends QueryParams>(
     query: string,
-    params?: Q,
+    _params?: Q,
     _options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
   ): Promise<RawQueryResponse<R> | R> {
     const {stegaConfig, fetchOptions: options} = splitStegaConfigFromFetchOptions(
       _options,
       this.stegaConfig,
     )
+    const params = _params ? vercelStegaCleanAll(_params) : _params
     if (!stegaConfig.enabled) {
       return super.fetch<R, Q>(query, params, options as Any)
     }
