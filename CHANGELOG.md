@@ -5,6 +5,19 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.10.0](https://github.com/sanity-io/client/compare/v6.9.3...v6.10.0) (2023-12-12)
+
+
+### Features
+
+* allow setting `useCdn: boolean` on `client.fetch` ([#454](https://github.com/sanity-io/client/issues/454)) ([936ec9e](https://github.com/sanity-io/client/commit/936ec9e7b25b8b24a1829cb0d896d7aa142dbee2))
+* **stega:** allow setting `stega` options on `client.fetch` ([#427](https://github.com/sanity-io/client/issues/427)) ([144fc2d](https://github.com/sanity-io/client/commit/144fc2db5bdbf5ec9dbd706843df41069e65dd6b))
+
+
+### Bug Fixes
+
+* **stega:** strip stega strings from params ([#453](https://github.com/sanity-io/client/issues/453)) ([26ce483](https://github.com/sanity-io/client/commit/26ce48378cfecc732f8b94c70903c09f8e01d383))
+
 ## [6.9.3](https://github.com/sanity-io/client/compare/v6.9.2...v6.9.3) (2023-12-07)
 
 
