@@ -134,3 +134,12 @@ export type Encoder = (context: {
   resultPath: ContentSourceMapParsedPath
   value: string
 }) => string
+
+// Extends the `client.fetch` call with a `stega` option
+declare module '../types' {
+  /** @public */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
+    stega?: boolean | StegaConfig
+  }
+}

@@ -663,7 +663,7 @@ export interface ListenOptions {
 }
 
 /** @public */
-export type ResponseQueryOptions<T = 'next'> = RequestOptions & {
+export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
   perspective?: ClientPerspective
   resultSourceMap?: boolean | 'withKeyArraySelector'
   cache?: RequestInit['cache']
