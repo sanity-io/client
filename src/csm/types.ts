@@ -3,6 +3,7 @@ import {Path} from './studioPath'
 
 export type {
   Any,
+  ClientPerspective,
   ContentSourceMap,
   ContentSourceMapDocument,
   ContentSourceMapDocumentBase,

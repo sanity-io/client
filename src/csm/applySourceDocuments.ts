@@ -1,9 +1,11 @@
+import {DRAFTS_PREFIX, getPublishedId} from './getPublishedId'
 import {parseJsonPath} from './jsonPath'
 import {resolveMapping} from './resolveMapping'
 import * as paths from './studioPath'
 import type {
   Any,
   ApplySourceDocumentsUpdateFunction,
+  ClientPerspective,
   ContentSourceMap,
   ContentSourceMapDocuments,
   Path,
@@ -25,8 +27,13 @@ export function applySourceDocuments<Result = unknown>(
     sourceDocument: ContentSourceMapDocuments[number],
   ) => SanityDocument | undefined,
   updateFn: ApplySourceDocumentsUpdateFunction = defaultUpdateFunction,
+  perspective: ClientPerspective = 'raw',
 ): Result {
   if (!resultSourceMap) return result
+
+  if (perspective !== 'published' && perspective !== 'raw' && perspective !== 'previewDrafts') {
+    throw new Error(`Unknown perspective "${perspective}"`)
+  }
 
   return walkMap(JSON.parse(JSON.stringify(result)), (value, path) => {
     const resolveMappingResult = resolveMapping(path, resultSourceMap)
@@ -48,14 +55,45 @@ export function applySourceDocuments<Result = unknown>(
     const sourcePath = resultSourceMap.paths[mapping.source.path]
 
     if (sourceDocument) {
-      const cachedDocument = getCachedDocument(sourceDocument)
+      const parsedPath = parseJsonPath(sourcePath + pathSuffix)
+      const stringifiedPath = paths.toString(parsedPath as Path)
+
+      // The _id is sometimes used used as `key` in lists, and should not be changed optimistically
+      if (stringifiedPath === '_id') {
+        return value
+      }
+
+      let cachedDocument: SanityDocument | undefined
+      if (perspective === 'previewDrafts') {
+        cachedDocument = getCachedDocument(
+          sourceDocument._id.startsWith(DRAFTS_PREFIX)
+            ? sourceDocument
+            : {...sourceDocument, _id: `${DRAFTS_PREFIX}.${sourceDocument._id}}`},
+        )
+        if (!cachedDocument) {
+          cachedDocument = getCachedDocument(
+            sourceDocument._id.startsWith(DRAFTS_PREFIX)
+              ? {...sourceDocument, _id: getPublishedId(sourceDocument._id)}
+              : sourceDocument,
+          )
+        }
+        if (cachedDocument) {
+          cachedDocument = {
+            ...cachedDocument,
+            _id: getPublishedId(sourceDocument._id),
+            _originalId: sourceDocument._id,
+          }
+        }
+      } else {
+        cachedDocument = getCachedDocument(sourceDocument)
+      }
+
       if (!cachedDocument) {
         return value
       }
 
-      const parsedPath = parseJsonPath(sourcePath + pathSuffix)
       const changedValue = cachedDocument
-        ? paths.get<Result[keyof Result]>(cachedDocument, paths.toString(parsedPath as Path), value)
+        ? paths.get<Result[keyof Result]>(cachedDocument, stringifiedPath, value)
         : value
       return value === changedValue
         ? value
