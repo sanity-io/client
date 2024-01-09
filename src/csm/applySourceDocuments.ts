@@ -1,3 +1,4 @@
+import {ClientPerspective} from '../types'
 import {parseJsonPath} from './jsonPath'
 import {resolveMapping} from './resolveMapping'
 import * as paths from './studioPath'
@@ -25,6 +26,7 @@ export function applySourceDocuments<Result = unknown>(
     sourceDocument: ContentSourceMapDocuments[number],
   ) => SanityDocument | undefined,
   updateFn: ApplySourceDocumentsUpdateFunction = defaultUpdateFunction,
+  perspective: ClientPerspective = 'raw',
 ): Result {
   if (!resultSourceMap) return result
 

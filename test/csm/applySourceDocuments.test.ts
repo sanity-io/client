@@ -1,4 +1,11 @@
-import {applySourceDocuments, type ContentSourceMap} from '@sanity/client/csm'
+import {
+  applySourceDocuments,
+  type ContentSourceMap,
+  type ContentSourceMapDocuments,
+  getPublishedId,
+  type SanityDocument,
+} from '@sanity/client/csm'
+import {diffString} from 'json-diff'
 import {describe, expect, test} from 'vitest'
 
 describe('complex queries', () => {
@@ -404,5 +411,769 @@ describe('simple queries', () => {
     expect(optimisticResult[0].title).toBe(draft.title)
     expect(result[0].media.alt).not.toBe(draft.media[0].alt)
     expect(optimisticResult[0].media.alt).toBe(draft.media[0].alt)
+  })
+})
+
+describe('handling perspectives', () => {
+  const dataset = [
+    {
+      _createdAt: '2024-01-09T11:10:46Z',
+      _rev: '2SKFLI1swIXZFEOewwAdnF',
+      _type: 'author',
+      name: 'George Martin',
+      _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+      _updatedAt: '2024-01-09T11:10:46Z',
+    },
+    {
+      title: 'Good Omens',
+      _updatedAt: '2024-01-09T13:46:42Z',
+      author: {
+        _type: 'reference',
+        _ref: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+      },
+      _createdAt: '2024-01-09T13:46:42Z',
+      _rev: '2SKFLI1swIXZFEOewwFlr0',
+      _type: 'book',
+      _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+    },
+    {
+      author: {
+        _ref: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+        _type: 'reference',
+      },
+      _createdAt: '2024-01-09T10:58:07Z',
+      _rev: '2SKFLI1swIXZFEOewwAl4r',
+      _type: 'book',
+      _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+      title: 'Fire & Blood',
+      _updatedAt: '2024-01-09T11:16:46Z',
+    },
+    {
+      _createdAt: '2024-01-09T13:45:33Z',
+      _rev: '2SKFLI1swIXZFEOewwFinU',
+      _type: 'author',
+      name: 'Terry Pratchett',
+      _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+      _updatedAt: '2024-01-09T13:45:33Z',
+    },
+    {
+      _updatedAt: '2024-01-09T11:10:53Z',
+      _createdAt: '2024-01-09T11:10:46Z',
+      _rev: '3f52865f-9369-4233-95ac-aaf5d9365abe',
+      _type: 'author',
+      name: 'George R.R. Martin',
+      _id: 'drafts.294709c3-710d-4dc6-8f6f-f36c4786611a',
+    },
+    {
+      _type: 'book',
+      _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+      title: 'It',
+      _updatedAt: '2024-01-09T11:17:12Z',
+      author: {
+        _weak: true,
+        _ref: 'de2baea7-4df7-4eb0-841e-db20103279fc',
+        _type: 'reference',
+        _strengthenOnPublish: {
+          template: {
+            id: 'author',
+          },
+          type: 'author',
+        },
+      },
+      _createdAt: '2024-01-09T10:58:07Z',
+      _rev: 'c5a77015-1802-4327-aa47-0f462a732c6a',
+    },
+    {
+      author: {
+        _type: 'reference',
+        _ref: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+      },
+      _createdAt: '2024-01-09T13:51:54Z',
+      _rev: '6d39b358-ee4f-42f2-8ca4-249673ddc56d',
+      _type: 'book',
+      _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+      title: 'The Winds of Winter',
+      _updatedAt: '2024-01-09T13:52:01Z',
+    },
+    {
+      _rev: '60d36f53-0850-4b2e-ac73-e0e831bdaa72',
+      _type: 'author',
+      name: 'Stephen King',
+      _id: 'drafts.de2baea7-4df7-4eb0-841e-db20103279fc',
+      _updatedAt: '2024-01-09T11:17:18Z',
+      _createdAt: '2024-01-09T11:17:15Z',
+    },
+  ] as const satisfies SanityDocument[]
+  const getCachedDocument: (
+    sourceDocument: ContentSourceMapDocuments[number],
+  ) => SanityDocument | undefined = (sourceDocument) => {
+    return dataset.find((doc) => doc._id === sourceDocument._id)
+  }
+  const simulateTerryPratchettUnpublished: typeof getCachedDocument = (sourceDocument) => {
+    const id = 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74'
+    const cachedDocument = getCachedDocument(sourceDocument)
+    if (sourceDocument._id === id) {
+      return undefined
+    }
+    if (getPublishedId(sourceDocument._id) === id) {
+      return {
+        ...getCachedDocument({...sourceDocument, _id: getPublishedId(sourceDocument._id)}),
+        _id: sourceDocument._id,
+      } as SanityDocument
+    }
+    return cachedDocument
+  }
+  test('perspective: raw', () => {
+    const mock = {
+      query: '*[_type == "book"]{\n  _id,_originalId,title,author->{_id,_originalId,name}\n}',
+      result: [
+        {
+          _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          _originalId: null,
+          title: 'Good Omens',
+          author: {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _originalId: null,
+            name: 'Terry Pratchett',
+          },
+        },
+        {
+          _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: null,
+          title: 'Fire & Blood',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: null,
+            name: 'George Martin',
+          },
+        },
+        {
+          _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: null,
+          title: 'It',
+          author: null,
+        },
+        {
+          _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+          _originalId: null,
+          title: 'The Winds of Winter',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: null,
+            name: 'George Martin',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+            _type: 'book',
+          },
+          {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _type: 'author',
+          },
+          {
+            _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _type: 'author',
+          },
+          {
+            _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+            _type: 'book',
+          },
+        ],
+        paths: ["$['_id']", "$['title']", "$['name']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_id']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['name']": {
+            source: {
+              document: 1,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['title']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_id']": {
+            source: {
+              document: 2,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['name']": {
+            source: {
+              document: 3,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['title']": {
+            source: {
+              document: 2,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['_id']": {
+            source: {
+              document: 4,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['title']": {
+            source: {
+              document: 4,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['_id']": {
+            source: {
+              document: 5,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['author']['name']": {
+            source: {
+              document: 3,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['title']": {
+            source: {
+              document: 5,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+      ms: 9,
+    } as const satisfies {
+      query: string
+      result: unknown
+      resultSourceMap: ContentSourceMap
+      ms: number
+    }
+
+    // Ensure that a correct cache doesn't lead to unexpected updates to the `result`
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'raw',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'published',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'previewDrafts',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+  })
+  test('perspective: published', () => {
+    const mock = {
+      query: '*[_type == "book"]{\n  _id,_originalId,title,author->{_id,_originalId,name}\n}',
+      result: [
+        {
+          _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          _originalId: null,
+          title: 'Good Omens',
+          author: {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _originalId: null,
+            name: 'Terry Pratchett',
+          },
+        },
+        {
+          _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: null,
+          title: 'Fire & Blood',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: null,
+            name: 'George Martin',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+            _type: 'book',
+          },
+          {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _type: 'author',
+          },
+          {
+            _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _type: 'author',
+          },
+        ],
+        paths: ["$['_id']", "$['title']", "$['name']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_id']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['name']": {
+            source: {
+              document: 1,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['title']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_id']": {
+            source: {
+              document: 2,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['name']": {
+            source: {
+              document: 3,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['title']": {
+            source: {
+              document: 2,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+      ms: 12,
+    } as const satisfies {
+      query: string
+      result: unknown
+      resultSourceMap: ContentSourceMap
+      ms: number
+    }
+
+    // Ensure that a correct cache doesn't lead to unexpected updates to the `result`
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'raw',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'published',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'previewDrafts',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+  })
+  test('perspective: previewDrafts', () => {
+    const mock = {
+      query: '*[_type == "book"]{\n  _id,_originalId,title,author->{_id,_originalId,name}\n}',
+      result: [
+        {
+          _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          _originalId: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          title: 'Good Omens',
+          author: {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _originalId: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            name: 'Terry Pratchett',
+          },
+        },
+        {
+          _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+          title: 'It',
+          author: {
+            _id: 'de2baea7-4df7-4eb0-841e-db20103279fc',
+            _originalId: 'drafts.de2baea7-4df7-4eb0-841e-db20103279fc',
+            name: 'Stephen King',
+          },
+        },
+        {
+          _id: '8b671177-113d-4249-ae23-6b50dc017e9e',
+          _originalId: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+          title: 'The Winds of Winter',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: 'drafts.294709c3-710d-4dc6-8f6f-f36c4786611a',
+            name: 'George R.R. Martin',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+            _type: 'book',
+          },
+          {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _type: 'author',
+          },
+          {
+            _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: 'drafts.de2baea7-4df7-4eb0-841e-db20103279fc',
+            _type: 'author',
+          },
+          {
+            _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+            _type: 'book',
+          },
+          {
+            _id: 'drafts.294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _type: 'author',
+          },
+        ],
+        paths: ["$['_id']", "$['_originalId']", "$['title']", "$['name']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['_originalId']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_id']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_originalId']": {
+            source: {
+              document: 1,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['name']": {
+            source: {
+              document: 1,
+              path: 3,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['title']": {
+            source: {
+              document: 0,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_id']": {
+            source: {
+              document: 2,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_originalId']": {
+            source: {
+              document: 2,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_originalId']": {
+            source: {
+              document: 3,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['name']": {
+            source: {
+              document: 3,
+              path: 3,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['title']": {
+            source: {
+              document: 2,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['_id']": {
+            source: {
+              document: 4,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['_originalId']": {
+            source: {
+              document: 4,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['author']['_id']": {
+            source: {
+              document: 5,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['author']['_originalId']": {
+            source: {
+              document: 5,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['author']['name']": {
+            source: {
+              document: 5,
+              path: 3,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['title']": {
+            source: {
+              document: 4,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+      ms: 12,
+    } as const satisfies {
+      query: string
+      result: unknown
+      resultSourceMap: ContentSourceMap
+      ms: number
+    }
+
+    // Ensure that a correct cache doesn't lead to unexpected updates to the `result`
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'raw',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'published',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'previewDrafts',
+        ),
+        mock.result,
+        {color: false},
+      ),
+    ).toBe('')
   })
 })
