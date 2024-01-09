@@ -1,4 +1,11 @@
-import {applySourceDocuments, type ContentSourceMap} from '@sanity/client/csm'
+import {
+  applySourceDocuments,
+  type ContentSourceMap,
+  type ContentSourceMapDocuments,
+  getPublishedId,
+  type SanityDocument,
+} from '@sanity/client/csm'
+import {diffString} from 'json-diff'
 import {describe, expect, test} from 'vitest'
 
 describe('complex queries', () => {
@@ -404,5 +411,1238 @@ describe('simple queries', () => {
     expect(optimisticResult[0].title).toBe(draft.title)
     expect(result[0].media.alt).not.toBe(draft.media[0].alt)
     expect(optimisticResult[0].media.alt).toBe(draft.media[0].alt)
+  })
+})
+
+describe('handling perspectives', () => {
+  const dataset = [
+    {
+      _createdAt: '2024-01-09T11:10:46Z',
+      _rev: 'D3N5P3XyAZ16DNFKjiRI0q',
+      _type: 'author',
+      name: 'George Martin (published)',
+      _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+      _updatedAt: '2024-01-09T15:58:47Z',
+    },
+    {
+      author: {
+        _ref: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+        _type: 'reference',
+      },
+      _createdAt: '2024-01-09T13:46:42Z',
+      _rev: '4CNIu3sfkQOfiJtCaJf66J',
+      _type: 'book',
+      _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+      title: 'Good Omens (published)',
+      _updatedAt: '2024-01-09T16:00:04Z',
+    },
+    {
+      title: 'Fire & Ice (published)',
+      _updatedAt: '2024-01-09T15:59:33Z',
+      author: {
+        _ref: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+        _type: 'reference',
+      },
+      _createdAt: '2024-01-09T10:58:07Z',
+      _rev: '4CNIu3sfkQOfiJtCaJf4ix',
+      _type: 'book',
+      _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+    },
+    {
+      _rev: '4CNIu3sfkQOfiJtCaJf0OF',
+      _type: 'author',
+      name: 'Terry Pratchett (published)',
+      _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+      _updatedAt: '2024-01-09T15:58:08Z',
+      _createdAt: '2024-01-09T13:45:33Z',
+    },
+    {
+      _type: 'author',
+      name: 'George R.R. Martin (draft)',
+      _id: 'drafts.294709c3-710d-4dc6-8f6f-f36c4786611a',
+      _updatedAt: '2024-01-09T15:58:54Z',
+      _createdAt: '2024-01-09T11:10:46Z',
+      _rev: '8b3babb0-2e94-4483-a975-e1c0530631ab',
+    },
+    {
+      author: {
+        _strengthenOnPublish: {
+          type: 'author',
+        },
+        _weak: true,
+        _ref: 'de2baea7-4df7-4eb0-841e-db20103279fc',
+        _type: 'reference',
+      },
+      _createdAt: '2024-01-09T10:58:07Z',
+      _rev: '3480a3e1-d8b4-49c9-8da8-70b85489dd05',
+      _type: 'book',
+      _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+      title: 'It (draft)',
+      _updatedAt: '2024-01-09T15:59:48Z',
+    },
+    {
+      _updatedAt: '2024-01-09T16:00:13Z',
+      author: {
+        _ref: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+        _type: 'reference',
+      },
+      _createdAt: '2024-01-09T13:51:54Z',
+      _rev: 'c891041e-12d9-45f1-b487-ba41283ed918',
+      _type: 'book',
+      _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+      title: 'The Winds of Winter (draft)',
+    },
+    {
+      _updatedAt: '2024-01-09T15:58:16Z',
+      _createdAt: '2024-01-09T11:17:15Z',
+      _rev: 'bfa045fa-4936-4eb3-978a-bdd9316ba837',
+      _type: 'author',
+      name: 'Stephen King (draft)',
+      _id: 'drafts.de2baea7-4df7-4eb0-841e-db20103279fc',
+    },
+  ] as const satisfies SanityDocument[]
+  const getCachedDocument: (
+    sourceDocument: ContentSourceMapDocuments[number],
+  ) => SanityDocument | undefined = (sourceDocument) => {
+    return dataset.find((doc) => doc._id === sourceDocument._id)
+  }
+  const simulateAuthorMutations: typeof getCachedDocument = (sourceDocument) => {
+    const cachedDocument = getCachedDocument(sourceDocument)
+
+    // Pretending Terry Pratchett is unpublished
+    let id = 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74'
+    if (sourceDocument._id === id) {
+      return undefined
+    }
+    if (getPublishedId(sourceDocument._id) === id) {
+      return {
+        ...getCachedDocument({...sourceDocument, _id: getPublishedId(sourceDocument._id)}),
+        _id: sourceDocument._id,
+        name: 'Terry Pratchett (draft)',
+      } as SanityDocument
+    }
+
+    // Published Stephen King
+    id = 'de2baea7-4df7-4eb0-841e-db20103279fc'
+    if (sourceDocument._id === id) {
+      return {
+        ...getCachedDocument({...sourceDocument, _id: `drafts.${sourceDocument._id}`}),
+        _id: id,
+        name: 'Stephen King (published)',
+      } as SanityDocument
+    }
+    if (getPublishedId(sourceDocument._id) === id) {
+      return undefined
+    }
+
+    // Published IT
+    id = '8826fb2c-6152-46c0-8d19-079fcd75b438'
+    if (sourceDocument._id === id) {
+      return undefined
+    }
+    if (getPublishedId(sourceDocument._id) === id) {
+      return {
+        ...getCachedDocument({...sourceDocument, _id: `drafts.${sourceDocument._id}`}),
+        _id: id,
+        title: 'It (published)',
+      } as SanityDocument
+    }
+
+    // Edited Good Omens
+    id = '2c1de490-e7ed-413c-8d23-163d4432bb63'
+    if (sourceDocument._id === id) {
+      return {
+        ...getCachedDocument(sourceDocument),
+        title: 'Good Omens (changed)',
+      } as SanityDocument
+    }
+
+    return cachedDocument
+  }
+  test('perspective: raw', () => {
+    const mock = {
+      query: '*[_type == "book"]{\n  _id,_originalId,title,author->{_id,_originalId,name}\n}',
+      result: [
+        {
+          _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          _originalId: null,
+          title: 'Good Omens (published)',
+          author: {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _originalId: null,
+            name: 'Terry Pratchett (published)',
+          },
+        },
+        {
+          _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: null,
+          title: 'Fire & Ice (published)',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: null,
+            name: 'George Martin (published)',
+          },
+        },
+        {
+          _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: null,
+          title: 'It (draft)',
+          author: null,
+        },
+        {
+          _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+          _originalId: null,
+          title: 'The Winds of Winter (draft)',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: null,
+            name: 'George Martin (published)',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+            _type: 'book',
+          },
+          {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _type: 'author',
+          },
+          {
+            _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _type: 'author',
+          },
+          {
+            _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+            _type: 'book',
+          },
+        ],
+        paths: ["$['_id']", "$['title']", "$['name']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_id']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['name']": {
+            source: {
+              document: 1,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['title']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_id']": {
+            source: {
+              document: 2,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['name']": {
+            source: {
+              document: 3,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['title']": {
+            source: {
+              document: 2,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['_id']": {
+            source: {
+              document: 4,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['title']": {
+            source: {
+              document: 4,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['_id']": {
+            source: {
+              document: 5,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['author']['name']": {
+            source: {
+              document: 3,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[3]['title']": {
+            source: {
+              document: 5,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+      ms: 579,
+    } as const satisfies {
+      query: string
+      result: unknown
+      resultSourceMap: ContentSourceMap
+      ms: number
+    }
+
+    // Ensure that a correct cache doesn't lead to unexpected updates to the `result`
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'raw',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'published',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'previewDrafts',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+
+    // Simulate mutations
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'raw',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: null
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: null
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+           title: "Fire & Ice (published)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+         {
+           _id: "drafts.8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+      -    title: "It (draft)"
+      +    title: "It (published)"
+           author: null
+         }
+         {
+           _id: "drafts.8b671177-113d-4249-ae23-6b50dc017e9e"
+           _originalId: null
+           title: "The Winds of Winter (draft)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+       ]
+      "
+    `)
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'published',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: null
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: null
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+           title: "Fire & Ice (published)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+         {
+           _id: "drafts.8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+      -    title: "It (draft)"
+      +    title: "It (published)"
+           author: null
+         }
+         {
+           _id: "drafts.8b671177-113d-4249-ae23-6b50dc017e9e"
+           _originalId: null
+           title: "The Winds of Winter (draft)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+       ]
+      "
+    `)
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'previewDrafts',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: null
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: null
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+           title: "Fire & Ice (published)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+         {
+           _id: "drafts.8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+      -    title: "It (draft)"
+      +    title: "It (published)"
+           author: null
+         }
+         {
+           _id: "drafts.8b671177-113d-4249-ae23-6b50dc017e9e"
+           _originalId: null
+           title: "The Winds of Winter (draft)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+       ]
+      "
+    `)
+  })
+  test('perspective: published', () => {
+    const mock = {
+      query: '*[_type == "book"]{\n  _id,_originalId,title,author->{_id,_originalId,name}\n}',
+      result: [
+        {
+          _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          _originalId: null,
+          title: 'Good Omens (published)',
+          author: {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _originalId: null,
+            name: 'Terry Pratchett (published)',
+          },
+        },
+        {
+          _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: null,
+          title: 'Fire & Ice (published)',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: null,
+            name: 'George Martin (published)',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+            _type: 'book',
+          },
+          {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _type: 'author',
+          },
+          {
+            _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _type: 'author',
+          },
+        ],
+        paths: ["$['_id']", "$['title']", "$['name']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_id']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['name']": {
+            source: {
+              document: 1,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['title']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_id']": {
+            source: {
+              document: 2,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['name']": {
+            source: {
+              document: 3,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['title']": {
+            source: {
+              document: 2,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+      ms: 12,
+    } as const satisfies {
+      query: string
+      result: unknown
+      resultSourceMap: ContentSourceMap
+      ms: number
+    }
+
+    // Ensure that a correct cache doesn't lead to unexpected updates to the `result`
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'raw',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'published',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'previewDrafts',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+
+    // Simulate mutations
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'raw',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: null
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: null
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+           title: "Fire & Ice (published)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+       ]
+      "
+    `)
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'published',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: null
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: null
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+           title: "Fire & Ice (published)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+       ]
+      "
+    `)
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'previewDrafts',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: null
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: null
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: null
+           title: "Fire & Ice (published)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: null
+             name: "George Martin (published)"
+           }
+         }
+       ]
+      "
+    `)
+  })
+  test('perspective: previewDrafts', () => {
+    const mock = {
+      query: '*[_type == "book"]{\n  _id,_originalId,title,author->{_id,_originalId,name}\n}',
+      result: [
+        {
+          _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          _originalId: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+          title: 'Good Omens (published)',
+          author: {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _originalId: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            name: 'Terry Pratchett (published)',
+          },
+        },
+        {
+          _id: '8826fb2c-6152-46c0-8d19-079fcd75b438',
+          _originalId: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+          title: 'It (draft)',
+          author: {
+            _id: 'de2baea7-4df7-4eb0-841e-db20103279fc',
+            _originalId: 'drafts.de2baea7-4df7-4eb0-841e-db20103279fc',
+            name: 'Stephen King (draft)',
+          },
+        },
+        {
+          _id: '8b671177-113d-4249-ae23-6b50dc017e9e',
+          _originalId: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+          title: 'The Winds of Winter (draft)',
+          author: {
+            _id: '294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _originalId: 'drafts.294709c3-710d-4dc6-8f6f-f36c4786611a',
+            name: 'George R.R. Martin (draft)',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: '2c1de490-e7ed-413c-8d23-163d4432bb63',
+            _type: 'book',
+          },
+          {
+            _id: 'd7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74',
+            _type: 'author',
+          },
+          {
+            _id: 'drafts.8826fb2c-6152-46c0-8d19-079fcd75b438',
+            _type: 'book',
+          },
+          {
+            _id: 'drafts.de2baea7-4df7-4eb0-841e-db20103279fc',
+            _type: 'author',
+          },
+          {
+            _id: 'drafts.8b671177-113d-4249-ae23-6b50dc017e9e',
+            _type: 'book',
+          },
+          {
+            _id: 'drafts.294709c3-710d-4dc6-8f6f-f36c4786611a',
+            _type: 'author',
+          },
+        ],
+        paths: ["$['_id']", "$['_originalId']", "$['title']", "$['name']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['_originalId']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_id']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['_originalId']": {
+            source: {
+              document: 1,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['author']['name']": {
+            source: {
+              document: 1,
+              path: 3,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['title']": {
+            source: {
+              document: 0,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_id']": {
+            source: {
+              document: 2,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['_originalId']": {
+            source: {
+              document: 2,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_id']": {
+            source: {
+              document: 3,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['_originalId']": {
+            source: {
+              document: 3,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['author']['name']": {
+            source: {
+              document: 3,
+              path: 3,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[1]['title']": {
+            source: {
+              document: 2,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['_id']": {
+            source: {
+              document: 4,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['_originalId']": {
+            source: {
+              document: 4,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['author']['_id']": {
+            source: {
+              document: 5,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['author']['_originalId']": {
+            source: {
+              document: 5,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['author']['name']": {
+            source: {
+              document: 5,
+              path: 3,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[2]['title']": {
+            source: {
+              document: 4,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+      ms: 2881,
+    } as const satisfies {
+      query: string
+      result: unknown
+      resultSourceMap: ContentSourceMap
+      ms: number
+    }
+
+    // Ensure that a correct cache doesn't lead to unexpected updates to the `result`
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'raw',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'published',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          getCachedDocument,
+          undefined,
+          'previewDrafts',
+        ),
+        {color: false},
+      ),
+    ).toBe('')
+
+    // Simulate mutations
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'raw',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: "drafts.8826fb2c-6152-46c0-8d19-079fcd75b438"
+      -    title: "It (draft)"
+      +    title: "It (published)"
+           author: {
+             _id: "de2baea7-4df7-4eb0-841e-db20103279fc"
+             _originalId: "drafts.de2baea7-4df7-4eb0-841e-db20103279fc"
+             name: "Stephen King (draft)"
+           }
+         }
+         {
+           _id: "8b671177-113d-4249-ae23-6b50dc017e9e"
+           _originalId: "drafts.8b671177-113d-4249-ae23-6b50dc017e9e"
+           title: "The Winds of Winter (draft)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: "drafts.294709c3-710d-4dc6-8f6f-f36c4786611a"
+             name: "George R.R. Martin (draft)"
+           }
+         }
+       ]
+      "
+    `)
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'published',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: "drafts.8826fb2c-6152-46c0-8d19-079fcd75b438"
+      -    title: "It (draft)"
+      +    title: "It (published)"
+           author: {
+             _id: "de2baea7-4df7-4eb0-841e-db20103279fc"
+             _originalId: "drafts.de2baea7-4df7-4eb0-841e-db20103279fc"
+             name: "Stephen King (draft)"
+           }
+         }
+         {
+           _id: "8b671177-113d-4249-ae23-6b50dc017e9e"
+           _originalId: "drafts.8b671177-113d-4249-ae23-6b50dc017e9e"
+           title: "The Winds of Winter (draft)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: "drafts.294709c3-710d-4dc6-8f6f-f36c4786611a"
+             name: "George R.R. Martin (draft)"
+           }
+         }
+       ]
+      "
+    `)
+    expect(
+      diffString(
+        mock.result,
+        applySourceDocuments(
+          mock.result,
+          mock.resultSourceMap,
+          simulateAuthorMutations,
+          undefined,
+          'previewDrafts',
+        ),
+        {color: false, full: true},
+      ),
+    ).toMatchInlineSnapshot(`
+      " [
+         {
+           _id: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+           _originalId: "2c1de490-e7ed-413c-8d23-163d4432bb63"
+      -    title: "Good Omens (published)"
+      +    title: "Good Omens (changed)"
+           author: {
+             _id: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             _originalId: "d7e0f612-ab9b-4fbb-ad1e-090f6e9d0a74"
+             name: "Terry Pratchett (published)"
+           }
+         }
+         {
+           _id: "8826fb2c-6152-46c0-8d19-079fcd75b438"
+           _originalId: "drafts.8826fb2c-6152-46c0-8d19-079fcd75b438"
+      -    title: "It (draft)"
+      +    title: "It (published)"
+           author: {
+             _id: "de2baea7-4df7-4eb0-841e-db20103279fc"
+             _originalId: "drafts.de2baea7-4df7-4eb0-841e-db20103279fc"
+      -      name: "Stephen King (draft)"
+      +      name: "Stephen King (published)"
+           }
+         }
+         {
+           _id: "8b671177-113d-4249-ae23-6b50dc017e9e"
+           _originalId: "drafts.8b671177-113d-4249-ae23-6b50dc017e9e"
+           title: "The Winds of Winter (draft)"
+           author: {
+             _id: "294709c3-710d-4dc6-8f6f-f36c4786611a"
+             _originalId: "drafts.294709c3-710d-4dc6-8f6f-f36c4786611a"
+             name: "George R.R. Martin (draft)"
+           }
+         }
+       ]
+      "
+    `)
   })
 })

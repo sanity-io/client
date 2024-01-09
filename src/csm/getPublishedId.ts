@@ -1,4 +1,4 @@
-const DRAFTS_PREFIX = 'drafts.'
+export const DRAFTS_PREFIX = 'drafts.'
 
 /** @internal */
 export function getPublishedId(id: string): string {
