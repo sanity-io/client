@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.11.0](https://github.com/sanity-io/client/compare/v6.10.0...v6.11.0) (2024-01-09)
+
+
+### Features
+
+* **csm:** support perspective modes when optimistically applying document mutations ([dff3513](https://github.com/sanity-io/client/commit/dff35139609c5f742dff46f7a915e24896d2b376))
+
 ## [6.10.0](https://github.com/sanity-io/client/compare/v6.9.3...v6.10.0) (2023-12-12)
 
 
