@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.11.1](https://github.com/sanity-io/client/compare/v6.11.0...v6.11.1) (2024-01-10)
+
+
+### Bug Fixes
+
+* **typings:** changed cache doc typing to be `Partial&lt;SanityDocument&gt;`` ([#469](https://github.com/sanity-io/client/issues/469)) ([5483f74](https://github.com/sanity-io/client/commit/5483f744f4428007ca5c697e288390eef7865bc5))
+
 ## [6.11.0](https://github.com/sanity-io/client/compare/v6.10.0...v6.11.0) (2024-01-09)
 
 
