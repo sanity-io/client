@@ -25,7 +25,7 @@ export function applySourceDocuments<Result = unknown>(
   resultSourceMap: ContentSourceMap | undefined,
   getCachedDocument: (
     sourceDocument: ContentSourceMapDocuments[number],
-  ) => SanityDocument | undefined,
+  ) => Partial<SanityDocument> | null | undefined,
   updateFn: ApplySourceDocumentsUpdateFunction = defaultUpdateFunction,
   perspective: ClientPerspective = 'raw',
 ): Result {
@@ -63,7 +63,7 @@ export function applySourceDocuments<Result = unknown>(
         return value
       }
 
-      let cachedDocument: SanityDocument | undefined
+      let cachedDocument: Partial<SanityDocument> | null | undefined
       if (perspective === 'previewDrafts') {
         cachedDocument = getCachedDocument(
           sourceDocument._id.startsWith(DRAFTS_PREFIX)

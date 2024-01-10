@@ -90,7 +90,7 @@ export interface ResolveEditUrlOptions extends Omit<ResolveEditInfoOptions, 'res
 export type ApplySourceDocumentsUpdateFunction = <T = unknown>(
   changedValue: T,
   context: {
-    cachedDocument: SanityDocument
+    cachedDocument: Partial<SanityDocument>
     previousValue: T
     sourceDocument: ContentSourceMapDocuments[number]
     sourcePath: ContentSourceMapParsedPath
