@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.11.2](https://github.com/sanity-io/client/compare/v6.11.1...v6.11.2) (2024-01-23)
+
+
+### Bug Fixes
+
+* **deps:** update dependency get-it to ^8.4.5 ([#474](https://github.com/sanity-io/client/issues/474)) ([d6d40ff](https://github.com/sanity-io/client/commit/d6d40ff1849a407ed77b5b2d4c0ab02510d2aa4c))
+* **stega:** fallback to original value if invalid JSON ([d51963a](https://github.com/sanity-io/client/commit/d51963a6dc747d62e847118a998f879e8752b172))
+
 ## [6.11.1](https://github.com/sanity-io/client/compare/v6.11.0...v6.11.1) (2024-01-10)
 
 
