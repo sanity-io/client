@@ -6,10 +6,14 @@ import {vercelStegaSplit} from '@vercel/stega'
  * @alpha
  */
 export function vercelStegaCleanAll<Result = unknown>(result: Result): Result {
-  return JSON.parse(
-    JSON.stringify(result, (key, value) => {
-      if (typeof value !== 'string') return value
-      return vercelStegaSplit(value).cleaned
-    }),
-  )
+  try {
+    return JSON.parse(
+      JSON.stringify(result, (key, value) => {
+        if (typeof value !== 'string') return value
+        return vercelStegaSplit(value).cleaned
+      }),
+    )
+  } catch {
+    return result
+  }
 }

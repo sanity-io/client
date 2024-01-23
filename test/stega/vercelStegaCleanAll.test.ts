@@ -17,5 +17,39 @@ test('it removes everything', () => {
     vercelStegaCombine('stega', editInfo),
     vercelStegaCombine('embedded', editInfo),
   ].join(' ')
+  expect(encoded).not.toEqual(payload)
   expect(vercelStegaCleanAll(encoded)).toEqual(payload)
+})
+
+test('it handles strings', () => {
+  const payload = 'foo'
+  const editInfo = JSON.stringify({origin: 'sanity.io', href: '/studio'})
+  const encoded = vercelStegaCombine(payload, editInfo)
+  expect(encoded).not.toEqual(payload)
+  expect(vercelStegaCleanAll(encoded)).toEqual(payload)
+})
+
+test('it handles values that are not supported by JSON', () => {
+  expect(vercelStegaCleanAll(undefined)).toMatchInlineSnapshot(`undefined`)
+  expect(vercelStegaCleanAll(null)).toMatchInlineSnapshot(`null`)
+  expect(vercelStegaCleanAll(Symbol('foo'))).toMatchInlineSnapshot(`Symbol(foo)`)
+  expect(vercelStegaCleanAll(new Set([1, 2, 3]))).toMatchInlineSnapshot(`{}`)
+  expect(
+    vercelStegaCleanAll(
+      new Map([
+        [0, 0],
+        [1, 1],
+        [2, 2],
+      ]),
+    ),
+  ).toMatchInlineSnapshot(`{}`)
+  expect(vercelStegaCleanAll([{foo: undefined, bar: null, baz: new Date('1995-12-17T03:24:00')}]))
+    .toMatchInlineSnapshot(`
+    [
+      {
+        "bar": null,
+        "baz": "1995-12-17T02:24:00.000Z",
+      },
+    ]
+  `)
 })
