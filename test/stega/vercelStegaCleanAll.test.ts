@@ -43,8 +43,9 @@ test('it handles values that are not supported by JSON', () => {
       ]),
     ),
   ).toMatchInlineSnapshot(`{}`)
-  expect(vercelStegaCleanAll([{foo: undefined, bar: null, baz: new Date('1995-12-17T03:24:00')}]))
-    .toMatchInlineSnapshot(`
+  expect(
+    vercelStegaCleanAll([{foo: undefined, bar: null, baz: new Date('1995-12-17T02:24:00.000Z')}]),
+  ).toMatchInlineSnapshot(`
     [
       {
         "bar": null,
