@@ -28,9 +28,6 @@ exports[`resolveEditUrl '/' > logger.error 1`] = `[]`;
 exports[`resolveEditUrl '/' > logger.log 1`] = `
 [
   [
-    "[@sanity/client/stega]: Encoding source map into result",
-  ],
-  [
     "[@sanity/client/stega]: Paths encoded: 18, skipped: 80",
   ],
   [
@@ -180,9 +177,6 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.error 1`] = `[]`;
 
 exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
 [
-  [
-    "[@sanity/client/stega]: Encoding source map into result",
-  ],
   [
     "[@sanity/client/stega]: Paths encoded: 18, skipped: 80",
   ],

@@ -149,7 +149,9 @@ export class ObservableSanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_Ob
       .pipe(
         map((res: Any) => {
           const {result: _result, resultSourceMap} = res as RawQueryResponse<R>
-          const result = stegaEncodeSourceMap(_result, resultSourceMap, stegaConfig)
+          const result = debugGroupFetch(stegaConfig, query, params, () =>
+            stegaEncodeSourceMap(_result, resultSourceMap, stegaConfig),
+          )
           return originalFilterResponse ? result : {...res, result}
         }),
       )
@@ -286,10 +288,30 @@ export class SanityStegaClient extends INTERNAL_DO_NOT_USE_DIRECTLY_SanityClient
       )
       .then((res: Any) => {
         const {result: _result, resultSourceMap} = res as RawQueryResponse<R>
-        const result = stegaEncodeSourceMap(_result, resultSourceMap, stegaConfig)
+        const result = debugGroupFetch(stegaConfig, query, params, () =>
+          stegaEncodeSourceMap(_result, resultSourceMap, stegaConfig),
+        )
         return originalFilterResponse ? result : {...res, result}
       })
   }
+}
+
+function debugGroupFetch<R>(
+  stegaConfig: InitializedStegaConfig,
+  query: string,
+  params: Any,
+  cb: () => R,
+) {
+  const {logger} = stegaConfig
+  if ((logger?.groupCollapsed || logger?.group) && logger.groupEnd) {
+    const group = (logger.groupCollapsed || logger.group)!
+    group('[@sanity/client/stega]: fetch')
+    logger.log?.('client.fetch', {query, params})
+    const result = cb()
+    logger.groupEnd()
+    return result
+  }
+  return cb()
 }
 
 export type {

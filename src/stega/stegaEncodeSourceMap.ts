@@ -109,9 +109,6 @@ export function stegaEncodeSourceMap<Result = unknown>(
     const isSkipping = report.skipped.length
     const isEncoding = report.encoded.length
     if (isSkipping || isEncoding) {
-      ;(logger?.groupCollapsed || logger.log)?.(
-        '[@sanity/client/stega]: Encoding source map into result',
-      )
       logger.log?.(
         `[@sanity/client/stega]: Paths encoded: ${report.encoded.length}, skipped: ${report.skipped.length}`,
       )
@@ -126,10 +123,6 @@ export function stegaEncodeSourceMap<Result = unknown>(
         skipped.add(path.replace(reKeySegment, '0').replace(/\[\d+\]/g, '[]'))
       }
       logger?.log?.(`[@sanity/client/stega]: List of skipped paths`, [...skipped.values()])
-    }
-
-    if (isSkipping || isEncoding) {
-      logger?.groupEnd?.()
     }
   }
 
