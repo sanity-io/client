@@ -53,21 +53,23 @@ export interface StegaConfig {
 }
 
 /** @public */
-export type StegaConfigRequiredKeys = Extract<keyof StegaConfig, 'enabled' | 'filter'>
+export type StegaConfigRequiredKeys = Extract<keyof StegaConfig, 'enabled'>
 
 /** @public */
 export type InitializedStegaConfig = Omit<StegaConfig, StegaConfigRequiredKeys> &
   Required<Pick<StegaConfig, StegaConfigRequiredKeys>>
 
-/** @public */
-export interface ClientStegaConfig extends ClientConfig {
-  stega?: StegaConfig | boolean
-}
+/**
+ * @public
+ * @deprecated -- use `ClientConfig` instead
+ */
+export interface ClientStegaConfig extends ClientConfig {}
 
-/** @public */
-export interface InitializedClientStegaConfig extends InitializedClientConfig {
-  stega: InitializedStegaConfig
-}
+/**
+ * @public
+ * @deprecated -- use `InitializedClientConfig` instead
+ */
+export interface InitializedClientStegaConfig extends InitializedClientConfig {}
 
 /** @public */
 export type FilterDefault = (props: {
@@ -134,12 +136,3 @@ export type Encoder = (context: {
   resultPath: ContentSourceMapParsedPath
   value: string
 }) => string
-
-// Extends the `client.fetch` call with a `stega` option
-declare module '../types' {
-  /** @public */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
-    stega?: boolean | StegaConfig
-  }
-}

@@ -657,10 +657,10 @@ useContentSourceMap(resultSourceMap)
 
 #### Using [Visual editing][visual-editing] with steganography
 
-A turnkey integration with [Visual editing][visual-editing] is available in [`@sanity/client/stega`]. It creates edit intent links for all the string values in your query result, using [steganography](https://npmjs.com/package/@vercel/stega) under the hood.
+A turnkey integration with [Visual editing][visual-editing] is available in [`@sanity/client`], with additional utils available on [`@sanity/client/stega`]. It creates edit intent links for all the string values in your query result, using [steganography](https://npmjs.com/package/@vercel/stega) under the hood. The code that handles stega is lazy loaded on demand when `client.fetch` is called, if `client.config().stega.enabled` is `true`.
 
 ```ts
-import {createClient} from '@sanity/client/stega'
+import {createClient} from '@sanity/client'
 
 const client = createClient({
   // ...base config options
@@ -713,7 +713,7 @@ const debugClient = client.withConfig({
 })
 ```
 
-Removing stega from part of the result:
+Removing stega from part of the result, available on [`@sanity/client/stega`]:
 
 ```ts
 import {vercelStegaCleanAll} from '@sanity/client/stega'
@@ -728,7 +728,7 @@ const videoAsset = vercelStegaCleanAll(result.videoAsset)
 If you want to create an edit link to something that isn't a string, or a field that isn't rendered directly, like a `slug` used in a URL but not rendered on the page, you can use the `resolveEditUrl` function.
 
 ```ts
-import {createClient} from '@sanity/client' // or '@sanity/client/stega'
+import {createClient} from '@sanity/client'
 import {resolveEditUrl} from '@sanity/client/csm'
 
 const client = createClient({

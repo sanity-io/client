@@ -112,7 +112,17 @@ export class ObservableSanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClient {
-    return new ObservableSanityClient(this.#httpRequest, {...this.config(), ...newConfig})
+    const thisConfig = this.config()
+    return new ObservableSanityClient(this.#httpRequest, {
+      ...thisConfig,
+      ...newConfig,
+      stega: {
+        ...(thisConfig.stega || {}),
+        ...(typeof newConfig?.stega === 'boolean'
+          ? {enabled: newConfig.stega}
+          : newConfig?.stega || {}),
+      },
+    })
   }
 
   /**
@@ -157,7 +167,14 @@ export class ObservableSanityClient {
     params?: Q,
     options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
   ): Observable<RawQueryResponse<R> | R> {
-    return dataMethods._fetch<R, Q>(this, this.#httpRequest, query, params, options)
+    return dataMethods._fetch<R, Q>(
+      this,
+      this.#httpRequest,
+      this.#clientConfig.stega,
+      query,
+      params,
+      options,
+    )
   }
 
   /**
@@ -738,7 +755,17 @@ export class SanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): SanityClient {
-    return new SanityClient(this.#httpRequest, {...this.config(), ...newConfig})
+    const thisConfig = this.config()
+    return new SanityClient(this.#httpRequest, {
+      ...thisConfig,
+      ...newConfig,
+      stega: {
+        ...(thisConfig.stega || {}),
+        ...(typeof newConfig?.stega === 'boolean'
+          ? {enabled: newConfig.stega}
+          : newConfig?.stega || {}),
+      },
+    })
   }
 
   /**
@@ -783,7 +810,16 @@ export class SanityClient {
     params?: Q,
     options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
   ): Promise<RawQueryResponse<R> | R> {
-    return lastValueFrom(dataMethods._fetch<R, Q>(this, this.#httpRequest, query, params, options))
+    return lastValueFrom(
+      dataMethods._fetch<R, Q>(
+        this,
+        this.#httpRequest,
+        this.#clientConfig.stega,
+        query,
+        params,
+        options,
+      ),
+    )
   }
 
   /**

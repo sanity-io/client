@@ -1,10 +1,4 @@
-import {createClient as createCoreClient} from '@sanity/client'
-import {
-  ClientStegaConfig,
-  ContentSourceMap,
-  createClient,
-  SanityStegaClient,
-} from '@sanity/client/stega'
+import {ClientConfig, ContentSourceMap, createClient, SanityClient} from '@sanity/client'
 import {
   vercelStegaCombine,
   vercelStegaDecode,
@@ -34,7 +28,7 @@ describe('@sanity/client/stega', async () => {
     nock = _nock.default
   }
 
-  const getClient = (conf?: ClientStegaConfig) => createClient({...clientConfig, ...(conf || {})})
+  const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
 
   const result = [{_id: 'njgNkngskjg', title: 'IPA', rating: 4, country: 'Norway'}]
   const resultSourceMap = {
@@ -88,7 +82,7 @@ describe('@sanity/client/stega', async () => {
   describe('createClient', async () => {
     test('createClient returns a SanityStegaClient instance', () => {
       const client = createClient({projectId: 'foo', dataset: 'bar'})
-      expect(client).toBeInstanceOf(SanityStegaClient)
+      expect(client).toBeInstanceOf(SanityClient)
     })
 
     test('config() returns a stega config property', () => {
@@ -96,7 +90,6 @@ describe('@sanity/client/stega', async () => {
       expect(client.config().stega).toMatchInlineSnapshot(`
         {
           "enabled": false,
-          "filter": [Function],
         }
       `)
     })
@@ -243,57 +236,25 @@ describe('@sanity/client/stega', async () => {
 
 describe('@sanity/client', () => {
   describe('createClient', () => {
-    test('throws an error if trying to use stega options that should use the stega client', () => {
-      expect(() =>
-        createCoreClient({
-          projectId: 'abc123',
-          // @ts-expect-error - we want to test that it throws an error
-          stega: {
-            enabled: true,
-          },
-        }),
-      ).toThrowErrorMatchingInlineSnapshot(
-        `[Error: It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.]`,
-      )
-      expect(() =>
-        // @ts-expect-error - we want to test that it throws an error
-        createCoreClient({projectId: 'abc123', stega: null}),
-      ).toThrowErrorMatchingInlineSnapshot(
-        `[Error: It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.]`,
-      )
-    })
     test('allows passing stega: undefined', () => {
       expect(() =>
-        createCoreClient({
+        createClient({
           projectId: 'abc123',
-          // @ts-expect-error - we want to test that it throws an error
           stega: undefined,
         }),
       ).not.toThrow()
     })
     test('allows passing stega: false', () => {
       expect(() =>
-        createCoreClient({
+        createClient({
           projectId: 'abc123',
-          // @ts-expect-error - we want to test that it throws an error
           stega: false,
         }),
       ).not.toThrow()
     })
-    test('disallows passing stega: true', () => {
-      expect(() =>
-        createCoreClient({
-          projectId: 'abc123',
-          // @ts-expect-error - we want to test that it throws an error
-          stega: true,
-        }),
-      ).toThrowErrorMatchingInlineSnapshot(
-        `[Error: It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.]`,
-      )
-    })
   })
   describe('client.fetch', async () => {
-    const client = createCoreClient(clientConfig)
+    const client = createClient(clientConfig)
     const isEdge = typeof EdgeRuntime === 'string'
     let nock: typeof import('nock') = (() => {
       throw new Error('Not supported in EdgeRuntime')
@@ -307,27 +268,6 @@ describe('@sanity/client', () => {
         .reply(200, {ms: 123, query: '*', result: []})
     }
 
-    test('throws an error if trying to use stega options that should use the stega client', async () => {
-      await expect(() =>
-        client.fetch(
-          '*',
-          {},
-          {
-            stega: {
-              enabled: true,
-            },
-          },
-        ),
-      ).toThrowErrorMatchingInlineSnapshot(
-        `[Error: It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'fetch' to 'false'.]`,
-      )
-      expect(() =>
-        // @ts-expect-error - we want to test that it throws an error
-        createCoreClient({projectId: 'abc123', stega: null}),
-      ).toThrowErrorMatchingInlineSnapshot(
-        `[Error: It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.]`,
-      )
-    })
     test('allows passing stega: undefined', () => {
       expect(() =>
         client.fetch(
@@ -349,19 +289,6 @@ describe('@sanity/client', () => {
           },
         ),
       ).not.toThrow()
-    })
-    test('disallows passing stega: true', () => {
-      expect(() =>
-        client.fetch(
-          '*',
-          {},
-          {
-            stega: true,
-          },
-        ),
-      ).toThrowErrorMatchingInlineSnapshot(
-        `[Error: It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'fetch' to 'false'.]`,
-      )
     })
   })
 })
