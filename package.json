@@ -117,10 +117,7 @@
     "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
     "test:node-runtimes": "node --test runtimes/node | npx faucet"
   },
-  "browserslist": [
-    "> 0.2% and supports es6-module and supports es6-module-dynamic-import and not dead and not IE 11",
-    "maintained node versions"
-  ],
+  "browserslist": "extends @sanity/browserslist-config",
   "prettier": {
     "bracketSpacing": false,
     "printWidth": 100,
@@ -138,7 +135,7 @@
     "@edge-runtime/vm": "^3.1.8",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "@sanity/pkg-utils": "^4.0.0",
+    "@sanity/pkg-utils": "^4.1.0",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^20.8.8",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
