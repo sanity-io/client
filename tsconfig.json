@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.settings",
   "include": ["./src", "./modules.d.ts", "./test"],
-  "exclude": ["./test-esm/test.ts"],
+  "exclude": ["./test-esm/test.ts", "./node_modules/next", "./test-next"],
   "compilerOptions": {
     "noEmit": true,
     "types": ["@edge-runtime/types"],

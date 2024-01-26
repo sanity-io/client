@@ -115,11 +115,15 @@
     "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
     "posttest:deno:update_import_map": "npx prettier --write runtimes/deno/import_map.json",
     "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
+    "test:next": "npm test -- --config ./vitest.next.config.ts",
     "test:node-runtimes": "node --test runtimes/node | npx faucet"
   },
   "browserslist": "extends @sanity/browserslist-config",
   "prettier": {
     "bracketSpacing": false,
+    "plugins": [
+      "prettier-plugin-packagejson"
+    ],
     "printWidth": 100,
     "semi": false,
     "singleQuote": true
@@ -149,6 +153,7 @@
     "happy-dom": "^12.10.3",
     "json-diff": "^1.0.6",
     "ls-engines": "^0.9.1",
+    "next": "^14.1.0",
     "nock": "^13.5.0",
     "prettier": "^3.2.4",
     "prettier-plugin-packagejson": "^2.4.9",
@@ -156,6 +161,7 @@
     "rollup": "^4.9.6",
     "sse-channel": "^4.0.0",
     "terser": "^5.27.0",
+    "type-fest": "4.10.1",
     "typescript": "^5.3.3",
     "vitest": "1.2.1",
     "vitest-github-actions-reporter": "0.11.1"

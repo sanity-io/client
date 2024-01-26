@@ -435,6 +435,19 @@ export interface PatchOperations {
 
 /** @public */
 export type QueryParams = {[key: string]: Any}
+/**
+ * The expected query params, on Next.js it doesn't allow `next` and `cache` keys
+ * as they are often accidentally given as params
+ * @public
+ */
+export type DefaultQueryParams = 'next' extends keyof RequestInit
+  ? {
+      cache: never
+      next: never
+      [key: string]: Any
+    }
+  : QueryParams
+
 /** @internal */
 export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
 /** @internal */
@@ -674,24 +687,34 @@ export interface ListenOptions {
 }
 
 /** @public */
-export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
+export interface ResponseQueryOptions extends RequestOptions {
   perspective?: ClientPerspective
   resultSourceMap?: boolean | 'withKeyArraySelector'
-  cache?: RequestInit['cache']
-  next?: T extends keyof RequestInit ? RequestInit[T] : never
   useCdn?: boolean
   stega?: boolean | StegaConfig
+  // The `cache` and `next` options are specific to the Next.js App Router integration
+  cache?: 'next' extends keyof RequestInit ? RequestInit['cache'] : never
+  next?: ('next' extends keyof RequestInit ? RequestInit : never)['next']
 }
 
 /** @public */
-export type FilteredResponseQueryOptions = ResponseQueryOptions & {
+export interface FilteredResponseQueryOptions extends ResponseQueryOptions {
   filterResponse?: true
 }
 
 /** @public */
-export type UnfilteredResponseQueryOptions = ResponseQueryOptions & {
+export interface UnfilteredResponseQueryOptions extends ResponseQueryOptions {
   filterResponse: false
 }
+
+/** @public */
+export type QueryOptions = FilteredResponseQueryOptions | UnfilteredResponseQueryOptions
+
+/**
+ * @public
+ */
+export type QueryParamsOptionsMistake =
+  "⛔️ You're passing untyped GROQ parameters that looks like request options! Did you forget to set an empty {} as the second parameter?. ⛔️"
 
 /** @public */
 export interface RawQueryResponse<R> {
@@ -700,6 +723,15 @@ export interface RawQueryResponse<R> {
   result: R
   resultSourceMap?: ContentSourceMap
 }
+
+/** @public */
+export type QueryResponseType<QueryResponse, QueryOptionsType> = QueryOptionsType extends {
+  filterResponse: infer FilterResponse
+}
+  ? FilterResponse extends true
+    ? QueryResponse
+    : RawQueryResponse<QueryResponse>
+  : QueryResponse
 
 /** @internal */
 export type BaseMutationOptions = RequestOptions & {

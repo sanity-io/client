@@ -7,7 +7,7 @@ import pkg from './package.json'
 
 export const sharedConfig: UserConfig['test'] = {
   // don't use vitest to run Bun and Deno tests
-  exclude: [...configDefaults.exclude, 'runtimes/**'],
+  exclude: [...configDefaults.exclude, 'runtimes/**', 'test-next/**'],
   // Enable rich PR failed test annotation on the CI
   reporters: process.env.GITHUB_ACTIONS ? ['default', new GithubActionsReporter()] : 'default',
   // Allow switching test runs from using the source TS or compiled ESM

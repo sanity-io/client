@@ -1,4 +1,5 @@
 import {lastValueFrom, Observable} from 'rxjs'
+import type {RequireAtLeastOne} from 'type-fest'
 
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
@@ -14,6 +15,7 @@ import type {
   Any,
   BaseMutationOptions,
   ClientConfig,
+  DefaultQueryParams,
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
@@ -25,15 +27,20 @@ import type {
   MutationSelection,
   PatchOperations,
   PatchSelection,
+  QueryOptions,
   QueryParams,
+  QueryParamsOptionsMistake,
   RawQueryResponse,
   RawRequestOptions,
+  ResponseQueryOptions,
   SanityDocument,
   SanityDocumentStub,
   SingleMutationResult,
   UnfilteredResponseQueryOptions,
 } from './types'
 import {ObservableUsersClient, UsersClient} from './users/UsersClient'
+
+declare const README: unique symbol
 
 export type {
   _listen,
@@ -772,6 +779,52 @@ export class SanityClient {
    * Perform a GROQ-query against the configured dataset.
    *
    * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<R = Any, Q extends QueryParams | Record<string, never> | undefined | never>(
+    query: string,
+    // params: Q extends QueryParams ? Q : Q extends Record<string, never> ? Q : undefined,
+    params: Q extends QueryParams ? Q : undefined,
+    options: UnfilteredResponseQueryOptions,
+  ): Promise<RawQueryResponse<R>>
+  /**
+   * You're passing in query parameters to a GROQ query that looks like query options.
+   * This is likely a mistake, you can either:
+   * a) replace the second argument with an empty object, and move the options to the third argument
+   * ```diff
+   * -client.fetch(query, {filterResponse: false})
+   * +client.fetch(query, {}, {filterResponse: false})
+   * ```
+   * b) add a generic type parameter that allows the query parameters to be passed in to silence the error
+   */
+  fetch<
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    R = Any,
+  >(
+    query: string,
+    params: RequireAtLeastOne<QueryOptions>,
+    options?: QueryOptions,
+  ): {
+    [README]: QueryParamsOptionsMistake
+  }
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<R = Any, Q = DefaultQueryParams>(
+    query: string,
+    // params: Q extends QueryParams ? Q : Q extends Record<string, never> ? Q : undefined,
+    params: Q extends QueryParams ? Q : undefined,
+    options: UnfilteredResponseQueryOptions,
+  ): Promise<RawQueryResponse<R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
    */
   fetch<R = Any>(query: string): Promise<R>
   /**
@@ -793,23 +846,11 @@ export class SanityClient {
     params: Q | undefined,
     options: FilteredResponseQueryOptions,
   ): Promise<R>
-  /**
-   * Perform a GROQ-query against the configured dataset.
-   *
-   * @param query - GROQ-query to perform
-   * @param params - Optional query parameters
-   * @param options - Request options
-   */
-  fetch<R = Any, Q = QueryParams>(
-    query: string,
-    params: Q | undefined,
-    options: UnfilteredResponseQueryOptions,
-  ): Promise<RawQueryResponse<R>>
   fetch<R, Q extends QueryParams>(
     query: string,
     params?: Q,
-    options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
-  ): Promise<RawQueryResponse<R> | R> {
+    options: QueryOptions = {},
+  ): Promise<RawQueryResponse<R> | R> | {[README]: string} {
     return lastValueFrom(
       dataMethods._fetch<R, Q>(
         this,
