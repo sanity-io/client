@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.12.1](https://github.com/sanity-io/client/compare/v6.12.0...v6.12.1) (2024-01-26)
+
+
+### Bug Fixes
+
+* **stega:** resolve issue where strings that ends in numbers are mistaken for datetimes ([6b64cc4](https://github.com/sanity-io/client/commit/6b64cc43babeeed4770ff191bdeffa4070b99266))
+
 ## [6.12.0](https://github.com/sanity-io/client/compare/v6.11.3...v6.12.0) (2024-01-26)
 
 
