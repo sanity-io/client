@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.11.4-canary.0",
+  "version": "6.11.4-canary.4",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -102,6 +102,7 @@
   "scripts": {
     "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
+    "postbuild": "node ./scripts/fix-dts.mjs",
     "clean": "npx rimraf dist coverage umd/*.js",
     "coverage": "vitest run --coverage",
     "lint": "eslint . --ext .cjs,.js,.ts --max-warnings 0",
