@@ -5,6 +5,18 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.12.0](https://github.com/sanity-io/client/compare/v6.11.3...v6.12.0) (2024-01-26)
+
+
+### Features
+
+* add stega support to the core client ([#495](https://github.com/sanity-io/client/issues/495)) ([a1abe4a](https://github.com/sanity-io/client/commit/a1abe4a9d1d5e387376117560a9c2a6b1c60e140))
+
+
+### Bug Fixes
+
+* add guards for common Next.js App Router mistakes ([#499](https://github.com/sanity-io/client/issues/499)) ([323ca33](https://github.com/sanity-io/client/commit/323ca33d422d79abc89bf40c5d4d579c9bbeb604))
+
 ## [6.11.3](https://github.com/sanity-io/client/compare/v6.11.2...v6.11.3) (2024-01-25)
 
 
