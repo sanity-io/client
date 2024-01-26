@@ -2,15 +2,11 @@ export * from '../defineCreateClient'
 
 import defineCreateClientExports from '../defineCreateClient'
 import envMiddleware from '../http/browserMiddleware'
-import {SanityStegaClient} from './SanityStegaClient'
-import type {ClientStegaConfig} from './types'
+import {SanityClient} from '../SanityClient'
+import type {ClientConfig} from './types'
 
-const exp = defineCreateClientExports<SanityStegaClient, ClientStegaConfig>(
-  envMiddleware,
-  SanityStegaClient,
-)
+const exp = defineCreateClientExports<SanityClient, ClientConfig>(envMiddleware, SanityClient)
 
-export type {ObservableSanityClient, SanityClient} from './shared'
 export * from './shared'
 
 /** @public */

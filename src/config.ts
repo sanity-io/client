@@ -8,6 +8,7 @@ export const defaultConfig = {
   apiHost: 'https://api.sanity.io',
   apiVersion: '1',
   useProjectHostname: true,
+  stega: {enabled: false},
 } satisfies ClientConfig
 
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
@@ -44,12 +45,24 @@ export const initConfig = (
   config: Partial<ClientConfig>,
   prevConfig: Partial<ClientConfig>,
 ): InitializedClientConfig => {
-  const specifiedConfig = Object.assign({}, prevConfig, config)
+  const specifiedConfig = {
+    ...prevConfig,
+    ...config,
+    stega: {
+      ...(typeof prevConfig.stega === 'boolean'
+        ? {enabled: prevConfig.stega}
+        : prevConfig.stega || defaultConfig.stega),
+      ...(typeof config.stega === 'boolean' ? {enabled: config.stega} : config.stega || {}),
+    },
+  }
   if (!specifiedConfig.apiVersion) {
     warnings.printNoApiVersionSpecifiedWarning()
   }
 
-  const newConfig = Object.assign({} as InitializedClientConfig, defaultConfig, specifiedConfig)
+  const newConfig = {
+    ...defaultConfig,
+    ...specifiedConfig,
+  } as InitializedClientConfig
   const projectBased = newConfig.useProjectHostname
 
   if (typeof Promise === 'undefined') {
@@ -65,20 +78,29 @@ export const initConfig = (
     validateApiPerspective(newConfig.perspective)
   }
 
-  if (
-    'encodeSourceMapAtPath' in newConfig ||
-    'encodeSourceMap' in newConfig ||
-    'studioUrl' in newConfig ||
-    'logger' in newConfig
-  ) {
+  if ('encodeSourceMap' in newConfig) {
     throw new Error(
-      `It looks like you're using options meant for '@sanity/preview-kit/client', such as 'encodeSourceMapAtPath', 'encodeSourceMap', 'studioUrl' and 'logger'. Make sure you're using the right import.`,
+      `It looks like you're using options meant for '@sanity/preview-kit/client'. 'encodeSourceMap' is not supported in '@sanity/client'. Did you mean 'stega.enabled'?`,
     )
   }
-
-  if ('stega' in newConfig && newConfig['stega'] !== undefined && newConfig['stega'] !== false) {
+  if ('encodeSourceMapAtPath' in newConfig) {
     throw new Error(
-      `It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'createClient' to 'false'.`,
+      `It looks like you're using options meant for '@sanity/preview-kit/client'. 'encodeSourceMapAtPath' is not supported in '@sanity/client'. Did you mean 'stega.filter'?`,
+    )
+  }
+  if (typeof newConfig.stega.enabled !== 'boolean') {
+    throw new Error(`stega.enabled must be a boolean, received ${newConfig.stega.enabled}`)
+  }
+  if (newConfig.stega.enabled && newConfig.stega.studioUrl === undefined) {
+    throw new Error(`stega.studioUrl must be defined when stega.enabled is true`)
+  }
+  if (
+    newConfig.stega.enabled &&
+    typeof newConfig.stega.studioUrl !== 'string' &&
+    typeof newConfig.stega.studioUrl !== 'function'
+  ) {
+    throw new Error(
+      `stega.studioUrl must be a string or a function, received ${newConfig.stega.studioUrl}`,
     )
   }
 

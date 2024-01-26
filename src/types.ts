@@ -2,6 +2,8 @@
 
 import type {Requester} from 'get-it'
 
+import type {InitializedStegaConfig, StegaConfig} from './stega/types'
+
 /**
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future
  * @internal
@@ -89,6 +91,10 @@ export interface ClientConfig {
    *@deprecated set `cache` and `next` options on `client.fetch` instead
    */
   fetch?: RequestFetchOptions | boolean
+  /**
+   * Options for how, if enabled, Content Source Maps are encoded into query results using steganography
+   */
+  stega?: StegaConfig | boolean
 }
 
 /** @public */
@@ -111,6 +117,10 @@ export interface InitializedClientConfig extends ClientConfig {
    * @deprecated Internal, don't use
    */
   cdnUrl: string
+  /**
+   * The fully initialized stega config, can be used to check if stega is enabled
+   */
+  stega: InitializedStegaConfig
 }
 
 /** @public */
@@ -670,6 +680,7 @@ export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
   cache?: RequestInit['cache']
   next?: T extends keyof RequestInit ? RequestInit[T] : never
   useCdn?: boolean
+  stega?: boolean | StegaConfig
 }
 
 /** @public */
@@ -898,3 +909,17 @@ export interface ContentSourceMap {
   documents: ContentSourceMapDocuments
   paths: ContentSourceMapPaths
 }
+
+export type {
+  ContentSourceMapParsedPath,
+  ContentSourceMapParsedPathKeyedSegment,
+  FilterDefault,
+  InitializedStegaConfig,
+  Logger,
+  ResolveStudioUrl,
+  StegaConfig,
+  StegaConfigRequiredKeys,
+  StudioBaseRoute,
+  StudioBaseUrl,
+  StudioUrl,
+} from './stega/types'

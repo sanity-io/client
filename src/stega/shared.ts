@@ -1,17 +1,19 @@
+import {ObservableSanityClient, SanityClient} from '../SanityClient'
+
+export * from '../SanityClient'
 export {encodeIntoResult} from './encodeIntoResult'
-export * from './SanityStegaClient'
 export {stegaEncodeSourceMap} from './stegaEncodeSourceMap'
 export * from './types'
 export {vercelStegaCleanAll} from './vercelStegaCleanAll'
 
 /**
- * @deprecated -- Use `import type {SanityClient} from '@sanity/client'` instead
+ * @deprecated -- Use `import {SanityClient} from '@sanity/client'` instead
  * @public
  */
-export type SanityClient = never
+export class SanityStegaClient extends SanityClient {}
 
 /**
- * @deprecated -- Use `import type {ObservableSanityClient} from '@sanity/client'` instead
+ * @deprecated -- Use `import {ObservableSanityClient} from '@sanity/client'` instead
  * @public
  */
-export type ObservableSanityClient = never
+export class ObservableSanityStegaClient extends ObservableSanityClient {}

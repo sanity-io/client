@@ -3,7 +3,7 @@
   "extends": ["github>sanity-io/renovate-config", ":reviewer(team:ecosystem)"],
   "packageRules": [
     {
-      "matchPackageNames": ["get-it"],
+      "matchPackageNames": ["@vercel/stega", "get-it"],
       "rangeStrategy": "bump",
       "semanticCommitType": "fix",
       "groupName": null,

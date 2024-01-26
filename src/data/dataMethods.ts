@@ -1,9 +1,10 @@
-import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
+import {from, type MonoTypeOperatorFunction, Observable} from 'rxjs'
+import {combineLatestWith, filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
 import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
+import {vercelStegaCleanAll} from '../stega/vercelStegaCleanAll'
 import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
@@ -15,6 +16,7 @@ import type {
   HttpRequest,
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,
+  InitializedStegaConfig,
   MultipleMutationResult,
   Mutation,
   MutationSelection,
@@ -65,21 +67,27 @@ const getQuerySizeLimit = 11264
 export function _fetch<R, Q extends QueryParams>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
+  _stega: InitializedStegaConfig,
   query: string,
-  params?: Q,
+  _params?: Q,
   options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
 ): Observable<RawQueryResponse<R> | R> {
-  if ('stega' in options && options['stega'] !== undefined && options['stega'] !== false) {
-    throw new Error(
-      `It looks like you're using options meant for '@sanity/client/stega'. Make sure you're using the right import. Or set 'stega' in 'fetch' to 'false'.`,
-    )
-  }
+  const stega =
+    'stega' in options
+      ? {
+          ...(_stega || {}),
+          ...(typeof options.stega === 'boolean' ? {enabled: options.stega} : options.stega || {}),
+        }
+      : _stega
+  const params = stega.enabled ? vercelStegaCleanAll(_params) : _params
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
   const {cache, next, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
     useAbortSignal: typeof options.signal !== 'undefined',
+    // Set `resultSourceMap' when stega is enabled, as it's required for encoding.
+    resultSourceMap: stega.enabled ? 'withKeyArraySelector' : options.resultSourceMap,
     ...options,
   }
   const reqOpts =
@@ -87,7 +95,27 @@ export function _fetch<R, Q extends QueryParams>(
       ? {...opts, fetch: {cache, next}}
       : opts
 
-  return _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts).pipe(map(mapResponse))
+  const $request = _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts)
+  return stega.enabled
+    ? $request.pipe(
+        combineLatestWith(
+          from(
+            import('../stega/stegaEncodeSourceMap').then(
+              ({stegaEncodeSourceMap}) => stegaEncodeSourceMap,
+            ),
+          ),
+        ),
+        map(
+          ([res, stegaEncodeSourceMap]: [
+            Any,
+            (typeof import('../stega/stegaEncodeSourceMap'))['stegaEncodeSourceMap'],
+          ]) => {
+            const result = stegaEncodeSourceMap(res.result, res.resultSourceMap, stega)
+            return mapResponse({...res, result})
+          },
+        ),
+      )
+    : $request.pipe(map(mapResponse))
 }
 
 /** @internal */

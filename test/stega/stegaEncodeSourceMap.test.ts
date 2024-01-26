@@ -1,7 +1,6 @@
 import {vercelStegaDecodeAll} from '@vercel/stega'
 import {expect, test, vi} from 'vitest'
 
-import {defaultStegaConfig} from '../../src/stega/config'
 import {stegaEncodeSourceMap} from '../../src/stega/stegaEncodeSourceMap'
 import type {ContentSourceMap, Logger} from '../../src/stega/types'
 
@@ -518,7 +517,90 @@ test.each(cases)('resolveEditUrl $studioUrl', ({studioUrl}) => {
   const encoded = stegaEncodeSourceMap(mock.result, mock.resultSourceMap, {
     enabled: true,
     studioUrl,
-    filter: defaultStegaConfig.filter!,
+    logger,
+  })
+  expect(
+    vercelStegaDecodeAll(JSON.stringify(encoded)).map(
+      ({href}: any) => decodeURIComponent(href).split('?')[0],
+    ),
+  ).toMatchSnapshot('decode all')
+  expect(logger.error.mock.calls).toMatchSnapshot('logger.error')
+  expect(logger.log.mock.calls).toMatchSnapshot('logger.log')
+  expect(logger.table.mock.calls).toMatchSnapshot('logger.table')
+})
+
+test('GraphQL API', () => {
+  const {data, extensions} = {
+    data: {
+      allPost: [
+        {
+          title: 'Stay tuned for details next week!',
+        },
+        {
+          title: 'Anticipation is building',
+        },
+      ],
+    },
+    extensions: {
+      sanitySourceMap: {
+        documents: [
+          {
+            _id: '9696c833-fe71-45b8-b29d-68e8cd78d3db',
+            _type: 'post',
+          },
+          {
+            _id: 'ab9e2f38-6ea5-4264-b923-51ae8901ab8e',
+            _type: 'post',
+          },
+        ],
+        paths: ["$['_type']", "$['title']"],
+        mappings: {
+          "$['allPost'][0]['_type']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$['allPost'][0]['title']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$['allPost'][1]['_type']": {
+            source: {
+              document: 1,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$['allPost'][1]['title']": {
+            source: {
+              document: 1,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      } satisfies ContentSourceMap,
+    },
+  }
+
+  const logger = {
+    error: vi.fn(),
+    log: vi.fn(),
+    table: vi.fn(),
+  } satisfies Logger
+  const studioUrl = 'https://test.sanity.studio'
+  const encoded = stegaEncodeSourceMap(data, extensions.sanitySourceMap, {
+    enabled: true,
+    studioUrl,
     logger,
   })
   expect(
