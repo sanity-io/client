@@ -3,7 +3,6 @@
 exports[`GraphQL API > decode all 1`] = `
 [
   "https://test.sanity.studio/intent/edit/mode=presentation;id=9696c833-fe71-45b8-b29d-68e8cd78d3db;type=post;path=title",
-  "https://test.sanity.studio/intent/edit/mode=presentation;id=ab9e2f38-6ea5-4264-b923-51ae8901ab8e;type=post;path=title",
 ]
 `;
 
@@ -15,10 +14,16 @@ exports[`GraphQL API > logger.log 1`] = `
     "[@sanity/client/stega]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 2, skipped: 0",
+    "[@sanity/client/stega]: Paths encoded: 1, skipped: 1",
   ],
   [
     "[@sanity/client/stega]: Table of encoded paths",
+  ],
+  [
+    "[@sanity/client/stega]: List of skipped paths",
+    [
+      "title",
+    ],
   ],
 ]
 `;
@@ -31,11 +36,6 @@ exports[`GraphQL API > logger.table 1`] = `
         "length": 33,
         "path": "title",
         "value": "Stay tuned for detai...",
-      },
-      {
-        "length": 24,
-        "path": "title",
-        "value": "Anticipation is buil...",
       },
     ],
   ],

@@ -537,7 +537,7 @@ test('GraphQL API', () => {
           title: 'Stay tuned for details next week!',
         },
         {
-          title: 'Anticipation is building',
+          title: 'Anticipation is building 123',
         },
       ],
     },
