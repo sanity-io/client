@@ -18,4 +18,7 @@ for (const [name, version] of Object.entries(pkg.dependencies)) {
   }
 }
 
-await Deno.writeTextFile(new URL('import_map.json', import.meta.url), JSON.stringify({imports}))
+await Deno.writeTextFile(
+  new URL('import_map.json', import.meta.url),
+  JSON.stringify({imports}, null, 2),
+)
