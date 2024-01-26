@@ -3,6 +3,7 @@
 exports[`GraphQL API > decode all 1`] = `
 [
   "https://test.sanity.studio/intent/edit/mode=presentation;id=9696c833-fe71-45b8-b29d-68e8cd78d3db;type=post;path=title",
+  "https://test.sanity.studio/intent/edit/mode=presentation;id=ab9e2f38-6ea5-4264-b923-51ae8901ab8e;type=post;path=title",
 ]
 `;
 
@@ -14,16 +15,10 @@ exports[`GraphQL API > logger.log 1`] = `
     "[@sanity/client/stega]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 1, skipped: 1",
+    "[@sanity/client/stega]: Paths encoded: 2, skipped: 0",
   ],
   [
     "[@sanity/client/stega]: Table of encoded paths",
-  ],
-  [
-    "[@sanity/client/stega]: List of skipped paths",
-    [
-      "title",
-    ],
   ],
 ]
 `;
@@ -36,6 +31,11 @@ exports[`GraphQL API > logger.table 1`] = `
         "length": 33,
         "path": "title",
         "value": "Stay tuned for detai...",
+      },
+      {
+        "length": 28,
+        "path": "title",
+        "value": "Anticipation is buil...",
       },
     ],
   ],
@@ -73,7 +73,7 @@ exports[`resolveEditUrl '/' > logger.log 1`] = `
     "[@sanity/client/stega]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 18, skipped: 80",
+    "[@sanity/client/stega]: Paths encoded: 18, skipped: 81",
   ],
   [
     "[@sanity/client/stega]: Table of encoded paths",
@@ -91,6 +91,7 @@ exports[`resolveEditUrl '/' > logger.log 1`] = `
       "media[].asset._ref",
       "media[].asset._type",
       "_id",
+      "lastModified",
     ],
   ],
 ]
@@ -176,9 +177,9 @@ exports[`resolveEditUrl '/' > logger.table 1`] = `
         "value": "Meet Ripple, a new s...",
       },
       {
-        "length": 13,
+        "length": 34,
         "path": "title",
-        "value": "Ripple Sconce",
+        "value": "Ripple 1996-12-20T00...",
       },
       {
         "length": 4,
@@ -226,7 +227,7 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
     "[@sanity/client/stega]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 18, skipped: 80",
+    "[@sanity/client/stega]: Paths encoded: 18, skipped: 81",
   ],
   [
     "[@sanity/client/stega]: Table of encoded paths",
@@ -244,6 +245,7 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
       "media[].asset._ref",
       "media[].asset._type",
       "_id",
+      "lastModified",
     ],
   ],
 ]
@@ -329,9 +331,9 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.table 1`] = `
         "value": "Meet Ripple, a new s...",
       },
       {
-        "length": 13,
+        "length": 34,
         "path": "title",
-        "value": "Ripple Sconce",
+        "value": "Ripple 1996-12-20T00...",
       },
       {
         "length": 4,

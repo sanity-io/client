@@ -225,12 +225,13 @@ const mock = {
           },
         },
         _id: 'e1bf9f1f-efdb-4105-8c26-6b64f897e9c1',
-        title: 'Ripple Sconce',
+        title: 'Ripple 1996-12-20T00:39:57Z Sconce',
       },
     ],
     siteSettings: {
       title: 'acme',
       copyrightText: 'acme © 2023 — all rights reserved',
+      lastModified: '2024-01-01',
     },
   },
   resultSourceMap: {
@@ -271,6 +272,7 @@ const mock = {
       "$['media'][?(@._key=='3239041c90c8')]",
       "$['media'][?(@._key=='c3c15f50cc9b')]",
       "$['copyrightText']",
+      "$['lastModified']",
     ],
     mappings: {
       "$['products'][0]['_id']": {
@@ -485,6 +487,14 @@ const mock = {
         source: {
           document: 5,
           path: 4,
+          type: 'documentValue',
+        },
+        type: 'value',
+      },
+      "$['siteSettings']['lastModified']": {
+        source: {
+          document: 5,
+          path: 10,
           type: 'documentValue',
         },
         type: 'value',
