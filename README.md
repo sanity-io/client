@@ -723,6 +723,85 @@ const result = await client.fetch('*[_type == "video"][0]')
 const videoAsset = vercelStegaCleanAll(result.videoAsset)
 ```
 
+#### [Visual editing][visual-editing] with the [GraphQL API][graphql-csm]
+
+It's possible to enable stega for the GraphQL API as well, with the `stegaEncodeSourceMap` utility available on [`@sanity/client/stega`]. On your GraphQL API request add the search param `resultSourceMap=true`
+
+Your GraphQL API response should now look something like this:
+
+```json
+{
+  "data": {
+    "allPost": [
+      {
+        "title": "GraphQL CSM"
+      }
+    ]
+  },
+  "extensions": {
+    "sanitySourceMap": {
+      "documents": [
+        {
+          "_id": "75bbbd60-0aa9-4b20-9c00-0b40cb010ff6",
+          "_type": "post"
+        }
+      ],
+      "paths": ["$['title']"],
+      "mappings": {
+        "$['allPost'][0]['title']": {
+          "source": {
+            "document": 0,
+            "path": 0,
+            "type": "documentValue"
+          },
+          "type": "value"
+        }
+      }
+    }
+  }
+}
+```
+
+To encode the CSMs to Stega payloads, use the `stegaEncodeSourceMap` utility, this creates the same result as with GROQ and `client.fetch` and is compatible with the Vercel Visual Editing integration, and the upcoming GraphQL support in [Presentation][presentation]:
+
+```ts
+import {ApolloClient, gql} from '@apollo/client'
+import {stegaEncodeSourceMap} from '@sanity/client/stega'
+
+const client = new ApolloClient({
+  uri: `https://${projectId}.api.sanity.io/v${apiVersion}/graphql/${dataset}/${graphqlTag}?resultSourceMap=true`,
+  // other base config options
+})
+
+const posts = await client.query({
+  query: gql`
+    query allPost {
+      allPost {
+        title
+      }
+    }
+  `,
+})
+
+// Later in the App, when you want to encode the CSMs to Stega payloads
+const data = stegaEncodeSourceMap(posts.data, posts.extensions.sanitySourceMap, {
+  // The options are the same as for the `stega` config option, except for which ones are optional and which ones are required
+  enabled: true, // required
+  studioUrl: 'https://test.sanity.studio', // required
+  filter: (props) => props.filterDefault(props), // optional
+  logger: console, // optional
+})
+
+// The `title` field now has a CSM embedded using Steganography, to verify the payloads you can use the `vercelStegaDecode` utilities in `@vercel/stega` and test the URLs it reports
+
+// Check for a single URL:
+import {vercelStegaDecode} from '@vercel/stega'
+console.log(vercelStegaDecode(data.allPost[0].title)) // {"href": "https://test.sanity.studio/intent/edit/mode=presentation;id=75bbbd60-0aa9-4b20-9c00-0b40cb010ff6;type=post;path=title", "origin": "sanity.io"}
+// Find all URLs in a payload
+import {vercelStegaDecodeAll} from '@vercel/stega'
+console.log(vercelStegaDecodeAll(JSON.stringify(data))) // [{"href": "https://test.sanity.studio/intent/edit/mode=presentation;id=75bbbd60-0aa9-4b20-9c00-0b40cb010ff6;type=post;path=title", "origin": "sanity.io"}]
+```
+
 #### Creating Studio edit intent links
 
 If you want to create an edit link to something that isn't a string, or a field that isn't rendered directly, like a `slug` used in a URL but not rendered on the page, you can use the `resolveEditUrl` function.
@@ -1608,3 +1687,5 @@ await client.request<void>({uri: '/auth/logout', method: 'POST'})
 [visual-editing]: https://www.sanity.io/docs/vercel-visual-editing?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
 [content-source-maps]: https://www.sanity.io/docs/content-source-maps?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
 [content-source-maps-intro]: https://www.sanity.io/blog/content-source-maps-announce?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
+[graphql-csm]: https://www.sanity.io/docs/graphql#e52e2285f14f
+[presentation]: https://www.sanity.io/blog/introducing-presentation
