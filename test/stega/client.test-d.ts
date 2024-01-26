@@ -9,56 +9,54 @@ import {describe, expectTypeOf, test} from 'vitest'
 describe('client.fetch', () => {
   const client: SanityClient | SanityStegaClient = createStegaClient({})
   test('simple query', async () => {
-    expectTypeOf(client.fetch('*')).toMatchTypeOf<Promise<any>>()
-    expectTypeOf(client.fetch('*[_type == $type]', {type: 'post'})).toMatchTypeOf<Promise<any>>()
+    expectTypeOf(await client.fetch('*')).toMatchTypeOf<any>()
+    expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toMatchTypeOf<any>()
   })
   test('generics', async () => {
-    expectTypeOf(client.fetch<number>('count(*)')).toMatchTypeOf<Promise<number>>()
+    expectTypeOf(await client.fetch<number>('count(*)')).toMatchTypeOf<number>()
     expectTypeOf(
-      client.fetch<number, {type: string}>('count(*[_type == $type])', {type: 'post'}),
-    ).toMatchTypeOf<Promise<number>>()
-    // @ts-expect-error -- should fail
-    expectTypeOf(client.fetch<number, {type: string}>('count(*[_type == $type])')).toMatchTypeOf<
-      Promise<number>
-    >()
+      await client.fetch<number, {type: string}>('count(*[_type == $type])', {type: 'post'}),
+    ).toMatchTypeOf<number>()
     expectTypeOf(
       // @ts-expect-error -- should fail
-      client.fetch<number, {type: string}>('count(*[_type == $type])', {_type: 'post'}),
-    ).toMatchTypeOf<Promise<number>>()
+      await client.fetch<number, {type: string}>('count(*[_type == $type])'),
+    ).toMatchTypeOf<number>()
+    expectTypeOf(
+      // @ts-expect-error -- should fail
+      await client.fetch<number, {type: string}>('count(*[_type == $type])', {_type: 'post'}),
+    ).toMatchTypeOf<number>()
   })
   test('filterResponse: false', async () => {
-    expectTypeOf(client.fetch<number>('count(*)', {}, {filterResponse: true})).toMatchTypeOf<
-      Promise<number>
-    >()
-    expectTypeOf(client.fetch<number>('count(*)', {}, {filterResponse: false})).toMatchTypeOf<
-      Promise<{
-        result: number
-        ms: number
-        query: string
-        resultSourceMap?: ContentSourceMap
-      }>
-    >()
     expectTypeOf(
-      client.fetch<number, {type: string}>(
+      await client.fetch<number>('count(*)', {}, {filterResponse: true}),
+    ).toMatchTypeOf<number>()
+    expectTypeOf(
+      await client.fetch<number>('count(*)', {}, {filterResponse: false}),
+    ).toMatchTypeOf<{
+      result: number
+      ms: number
+      query: string
+      resultSourceMap?: ContentSourceMap
+    }>()
+    expectTypeOf(
+      await client.fetch<number, {type: string}>(
         'count(*[_type == $type])',
         {type: 'post'},
         {filterResponse: true},
       ),
-    ).toMatchTypeOf<Promise<number>>()
+    ).toMatchTypeOf<number>()
     expectTypeOf(
-      client.fetch<number, {type: string}>(
+      await client.fetch<number, {type: string}>(
         'count(*[_type == $type])',
         {type: 'post'},
         {filterResponse: false},
       ),
-    ).toMatchTypeOf<
-      Promise<{
-        result: number
-        ms: number
-        query: string
-        resultSourceMap?: ContentSourceMap
-      }>
-    >()
+    ).toMatchTypeOf<{
+      result: number
+      ms: number
+      query: string
+      resultSourceMap?: ContentSourceMap
+    }>()
   })
 })
 
@@ -76,6 +74,6 @@ test('SanityClient type can be assigned to SanityStegaClient', () => {
   expectTypeOf(isSanityClient(createClient({}))).toMatchTypeOf<boolean>()
 })
 
-// test('SanityClient type is assignable to itself on both export paths', () => {
-//   expectTypeOf<SanityClient>().toMatchTypeOf<import('@sanity/client/stega').SanityClient>()
-// })
+test('SanityClient type is assignable to itself on both export paths', async () => {
+  expectTypeOf<SanityClient>().toMatchTypeOf<import('@sanity/client/stega').SanityClient>()
+})

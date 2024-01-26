@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.settings",
+  "include": ["../src", "."],
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "esnext",
+    "paths": {
+      "@sanity/client": ["../src"],
+      "@sanity/client/*": ["../src/*"],
+    },
+  },
+}

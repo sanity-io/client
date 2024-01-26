@@ -16,6 +16,9 @@ export default defineConfig({
         .pathname,
       '@sanity/client': new URL(pkg.exports['.'].browser.source, import.meta.url).pathname,
     },
+    typecheck: {
+      enabled: false,
+    },
   },
   resolve: {
     // https://github.com/vercel/next.js/blob/95322649ffb2ad0d6423481faed188dd7b1f7ff2/packages/next/src/build/webpack-config.ts#L1079-L1084

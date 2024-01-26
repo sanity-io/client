@@ -435,6 +435,79 @@ export interface PatchOperations {
 
 /** @public */
 export type QueryParams = {[key: string]: Any}
+
+/**
+ * Verify this type has all the same keys as QueryOptions before exporting
+ * @internal
+ */
+export type _QueryParamsLikelyByMistake = {
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  body?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  cache?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  filterResponse?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  headers?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  method?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  next?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  perspective?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  query?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  resultSourceMap?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  signal?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  stega?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  tag?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  timeout?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  token?: Any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  useCdn?: Any
+}
+
+/**
+ * It's easy to accidentally set query options such as `filterResponse`, `cache` and `next` as the second parameter in `client.fetch`,
+ * as that is a wide type used to set GROQ query paramaters and it accepts anything that can serialize to JSON.
+ * This type is used to prevent that, and will cause a type error if you try to pass a query option as the second parameter.
+ * If this type is `never`, it means `_QueryParamsLikelyByMistake` is missing keys from `QueryOptions`.
+ * @internal
+ */
+export type QueryParamsLikelyByMistake =
+  Required<_QueryParamsLikelyByMistake> extends Record<keyof QueryOptions, Any>
+    ? _QueryParamsLikelyByMistake
+    : never
+
+/**
+ * It's easy to accidentally set query options such as `filterResponse`, `cache` and `next` as the second parameter in `client.fetch`,
+ * as that is a wide type used to set GROQ query paramaters and it accepts anything that can serialize to JSON.
+ * This type is used to prevent that, and will cause a type error if you try to pass a query option as the second parameter.
+ * @internal
+ */
+export type QueryParamsWithoutQueryOptions = {
+  [K in keyof _QueryParamsLikelyByMistake]: never
+} & QueryParams
+
+/**
+ * Transform a QueryParams generic type to a valid parameter type for `client.fetch
+ * @public
+ */
+export type QueryParamsParameter<QueryParamsParameterType> =
+  QueryParamsParameterType extends QueryParams
+    ? QueryParamsParameterType
+    : QueryParamsParameterType extends Record<string, never>
+      ? Record<string, never>
+      : QueryParamsParameterType extends undefined
+        ? undefined | Record<string, never>
+        : never
+
 /** @internal */
 export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
 /** @internal */
@@ -674,24 +747,28 @@ export interface ListenOptions {
 }
 
 /** @public */
-export interface ResponseQueryOptions<T = 'next'> extends RequestOptions {
+export interface ResponseQueryOptions extends RequestOptions {
   perspective?: ClientPerspective
   resultSourceMap?: boolean | 'withKeyArraySelector'
-  cache?: RequestInit['cache']
-  next?: T extends keyof RequestInit ? RequestInit[T] : never
   useCdn?: boolean
   stega?: boolean | StegaConfig
+  // The `cache` and `next` options are specific to the Next.js App Router integration
+  cache?: 'next' extends keyof RequestInit ? RequestInit['cache'] : never
+  next?: ('next' extends keyof RequestInit ? RequestInit : never)['next']
 }
 
 /** @public */
-export type FilteredResponseQueryOptions = ResponseQueryOptions & {
+export interface FilteredResponseQueryOptions extends ResponseQueryOptions {
   filterResponse?: true
 }
 
 /** @public */
-export type UnfilteredResponseQueryOptions = ResponseQueryOptions & {
+export interface UnfilteredResponseQueryOptions extends ResponseQueryOptions {
   filterResponse: false
 }
+
+/** @public */
+export type QueryOptions = FilteredResponseQueryOptions | UnfilteredResponseQueryOptions
 
 /** @public */
 export interface RawQueryResponse<R> {

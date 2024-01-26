@@ -108,18 +108,22 @@
     "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
     "prepublishOnly": "npm run build",
     "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
-    "test": "vitest --typecheck",
+    "test": "vitest",
     "test:browser": "npm test -- --config ./vitest.browser.config.ts",
     "test:bun": "bun test runtimes/bun",
     "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
     "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
     "posttest:deno:update_import_map": "npx prettier --write runtimes/deno/import_map.json",
     "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
+    "test:next": "npm test -- --config ./vitest.next.config.ts",
     "test:node-runtimes": "node --test runtimes/node | npx faucet"
   },
   "browserslist": "extends @sanity/browserslist-config",
   "prettier": {
     "bracketSpacing": false,
+    "plugins": [
+      "prettier-plugin-packagejson"
+    ],
     "printWidth": 100,
     "semi": false,
     "singleQuote": true
@@ -149,6 +153,7 @@
     "happy-dom": "^12.10.3",
     "json-diff": "^1.0.6",
     "ls-engines": "^0.9.1",
+    "next": "^14.1.0",
     "nock": "^13.5.0",
     "prettier": "^3.2.4",
     "prettier-plugin-packagejson": "^2.4.9",

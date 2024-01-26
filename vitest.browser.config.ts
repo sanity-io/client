@@ -16,6 +16,9 @@ export default defineConfig({
         .pathname,
       '@sanity/client': new URL(pkg.exports['.'].browser.source, import.meta.url).pathname,
     },
+    typecheck: {
+      enabled: false,
+    },
   },
   resolve: {
     conditions: ['browser', 'module', 'import'],
