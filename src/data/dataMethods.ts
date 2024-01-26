@@ -10,7 +10,6 @@ import type {
   AllDocumentsMutationOptions,
   Any,
   BaseMutationOptions,
-  FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
@@ -20,13 +19,12 @@ import type {
   MultipleMutationResult,
   Mutation,
   MutationSelection,
-  QueryParams,
+  QueryOptions,
   RawQueryResponse,
   RequestObservableOptions,
   RequestOptions,
   SanityDocument,
   SingleMutationResult,
-  UnfilteredResponseQueryOptions,
 } from '../types'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
@@ -64,13 +62,13 @@ const indexBy = (docs: Any[], attr: Any) =>
 const getQuerySizeLimit = 11264
 
 /** @internal */
-export function _fetch<R, Q extends QueryParams>(
+export function _fetch<R, Q>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   _stega: InitializedStegaConfig,
   query: string,
-  _params?: Q,
-  options: FilteredResponseQueryOptions | UnfilteredResponseQueryOptions = {},
+  _params: Q = {} as Q,
+  options: QueryOptions = {},
 ): Observable<RawQueryResponse<R> | R> {
   const stega =
     'stega' in options
