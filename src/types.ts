@@ -30,15 +30,6 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
-/**
- * Options for the native `fetch` feature, used by the Next.js app-router
- * @public
- */
-export interface RequestFetchOptions<T = 'next'> {
-  cache?: RequestInit['cache']
-  next?: T extends keyof RequestInit ? RequestInit[T] : never
-}
-
 /** @public */
 export type ClientPerspective = 'previewDrafts' | 'published' | 'raw'
 
@@ -90,7 +81,12 @@ export interface ClientConfig {
   /**
    *@deprecated set `cache` and `next` options on `client.fetch` instead
    */
-  fetch?: RequestFetchOptions | boolean
+  fetch?:
+    | {
+        cache?: ResponseQueryOptions['cache']
+        next?: ResponseQueryOptions['next']
+      }
+    | boolean
   /**
    * Options for how, if enabled, Content Source Maps are encoded into query results using steganography
    */
@@ -434,66 +430,47 @@ export interface PatchOperations {
 }
 
 /** @public */
-export type QueryParams = {[key: string]: Any}
-
-/**
- * Verify this type has all the same keys as QueryOptions before exporting
- * @internal
- */
-export type _QueryParamsLikelyByMistake = {
+export interface QueryParams {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  [key: string]: any
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  body?: Any
+  body?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  cache?: Any
+  cache?: 'next' extends keyof RequestInit ? never : any
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  filterResponse?: Any
+  filterResponse?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  headers?: Any
+  headers?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  method?: Any
+  method?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  next?: Any
+  next?: 'next' extends keyof RequestInit ? never : any
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  perspective?: Any
+  perspective?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  query?: Any
+  query?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  resultSourceMap?: Any
+  resultSourceMap?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  signal?: Any
+  signal?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  stega?: Any
+  stega?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  tag?: Any
+  tag?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  timeout?: Any
+  timeout?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  token?: Any
+  token?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
-  useCdn?: Any
+  useCdn?: never
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 /**
- * It's easy to accidentally set query options such as `filterResponse`, `cache` and `next` as the second parameter in `client.fetch`,
- * as that is a wide type used to set GROQ query paramaters and it accepts anything that can serialize to JSON.
- * This type is used to prevent that, and will cause a type error if you try to pass a query option as the second parameter.
- * If this type is `never`, it means `_QueryParamsLikelyByMistake` is missing keys from `QueryOptions`.
- * @internal
+ * This type can be used with `client.fetch` to indicate that the query has no GROQ parameters.
+ * @public
  */
-export type QueryParamsLikelyByMistake =
-  Required<_QueryParamsLikelyByMistake> extends Record<keyof QueryOptions, Any>
-    ? _QueryParamsLikelyByMistake
-    : never
-
-/**
- * It's easy to accidentally set query options such as `filterResponse`, `cache` and `next` as the second parameter in `client.fetch`,
- * as that is a wide type used to set GROQ query paramaters and it accepts anything that can serialize to JSON.
- * This type is used to prevent that, and will cause a type error if you try to pass a query option as the second parameter.
- * @internal
- */
-export type QueryParamsWithoutQueryOptions = {
-  [K in keyof _QueryParamsLikelyByMistake]: never
-} & QueryParams
+export type QueryWithoutParams = Record<string, never> | undefined
 
 /** @internal */
 export type MutationSelectionQueryParams = {[key: string]: Any}
