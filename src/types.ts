@@ -680,6 +680,9 @@ export type ListenEventName =
   | 'reconnect'
 
 /** @public */
+export type ListenParams = {[key: string]: Any}
+
+/** @public */
 export interface ListenOptions {
   /**
    * Whether or not to include the resulting document in addition to the mutations performed.

@@ -1,4 +1,4 @@
-import type {Any, QueryParams} from '../types'
+import type {Any, ListenParams, QueryParams} from '../types'
 
 export const encodeQueryString = ({
   query,
@@ -6,7 +6,7 @@ export const encodeQueryString = ({
   options = {},
 }: {
   query: string
-  params?: QueryParams
+  params?: ListenParams | QueryParams
   options?: Any
 }) => {
   const searchParams = new URLSearchParams()

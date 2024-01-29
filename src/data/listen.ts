@@ -1,7 +1,7 @@
 import {Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {Any, ListenEvent, ListenOptions, MutationEvent, QueryParams} from '../types'
+import type {Any, ListenEvent, ListenOptions, ListenParams, MutationEvent} from '../types'
 import defaults from '../util/defaults'
 import {pick} from '../util/pick'
 import {_getDataUrl} from './dataMethods'
@@ -35,7 +35,7 @@ const defaultOptions = {
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
-  params?: QueryParams,
+  params?: ListenParams,
 ): Observable<MutationEvent<R>>
 /**
  * Set up a listener that will be notified when mutations occur on documents matching the provided query/filter.
@@ -48,14 +48,14 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
-  params?: QueryParams,
+  params?: ListenParams,
   options?: ListenOptions,
 ): Observable<ListenEvent<R>>
 /** @public */
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
-  params?: QueryParams,
+  params?: ListenParams,
   opts: ListenOptions = {},
 ): Observable<MutationEvent<R> | ListenEvent<R>> {
   const {url, token, withCredentials, requestTagPrefix} = this.config()
