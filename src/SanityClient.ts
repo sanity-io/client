@@ -27,8 +27,7 @@ import type {
   PatchSelection,
   QueryOptions,
   QueryParams,
-  QueryParamsLikelyByMistake,
-  QueryParamsWithoutQueryOptions,
+  QueryWithoutParams,
   RawQueryResponse,
   RawRequestOptions,
   SanityDocument,
@@ -133,58 +132,35 @@ export class ObservableSanityClient {
    *
    * @param query - GROQ-query to perform
    */
-  fetch<R = Any>(query: string): Observable<R>
-  /**
-   * Perform a GROQ-query against the configured dataset.
-   *
-   * @param query - GROQ-query to perform
-   * @param params - Query parameters
-   */
-  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(query: string, params: Q): Observable<R>
-  /**
-   * Perform a GROQ-query against the configured dataset.
-   *
-   * @param query - GROQ-query to perform
-   * @param params - Query parameters
-   * @param options - Request options
-   */
-  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
+  fetch<R = Any, Q extends QueryWithoutParams = QueryWithoutParams>(
     query: string,
-    params: Q | undefined,
-    options: FilteredResponseQueryOptions,
+    params?: Q | QueryWithoutParams,
   ): Observable<R>
   /**
    * Perform a GROQ-query against the configured dataset.
    *
    * @param query - GROQ-query to perform
-   * @param params - Query parameters
+   * @param params - Optional query parameters
+   * @param options - Optional request options
+   */
+  fetch<R = Any, Q extends QueryWithoutParams | QueryParams = QueryParams>(
+    query: string,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: FilteredResponseQueryOptions,
+  ): Observable<R>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
    * @param options - Request options
    */
-  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
+  fetch<R = Any, Q extends QueryWithoutParams | QueryParams = QueryParams>(
     query: string,
-    params: Q | undefined,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<R>>
-  /**
-   * You're passing in query parameters to a GROQ query that looks like query options.
-   * This is likely a mistake, you can either:
-   * a) replace the second argument with an empty object, and move the options to the third argument
-   * ```diff
-   * -client.fetch(query, {cache: 'no-store'})
-   * +client.fetch(query, {}, {cache: 'no-store'})
-   * ```
-   * b) add a generic type parameter that allows the query parameters to be passed in to silence the error
-   * @deprecated not actually deprecated, marking it as deprecated makes this error easier to spot
-   */
-  fetch<
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    R = Any,
-  >(
-    query: string,
-    params: QueryParamsLikelyByMistake & QueryParams,
-    options?: QueryOptions,
-  ): unknown
-  fetch<R, Q extends QueryParams>(
+  fetch<R, Q>(
     query: string,
     params?: Q,
     options?: QueryOptions,
@@ -795,25 +771,21 @@ export class SanityClient {
    *
    * @param query - GROQ-query to perform
    */
-  fetch<R = Any>(query: string): Promise<R>
-  /**
-   * Perform a GROQ-query against the configured dataset.
-   *
-   * @param query - GROQ-query to perform
-   * @param params - Optional query parameters
-   */
-  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(query: string, params: Q): Promise<R>
-  /**
-   * Perform a GROQ-query against the configured dataset.
-   *
-   * @param query - GROQ-query to perform
-   * @param params - Optional query parameters
-   * @param options - Request options
-   */
-  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
+  fetch<R = Any, Q extends QueryWithoutParams = QueryWithoutParams>(
     query: string,
-    params: Q | undefined,
-    options: FilteredResponseQueryOptions,
+    params?: Q | QueryWithoutParams,
+  ): Promise<R>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Optional request options
+   */
+  fetch<R = Any, Q extends QueryWithoutParams | QueryParams = QueryParams>(
+    query: string,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: FilteredResponseQueryOptions,
   ): Promise<R>
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -822,35 +794,12 @@ export class SanityClient {
    * @param params - Optional query parameters
    * @param options - Request options
    */
-  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
+  fetch<R = Any, Q extends QueryWithoutParams | QueryParams = QueryParams>(
     query: string,
-    params: Q | undefined,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Promise<RawQueryResponse<R>>
-  /**
-   * You're passing in query parameters to a GROQ query that looks like query options.
-   * This is likely a mistake, you can either:
-   * a) replace the second argument with an empty object, and move the options to the third argument
-   * ```diff
-   * -client.fetch(query, {cache: 'no-store'})
-   * +client.fetch(query, {}, {cache: 'no-store'})
-   * ```
-   * b) add a generic type parameter that allows the query parameters to be passed in to silence the error
-   * @deprecated not actually deprecated, marking it as deprecated makes this error easier to spot
-   */
-  fetch<
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    R = Any,
-  >(
-    query: string,
-    params: QueryParamsLikelyByMistake & QueryParams,
-    options?: QueryOptions,
-  ): unknown
-  fetch<R, Q extends QueryParams>(
-    query: string,
-    params?: Q,
-    options?: QueryOptions,
-  ): Promise<RawQueryResponse<R> | R> {
+  fetch<R, Q>(query: string, params?: Q, options?: QueryOptions): Promise<RawQueryResponse<R> | R> {
     return lastValueFrom(
       dataMethods._fetch<R, Q>(
         this,
