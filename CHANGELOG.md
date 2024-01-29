@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.12.2](https://github.com/sanity-io/client/compare/v6.12.1...v6.12.2) (2024-01-29)
+
+
+### Bug Fixes
+
+* **typings:** relax query params typings to fix regressions ([#510](https://github.com/sanity-io/client/issues/510)) ([b46583e](https://github.com/sanity-io/client/commit/b46583ee99cf5b50c467c507fece83d9fa4e9519))
+
 ## [6.12.1](https://github.com/sanity-io/client/compare/v6.12.0...v6.12.1) (2024-01-26)
 
 
