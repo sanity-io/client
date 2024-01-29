@@ -28,7 +28,6 @@ import type {
   QueryOptions,
   QueryParams,
   QueryParamsLikelyByMistake,
-  QueryParamsParameter,
   QueryParamsWithoutQueryOptions,
   RawQueryResponse,
   RawRequestOptions,
@@ -134,33 +133,36 @@ export class ObservableSanityClient {
    *
    * @param query - GROQ-query to perform
    */
-  fetch<
-    R = Any,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Q extends never | undefined | Record<string, never> = never,
-  >(query: string): Observable<R>
+  fetch<R = Any>(query: string): Observable<R>
   /**
    * Perform a GROQ-query against the configured dataset.
    *
    * @param query - GROQ-query to perform
-   * @param params - Optional query parameters
-   * @param options - Optional request options
+   * @param params - Query parameters
+   */
+  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(query: string, params: Q): Observable<R>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Query parameters
+   * @param options - Request options
    */
   fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
     query: string,
-    params: QueryParamsParameter<Q>,
-    options?: FilteredResponseQueryOptions,
+    params: Q | undefined,
+    options: FilteredResponseQueryOptions,
   ): Observable<R>
   /**
    * Perform a GROQ-query against the configured dataset.
    *
    * @param query - GROQ-query to perform
-   * @param params - Optional query parameters
+   * @param params - Query parameters
    * @param options - Request options
    */
   fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
     query: string,
-    params: QueryParamsParameter<Q>,
+    params: Q | undefined,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<R>>
   /**
@@ -793,22 +795,25 @@ export class SanityClient {
    *
    * @param query - GROQ-query to perform
    */
-  fetch<
-    R = Any,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Q extends never | undefined | Record<string, never> = never,
-  >(query: string): Promise<R>
+  fetch<R = Any>(query: string): Promise<R>
   /**
    * Perform a GROQ-query against the configured dataset.
    *
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
-   * @param options - Optional request options
+   */
+  fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(query: string, params: Q): Promise<R>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
    */
   fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
     query: string,
-    params: QueryParamsParameter<Q>,
-    options?: FilteredResponseQueryOptions,
+    params: Q | undefined,
+    options: FilteredResponseQueryOptions,
   ): Promise<R>
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -819,7 +824,7 @@ export class SanityClient {
    */
   fetch<R = Any, Q = QueryParamsWithoutQueryOptions>(
     query: string,
-    params: QueryParamsParameter<Q>,
+    params: Q | undefined,
     options: UnfilteredResponseQueryOptions,
   ): Promise<RawQueryResponse<R>>
   /**

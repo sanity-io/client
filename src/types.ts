@@ -495,19 +495,6 @@ export type QueryParamsWithoutQueryOptions = {
   [K in keyof _QueryParamsLikelyByMistake]: never
 } & QueryParams
 
-/**
- * Transform a QueryParams generic type to a valid parameter type for `client.fetch
- * @public
- */
-export type QueryParamsParameter<QueryParamsParameterType> =
-  QueryParamsParameterType extends QueryParams
-    ? QueryParamsParameterType
-    : QueryParamsParameterType extends Record<string, never>
-      ? Record<string, never>
-      : QueryParamsParameterType extends undefined
-        ? undefined | Record<string, never>
-        : never
-
 /** @internal */
 export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
 /** @internal */
