@@ -496,7 +496,11 @@ export type QueryParamsWithoutQueryOptions = {
 } & QueryParams
 
 /** @internal */
-export type MutationSelection = {query: string; params?: QueryParams} | {id: string | string[]}
+export type MutationSelectionQueryParams = {[key: string]: Any}
+/** @internal */
+export type MutationSelection =
+  | {query: string; params?: MutationSelectionQueryParams}
+  | {id: string | string[]}
 /** @internal */
 export type PatchSelection = string | string[] | MutationSelection
 /** @internal */
