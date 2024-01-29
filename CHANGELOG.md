@@ -5,6 +5,15 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.12.3](https://github.com/sanity-io/client/compare/v6.12.2...v6.12.3) (2024-01-29)
+
+
+### Bug Fixes
+
+* **typings:** add `ListenParams` for `client.listen` ([dff1bcc](https://github.com/sanity-io/client/commit/dff1bccc86dfdaff71168383ff49468c9faa4d6a))
+* **typings:** add `MutationSelectionQueryParams` type ([5bf3eee](https://github.com/sanity-io/client/commit/5bf3eeede1bbd90359c17dcbf36ce7122c057dc3))
+* **typings:** improve the QueryParams typing and generics ([#514](https://github.com/sanity-io/client/issues/514)) ([9c606a4](https://github.com/sanity-io/client/commit/9c606a4395a511a02f4c0febeba5444359a74392))
+
 ## [6.12.2](https://github.com/sanity-io/client/compare/v6.12.1...v6.12.2) (2024-01-29)
 
 
