@@ -8,7 +8,7 @@
     "module": "esnext",
     "paths": {
       "@sanity/client": ["./src"],
-      "@sanity/client/*": ["./src/*"],
-    },
-  },
+      "@sanity/client/*": ["./src/*"]
+    }
+  }
 }
