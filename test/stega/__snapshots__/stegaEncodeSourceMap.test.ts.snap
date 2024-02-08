@@ -12,13 +12,13 @@ exports[`GraphQL API > logger.error 1`] = `[]`;
 exports[`GraphQL API > logger.log 1`] = `
 [
   [
-    "[@sanity/client/stega]: Encoding source map into result",
+    "[@sanity/client]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 2, skipped: 0",
+    "[@sanity/client]: Paths encoded: 2, skipped: 0",
   ],
   [
-    "[@sanity/client/stega]: Table of encoded paths",
+    "[@sanity/client]: Table of encoded paths",
   ],
 ]
 `;
@@ -70,16 +70,16 @@ exports[`resolveEditUrl '/' > logger.error 1`] = `[]`;
 exports[`resolveEditUrl '/' > logger.log 1`] = `
 [
   [
-    "[@sanity/client/stega]: Encoding source map into result",
+    "[@sanity/client]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 18, skipped: 81",
+    "[@sanity/client]: Paths encoded: 18, skipped: 81",
   ],
   [
-    "[@sanity/client/stega]: Table of encoded paths",
+    "[@sanity/client]: Table of encoded paths",
   ],
   [
-    "[@sanity/client/stega]: List of skipped paths",
+    "[@sanity/client]: List of skipped paths",
     [
       "description[]._key",
       "description[]._type",
@@ -224,16 +224,16 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.error 1`] = `[]`;
 exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
 [
   [
-    "[@sanity/client/stega]: Encoding source map into result",
+    "[@sanity/client]: Encoding source map into result",
   ],
   [
-    "[@sanity/client/stega]: Paths encoded: 18, skipped: 81",
+    "[@sanity/client]: Paths encoded: 18, skipped: 81",
   ],
   [
-    "[@sanity/client/stega]: Table of encoded paths",
+    "[@sanity/client]: Table of encoded paths",
   ],
   [
-    "[@sanity/client/stega]: List of skipped paths",
+    "[@sanity/client]: List of skipped paths",
     [
       "description[]._key",
       "description[]._type",

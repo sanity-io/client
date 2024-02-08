@@ -24,12 +24,12 @@ export function stegaEncodeSourceMap<Result = unknown>(
   const {filter, logger, enabled} = config
   if (!enabled) {
     const msg = "config.enabled must be true, don't call this function otherwise"
-    logger?.error?.(`[@sanity/client/stega]: ${msg}`, {result, resultSourceMap, config})
+    logger?.error?.(`[@sanity/client]: ${msg}`, {result, resultSourceMap, config})
     throw new TypeError(msg)
   }
 
   if (!resultSourceMap) {
-    logger?.error?.('[@sanity/client/stega]: Missing Content Source Map from response body', {
+    logger?.error?.('[@sanity/client]: Missing Content Source Map from response body', {
       result,
       resultSourceMap,
       config,
@@ -39,7 +39,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
 
   if (!config.studioUrl) {
     const msg = 'config.studioUrl must be defined'
-    logger?.error?.(`[@sanity/client/stega]: ${msg}`, {result, resultSourceMap, config})
+    logger?.error?.(`[@sanity/client]: ${msg}`, {result, resultSourceMap, config})
     throw new TypeError(msg)
   }
 
@@ -109,15 +109,13 @@ export function stegaEncodeSourceMap<Result = unknown>(
     const isSkipping = report.skipped.length
     const isEncoding = report.encoded.length
     if (isSkipping || isEncoding) {
-      ;(logger?.groupCollapsed || logger.log)?.(
-        '[@sanity/client/stega]: Encoding source map into result',
-      )
+      ;(logger?.groupCollapsed || logger.log)?.('[@sanity/client]: Encoding source map into result')
       logger.log?.(
-        `[@sanity/client/stega]: Paths encoded: ${report.encoded.length}, skipped: ${report.skipped.length}`,
+        `[@sanity/client]: Paths encoded: ${report.encoded.length}, skipped: ${report.skipped.length}`,
       )
     }
     if (report.encoded.length > 0) {
-      logger?.log?.(`[@sanity/client/stega]: Table of encoded paths`)
+      logger?.log?.(`[@sanity/client]: Table of encoded paths`)
       ;(logger?.table || logger.log)?.(report.encoded)
     }
     if (report.skipped.length > 0) {
@@ -125,7 +123,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
       for (const {path} of report.skipped) {
         skipped.add(path.replace(reKeySegment, '0').replace(/\[\d+\]/g, '[]'))
       }
-      logger?.log?.(`[@sanity/client/stega]: List of skipped paths`, [...skipped.values()])
+      logger?.log?.(`[@sanity/client]: List of skipped paths`, [...skipped.values()])
     }
 
     if (isSkipping || isEncoding) {
