@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.12.4](https://github.com/sanity-io/client/compare/v6.12.3...v6.12.4) (2024-02-08)
+
+
+### Bug Fixes
+
+* adjust stega logging prefix ([76a8b5e](https://github.com/sanity-io/client/commit/76a8b5ed8e8a5fcbf3c4b07af2ef8a8ac364f30b))
+
 ## [6.12.3](https://github.com/sanity-io/client/compare/v6.12.2...v6.12.3) (2024-01-29)
 
 
