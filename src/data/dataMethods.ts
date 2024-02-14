@@ -80,6 +80,7 @@ export function _fetch<R, Q>(
   const params = stega.enabled ? vercelStegaCleanAll(_params) : _params
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
+
   const {cache, next, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
@@ -87,6 +88,9 @@ export function _fetch<R, Q>(
     // Set `resultSourceMap' when stega is enabled, as it's required for encoding.
     resultSourceMap: stega.enabled ? 'withKeyArraySelector' : options.resultSourceMap,
     ...options,
+    // Default to not returning the query, unless `filterResponse` is `false`,
+    // or `returnQuery` is explicitly set. `true` is the default in Content Lake, so skip if truthy
+    returnQuery: options.filterResponse === false && options.returnQuery !== false,
   }
   const reqOpts =
     typeof cache !== 'undefined' || typeof next !== 'undefined'
@@ -253,7 +257,7 @@ export function _dataRequest(
   const useGet = !isMutation && strQuery.length < getQuerySizeLimit
   const stringQuery = useGet ? strQuery : ''
   const returnFirst = options.returnFirst
-  const {timeout, token, tag, headers} = options
+  const {timeout, token, tag, headers, returnQuery} = options
 
   const uri = _getDataUrl(client, endpoint, stringQuery)
 
@@ -267,6 +271,7 @@ export function _dataRequest(
     headers,
     token,
     tag,
+    returnQuery,
     perspective: options.perspective,
     resultSourceMap: options.resultSourceMap,
     canUseCdn: isQuery,
@@ -368,6 +373,10 @@ export function _requestObservable<R>(
         useCdn = false
         printCdnPreviewDraftsWarning()
       }
+    }
+
+    if (options.returnQuery === false) {
+      options.query = {returnQuery: 'false', ...options.query}
     }
   }
 

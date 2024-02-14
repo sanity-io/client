@@ -1,6 +1,12 @@
 /// <reference types="next/types/global" />
 
-import {createClient, QueryOptions, QueryParams, RawQueryResponse} from '@sanity/client'
+import {
+  createClient,
+  type QueryOptions,
+  type QueryParams,
+  type RawQuerylessQueryResponse,
+  type RawQueryResponse,
+} from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
 
 describe('client.fetch', () => {
@@ -33,6 +39,13 @@ describe('client.fetch', () => {
         {filterResponse: false, cache: 'force-cache', next: {revalidate: 60, tags: ['post']}},
       ),
     ).toMatchTypeOf<RawQueryResponse<any>>()
+    expectTypeOf(
+      await client.fetch(
+        '*[_type == $type]',
+        {type: 'post'},
+        {filterResponse: false, returnQuery: false},
+      ),
+    ).toMatchTypeOf<RawQuerylessQueryResponse<any>>()
   })
   test('generics', async () => {
     expectTypeOf(
