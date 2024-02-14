@@ -1561,7 +1561,11 @@ describe('client', async () => {
 
     test('patch() can take an array of IDs', () => {
       const patch = getClient().patch(['abc123', 'foo.456']).inc({count: 1}).serialize()
-      expect(patch).toEqual({id: ['abc123', 'foo.456'], inc: {count: 1}})
+      expect(patch).toEqual({
+        query: '*[_id in $ids]',
+        params: {ids: ['abc123', 'foo.456']},
+        inc: {count: 1},
+      })
     })
 
     test('patch() can take a query', () => {

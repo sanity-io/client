@@ -1,8 +1,12 @@
 import type {MutationSelection} from '../types'
 
 export function getSelection(sel: unknown): MutationSelection {
-  if (typeof sel === 'string' || Array.isArray(sel)) {
+  if (typeof sel === 'string') {
     return {id: sel}
+  }
+
+  if (Array.isArray(sel)) {
+    return {query: '*[_id in $ids]', params: {ids: sel}}
   }
 
   if (typeof sel === 'object' && sel !== null && 'query' in sel && typeof sel.query === 'string') {
