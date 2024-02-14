@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.13.0](https://github.com/sanity-io/client/compare/v6.12.4...v6.13.0) (2024-02-14)
+
+
+### Features
+
+* add support for `returnQuery` option, default to `false` ([#545](https://github.com/sanity-io/client/issues/545)) ([dee015b](https://github.com/sanity-io/client/commit/dee015bbad623c547e333e55a89fcd2dc0b2072d))
+
 ## [6.12.4](https://github.com/sanity-io/client/compare/v6.12.3...v6.12.4) (2024-02-08)
 
 
