@@ -131,10 +131,8 @@ describe('@sanity/client/stega', async () => {
 
     test.skipIf(isEdge)('it returns stega strings in the response', async () => {
       nock(projectHost())
-        .get(
-          `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
-        )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .get(`/v1/data/query/foo?query=${qs}&resultSourceMap=withKeyArraySelector`)
+        .reply(200, {ms: 123, query, result, resultSourceMap})
 
       const res = await getClient({stega: {enabled: true, studioUrl: '/studio'}}).fetch(
         query,
@@ -166,10 +164,8 @@ describe('@sanity/client/stega', async () => {
 
     test.skipIf(isEdge)('it strips stega strings from params', async () => {
       nock(projectHost())
-        .get(
-          `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
-        )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .get(`/v1/data/query/foo?query=${qs}&resultSourceMap=withKeyArraySelector`)
+        .reply(200, {ms: 123, query, result, resultSourceMap})
 
       const res = await getClient({stega: {enabled: true, studioUrl: '/studio'}}).fetch(query, {
         id: vercelStegaCombine(params.id, JSON.stringify({origin: 'sanity.io', href: '/studio'})),
@@ -181,10 +177,8 @@ describe('@sanity/client/stega', async () => {
   describe.skipIf(isEdge)('client.fetch', async () => {
     test('the stega option accepts booleans as a shortcut to toggle `enabled`', async () => {
       nock(projectHost())
-        .get(
-          `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
-        )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .get(`/v1/data/query/foo?query=${qs}&resultSourceMap=withKeyArraySelector`)
+        .reply(200, {ms: 123, query, result, resultSourceMap})
 
       const res = await getClient({stega: {studioUrl}}).fetch(query, params, {
         stega: true,
@@ -205,8 +199,8 @@ describe('@sanity/client/stega', async () => {
 
     test('the stega option accepts booleans as a shortcut to toggle `enabled`', async () => {
       nock(projectHost())
-        .get(`/v1/data/query/foo?query=${qs}&returnQuery=false`)
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .get(`/v1/data/query/foo?query=${qs}`)
+        .reply(200, {ms: 123, query, result, resultSourceMap})
 
       const res = await getClient({stega: {studioUrl, enabled: true}}).fetch(query, params, {
         stega: false,
@@ -216,10 +210,8 @@ describe('@sanity/client/stega', async () => {
 
     test('the stega option merges in defaults', async () => {
       nock(projectHost())
-        .get(
-          `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
-        )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .get(`/v1/data/query/foo?query=${qs}&resultSourceMap=withKeyArraySelector`)
+        .reply(200, {ms: 123, query, result, resultSourceMap})
 
       const res = await getClient({stega: {studioUrl, enabled: true}}).fetch(query, params, {
         stega: {
