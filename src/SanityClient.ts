@@ -28,12 +28,14 @@ import type {
   QueryOptions,
   QueryParams,
   QueryWithoutParams,
+  RawQuerylessQueryResponse,
   RawQueryResponse,
   RawRequestOptions,
   SanityDocument,
   SanityDocumentStub,
   SingleMutationResult,
   UnfilteredResponseQueryOptions,
+  UnfilteredResponseWithoutQuery,
 } from './types'
 import {ObservableUsersClient, UsersClient} from './users/UsersClient'
 
@@ -160,6 +162,18 @@ export class ObservableSanityClient {
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<R = Any, Q extends QueryWithoutParams | QueryParams = QueryParams>(
+    query: string,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseWithoutQuery,
+  ): Observable<RawQuerylessQueryResponse<R>>
   fetch<R, Q>(
     query: string,
     params?: Q,
@@ -799,6 +813,18 @@ export class SanityClient {
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Promise<RawQueryResponse<R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<R = Any, Q extends QueryWithoutParams | QueryParams = QueryParams>(
+    query: string,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseWithoutQuery,
+  ): Promise<RawQuerylessQueryResponse<R>>
   fetch<R, Q>(query: string, params?: Q, options?: QueryOptions): Promise<RawQueryResponse<R> | R> {
     return lastValueFrom(
       dataMethods._fetch<R, Q>(

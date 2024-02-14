@@ -508,9 +508,8 @@ describe('client', async () => {
       const qs =
         'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
-      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
+      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}&returnQuery=false`).reply(200, {
         ms: 123,
-        query: query,
         result,
       })
 
@@ -527,7 +526,7 @@ describe('client', async () => {
 
       nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
         ms: 123,
-        query: query,
+        query,
         result,
       })
 
@@ -538,12 +537,32 @@ describe('client', async () => {
       expect(res.result[0].rating, 'data should match').toBe(5)
     })
 
-    test.skipIf(isEdge)('can query for documents with request tag', async () => {
-      nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
+    test.skipIf(isEdge)('can explicitly ask to include query in response', async () => {
+      const query = 'beerfiesta.beer[.title == $beerName]'
+      const params = {beerName: 'Headroom Double IPA'}
+      const qs =
+        'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
+
+      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
         ms: 123,
-        query: '*',
+        query,
         result,
       })
+
+      const res = await getClient().fetch(query, params, {filterResponse: false, returnQuery: true})
+      expect(res.ms, 'should include timing info').toBe(123)
+      expect(res.query, 'should include query').toBe(query)
+      expect(res.result.length, 'length should match').toBe(1)
+      expect(res.result[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)('can query for documents with request tag', async () => {
+      nock(projectHost())
+        .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob&returnQuery=false`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
 
       const res = await getClient().fetch('*', {}, {tag: 'mycompany.syncjob'})
       expect(res.length, 'length should match').toBe(1)
@@ -554,10 +573,11 @@ describe('client', async () => {
       'can query for documents with resultSourceMap and perspective',
       async () => {
         nock(projectHost())
-          .get(`/vX/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
+          .get(
+            `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=true&perspective=previewDrafts`,
+          )
           .reply(200, {
             ms: 123,
-            query: '*',
             result,
             resultSourceMap,
           })
@@ -578,11 +598,10 @@ describe('client', async () => {
       async () => {
         nock(projectHost())
           .get(
-            `/vX/data/query/foo?query=*&resultSourceMap=withKeyArraySelector&perspective=previewDrafts`,
+            `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=withKeyArraySelector&perspective=previewDrafts`,
           )
           .reply(200, {
             ms: 123,
-            query: '*',
             result,
             resultSourceMap,
           })
@@ -600,10 +619,9 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('automatically useCdn false if perspective is previewDrafts', async () => {
       nock('https://abc123.api.sanity.io')
-        .get(`/v1/data/query/foo?query=*&perspective=previewDrafts`)
+        .get(`/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
         .reply(200, {
           ms: 123,
-          query: '*',
           result,
         })
 
@@ -622,10 +640,11 @@ describe('client', async () => {
       'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
       async () => {
         nock(projectHost())
-          .get(`/vX/data/query/foo?query=*&resultSourceMap=true&perspective=previewDrafts`)
+          .get(
+            `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=true&perspective=previewDrafts`,
+          )
           .reply(200, {
             ms: 123,
-            query: '*',
             result,
             resultSourceMap,
           })
@@ -644,12 +663,13 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'setting resultSourceMap and perspective on client.fetch overrides the config',
       async () => {
-        nock(projectHost()).get(`/vX/data/query/foo?query=*&perspective=published`).reply(200, {
-          ms: 123,
-          query: '*',
-          result,
-          resultSourceMap,
-        })
+        nock(projectHost())
+          .get(`/vX/data/query/foo?query=*&returnQuery=false&perspective=published`)
+          .reply(200, {
+            ms: 123,
+            result,
+            resultSourceMap,
+          })
 
         const client = getClient({
           apiVersion: 'X',
@@ -666,10 +686,9 @@ describe('client', async () => {
       'setting a perspective previewDrafts override on client.fetch sets useCdn to false',
       async () => {
         nock('https://abc123.api.sanity.io')
-          .get(`/v1/data/query/foo?query=*&perspective=previewDrafts`)
+          .get(`/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
           .reply(200, {
             ms: 123,
-            query: '*',
             result,
           })
 
@@ -681,11 +700,12 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('allow overriding useCdn to false on client.fetch', async () => {
-      nock('https://abc123.api.sanity.io').get(`/v1/data/query/foo?query=*`).reply(200, {
-        ms: 123,
-        query: '*',
-        result,
-      })
+      nock('https://abc123.api.sanity.io')
+        .get(`/v1/data/query/foo?query=*&returnQuery=false`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
 
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
       const res = await client.fetch('*', {}, {useCdn: false})
@@ -694,11 +714,12 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('allow overriding useCdn to true on client.fetch', async () => {
-      nock('https://abc123.apicdn.sanity.io').get(`/v1/data/query/foo?query=*`).reply(200, {
-        ms: 123,
-        query: '*',
-        result,
-      })
+      nock('https://abc123.apicdn.sanity.io')
+        .get(`/v1/data/query/foo?query=*&returnQuery=false`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
 
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: false})
       const res = await client.fetch('*', {}, {useCdn: true})
@@ -707,23 +728,19 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
-      nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
-        ms: 123,
-        query: '*',
-        result,
-      })
-
       expect(() => {
         getClient().fetch('*', {}, {tag: 'mycompany syncjob ok'})
       }).toThrow(/tag can only contain alphanumeric/i)
     })
 
     test.skipIf(isEdge)('can use a tag-prefixed client', async () => {
-      nock(projectHost()).get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob`).reply(200, {
-        ms: 123,
-        query: '*',
-        result,
-      })
+      nock(projectHost())
+        .get(`/v1/data/query/foo?query=*&returnQuery=false&tag=mycompany.syncjob`)
+        .reply(200, {
+          ms: 123,
+          query: '*',
+          result,
+        })
 
       const res = await getClient({requestTagPrefix: 'mycompany'}).fetch('*', {}, {tag: 'syncjob'})
       expect(res.length, 'length should match').toBe(1)
@@ -739,7 +756,10 @@ describe('client', async () => {
         message: 'You are not allowed to access this resource',
       }
 
-      nock(projectHost()).get('/v1/data/query/foo?query=area51').times(5).reply(403, response)
+      nock(projectHost())
+        .get('/v1/data/query/foo?query=area51&returnQuery=false')
+        .times(5)
+        .reply(403, response)
 
       try {
         await getClient().fetch('area51')
@@ -766,7 +786,7 @@ describe('client', async () => {
       }
 
       nock(projectHost())
-        .get('/v1/data/query/foo?query=foo.bar.baz%20%2012%23%5B%7B')
+        .get('/v1/data/query/foo?query=foo.bar.baz%20%2012%23%5B%7B&returnQuery=false')
         .reply(400, response)
 
       try {
@@ -1180,7 +1200,7 @@ describe('client', async () => {
     test.skipIf(isEdge)('delete() can use query with params', async () => {
       const query = '*[_type == "beer" && title == $beerName]'
       const params = {beerName: 'Headroom Double IPA'}
-      const expectedBody = {mutations: [{delete: {query: query, params: params}}]}
+      const expectedBody = {mutations: [{delete: {query, params: params}}]}
       nock(projectHost())
         .post(
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
@@ -1188,7 +1208,7 @@ describe('client', async () => {
         )
         .reply(200, {transactionId: 'abc123'})
 
-      await expect(getClient().delete({query: query, params: params})).resolves.not.toThrow()
+      await expect(getClient().delete({query, params: params})).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('delete() can be told not to return documents', async () => {
@@ -1375,10 +1395,9 @@ describe('client', async () => {
 
       nock(projectHost())
         .get('/v1/data/query/foo')
-        .query({query, ...qParams})
+        .query({query, ...qParams, returnQuery: 'false'})
         .reply(200, {
           ms: 123,
-          query: query,
           result,
         })
 
@@ -1404,7 +1423,7 @@ describe('client', async () => {
         .post('/v1/data/query/foo', '*')
         .reply(200, {
           ms: 123,
-          query: query,
+          query,
           result,
         })
 
@@ -1435,7 +1454,7 @@ describe('client', async () => {
         .post('/v1/data/query/foo', '*')
         .reply(200, {
           ms: 123,
-          query: query,
+          query,
           result,
         })
 
@@ -1462,7 +1481,7 @@ describe('client', async () => {
           .post('/v1/data/query/foo?tag=myapp.silly-query', '*')
           .reply(200, {
             ms: 123,
-            query: query,
+            query,
             result,
           })
 
@@ -1490,7 +1509,7 @@ describe('client', async () => {
           .post('/vX/data/query/foo?resultSourceMap=true&perspective=previewDrafts', '*')
           .reply(200, {
             ms: 123,
-            query: query,
+            query,
             result,
             resultSourceMap,
           })
@@ -1523,7 +1542,7 @@ describe('client', async () => {
         .post('/v1/data/query/foo', '*')
         .reply(200, {
           ms: 123,
-          query: query,
+          query,
           result,
         })
 
@@ -2556,7 +2575,9 @@ describe('client', async () => {
       const client = createClient({projectId: 'abc123', dataset: 'foo'})
 
       const response = {result: []}
-      nock('https://abc123.apicdn.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
+      nock('https://abc123.apicdn.sanity.io')
+        .get('/v1/data/query/foo?query=*&returnQuery=false')
+        .reply(200, response)
 
       const docs = await client.fetch('*')
       expect(docs.length).toEqual(0)
@@ -2566,7 +2587,9 @@ describe('client', async () => {
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: false})
 
       const response = {result: []}
-      nock('https://abc123.api.sanity.io').get('/v1/data/query/foo?query=*').reply(200, response)
+      nock('https://abc123.api.sanity.io')
+        .get('/v1/data/query/foo?query=*&returnQuery=false')
+        .reply(200, response)
 
       const docs = await client.fetch('*')
       expect(docs.length).toEqual(0)
@@ -2592,7 +2615,7 @@ describe('client', async () => {
 
       const reqheaders = {Authorization: 'Bearer foo'}
       nock('https://abc123.apicdn.sanity.io', {reqheaders})
-        .get('/v1/data/query/foo?query=*')
+        .get('/v1/data/query/foo?query=*&returnQuery=false')
         .reply(200, {result: []})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
@@ -2608,7 +2631,7 @@ describe('client', async () => {
 
       const reqheaders = {foo: 'bar'}
       nock('https://abc123.api.sanity.io', {reqheaders})
-        .get('/v1/data/query/foo?query=*')
+        .get('/v1/data/query/foo?query=*&returnQuery=false')
         .reply(200, {result: []})
 
       await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
@@ -2623,7 +2646,7 @@ describe('client', async () => {
       })
 
       nock('https://abc123.api.sanity.io')
-        .get('/v1/data/query/foo?query=*')
+        .get('/v1/data/query/foo?query=*&returnQuery=false')
         .reply(200, {result: []})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
@@ -2632,7 +2655,7 @@ describe('client', async () => {
 
   describe('HTTP REQUESTS', () => {
     test.skipIf(isEdge)('includes token if set', async () => {
-      const qs = '?query=foo.bar'
+      const qs = '?query=foo.bar&returnQuery=false'
       const token = 'abcdefghijklmnopqrstuvwxyz'
       const reqheaders = {Authorization: `Bearer ${token}`}
       nock(projectHost(), {reqheaders}).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
@@ -2642,7 +2665,7 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('allows overriding token', async () => {
-      const qs = '?query=foo.bar'
+      const qs = '?query=foo.bar&returnQuery=false'
       const token = 'abcdefghijklmnopqrstuvwxyz'
       const override = '123456789'
       const reqheaders = {Authorization: `Bearer ${override}`}
@@ -2653,7 +2676,7 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('allows overriding timeout', async () => {
-      const qs = `?query=${encodeURIComponent('*[][0]')}`
+      const qs = `?query=${encodeURIComponent('*[][0]')}&returnQuery=false`
       nock(projectHost()).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
 
       const docs = await getClient().fetch('*[][0]', {}, {timeout: 60 * 1000})
