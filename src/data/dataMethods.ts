@@ -80,6 +80,11 @@ export function _fetch<R, Q>(
   const params = stega.enabled ? vercelStegaCleanAll(_params) : _params
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
+
+  // Default to not returning the query, unless `filterResponse` is `false`,
+  // or `returnQuery` is explicitly set. `true` is the default in Content Lake, so skip if truthy
+  const returnQuery = options.filterResponse === false && options.returnQuery !== false
+
   const {cache, next, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
@@ -93,7 +98,13 @@ export function _fetch<R, Q>(
       ? {...opts, fetch: {cache, next}}
       : opts
 
-  const $request = _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts)
+  const $request = _dataRequest(
+    client,
+    httpRequest,
+    'query',
+    {query, params, options: {returnQuery}},
+    reqOpts,
+  )
   return stega.enabled
     ? $request.pipe(
         combineLatestWith(

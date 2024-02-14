@@ -452,6 +452,8 @@ export interface QueryParams {
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   resultSourceMap?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  returnQuery?: never
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   signal?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   stega?: never
@@ -721,6 +723,7 @@ export interface ListenOptions {
 export interface ResponseQueryOptions extends RequestOptions {
   perspective?: ClientPerspective
   resultSourceMap?: boolean | 'withKeyArraySelector'
+  returnQuery?: boolean
   useCdn?: boolean
   stega?: boolean | StegaConfig
   // The `cache` and `next` options are specific to the Next.js App Router integration
@@ -736,10 +739,31 @@ export interface FilteredResponseQueryOptions extends ResponseQueryOptions {
 /** @public */
 export interface UnfilteredResponseQueryOptions extends ResponseQueryOptions {
   filterResponse: false
+
+  /**
+   * When `filterResponse` is `false`, `returnQuery` also defaults to `true` for
+   * backwards compatibility (on the client side, not from the content lake API).
+   * Can also explicitly be set to `true`.
+   */
+  returnQuery?: true
+}
+
+/**
+ * When using `filterResponse: false`, but you do not wish to receive back the query from
+ * the content lake API.
+ *
+ * @public
+ */
+export interface UnfilteredResponseWithoutQuery extends ResponseQueryOptions {
+  filterResponse: false
+  returnQuery: false
 }
 
 /** @public */
-export type QueryOptions = FilteredResponseQueryOptions | UnfilteredResponseQueryOptions
+export type QueryOptions =
+  | FilteredResponseQueryOptions
+  | UnfilteredResponseQueryOptions
+  | UnfilteredResponseWithoutQuery
 
 /** @public */
 export interface RawQueryResponse<R> {
@@ -748,6 +772,9 @@ export interface RawQueryResponse<R> {
   result: R
   resultSourceMap?: ContentSourceMap
 }
+
+/** @public */
+export type RawQuerylessQueryResponse<R> = Omit<RawQueryResponse<R>, 'query'>
 
 /** @internal */
 export type BaseMutationOptions = RequestOptions & {
