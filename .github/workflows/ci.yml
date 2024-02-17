@@ -30,7 +30,7 @@ jobs:
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
       - run: npm run coverage
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         name: Cache build output
         with:
           name: build-output
@@ -97,7 +97,7 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm install
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         name: Restore build output
         with:
           name: build-output
@@ -113,7 +113,7 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm install
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         name: Restore build output
         with:
           name: build-output
@@ -129,7 +129,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         name: Restore build output
         with:
           name: build-output
@@ -148,7 +148,7 @@ jobs:
         with:
           path: ./node_modules
           key: prod-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         name: Restore build output
         with:
           name: build-output
@@ -168,7 +168,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         name: Restore build output
         with:
           name: build-output
