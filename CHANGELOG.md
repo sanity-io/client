@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.14.0](https://github.com/sanity-io/client/compare/v6.13.3...v6.14.0) (2024-02-19)
+
+
+### Features
+
+* optionally encode cross dataset reference specific data ([#560](https://github.com/sanity-io/client/issues/560)) ([62a9edb](https://github.com/sanity-io/client/commit/62a9edb6a27686477ad06c13d0ff57bc51ae2165))
+
 ## [6.13.3](https://github.com/sanity-io/client/compare/v6.13.2...v6.13.3) (2024-02-14)
 
 
