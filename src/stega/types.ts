@@ -50,6 +50,10 @@ export interface StegaConfig {
    * Specify a `console.log` compatible logger to see debug logs, which keys are encoded and which are not.
    */
   logger?: Logger
+  /**
+   * Set to `true` to omit cross dataset reference specific data from encoded strings
+   */
+  omitCrossDatasetReferenceData?: boolean
 }
 
 /** @public */

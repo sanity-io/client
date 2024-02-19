@@ -84,7 +84,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
           : config.studioUrl!,
       )
       if (!baseUrl) return value
-      const {_id: id, _type: type} = sourceDocument
+      const {_id: id, _type: type, _projectId: projectId, _dataset: dataset} = sourceDocument
 
       return vercelStegaCombine(
         value,
@@ -97,6 +97,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
             id,
             type,
             path: sourcePath,
+            ...(!config.omitCrossDatasetReferenceData && {dataset, projectId}),
           }),
         },
         // We use custom logic to determine if we should skip encoding

@@ -70,6 +70,8 @@ export interface CreateEditUrlOptions {
   id: string
   type: string
   path: ContentSourceMapParsedPath | string
+  projectId?: string
+  dataset?: string
 }
 
 /** @alpha */
