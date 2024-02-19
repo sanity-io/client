@@ -12,6 +12,8 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
     id: _id,
     type,
     path,
+    projectId,
+    dataset,
   } = options
 
   if (!baseUrl) {
@@ -49,6 +51,12 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   }
   if (tool) {
     searchParams.set('tool', tool)
+  }
+  if (projectId) {
+    searchParams.set('projectId', projectId)
+  }
+  if (dataset) {
+    searchParams.set('dataset', dataset)
   }
 
   const segments = [baseUrl === '/' ? '' : baseUrl]

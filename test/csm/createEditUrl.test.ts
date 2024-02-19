@@ -8,6 +8,8 @@ const workspace = 'staging'
 const tool = 'content'
 const id = 'drafts.homepage'
 const type = 'page'
+const projectId = 'a1b2c3d4'
+const dataset = 'production'
 
 const cases = [
   {
@@ -27,6 +29,12 @@ const cases = [
     path: parseJsonPath("$['foo'][?(@._key=='section-1')][0]"),
     expected:
       '/staging/intent/edit/mode=presentation;id=homepage;type=page;path=foo[_key=="section-1"][0];tool=content?baseUrl=/&id=homepage&type=page&path=foo[_key=="section-1"][0]&workspace=staging&tool=content',
+  },
+  {
+    context: {baseUrl: '/', workspace, tool, id, type, projectId, dataset},
+    path: parseJsonPath("$['foo'][?(@._key=='section-1')][0]"),
+    expected:
+      '/staging/intent/edit/mode=presentation;id=homepage;type=page;path=foo[_key=="section-1"][0];tool=content?baseUrl=/&id=homepage&type=page&path=foo[_key=="section-1"][0]&workspace=staging&tool=content&projectId=a1b2c3d4&dataset=production',
   },
 ]
 

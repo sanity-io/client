@@ -34,7 +34,7 @@ export function resolveEditInfo(options: ResolveEditInfoOptions): CreateEditUrlO
       typeof options.studioUrl === 'function' ? options.studioUrl(sourceDoc) : options.studioUrl,
     )
     if (!baseUrl) return undefined
-    const {_id, _type} = sourceDoc
+    const {_id, _type, _projectId, _dataset} = sourceDoc
     return {
       baseUrl,
       workspace,
@@ -42,6 +42,8 @@ export function resolveEditInfo(options: ResolveEditInfoOptions): CreateEditUrlO
       id: _id,
       type: _type,
       path: parseJsonPath(sourcePath + pathSuffix),
+      projectId: _projectId,
+      dataset: _dataset,
     } satisfies CreateEditUrlOptions
   }
 
