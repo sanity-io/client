@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.14.3](https://github.com/sanity-io/client/compare/v6.14.2...v6.14.3) (2024-02-23)
+
+
+### Bug Fixes
+
+* **typings:** update `DatasetsResponse` ([#590](https://github.com/sanity-io/client/issues/590)) ([f303f41](https://github.com/sanity-io/client/commit/f303f41b44cc8f1b3bfc7981d464ae0f786640eb))
+
 ## [6.14.2](https://github.com/sanity-io/client/compare/v6.14.1...v6.14.2) (2024-02-21)
 
 
