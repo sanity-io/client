@@ -14,7 +14,7 @@ export const defaultConfig = {
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 const isLocal = (host: string) => LOCALHOSTS.indexOf(host) !== -1
 
-export const validateApiVersion = function validateApiVersion(apiVersion: string) {
+function validateApiVersion(apiVersion: string) {
   if (apiVersion === '1' || apiVersion === 'X') {
     return
   }
