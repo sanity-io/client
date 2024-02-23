@@ -345,7 +345,16 @@ export type DatasetAclMode = 'public' | 'private' | 'custom'
 /** @internal */
 export type DatasetResponse = {datasetName: string; aclMode: DatasetAclMode}
 /** @internal */
-export type DatasetsResponse = {name: string; aclMode: DatasetAclMode}[]
+export type DatasetsResponse = {
+  name: string
+  aclMode: DatasetAclMode
+  createdAt: string
+  createdByUserId: string
+  addonFor: string | null
+  datasetProfile: string
+  features: string[]
+  tags: string[]
+}[]
 
 /** @internal */
 export interface SanityProjectMember {
