@@ -1,4 +1,4 @@
-import {getPublishedId} from './getPublishedId'
+import {DRAFTS_PREFIX, getPublishedId} from './getPublishedId'
 import {jsonPathToStudioPath} from './jsonPath'
 import * as studioPath from './studioPath'
 import type {CreateEditUrlOptions, EditIntentUrl, StudioBaseUrl} from './types'
@@ -31,8 +31,6 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
 
   const workspace = _workspace === 'default' ? undefined : _workspace
   const tool = _tool === 'default' ? undefined : _tool
-  // eslint-disable-next-line no-warning-comments
-  // @TODO allow passing draft prefixed IDs, to better open the right perspective mode
   const id = getPublishedId(_id)
   const stringifiedPath = Array.isArray(path)
     ? studioPath.toString(jsonPathToStudioPath(path))
@@ -57,6 +55,9 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   }
   if (dataset) {
     searchParams.set('dataset', dataset)
+  }
+  if (_id.startsWith(DRAFTS_PREFIX)) {
+    searchParams.set('isDraft', '')
   }
 
   const segments = [baseUrl === '/' ? '' : baseUrl]

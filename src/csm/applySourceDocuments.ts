@@ -68,7 +68,7 @@ export function applySourceDocuments<Result = unknown>(
         cachedDocument = getCachedDocument(
           sourceDocument._id.startsWith(DRAFTS_PREFIX)
             ? sourceDocument
-            : {...sourceDocument, _id: `${DRAFTS_PREFIX}.${sourceDocument._id}}`},
+            : {...sourceDocument, _id: `${DRAFTS_PREFIX}${sourceDocument._id}}`},
         )
         if (!cachedDocument) {
           cachedDocument = getCachedDocument(
