@@ -31,8 +31,6 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
 
   const workspace = _workspace === 'default' ? undefined : _workspace
   const tool = _tool === 'default' ? undefined : _tool
-  // eslint-disable-next-line no-warning-comments
-  // @TODO allow passing draft prefixed IDs, to better open the right perspective mode
   const id = getPublishedId(_id)
   const stringifiedPath = Array.isArray(path)
     ? studioPath.toString(jsonPathToStudioPath(path))
