@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.0](https://github.com/sanity-io/client/compare/v6.14.4...v6.15.0) (2024-02-26)
+
+
+### Features
+
+* **csm:** add conditional `isDraft` search parameter to edit urls ([#604](https://github.com/sanity-io/client/issues/604)) ([89783d2](https://github.com/sanity-io/client/commit/89783d2bb96971e7c4f414d51cbc488debc25291))
+
 ## [6.14.4](https://github.com/sanity-io/client/compare/v6.14.3...v6.14.4) (2024-02-26)
 
 
