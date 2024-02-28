@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.1](https://github.com/sanity-io/client/compare/v6.15.0...v6.15.1) (2024-02-28)
+
+
+### Bug Fixes
+
+* support turbopack ([76d5e24](https://github.com/sanity-io/client/commit/76d5e247a9226c2709c9c306ced04e3831915286))
+
 ## [6.15.0](https://github.com/sanity-io/client/compare/v6.14.4...v6.15.0) (2024-02-26)
 
 
