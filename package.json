@@ -159,7 +159,7 @@
     "prettier": "^3.2.5",
     "prettier-plugin-packagejson": "^2.4.12",
     "rimraf": "^5.0.1",
-    "rollup": "^4.12.0",
+    "rollup": "^4.12.1",
     "sse-channel": "^4.0.0",
     "terser": "^5.28.1",
     "typescript": "^5.3.3",
