@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.15.2",
+  "version": "6.15.3-canary.2",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -39,9 +39,7 @@
       "worker": "./dist/index.browser.js",
       "source": "./src/index.ts",
       "require": "./dist/index.cjs",
-      "node": {
-        "import": "./dist/index.cjs.js"
-      },
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./csm": {
@@ -65,9 +63,6 @@
       "worker": "./dist/stega.browser.js",
       "source": "./src/stega/index.ts",
       "require": "./dist/stega.cjs",
-      "node": {
-        "import": "./dist/stega.cjs.js"
-      },
       "import": "./dist/stega.js",
       "default": "./dist/stega.js"
     },
