@@ -38,7 +38,6 @@
       "edge-light": "./dist/index.browser.js",
       "worker": "./dist/index.browser.js",
       "source": "./src/index.ts",
-      "module": "./dist/index.js",
       "require": "./dist/index.cjs",
       "node": {
         "import": "./dist/index.cjs.js"
@@ -65,7 +64,6 @@
       "edge-light": "./dist/stega.browser.js",
       "worker": "./dist/stega.browser.js",
       "source": "./src/stega/index.ts",
-      "module": "./dist/stega.js",
       "require": "./dist/stega.cjs",
       "node": {
         "import": "./dist/stega.cjs.js"
