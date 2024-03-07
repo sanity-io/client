@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.2](https://github.com/sanity-io/client/compare/v6.15.1...v6.15.2) (2024-03-07)
+
+
+### Bug Fixes
+
+* remove `module` export condition ([#625](https://github.com/sanity-io/client/issues/625)) ([2a7e81d](https://github.com/sanity-io/client/commit/2a7e81d7f3eab858c827cdf8a763d258d9b08468))
+
 ## [6.15.1](https://github.com/sanity-io/client/compare/v6.15.0...v6.15.1) (2024-02-28)
 
 
