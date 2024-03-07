@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.3](https://github.com/sanity-io/client/compare/v6.15.2...v6.15.3) (2024-03-07)
+
+
+### Bug Fixes
+
+* resolve turbopack regression ([#627](https://github.com/sanity-io/client/issues/627)) ([fdb999a](https://github.com/sanity-io/client/commit/fdb999a468a09dede5e450da88542ddfeb1fbd83))
+
 ## [6.15.2](https://github.com/sanity-io/client/compare/v6.15.1...v6.15.2) (2024-03-07)
 
 
