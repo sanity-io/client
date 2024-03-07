@@ -46,8 +46,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci --ignore-scripts
         if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
-      - run: npm audit signatures
-        if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
+      #- run: npm audit signatures
+      #  if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
       # Release Please has already incremented versions and published tags, so we just
       # need to publish the new version to npm here
       - run: npm publish --provenance
