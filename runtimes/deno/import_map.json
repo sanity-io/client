@@ -2,8 +2,8 @@
   "imports": {
     "@sanity/eventsource": "https://esm.sh/@sanity/eventsource@^5.0.0/browser",
     "@vercel/stega": "https://esm.sh/@vercel/stega@0.1.0",
-    "get-it": "https://esm.sh/get-it@^8.4.13",
-    "get-it/middleware": "https://esm.sh/get-it@^8.4.13/middleware",
+    "get-it": "https://esm.sh/get-it@^8.4.14",
+    "get-it/middleware": "https://esm.sh/get-it@^8.4.14/middleware",
     "rxjs": "https://esm.sh/rxjs@^7.0.0",
     "rxjs/operators": "https://esm.sh/rxjs@^7.0.0/operators"
   }
