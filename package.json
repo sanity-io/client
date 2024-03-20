@@ -26,7 +26,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "source": "./src/index.ts",
       "browser": {
         "source": "./src/index.browser.ts",
         "import": "./dist/index.browser.js",
@@ -37,20 +37,18 @@
       "edge": "./dist/index.browser.js",
       "edge-light": "./dist/index.browser.js",
       "worker": "./dist/index.browser.js",
-      "source": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./csm": {
-      "types": "./dist/csm.d.ts",
       "source": "./src/csm/index.ts",
       "import": "./dist/csm.js",
       "require": "./dist/csm.cjs",
       "default": "./dist/csm.js"
     },
     "./stega": {
-      "types": "./dist/stega.d.ts",
+      "source": "./src/stega/index.ts",
       "browser": {
         "source": "./src/stega/index.browser.ts",
         "import": "./dist/stega.browser.js",
@@ -61,7 +59,6 @@
       "edge": "./dist/stega.browser.js",
       "edge-light": "./dist/stega.browser.js",
       "worker": "./dist/stega.browser.js",
-      "source": "./src/stega/index.ts",
       "import": "./dist/stega.js",
       "require": "./dist/stega.cjs",
       "default": "./dist/stega.js"
@@ -133,7 +130,7 @@
     "@edge-runtime/vm": "^3.2.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "@sanity/pkg-utils": "^5.0.4",
+    "@sanity/pkg-utils": "^5.1.1",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^20.8.8",
     "@typescript-eslint/eslint-plugin": "^7.3.1",
@@ -155,7 +152,7 @@
     "rollup": "^4.13.0",
     "sse-channel": "^4.0.0",
     "terser": "^5.29.2",
-    "typescript": "^5.4.2",
+    "typescript": "5.4.2",
     "vitest": "1.4.0",
     "vitest-github-actions-reporter": "0.11.1"
   },
