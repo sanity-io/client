@@ -459,16 +459,16 @@ The following example will result in a query with `tag=website.landing-page`:
 
 ```ts
 const client = createClient({
-  projectId: "<project>",
-  dataset: "<dataset>",
+  projectId: '<project>',
+  dataset: '<dataset>',
   useCdn: true,
-  apiVersion: "2024-01-24",
-  requestTagPrefix: "website" // Added to every request
-});
+  apiVersion: '2024-01-24',
+  requestTagPrefix: 'website', // Added to every request
+})
 
 const posts = await client.fetch('*[_type == "post"]', {
   tag: `index-page`, // Appended to requestTagPrefix for this individual request
-});
+})
 ```
 
 ### Performing queries
