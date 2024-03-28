@@ -45,6 +45,10 @@ export interface ClientConfig {
   apiHost?: string
   apiVersion?: string
   proxy?: string
+
+  /**
+   * Optional request tag prefix for all request tags
+   */
   requestTagPrefix?: string
   ignoreBrowserTokenWarning?: boolean
   withCredentials?: boolean
