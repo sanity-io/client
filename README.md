@@ -65,11 +65,14 @@ export async function updateDocumentTitle(_id, title) {
     - [Browser ESM CDN](#browser-esm-cdn)
     - [UMD](#umd)
   - [Specifying API version](#specifying-api-version)
+  - [Request tags](#request-tags)
   - [Performing queries](#performing-queries)
   - [Using perspectives](#using-perspectives)
     - [`published`](#published)
     - [`previewDrafts`](#previewdrafts)
   - [Fetching Content Source Maps](#fetching-content-source-maps)
+    - [Using Visual editing with steganography](#using-visual-editing-with-steganography)
+    - [Creating Studio edit intent links](#creating-studio-edit-intent-links)
   - [Listening to queries](#listening-to-queries)
   - [Fetch a single document](#fetch-a-single-document)
   - [Fetch multiple documents in one go](#fetch-multiple-documents-in-one-go)
@@ -94,13 +97,28 @@ export async function updateDocumentTitle(_id, title) {
   - [Deleting an asset](#deleting-an-asset)
   - [Mutation options](#mutation-options)
   - [Aborting a request](#aborting-a-request)
+    - [1. Abort a request by passing an AbortSignal with the request options](#1-abort-a-request-by-passing-an-abortsignal-with-the-request-options)
+    - [2. Cancel a request by unsubscribing from the Observable](#2-cancel-a-request-by-unsubscribing-from-the-observable)
   - [Get client configuration](#get-client-configuration)
   - [Set client configuration](#set-client-configuration)
-- [Release new version](#release-new-version)
 - [License](#license)
-- [Migrate](#migrate)
-  - [From `v5`](#from-v5)
-  - [From `v4`](#from-v4)
+- [From `v5`](#from-v5)
+  - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
+- [From `v4`](#from-v4)
+  - [No longer shipping `ES5`](#no-longer-shipping-es5)
+  - [Node.js `v12` no longer supported](#nodejs-v12-no-longer-supported)
+  - [The `default` export is replaced with the named export `createClient`](#the-default-export-is-replaced-with-the-named-export-createclient)
+  - [`client.assets.delete` is removed](#clientassetsdelete-is-removed)
+  - [`client.assets.getImageUrl` is removed, replace with `@sanity/image-url`](#clientassetsgetimageurl-is-removed-replace-with-sanityimage-url)
+  - [`SanityClient` static properties moved to named exports](#sanityclient-static-properties-moved-to-named-exports)
+  - [`client.clientConfig` is removed, replace with `client.config()`](#clientclientconfig-is-removed-replace-with-clientconfig)
+  - [`client.isPromiseAPI()` is removed, replace with an `instanceof` check](#clientispromiseapi-is-removed-replace-with-an-instanceof-check)
+  - [`client.observable.isObservableAPI()` is removed, replace with an `instanceof` check](#clientobservableisobservableapi-is-removed-replace-with-an-instanceof-check)
+  - [`client._requestObservable` is removed, replace with `client.observable.request`](#client_requestobservable-is-removed-replace-with-clientobservablerequest)
+  - [`client._dataRequest` is removed, replace with `client.dataRequest`](#client_datarequest-is-removed-replace-with-clientdatarequest)
+  - [`client._create_` is removed, replace with one of `client.create`, `client.createIfNotExists` or `client.createOrReplace`](#client_create_-is-removed-replace-with-one-of-clientcreate-clientcreateifnotexists-or-clientcreateorreplace)
+  - [`client.patch.replace` is removed, replace with `client.createOrReplace`](#clientpatchreplace-is-removed-replace-with-clientcreateorreplace)
+  - [`client.auth` is removed, replace with `client.request`](#clientauth-is-removed-replace-with-clientrequest)
 
 ## Requirements
 
@@ -428,6 +446,31 @@ In general, unless you know what API version you want to use, you'll want to sta
 
 In future versions, specifying an API version will be required. For now (to maintain backwards compatiblity) not specifying a version will trigger a deprecation warning and fall back to using `v1`.
 
+### Request tags
+
+Request tags are values assigned to API and CDN requests that can be used to filter and aggregate log data within [request logs][request-logs] from your Sanity Content Lake.
+
+Sanity Client has out-of-the-box support for tagging every API and CDN request on two levels:
+
+- Globally: Using the `requestTagPrefix` client configuration parameter
+- Per Request: Pass the tag option to the SDK’s Request method.
+
+The following example will result in a query with `tag=website.landing-page`:
+
+```ts
+const client = createClient({
+  projectId: "<project>",
+  dataset: "<dataset>",
+  useCdn: true,
+  apiVersion: "2024-01-24",
+  requestTagPrefix: "website" // Added to every request
+});
+
+const posts = await client.fetch('*[_type == "post"]', {
+  tag: `index-page`, // Appended to requestTagPrefix for this individual request
+});
+```
+
 ### Performing queries
 
 ```js
@@ -640,7 +683,7 @@ Enabling Content Source Maps is a two-step process:
    console.log(resultSourceMap)
    ```
 
-If your `apiVersion` is `2021-03-25` or later, the `resultSourceMap` property will always exist in the response after enabling it. If there is no source map, `resultSourceMap` is an empty object.  
+If your `apiVersion` is `2021-03-25` or later, the `resultSourceMap` property will always exist in the response after enabling it. If there is no source map, `resultSourceMap` is an empty object.
 This is the corresponding TypeScript definition:
 
 ```ts
@@ -1608,3 +1651,4 @@ await client.request<void>({uri: '/auth/logout', method: 'POST'})
 [visual-editing]: https://www.sanity.io/docs/vercel-visual-editing?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
 [content-source-maps]: https://www.sanity.io/docs/content-source-maps?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
 [content-source-maps-intro]: https://www.sanity.io/blog/content-source-maps-announce?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
+[request-logs]: https://www.sanity.io/docs/request-logs?utm_source=github.com&utm_medium=referral&utm_campaign=may-vercel-launch
