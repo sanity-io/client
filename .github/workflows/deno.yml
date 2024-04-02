@@ -24,11 +24,11 @@ jobs:
         with:
           deno-version: vx.x.x
       - run: npm run test:deno:update_import_map
-      - uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-token
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          app_id: ${{ secrets.ECOSPARK_APP_ID }}
-          private_key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
       - uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e # v6
         with:
           body: I ran `npm run test:deno:update_import_map` 🧑‍💻
@@ -36,4 +36,4 @@ jobs:
           commit-message: 'chore(deno): update import_map.json'
           labels: 🤖 bot
           title: 'chore(deno): update import_map.json'
-          token: ${{ steps.generate-token.outputs.token }}
+          token: ${{ steps.app-token.outputs.token }}

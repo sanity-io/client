@@ -30,11 +30,11 @@ jobs:
           key: prettier-${{ hashFiles('package-lock.json') }}-${{ hashFiles('.gitignore') }}
       - run: npx prettier --ignore-path .gitignore --cache --write .
       - run: git restore .github/workflows CHANGELOG.md runtimes/deno/import_map.json
-      - uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        id: generate-token
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
-          app_id: ${{ secrets.ECOSPARK_APP_ID }}
-          private_key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
       - uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e # v6
         with:
           body: I ran `npx prettier --ignore-path .gitignore --cache --write .` 🧑‍💻
@@ -42,4 +42,4 @@ jobs:
           commit-message: 'chore(prettier): 🤖 ✨'
           labels: 🤖 bot
           title: 'chore(prettier): 🤖 ✨'
-          token: ${{ steps.generate-token.outputs.token }}
+          token: ${{ steps.app-token.outputs.token }}
