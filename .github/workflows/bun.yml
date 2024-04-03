@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@d3603274aca5625baad52ec06108517a089cdd00 # v1
+      - uses: oven-sh/setup-bun@8f24390df009a496891208e5e36b8a1de1f45135 # v1
         with:
           bun-version: latest
       - run: bun install
