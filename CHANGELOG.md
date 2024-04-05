@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.11](https://github.com/sanity-io/client/compare/v6.15.10...v6.15.11) (2024-04-05)
+
+
+### Bug Fixes
+
+* **stega:** update default filter to skip paths that contain "type" ([#689](https://github.com/sanity-io/client/issues/689)) ([1c6e4ea](https://github.com/sanity-io/client/commit/1c6e4eaa0b1bfd65866e51b476731d75ba0c2aa8))
+
 ## [6.15.10](https://github.com/sanity-io/client/compare/v6.15.9...v6.15.10) (2024-04-05)
 
 
