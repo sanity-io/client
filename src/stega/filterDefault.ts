@@ -1,6 +1,6 @@
-import type {FilterDefault} from './types'
+import type {ContentSourceMapParsedPath, FilterDefault} from './types'
 
-export const filterDefault: FilterDefault = ({sourcePath, value}) => {
+export const filterDefault: FilterDefault = ({sourcePath, resultPath, value}) => {
   // Skips encoding on URL or Date strings, similar to the `skip: 'auto'` parameter in vercelStegaCombine()
   if (isValidDate(value) || isValidURL(value)) {
     return false
@@ -47,6 +47,12 @@ export const filterDefault: FilterDefault = ({sourcePath, value}) => {
       (path) => path === 'meta' || path === 'metadata' || path === 'openGraph' || path === 'seo',
     )
   ) {
+    return false
+  }
+
+  // If the sourcePath or resultPath contains something that sounds like a type, like iconType, we skip encoding, as it's most
+  // of the time used for logic that breaks if it contains stega characters
+  if (hasTypeLike(sourcePath) || hasTypeLike(resultPath)) {
     return false
   }
 
@@ -110,4 +116,8 @@ function isValidURL(url: string) {
     return false
   }
   return true
+}
+
+function hasTypeLike(path: ContentSourceMapParsedPath): boolean {
+  return path.some((segment) => typeof segment === 'string' && segment.match(/type/i) !== null)
 }
