@@ -68,7 +68,6 @@
   "main": "./dist/index.cjs",
   "unpkg": "umd/sanityClient.min.js",
   "module": "./dist/index.js",
-  "source": "./src/index.ts",
   "browser": {
     "./dist/index.cjs": "./dist/index.browser.cjs",
     "./dist/index.js": "./dist/index.browser.js",
