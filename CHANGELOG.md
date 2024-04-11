@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.13](https://github.com/sanity-io/client/compare/v6.15.12...v6.15.13) (2024-04-11)
+
+
+### Bug Fixes
+
+* improve bun support ([ac37787](https://github.com/sanity-io/client/commit/ac37787241bd15de1ec4a0a8d49593a5d1db6a20))
+
 ## [6.15.12](https://github.com/sanity-io/client/compare/v6.15.11...v6.15.12) (2024-04-11)
 
 
