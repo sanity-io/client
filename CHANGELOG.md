@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.12](https://github.com/sanity-io/client/compare/v6.15.11...v6.15.12) (2024-04-11)
+
+
+### Bug Fixes
+
+* add bun export condition ([57e814f](https://github.com/sanity-io/client/commit/57e814fab8d80e551d513c657bbd9355a602b71a))
+* **deps:** update dependency get-it to ^8.4.19 ([#705](https://github.com/sanity-io/client/issues/705)) ([fa3e10c](https://github.com/sanity-io/client/commit/fa3e10c28ac6c4cc8db3fe4dae2bce6c4c6f19b9))
+
 ## [6.15.11](https://github.com/sanity-io/client/compare/v6.15.10...v6.15.11) (2024-04-05)
 
 
