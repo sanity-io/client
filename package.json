@@ -27,13 +27,13 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "bun": "./dist/index.js",
       "browser": {
         "source": "./src/index.browser.ts",
         "import": "./dist/index.browser.js",
         "require": "./dist/index.browser.cjs"
       },
       "react-server": "./dist/index.browser.js",
+      "bun": "./dist/index.browser.js",
       "deno": "./dist/index.browser.js",
       "edge": "./dist/index.browser.js",
       "edge-light": "./dist/index.browser.js",
@@ -50,13 +50,13 @@
     },
     "./stega": {
       "source": "./src/stega/index.ts",
-      "bun": "./dist/stega.js",
       "browser": {
         "source": "./src/stega/index.browser.ts",
         "import": "./dist/stega.browser.js",
         "require": "./dist/stega.browser.cjs"
       },
       "react-server": "./dist/stega.browser.js",
+      "bun": "./dist/stega.browser.js",
       "deno": "./dist/stega.browser.js",
       "edge": "./dist/stega.browser.js",
       "edge-light": "./dist/stega.browser.js",
@@ -123,7 +123,7 @@
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
     "@vercel/stega": "0.1.0",
-    "get-it": "^8.4.20",
+    "get-it": "^8.4.21",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {

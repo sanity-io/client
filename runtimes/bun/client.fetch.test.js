@@ -1,6 +1,5 @@
+import {createClient} from '@sanity/client'
 import {expect, test} from 'bun:test'
-
-import {createClient} from '../..'
 
 const projectId = '81pocpw8'
 const dataset = 'production'
