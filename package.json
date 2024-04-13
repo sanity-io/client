@@ -123,7 +123,7 @@
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
     "@vercel/stega": "0.1.0",
-    "get-it": "^8.4.21",
+    "get-it": "^8.4.23",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
