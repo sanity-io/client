@@ -1,6 +1,8 @@
-import type {ContentSourceMap, ContentSourceMapDocuments, SanityDocument} from '../types'
+import type {ContentSourceMap, ContentSourceMapDocuments, SanityDocument} from '@sanity/client'
+
 import {Path} from './studioPath'
 
+export type {IndexTuple, KeyedSegment, Path, PathSegment} from './studioPath'
 export type {
   Any,
   ClientPerspective,
@@ -18,8 +20,7 @@ export type {
   ContentSourceMapUnknownSource,
   ContentSourceMapValueMapping,
   SanityDocument,
-} from '../types'
-export type {IndexTuple, KeyedSegment, Path, PathSegment} from './studioPath'
+} from '@sanity/client'
 
 /**
  * @alpha
