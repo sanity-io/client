@@ -1,4 +1,5 @@
-import type {ContentSourceMap, ContentSourceMapDocuments, SanityDocument} from '../types'
+import type {ContentSourceMap, ContentSourceMapDocuments, SanityDocument} from '@sanity/client'
+
 import {Path} from './studioPath'
 
 export type {
