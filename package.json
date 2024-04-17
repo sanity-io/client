@@ -60,8 +60,8 @@
         "require": "./dist/stega.browser.cjs"
       },
       "react-native": {
-        "import": "./dist/index.browser.js",
-        "require": "./dist/index.browser.cjs"
+        "import": "./dist/stega.browser.js",
+        "require": "./dist/stega.browser.cjs"
       },
       "react-server": "./dist/stega.browser.js",
       "bun": "./dist/stega.browser.js",
