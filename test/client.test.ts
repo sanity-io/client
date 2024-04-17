@@ -2684,7 +2684,7 @@ describe('client', async () => {
     })
 
     test.runIf(isNode)('includes user agent in node', async () => {
-      const pkg = await import('../package.json')
+      const {default: pkg} = await import('../package.json')
       const reqheaders = {'User-Agent': `${pkg.name} ${pkg.version}`}
       nock(projectHost(), {reqheaders}).get('/v1/data/doc/foo/bar').reply(200, {documents: []})
 
@@ -2692,7 +2692,7 @@ describe('client', async () => {
     })
 
     test.runIf(isNode)('includes user agent in node', async () => {
-      const pkg = await import('../package.json')
+      const {default: pkg} = await import('../package.json')
       const reqheaders = {'User-Agent': `${pkg.name} ${pkg.version}`}
       nock(projectHost(), {reqheaders}).get('/v1/data/doc/foo/bar').reply(200, {documents: []})
 
