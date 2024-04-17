@@ -32,6 +32,10 @@
         "import": "./dist/index.browser.js",
         "require": "./dist/index.browser.cjs"
       },
+      "react-native": {
+        "import": "./dist/index.browser.js",
+        "require": "./dist/index.browser.cjs"
+      },
       "react-server": "./dist/index.browser.js",
       "bun": "./dist/index.browser.js",
       "deno": "./dist/index.browser.js",
@@ -54,6 +58,10 @@
         "source": "./src/stega/index.browser.ts",
         "import": "./dist/stega.browser.js",
         "require": "./dist/stega.browser.cjs"
+      },
+      "react-native": {
+        "import": "./dist/index.browser.js",
+        "require": "./dist/index.browser.cjs"
       },
       "react-server": "./dist/stega.browser.js",
       "bun": "./dist/stega.browser.js",
