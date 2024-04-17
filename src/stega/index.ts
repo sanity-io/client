@@ -9,8 +9,11 @@ const exp = defineCreateClientExports<SanityClient, ClientConfig>(envMiddleware,
 
 export * from './shared'
 
-/** @public */
-export const requester = exp.requester
+/**
+ * @deprecated -- Use `import {requester} from '@sanity/client'` instead
+ * @public
+ */
+export const requester = originalRequester
 
 /** @public */
 export const createClient = exp.createClient
