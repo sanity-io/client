@@ -27,22 +27,9 @@ const printWarnings = {
 }
 
 /** @internal */
-export function defineHttpRequest(
-  envMiddleware: Middlewares,
-  {
-    maxRetries = 5,
-    retryDelay,
-  }: {maxRetries?: number; retryDelay?: (attemptNumber: number) => number},
-): HttpRequest {
+export function defineHttpRequest(envMiddleware: Middlewares): HttpRequest {
   const request = getIt([
-    maxRetries > 0
-      ? retry({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          retryDelay: retryDelay as any, // This option is typed incorrectly in get-it.
-          maxRetries,
-          shouldRetry,
-        })
-      : {},
+    retry({shouldRetry}),
     ...envMiddleware,
     printWarnings,
     jsonRequest(),
@@ -63,6 +50,9 @@ export function defineHttpRequest(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function shouldRetry(err: any, attempt: number, options: any) {
+  // Allow opting out of retries
+  if (options.maxRetries === 0) return false
+
   // By default `retry.shouldRetry` doesn't retry on server errors so we add our own logic.
 
   const isSafe = options.method === 'GET' || options.method === 'HEAD'

@@ -24,17 +24,10 @@ export default function defineCreateClientExports<
   ClassConstructor: new (httpRequest: HttpRequest, config: ClientConfigType) => SanityClientType,
 ) {
   // Set the http client to use for requests, and its environment specific middleware
-  const httpRequest = defineHttpRequest(envMiddleware, {})
+  const httpRequest = defineHttpRequest(envMiddleware)
   const requester = httpRequest.defaultRequester
 
-  const createClient = (config: ClientConfigType) =>
-    new ClassConstructor(
-      defineHttpRequest(envMiddleware, {
-        maxRetries: config.maxRetries,
-        retryDelay: config.retryDelay,
-      }),
-      config,
-    )
+  const createClient = (config: ClientConfigType) => new ClassConstructor(httpRequest, config)
 
   return {requester, createClient}
 }
