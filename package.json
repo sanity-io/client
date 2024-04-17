@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.15.15",
+  "version": "6.15.16-canary.0",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -55,20 +55,10 @@
     "./stega": {
       "source": "./src/stega/index.ts",
       "browser": {
-        "source": "./src/stega/index.browser.ts",
+        "source": "./src/stega/index.ts",
         "import": "./dist/stega.browser.js",
         "require": "./dist/stega.browser.cjs"
       },
-      "react-native": {
-        "import": "./dist/stega.browser.js",
-        "require": "./dist/stega.browser.cjs"
-      },
-      "react-server": "./dist/stega.browser.js",
-      "bun": "./dist/stega.browser.js",
-      "deno": "./dist/stega.browser.js",
-      "edge": "./dist/stega.browser.js",
-      "edge-light": "./dist/stega.browser.js",
-      "worker": "./dist/stega.browser.js",
       "import": "./dist/stega.js",
       "require": "./dist/stega.cjs",
       "default": "./dist/stega.js"
@@ -80,9 +70,7 @@
   "module": "./dist/index.js",
   "browser": {
     "./dist/index.cjs": "./dist/index.browser.cjs",
-    "./dist/index.js": "./dist/index.browser.js",
-    "./dist/stega.cjs": "./dist/stega.browser.cjs",
-    "./dist/stega.js": "./dist/stega.browser.js"
+    "./dist/index.js": "./dist/index.browser.js"
   },
   "types": "./dist/index.d.ts",
   "typesVersions": {

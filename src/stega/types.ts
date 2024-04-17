@@ -1,11 +1,11 @@
+import type {ClientConfig, InitializedClientConfig, RawQueryResponse} from '@sanity/client'
 import type {
   ContentSourceMap,
   ContentSourceMapDocuments,
   ContentSourceMapParsedPath,
   ResolveStudioUrl,
   StudioUrl,
-} from '../csm'
-import {ClientConfig, InitializedClientConfig, RawQueryResponse} from '../types'
+} from '@sanity/client/csm'
 
 export type {
   ContentSourceMapParsedPath,
@@ -13,8 +13,7 @@ export type {
   StudioBaseRoute,
   StudioBaseUrl,
   StudioUrl,
-} from '../csm/types'
-export type * from '../types'
+} from '@sanity/client/csm'
 
 export type {ContentSourceMap, ResolveStudioUrl}
 

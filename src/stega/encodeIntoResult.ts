@@ -1,6 +1,7 @@
+import type {ContentSourceMap} from '@sanity/client/csm'
+
 import {parseJsonPath} from '../csm/jsonPath'
 import {resolveMapping} from '../csm/resolveMapping'
-import type {ContentSourceMap} from '../csm/types'
 import {walkMap} from '../csm/walkMap'
 import type {Encoder} from './types'
 
