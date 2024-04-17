@@ -1,8 +1,8 @@
-import {getIt, type Middlewares} from 'get-it'
+import {getIt, type Middlewares, Requester} from 'get-it'
 import {jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/middleware'
 import {Observable} from 'rxjs'
 
-import type {Any, HttpRequest, RequestOptions} from '../types'
+import type {Any} from '../types'
 import {ClientError, ServerError} from './errors'
 
 const httpError = {
@@ -27,22 +27,9 @@ const printWarnings = {
 }
 
 /** @internal */
-export function defineHttpRequest(
-  envMiddleware: Middlewares,
-  {
-    maxRetries = 5,
-    retryDelay,
-  }: {maxRetries?: number; retryDelay?: (attemptNumber: number) => number},
-): HttpRequest {
-  const request = getIt([
-    maxRetries > 0
-      ? retry({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          retryDelay: retryDelay as any, // This option is typed incorrectly in get-it.
-          maxRetries,
-          shouldRetry,
-        })
-      : {},
+export function defineHttpRequest(envMiddleware: Middlewares): Requester {
+  return getIt([
+    retry({shouldRetry}),
     ...envMiddleware,
     printWarnings,
     jsonRequest(),
@@ -51,18 +38,13 @@ export function defineHttpRequest(
     httpError,
     observable({implementation: Observable}),
   ])
-
-  function httpRequest(options: RequestOptions, requester = request) {
-    return requester({maxRedirects: 0, ...options} as Any)
-  }
-
-  httpRequest.defaultRequester = request
-
-  return httpRequest
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function shouldRetry(err: any, attempt: number, options: any) {
+  // Allow opting out of retries
+  if (options.maxRetries === 0) return false
+
   // By default `retry.shouldRetry` doesn't retry on server errors so we add our own logic.
 
   const isSafe = options.method === 'GET' || options.method === 'HEAD'

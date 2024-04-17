@@ -293,7 +293,6 @@ export interface ErrorProps {
 
 /** @public */
 export type HttpRequest = {
-  defaultRequester: Requester
   (options: RequestOptions, requester: Requester): ReturnType<Requester>
 }
 
