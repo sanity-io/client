@@ -1,8 +1,4 @@
 {
   "extends": "./tsconfig.settings",
-  "include": ["./src", "./modules.d.ts"],
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "."
-  }
+  "include": ["./src", "./modules.d.ts"]
 }

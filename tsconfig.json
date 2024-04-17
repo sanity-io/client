@@ -3,9 +3,7 @@
   "include": ["./src", "./modules.d.ts", "./test"],
   "exclude": ["./test-esm/test.ts", "./node_modules/next", "./test-next"],
   "compilerOptions": {
-    "noEmit": true,
     "types": ["@edge-runtime/types"],
-    "module": "esnext",
     "paths": {
       "@sanity/client": ["./src"],
       "@sanity/client/*": ["./src/*"]

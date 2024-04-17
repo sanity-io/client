@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.15.14",
+  "version": "6.15.15-canary.0",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -122,7 +122,6 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
-    "@vercel/stega": "0.1.0",
     "get-it": "^8.4.23",
     "rxjs": "^7.0.0"
   },
@@ -136,6 +135,7 @@
     "@types/node": "^20.8.8",
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
+    "@vercel/stega": "0.1.0",
     "@vitest/coverage-v8": "1.5.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",

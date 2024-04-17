@@ -1,9 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
+    "paths": {
+      "@sanity/client": ["./src"],
+      "@sanity/client/*": ["./src/*"]
+    },
+    
+    "outDir": "./dist",
+    "rootDir": ".",
+    "noEmit": true,
+
+    "target": "ESNext",
+    "module": "Preserve",
 
     // Strict type-checking
     "strict": true,
@@ -21,11 +28,7 @@
     "skipLibCheck": true,
 
     // Module resolution
-    "module": "esnext",
-    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "forceConsistentCasingInFileNames": true
   }
 }
