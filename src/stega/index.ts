@@ -15,5 +15,8 @@ export * from './shared'
  */
 export const requester = originalRequester
 
-/** @public */
-export const createClient = exp.createClient
+/**
+ * @deprecated -- Use `import {createClient} from '@sanity/client'` instead
+ * @public
+ */
+export const createClient = originalCreateClient
