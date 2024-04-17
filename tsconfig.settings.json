@@ -2,7 +2,7 @@
   "compilerOptions": {
     "paths": {
       "@sanity/client/*": ["./src/*"],
-      "@sanity/client": ["./src/index"],
+      "@sanity/client": ["./src/index"]
     },
 
     "outDir": "./dist",
