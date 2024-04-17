@@ -4,7 +4,7 @@
       "@sanity/client/*": ["./src/*"],
       "@sanity/client": ["./src/index"],
     },
-    
+
     "outDir": "./dist",
     "rootDir": ".",
     "noEmit": true,
