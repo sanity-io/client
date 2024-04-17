@@ -122,7 +122,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.0",
-    "get-it": "^8.4.23",
+    "get-it": "^8.4.24",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
