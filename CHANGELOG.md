@@ -5,6 +5,15 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.16](https://github.com/sanity-io/client/compare/v6.15.15...v6.15.16) (2024-04-17)
+
+
+### Bug Fixes
+
+* `createClient` from `@sanity/client/stega` is deprecated ([4d0a03f](https://github.com/sanity-io/client/commit/4d0a03f4954ac00568b6feaef4b3d98fa5dc2984))
+* `requester` from `@sanity/client/stega` is deprecated ([f29263d](https://github.com/sanity-io/client/commit/f29263dc5c6649c9df6d256afe7701592ccc65c0))
+* use the correct stega export conditions for `react-native` ([06af163](https://github.com/sanity-io/client/commit/06af16360874146dcbca9c4cfaa4deeb35bfb664))
+
 ## [6.15.15](https://github.com/sanity-io/client/compare/v6.15.14...v6.15.15) (2024-04-17)
 
 
