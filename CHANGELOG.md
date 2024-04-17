@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.15](https://github.com/sanity-io/client/compare/v6.15.14...v6.15.15) (2024-04-17)
+
+
+### Bug Fixes
+
+* add `react-native` export conditions ([cc0fd76](https://github.com/sanity-io/client/commit/cc0fd76f066eae0f809cf808e3b4c9ab1f7e4eaf))
+* **deps:** update dependency get-it to ^8.4.24 ([0d5952c](https://github.com/sanity-io/client/commit/0d5952c91aeb956e4cf9dc607ab333e49e206b76))
+
 ## [6.15.14](https://github.com/sanity-io/client/compare/v6.15.13...v6.15.14) (2024-04-14)
 
 
