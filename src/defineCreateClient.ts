@@ -1,7 +1,7 @@
 import type {Middlewares} from 'get-it'
 
 import {defineHttpRequest} from './http/request'
-import type {ClientConfig, HttpRequest} from './types'
+import type {Any, ClientConfig, HttpRequest} from './types'
 
 export * from './data/patch'
 export * from './data/transaction'
@@ -24,17 +24,19 @@ export default function defineCreateClientExports<
   ClassConstructor: new (httpRequest: HttpRequest, config: ClientConfigType) => SanityClientType,
 ) {
   // Set the http client to use for requests, and its environment specific middleware
-  const httpRequest = defineHttpRequest(envMiddleware, {})
-  const requester = httpRequest.defaultRequester
+  const defaultRequester = defineHttpRequest(envMiddleware)
 
   const createClient = (config: ClientConfigType) =>
     new ClassConstructor(
-      defineHttpRequest(envMiddleware, {
-        maxRetries: config.maxRetries,
-        retryDelay: config.retryDelay,
-      }),
+      (options, requester) =>
+        (requester || defaultRequester)({
+          maxRedirects: 0,
+          maxRetries: config.maxRetries,
+          retryDelay: config.retryDelay,
+          ...options,
+        } as Any),
       config,
     )
 
-  return {requester, createClient}
+  return {requester: defaultRequester, createClient}
 }
