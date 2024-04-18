@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.18](https://github.com/sanity-io/client/compare/v6.15.17...v6.15.18) (2024-04-18)
+
+
+### Bug Fixes
+
+* allow setting middleware on `requester` ([#742](https://github.com/sanity-io/client/issues/742)) ([65d45be](https://github.com/sanity-io/client/commit/65d45be227cb444358289389f939a68784e24cb0))
+
 ## [6.15.17](https://github.com/sanity-io/client/compare/v6.15.16...v6.15.17) (2024-04-17)
 
 
