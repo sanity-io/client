@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.15.19](https://github.com/sanity-io/client/compare/v6.15.18...v6.15.19) (2024-04-19)
+
+
+### Bug Fixes
+
+* handle bug affecting next 14.2.2 during static pregeneration ([#748](https://github.com/sanity-io/client/issues/748)) ([28493e2](https://github.com/sanity-io/client/commit/28493e24f48f4c7f7de3f1caae8958789e49727a))
+
 ## [6.15.18](https://github.com/sanity-io/client/compare/v6.15.17...v6.15.18) (2024-04-18)
 
 
