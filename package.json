@@ -117,7 +117,7 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@sanity/eventsource": "^5.0.0",
+    "@sanity/eventsource": "^5.0.2",
     "get-it": "^8.4.27",
     "rxjs": "^7.0.0"
   },
