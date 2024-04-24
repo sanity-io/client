@@ -1,3 +1,4 @@
+import type {EventSource as EventSourceType, EventSourceInit} from '@sanity/eventsource'
 import {Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
@@ -72,7 +73,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   const listenFor = options.events ? options.events : ['mutation']
   const shouldEmitReconnect = listenFor.indexOf('reconnect') !== -1
 
-  const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
+  const esOptions: EventSourceInit = {}
   if (token || withCredentials) {
     esOptions.withCredentials = true
   }
@@ -84,7 +85,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   }
 
   return new Observable((observer) => {
-    let es: InstanceType<typeof import('@sanity/eventsource')>
+    let es: EventSourceType
     getEventSource()
       .then((eventSource) => {
         es = eventSource
@@ -150,8 +151,8 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
       }
     }
 
-    async function getEventSource(): Promise<InstanceType<typeof import('@sanity/eventsource')>> {
-      const {default: EventSource} = await import('@sanity/eventsource')
+    async function getEventSource(): Promise<EventSourceType> {
+      const {EventSource} = await import('@sanity/eventsource')
       const evs = new EventSource(uri, esOptions)
       evs.addEventListener('error', onError)
       evs.addEventListener('channelError', onChannelError)

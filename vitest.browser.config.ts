@@ -17,7 +17,8 @@ export default defineConfig({
       '@sanity/client': new URL(pkg.exports['.'].browser.source, import.meta.url).pathname,
     },
     typecheck: {
-      enabled: false,
+      enabled: true,
+      tsconfig: 'tsconfig.browser.json',
     },
   },
   resolve: {
