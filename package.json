@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.15.20",
+  "version": "6.15.20-canary.1",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -117,7 +117,7 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@sanity/eventsource": "^5.0.2",
+    "@sanity/eventsource": "6.0.0-canary.1",
     "get-it": "^8.4.27",
     "rxjs": "^7.0.0"
   },
