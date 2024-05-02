@@ -759,11 +759,11 @@ const debugClient = client.withConfig({
 Removing stega from part of the result, available on [`@sanity/client/stega`]:
 
 ```ts
-import {vercelStegaCleanAll} from '@sanity/client/stega'
+import {stegaClean} from '@sanity/client/stega'
 const result = await client.fetch('*[_type == "video"][0]')
 
 // Remove stega from the payload sent to a third party library
-const videoAsset = vercelStegaCleanAll(result.videoAsset)
+const videoAsset = stegaClean(result.videoAsset)
 ```
 
 #### Creating Studio edit intent links
