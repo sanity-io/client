@@ -4,7 +4,7 @@ import {combineLatestWith, filter, map} from 'rxjs/operators'
 import {validateApiPerspective} from '../config'
 import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import {vercelStegaCleanAll} from '../stega/vercelStegaCleanAll'
+import {stegaClean} from '../stega/stegaClean'
 import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
@@ -77,7 +77,7 @@ export function _fetch<R, Q>(
           ...(typeof options.stega === 'boolean' ? {enabled: options.stega} : options.stega || {}),
         }
       : _stega
-  const params = stega.enabled ? vercelStegaCleanAll(_params) : _params
+  const params = stega.enabled ? stegaClean(_params) : _params
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
 
