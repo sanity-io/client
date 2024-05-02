@@ -1,7 +1,6 @@
+import {stegaClean} from '@sanity/client/stega'
 import {vercelStegaCombine} from '@vercel/stega'
 import {expect, test} from 'vitest'
-
-import {vercelStegaCleanAll} from '../../src/stega/vercelStegaCleanAll'
 
 test('it removes everything', () => {
   const payload = {
@@ -18,7 +17,7 @@ test('it removes everything', () => {
     vercelStegaCombine('embedded', editInfo),
   ].join(' ')
   expect(encoded).not.toEqual(payload)
-  expect(vercelStegaCleanAll(encoded)).toEqual(payload)
+  expect(stegaClean(encoded)).toEqual(payload)
 })
 
 test('it handles strings', () => {
@@ -26,16 +25,16 @@ test('it handles strings', () => {
   const editInfo = JSON.stringify({origin: 'sanity.io', href: '/studio'})
   const encoded = vercelStegaCombine(payload, editInfo)
   expect(encoded).not.toEqual(payload)
-  expect(vercelStegaCleanAll(encoded)).toEqual(payload)
+  expect(stegaClean(encoded)).toEqual(payload)
 })
 
 test('it handles values that are not supported by JSON', () => {
-  expect(vercelStegaCleanAll(undefined)).toMatchInlineSnapshot(`undefined`)
-  expect(vercelStegaCleanAll(null)).toMatchInlineSnapshot(`null`)
-  expect(vercelStegaCleanAll(Symbol('foo'))).toMatchInlineSnapshot(`Symbol(foo)`)
-  expect(vercelStegaCleanAll(new Set([1, 2, 3]))).toMatchInlineSnapshot(`{}`)
+  expect(stegaClean(undefined)).toMatchInlineSnapshot(`undefined`)
+  expect(stegaClean(null)).toMatchInlineSnapshot(`null`)
+  expect(stegaClean(Symbol('foo'))).toMatchInlineSnapshot(`Symbol(foo)`)
+  expect(stegaClean(new Set([1, 2, 3]))).toMatchInlineSnapshot(`{}`)
   expect(
-    vercelStegaCleanAll(
+    stegaClean(
       new Map([
         [0, 0],
         [1, 1],
@@ -43,9 +42,8 @@ test('it handles values that are not supported by JSON', () => {
       ]),
     ),
   ).toMatchInlineSnapshot(`{}`)
-  expect(
-    vercelStegaCleanAll([{foo: undefined, bar: null, baz: new Date('1995-12-17T02:24:00.000Z')}]),
-  ).toMatchInlineSnapshot(`
+  expect(stegaClean([{foo: undefined, bar: null, baz: new Date('1995-12-17T02:24:00.000Z')}]))
+    .toMatchInlineSnapshot(`
     [
       {
         "bar": null,
