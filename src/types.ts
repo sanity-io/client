@@ -381,6 +381,7 @@ export interface SanityProject {
   maxRetentionDays?: number
   members: SanityProjectMember[]
   metadata: {
+    cliInitializedAt?: string
     color?: string
     externalStudioHost?: string
   }
