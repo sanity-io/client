@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.17.0](https://github.com/sanity-io/client/compare/v6.16.0...v6.17.0) (2024-05-02)
+
+
+### Features
+
+* update SanityProject to include metadata.cliInitializedAt ([#779](https://github.com/sanity-io/client/issues/779)) ([77bf6f6](https://github.com/sanity-io/client/commit/77bf6f6120ea595bb971ac2e7fd5896681b5854d))
+
 ## [6.16.0](https://github.com/sanity-io/client/compare/v6.15.20...v6.16.0) (2024-05-02)
 
 
