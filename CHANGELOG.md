@@ -5,6 +5,18 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.16.0](https://github.com/sanity-io/client/compare/v6.15.20...v6.16.0) (2024-05-02)
+
+
+### Features
+
+* add `stegaClean` method, deprecate `vercelStegaCleanAll` ([#773](https://github.com/sanity-io/client/issues/773)) ([2749586](https://github.com/sanity-io/client/commit/2749586bf75683c817ad9dfb6e724ad6e28ebec4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vercel/stega to v0.1.1 ([#771](https://github.com/sanity-io/client/issues/771)) ([aea84ce](https://github.com/sanity-io/client/commit/aea84ce2e5d05e3cf3071cd4f6228a8d10595b56))
+
 ## [6.15.20](https://github.com/sanity-io/client/compare/v6.15.19...v6.15.20) (2024-04-22)
 
 
