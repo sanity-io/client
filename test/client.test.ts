@@ -569,6 +569,90 @@ describe('client', async () => {
       expect(res[0].rating, 'data should match').toBe(5)
     })
 
+    test.skipIf(isEdge)('can query for documents with last live event ID', async () => {
+      nock(projectHost())
+        .get(
+          `/vX/data/query/foo?query=*&returnQuery=false&lastLiveEventId=MTA0MDM1Nnx2a2lQY200bnRHQQ`,
+        )
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const res = await getClient({apiVersion: 'X'}).fetch(
+        '*',
+        {},
+        {lastLiveEventId: 'MTA0MDM1Nnx2a2lQY200bnRHQQ'},
+      )
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)(
+      'allows passing last live event ID from Next.js style searchParams',
+      async () => {
+        nock(projectHost())
+          .get(
+            `/vX/data/query/foo?query=*&returnQuery=false&lastLiveEventId=MTA0MDM1Nnx2a2lQY200bnRHQQ`,
+          )
+          .reply(200, {
+            ms: 123,
+            result,
+          })
+
+        const res = await getClient({apiVersion: 'X'}).fetch(
+          '*',
+          {},
+          // searchParams in Next.js will return an arry of strings in some cases,
+          // as an convenience we allow it, and behave the same way as URLSearchParams.get() when that happens:
+          // we pick the first value in the array
+          {lastLiveEventId: ['MTA0MDM1Nnx2a2lQY200bnRHQQ', 'some-other-value']},
+        )
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'allows passing last live event ID from URLSearchParams that might be null',
+      async () => {
+        nock(projectHost()).get(`/vX/data/query/foo?query=*&returnQuery=false`).reply(200, {
+          ms: 123,
+          result,
+        })
+        const searchParams = new URLSearchParams('')
+
+        const res = await getClient({apiVersion: 'X'}).fetch(
+          '*',
+          {},
+          // URLSearchParams.get() will return null if the key is not found, we should handle that
+          {lastLiveEventId: searchParams.get('lastLiveEventId')},
+        )
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'allows passing last live event ID from URLSearchParams that might be an empty string',
+      async () => {
+        nock(projectHost()).get(`/vX/data/query/foo?query=*&returnQuery=false`).reply(200, {
+          ms: 123,
+          result,
+        })
+        const searchParams = new URLSearchParams('lastLiveEventId=')
+
+        const res = await getClient({apiVersion: 'X'}).fetch(
+          '*',
+          {},
+          // URLSearchParams.get() will return null if the key is not found, we should handle that
+          {lastLiveEventId: searchParams.get('lastLiveEventId')},
+        )
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
     test.skipIf(isEdge)(
       'can query for documents with resultSourceMap and perspective',
       async () => {

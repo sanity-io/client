@@ -171,6 +171,10 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
         .then((eventSource) => {
           if (eventSource) {
             es = eventSource
+            // Handle race condition where the observer is unsubscribed before the EventSource is set up
+            if (unsubscribed) {
+              unsubscribe()
+            }
           }
         })
         .catch((reason) => {
@@ -189,7 +193,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   })
 }
 
-function parseEvent(event: Any) {
+function parseEvent(event: MessageEvent) {
   try {
     const data = (event.data && JSON.parse(event.data)) || {}
     return Object.assign({type: event.type}, data)

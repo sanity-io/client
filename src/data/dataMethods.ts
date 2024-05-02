@@ -257,7 +257,7 @@ export function _dataRequest(
   const useGet = !isMutation && strQuery.length < getQuerySizeLimit
   const stringQuery = useGet ? strQuery : ''
   const returnFirst = options.returnFirst
-  const {timeout, token, tag, headers, returnQuery} = options
+  const {timeout, token, tag, headers, returnQuery, lastLiveEventId} = options
 
   const uri = _getDataUrl(client, endpoint, stringQuery)
 
@@ -274,6 +274,7 @@ export function _dataRequest(
     returnQuery,
     perspective: options.perspective,
     resultSourceMap: options.resultSourceMap,
+    lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     canUseCdn: isQuery,
     signal: options.signal,
     fetch: options.fetch,
@@ -373,6 +374,10 @@ export function _requestObservable<R>(
         useCdn = false
         printCdnPreviewDraftsWarning()
       }
+    }
+
+    if (options.lastLiveEventId) {
+      options.query = {...options.query, lastLiveEventId: options.lastLiveEventId}
     }
 
     if (options.returnQuery === false) {

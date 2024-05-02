@@ -4,6 +4,7 @@ import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
+import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
@@ -43,6 +44,7 @@ export type {
   _listen,
   AssetsClient,
   DatasetsClient,
+  LiveClient,
   ObservableAssetsClient,
   ObservableDatasetsClient,
   ObservableProjectsClient,
@@ -55,6 +57,7 @@ export type {
 export class ObservableSanityClient {
   assets: ObservableAssetsClient
   datasets: ObservableDatasetsClient
+  live: LiveClient
   projects: ObservableProjectsClient
   users: ObservableUsersClient
 
@@ -76,6 +79,7 @@ export class ObservableSanityClient {
 
     this.assets = new ObservableAssetsClient(this, this.#httpRequest)
     this.datasets = new ObservableDatasetsClient(this, this.#httpRequest)
+    this.live = new LiveClient(this)
     this.projects = new ObservableProjectsClient(this, this.#httpRequest)
     this.users = new ObservableUsersClient(this, this.#httpRequest)
   }
@@ -695,6 +699,7 @@ export class ObservableSanityClient {
 export class SanityClient {
   assets: AssetsClient
   datasets: DatasetsClient
+  live: LiveClient
   projects: ProjectsClient
   users: UsersClient
 
@@ -721,6 +726,7 @@ export class SanityClient {
 
     this.assets = new AssetsClient(this, this.#httpRequest)
     this.datasets = new DatasetsClient(this, this.#httpRequest)
+    this.live = new LiveClient(this)
     this.projects = new ProjectsClient(this, this.#httpRequest)
     this.users = new UsersClient(this, this.#httpRequest)
 
