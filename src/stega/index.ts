@@ -7,9 +7,9 @@ import {
 } from '@sanity/client'
 
 export {encodeIntoResult} from './encodeIntoResult'
+export {stegaClean, vercelStegaCleanAll} from './stegaClean'
 export {stegaEncodeSourceMap} from './stegaEncodeSourceMap'
 export * from './types'
-export {stegaClean, vercelStegaCleanAll} from './vercelStegaCleanAll'
 
 /**
  * @deprecated -- Use `import {SanityClient} from '@sanity/client'` instead
