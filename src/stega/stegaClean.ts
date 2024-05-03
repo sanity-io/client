@@ -6,11 +6,7 @@ import {vercelStegaClean} from '@vercel/stega'
  * @public
  */
 export function stegaClean<Result = unknown>(result: Result): Result {
-  try {
-    return vercelStegaClean<Result>(result)
-  } catch {
-    return result
-  }
+  return vercelStegaClean<Result>(result)
 }
 
 /**
