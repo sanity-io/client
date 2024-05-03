@@ -5,6 +5,15 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.17.1](https://github.com/sanity-io/client/compare/v6.17.0...v6.17.1) (2024-05-03)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vercel/stega to v0.1.2 ([#784](https://github.com/sanity-io/client/issues/784)) ([7297ead](https://github.com/sanity-io/client/commit/7297eadce4e5d45287ebd099ad4e4cd4ca1193f1))
+* **deps:** update dependency get-it to v8.4.28 ([#786](https://github.com/sanity-io/client/issues/786)) ([47985fc](https://github.com/sanity-io/client/commit/47985fc324bf690db56b61d8114b3027e9990917))
+* prevent listener leak on unsubscribe before eventsource module load ([#783](https://github.com/sanity-io/client/issues/783)) ([f38b64e](https://github.com/sanity-io/client/commit/f38b64e4ae0a087839ae64c1de9fce80b24455b5))
+
 ## [6.17.0](https://github.com/sanity-io/client/compare/v6.16.0...v6.17.0) (2024-05-02)
 
 
