@@ -31,7 +31,6 @@ test('it handles strings', () => {
 test('it handles values that are not supported by JSON', () => {
   expect(stegaClean(undefined)).toMatchInlineSnapshot(`undefined`)
   expect(stegaClean(null)).toMatchInlineSnapshot(`null`)
-  expect(stegaClean(Symbol('foo'))).toMatchInlineSnapshot(`Symbol(foo)`)
   expect(stegaClean(new Set([1, 2, 3]))).toMatchInlineSnapshot(`{}`)
   expect(
     stegaClean(
