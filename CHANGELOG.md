@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.17.2](https://github.com/sanity-io/client/compare/v6.17.1...v6.17.2) (2024-05-03)
+
+
+### Bug Fixes
+
+* **stega:** remove try/catch block from `stegaClean` ([#788](https://github.com/sanity-io/client/issues/788)) ([06aaad2](https://github.com/sanity-io/client/commit/06aaad2e42ea2a1d30d85abaa0595b61caa49d1e))
+
 ## [6.17.1](https://github.com/sanity-io/client/compare/v6.17.0...v6.17.1) (2024-05-03)
 
 
