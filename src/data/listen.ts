@@ -85,16 +85,13 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
 
   return new Observable((observer) => {
     let es: InstanceType<typeof import('@sanity/eventsource')>
-    getEventSource()
-      .then((eventSource) => {
-        es = eventSource
-      })
-      .catch((reason) => {
-        observer.error(reason)
-        stop()
-      })
     let reconnectTimer: NodeJS.Timeout
     let stopped = false
+    // Unsubscribe differs from stopped in that we will never reopen.
+    // Once it is`true`, it will never be `false` again.
+    let unsubscribed = false
+
+    open()
 
     function onError() {
       if (stopped) {
@@ -150,8 +147,17 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
       }
     }
 
-    async function getEventSource(): Promise<InstanceType<typeof import('@sanity/eventsource')>> {
+    async function getEventSource(): Promise<InstanceType<
+      typeof import('@sanity/eventsource')
+    > | void> {
       const {default: EventSource} = await import('@sanity/eventsource')
+
+      // If the listener has been unsubscribed from before we managed to load the module,
+      // do not set up the EventSource.
+      if (unsubscribed) {
+        return
+      }
+
       const evs = new EventSource(uri, esOptions)
       evs.addEventListener('error', onError)
       evs.addEventListener('channelError', onChannelError)
@@ -163,7 +169,9 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     function open() {
       getEventSource()
         .then((eventSource) => {
-          es = eventSource
+          if (eventSource) {
+            es = eventSource
+          }
         })
         .catch((reason) => {
           observer.error(reason)
@@ -174,6 +182,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     function stop() {
       stopped = true
       unsubscribe()
+      unsubscribed = true
     }
 
     return stop

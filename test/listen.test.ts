@@ -1,7 +1,7 @@
 import type {AddressInfo} from 'node:net'
 
 import {type ClientConfig, createClient} from '@sanity/client'
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
 
@@ -211,6 +211,35 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       } finally {
         server.close()
       }
+    })
+
+    test('can immediately unsubscribe, does not connect to server', async () => {
+      const onMessage = vitest.fn()
+      const onError = vitest.fn()
+      const onRequest = vitest.fn(({channel}) => {
+        channel!.send({event: 'mutation', data: {foo: 'bar'}})
+        process.nextTick(() => channel!.close())
+      })
+
+      const {server, client} = await testSse(onRequest)
+
+      const query = '*[_type == "beer" && title == $beerName]'
+      const params = {beerName: 'Headroom Double IPA'}
+
+      client
+        .listen(query, params)
+        .subscribe({
+          next: onMessage,
+          error: onError,
+        })
+        .unsubscribe()
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      expect(onMessage).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+      expect(onRequest).not.toHaveBeenCalled()
+      server.close()
     })
   },
 )
