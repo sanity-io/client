@@ -38,12 +38,8 @@ export class LiveClient {
 
         // If the event has a `data` property, then it`s a MessageEvent emitted by the API and we should forward the error and close the connection
         if ('data' in evt) {
-          try {
-            const event = parseEvent(evt)
-            observer.error(new Error(event.message, {cause: event}))
-          } catch (err) {
-            observer.error(err)
-          }
+          const event = parseEvent(evt)
+          observer.error(new Error(event.message, {cause: event}))
         }
 
         // Unless we've explicitly stopped the ES (in which case `stopped` should be true),
