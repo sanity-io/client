@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.18.0](https://github.com/sanity-io/client/compare/v6.17.3...v6.18.0) (2024-05-07)
+
+
+### Features
+
+* add experimental new live events API ([#797](https://github.com/sanity-io/client/issues/797)) ([de0cec7](https://github.com/sanity-io/client/commit/de0cec7aba29ea754c5a19fa3c16f02b7ee24b8c))
+
 ## [6.17.3](https://github.com/sanity-io/client/compare/v6.17.2...v6.17.3) (2024-05-07)
 
 
