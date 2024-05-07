@@ -14,6 +14,7 @@ export const createSseServer = (onRequest: OnRequest): Promise<http.Server> =>
       let channel
       if (
         request?.url?.indexOf('/v1/data/listen/') === 0 ||
+        request?.url?.indexOf('/vX/data/live/events/') === 0 ||
         request?.url?.indexOf('/listen/beerns?query=') === 0
       ) {
         channel = new SseChannel({jsonEncode: true})

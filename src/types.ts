@@ -306,6 +306,8 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   returnQuery?: boolean
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
+  /** @alpha this API is experimental and may change or even be removed */
+  lastLiveEventId?: string
 }
 
 /** @public */
@@ -479,6 +481,8 @@ export interface QueryParams {
   token?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   useCdn?: never
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  lastLiveEventId?: never
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
@@ -743,6 +747,8 @@ export interface ResponseQueryOptions extends RequestOptions {
   // The `cache` and `next` options are specific to the Next.js App Router integration
   cache?: 'next' extends keyof RequestInit ? RequestInit['cache'] : never
   next?: ('next' extends keyof RequestInit ? RequestInit : never)['next']
+  /** @alpha this API is experimental and may change or even be removed */
+  lastLiveEventId?: string | string[] | null
 }
 
 /** @public */
@@ -785,6 +791,8 @@ export interface RawQueryResponse<R> {
   ms: number
   result: R
   resultSourceMap?: ContentSourceMap
+  /** @alpha this API is experimental and may change or even be removed */
+  syncTags?: SyncTag[]
 }
 
 /** @public */
@@ -997,6 +1005,19 @@ export interface ContentSourceMap {
   mappings: ContentSourceMapMappings
   documents: ContentSourceMapDocuments
   paths: ContentSourceMapPaths
+}
+
+/** @alpha this API is experimental and may change or even be removed */
+export type SyncTag = `s1:${string}`
+/** @alpha this API is experimental and may change or even be removed */
+export interface LiveEventRestart {
+  type: 'restart'
+}
+/** @alpha this API is experimental and may change or even be removed */
+export interface LiveEventMessage {
+  type: 'message'
+  id: string
+  tags: SyncTag[]
 }
 
 export type {
