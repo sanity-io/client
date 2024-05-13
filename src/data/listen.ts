@@ -171,6 +171,10 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
         .then((eventSource) => {
           if (eventSource) {
             es = eventSource
+            // Handle race condition where the observer is unsubscribed before the EventSource is set up
+            if (unsubscribed) {
+              unsubscribe()
+            }
           }
         })
         .catch((reason) => {
