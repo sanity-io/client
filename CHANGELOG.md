@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.18.1](https://github.com/sanity-io/client/compare/v6.18.0...v6.18.1) (2024-05-13)
+
+
+### Bug Fixes
+
+* race condition in `client.listen` memory leak ([#805](https://github.com/sanity-io/client/issues/805)) ([d2e468a](https://github.com/sanity-io/client/commit/d2e468ac2332afe59f50af7111fc00fe4d20e70c))
+
 ## [6.18.0](https://github.com/sanity-io/client/compare/v6.17.3...v6.18.0) (2024-05-07)
 
 
