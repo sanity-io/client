@@ -1260,7 +1260,7 @@ The following options are available for mutations, and can be applied either as 
   - `async`: request will return immediately when the changes have been committed, but it might still be a second or more until changes are reflected in a query. Unless you are immediately re-querying for something that includes the mutated data, this is the preferred choice.
   - `deferred`: fastest way to write - bypasses real-time indexing completely, and should be used in cases where you are bulk importing/mutating a large number of documents and don't need to see that data in a query for tens of seconds.
 - `dryRun` (`true|false`) - default `false`. If true, the mutation will be a dry run - the response will be identical to the one returned had this property been omitted or false (including error responses) but no documents will be affected.
-- `autoGenerateArrayKeys` (`true|false`) - default `false`. If true, the mutation API will automatically add `_key` attributes to objects in arrays that is missing them. This makes array operations more robust by having a unique key within the array available for selections, which helps prevent race conditions in real-time, collaborative editing.
+- `autoGenerateArrayKeys` (`true|false`) - default `false`. If true, the mutation API will automatically add `_key` attributes to objects in arrays that are missing them. This makes array operations more robust by having a unique key within the array available for selections, which helps prevent race conditions in real-time, collaborative editing.
 
 ### Aborting a request
 
