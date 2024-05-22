@@ -34,3 +34,5 @@ export const requester = originalRequester
  * @public
  */
 export const createClient = originalCreateClient
+
+console.log('Delete me!')
