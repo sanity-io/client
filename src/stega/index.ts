@@ -1,8 +1,8 @@
 export * from '@sanity/client'
 import {
   createClient as originalCreateClient,
-  ObservableSanityClient,
   requester as originalRequester,
+  ObservableSanityClient,
   SanityClient,
 } from '@sanity/client'
 
