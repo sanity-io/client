@@ -6,9 +6,11 @@ import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
 import type {
+  Action,
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
   Any,
+  BaseActionOptions,
   BaseMutationOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
@@ -16,6 +18,7 @@ import type {
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,
   InitializedStegaConfig,
+  MultipleActionResult,
   MultipleMutationResult,
   Mutation,
   MutationSelection,
@@ -24,6 +27,7 @@ import type {
   RequestObservableOptions,
   RequestOptions,
   SanityDocument,
+  SingleActionResult,
   SingleMutationResult,
 } from '../types'
 import {getSelection} from '../util/getSelection'
@@ -236,6 +240,29 @@ export function _mutate<R extends Record<string, Any>>(
   const muts = Array.isArray(mut) ? mut : [mut]
   const transactionId = (options && options.transactionId) || undefined
   return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
+}
+
+/**
+ * @internal
+ */
+export function _action(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  actions: Action | Action[],
+  options?: BaseActionOptions,
+): Observable<SingleActionResult | MultipleActionResult> {
+  const acts = Array.isArray(actions) ? actions : [actions]
+  const transactionId = (options && options.transactionId) || undefined
+  const skipCrossDatasetReferenceValidation =
+    (options && options.skipCrossDatasetReferenceValidation) || undefined
+
+  return _dataRequest(
+    client,
+    httpRequest,
+    'actions',
+    {actions: acts, transactionId, skipCrossDatasetReferenceValidation},
+    options,
+  )
 }
 
 /**

@@ -1,4 +1,4 @@
-import type {Any, ErrorProps, MutationError} from '../types'
+import type {ActionError, Any, ErrorProps, MutationError} from '../types'
 
 const MAX_ITEMS_IN_ERROR_MESSAGE = 5
 
@@ -47,7 +47,7 @@ function extractErrorProps(res: Any): ErrorProps {
   }
 
   // Mutation errors (specifically)
-  if (isMutationError(body)) {
+  if (isMutationError(body) || isActionError(body)) {
     const allItems = body.error.items || []
     const items = allItems
       .slice(0, MAX_ITEMS_IN_ERROR_MESSAGE)
@@ -79,6 +79,15 @@ function isMutationError(body: Any): body is MutationError {
     isPlainObject(body) &&
     isPlainObject(body.error) &&
     body.error.type === 'mutationError' &&
+    typeof body.error.description === 'string'
+  )
+}
+
+function isActionError(body: Any): body is ActionError {
+  return (
+    isPlainObject(body) &&
+    isPlainObject(body.error) &&
+    body.error.type === 'actionError' &&
     typeof body.error.description === 'string'
   )
 }

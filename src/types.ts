@@ -511,6 +511,71 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {delete: MutationSelection}
   | {patch: PatchMutationOperation}
 
+/** @public */
+export type Action =
+  | CreateAction
+  | ReplaceDraftAction
+  | EditAction
+  | DeleteAction
+  | DiscardAction
+  | PublishAction
+  | UnpublishAction
+
+/** @public */
+export type CreateAction = {
+  actionType: 'sanity.action.document.create'
+  publishedId: string
+  attributes: IdentifiedSanityDocumentStub
+  ifExists: 'fail' | 'ignore'
+}
+
+/** @public */
+export type ReplaceDraftAction = {
+  actionType: 'sanity.action.document.replaceDraft'
+  draftId: string
+  publishedId: string
+  attributes: IdentifiedSanityDocumentStub
+}
+
+/** @public */
+export type EditAction = {
+  actionType: 'sanity.action.document.edit'
+  draftId: string
+  publishedId: string
+  patch: PatchOperations
+}
+
+/** @public */
+export type DeleteAction = {
+  actionType: 'sanity.action.document.delete'
+  publishedId: string
+  includeDrafts: string[]
+  purge: boolean
+}
+
+/** @public */
+export type DiscardAction = {
+  actionType: 'sanity.action.document.discard'
+  draftId: string
+  purge: boolean
+}
+
+/** @public */
+export type PublishAction = {
+  actionType: 'sanity.action.document.publish'
+  draftId: string
+  ifDraftRevisionId: string
+  publishedId: string
+  ifPublishedRevisionId: string
+}
+
+/** @public */
+export type UnpublishAction = {
+  actionType: 'sanity.action.document.unpublish'
+  draftId: string
+  publishedId: string
+}
+
 /**
  * A mutation was performed. Note that when updating multiple documents in a transaction,
  * each document affected will get a separate mutation event.
@@ -885,6 +950,22 @@ export type TransactionMutationOptions =
   | TransactionAllDocumentIdsMutationOptions
 
 /** @internal */
+export type BaseActionOptions = RequestOptions & {
+  transactionId?: string
+  skipCrossDatasetReferenceValidation?: boolean
+}
+
+/** @internal */
+export interface SingleActionResult {
+  transactionId: string
+}
+
+/** @internal */
+export interface MultipleActionResult {
+  transactionId: string
+}
+
+/** @internal */
 export interface RawRequestOptions {
   url?: string
   uri?: string
@@ -925,6 +1006,25 @@ export interface MutationErrorItem {
     description: string
     value?: unknown
   }
+}
+
+/** @internal */
+export interface ActionError {
+  error: {
+    type: 'actionError'
+    description: string
+    items?: ActionErrorItem[]
+  }
+}
+
+/** @internal */
+export interface ActionErrorItem {
+  error: {
+    type: string
+    description: string
+    value?: unknown
+  }
+  index: number
 }
 
 /**
