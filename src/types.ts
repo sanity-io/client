@@ -513,22 +513,22 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
 
 /** @public */
 export type Action =
-  | CreateAction
-  | ReplaceDraftAction
-  | EditAction
-  | DeleteAction
-  | DiscardAction
-  | PublishAction
-  | UnpublishAction
+  | {create: CreateAction}
+  | {replaceDraft: ReplaceDraftAction}
+  | {edit: EditAction}
+  | {delete: DeleteAction}
+  | {discard: DiscardAction}
+  | {publish: PublishAction}
+  | {unpublish: UnpublishAction}
 
 /**
  * Creates a new draft document. The published version of the document must not already exist.
  * If the draft version of the document already exists the action will fail by default, but
  * this can be adjusted to instead leave the existing document in place.
+ *
+ * @public
  */
 export type CreateAction = {
-  actionType: 'sanity.action.document.create'
-
   /**
    * ID of the published document to create a draft for.
    */
@@ -548,10 +548,10 @@ export type CreateAction = {
 /**
  * Replaces an existing draft document.
  * At least one of the draft or published versions of the document must exist.
+ *
+ * @public
  */
 export type ReplaceDraftAction = {
-  actionType: 'sanity.action.document.replaceDraft'
-
   /**
    * Draft document ID to replace, if it exists.
    */
@@ -572,10 +572,10 @@ export type ReplaceDraftAction = {
  * Modifies an existing draft document.
  * It applies the given patch to the document referenced by draftId.
  * If there is no such document then one is created using the current state of the published version and then that is updated accordingly.
+ *
+ * @public
  */
 export type EditAction = {
-  actionType: 'sanity.action.document.edit'
-
   /**
    * Draft document ID to edit
    */
@@ -596,10 +596,10 @@ export type EditAction = {
  * Deletes the published version of a document and optionally some (likely all known) draft versions.
  * If any draft version exists that is not specified for deletion this is an error.
  * If the purge flag is set then the document history is also deleted.
+ *
+ * @public
  */
 export type DeleteAction = {
-  actionType: 'sanity.action.document.delete'
-
   /**
    * Published document ID to delete
    */
@@ -619,10 +619,10 @@ export type DeleteAction = {
 /**
  * Delete the draft version of a document.
  * It is an error if it does not exist. If the purge flag is set, the document history is also deleted.
+ *
+ * @public
  */
 export type DiscardAction = {
-  actionType: 'sanity.action.document.discard'
-
   /**
    * Draft document ID to delete
    */
@@ -640,10 +640,10 @@ export type DiscardAction = {
  * In either case the draft document is deleted.
  * The optional revision id parameters can be used for optimistic locking to ensure
  * that the draft and/or published versions of the document have not been changed by another client.
+ *
+ * @public
  */
 export type PublishAction = {
-  actionType: 'sanity.action.document.publish'
-
   /**
    * Draft document ID to publish
    */
@@ -669,10 +669,10 @@ export type PublishAction = {
  * Retract a published document.
  * If there is no draft version then this is created from the published version.
  * In either case the published version is deleted.
+ *
+ * @public
  */
 export type UnpublishAction = {
-  actionType: 'sanity.action.document.unpublish'
-
   /**
    * Draft document ID to replace the published document with
    */

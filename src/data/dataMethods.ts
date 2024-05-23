@@ -255,12 +255,33 @@ export function _action(
   const transactionId = (options && options.transactionId) || undefined
   const skipCrossDatasetReferenceValidation =
     (options && options.skipCrossDatasetReferenceValidation) || undefined
+  const dryRun = (options && options.dryRun) || undefined
+
+  const actionWithTypes = acts.map((act: Action) => {
+    if ('create' in act) {
+      return {actionType: 'sanity.action.document.create', ...act.create}
+    } else if ('replaceDraft' in act) {
+      return {actionType: 'sanity.action.document.replaceDraft', ...act.replaceDraft}
+    } else if ('edit' in act) {
+      return {actionType: 'sanity.action.document.edit', ...act.edit}
+    } else if ('delete' in act) {
+      return {actionType: 'sanity.action.document.delete', ...act.delete}
+    } else if ('discard' in act) {
+      return {actionType: 'sanity.action.document.discard', ...act.discard}
+    } else if ('publish' in act) {
+      return {actionType: 'sanity.action.document.publish', ...act.publish}
+    } else if ('unpublish' in act) {
+      return {actionType: 'sanity.action.document.unpublish', ...act.unpublish}
+    }
+
+    return act
+  })
 
   return _dataRequest(
     client,
     httpRequest,
     'actions',
-    {actions: acts, transactionId, skipCrossDatasetReferenceValidation},
+    {actions: actionWithTypes, transactionId, skipCrossDatasetReferenceValidation, dryRun},
     options,
   )
 }
@@ -276,12 +297,13 @@ export function _dataRequest(
   options: Any = {},
 ): Any {
   const isMutation = endpoint === 'mutate'
+  const isAction = endpoint === 'actions'
   const isQuery = endpoint === 'query'
 
   // Check if the query string is within a configured threshold,
   // in which case we can use GET. Otherwise, use POST.
-  const strQuery = isMutation ? '' : encodeQueryString(body)
-  const useGet = !isMutation && strQuery.length < getQuerySizeLimit
+  const strQuery = isMutation || isAction ? '' : encodeQueryString(body)
+  const useGet = !isMutation && !isAction && strQuery.length < getQuerySizeLimit
   const stringQuery = useGet ? strQuery : ''
   const returnFirst = options.returnFirst
   const {timeout, token, tag, headers, returnQuery, lastLiveEventId} = options

@@ -2,6 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {
+  Action,
+  BaseActionOptions,
   type ClientConfig,
   ClientError,
   ContentSourceMap,
@@ -1462,6 +1464,163 @@ describe('client', async () => {
         ).resolves.not.toThrow()
       },
     )
+
+    test.skipIf(isEdge)('action() performs single operation', async () => {
+      const action: Action = {
+        create: {
+          publishedId: 'post1',
+          attributes: {_id: 'post1', _type: 'post'},
+          ifExists: 'fail',
+        },
+      }
+
+      nock(projectHost())
+        .post('/v1/data/actions/foo', {
+          actions: [{actionType: 'sanity.action.document.create', ...action.create}],
+        })
+        .reply(200, {
+          transactionId: 'foo',
+        })
+
+      await expect(getClient().action(action)).resolves.not.toThrow()
+    })
+
+    test.skipIf(isEdge)('action() performs multiple operations', async () => {
+      const action1: Action = {
+        create: {
+          publishedId: 'post1',
+          attributes: {_id: 'post1', _type: 'post'},
+          ifExists: 'fail',
+        },
+      }
+
+      const action2: Action = {
+        replaceDraft: {
+          draftId: 'drafts.post2',
+          publishedId: 'post2',
+          attributes: {_id: 'post2', _type: 'post'},
+        },
+      }
+
+      const action3: Action = {
+        edit: {
+          draftId: 'drafts.post3',
+          publishedId: 'post3',
+          patch: {
+            set: {count: 1},
+          },
+        },
+      }
+
+      const action4: Action = {
+        delete: {
+          publishedId: 'post4',
+          includeDrafts: ['drafts.post4'],
+          purge: true,
+        },
+      }
+
+      const action5: Action = {
+        discard: {
+          draftId: 'drafts.post5',
+          purge: true,
+        },
+      }
+
+      const action6: Action = {
+        publish: {
+          draftId: 'drafts.post6',
+          ifDraftRevisionId: 'rev7',
+          publishedId: 'post6',
+          ifPublishedRevisionId: 'rev6',
+        },
+      }
+
+      const action7: Action = {
+        unpublish: {
+          draftId: 'drafts.post7',
+          publishedId: 'post7',
+        },
+      }
+
+      nock(projectHost())
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore: TS is wrong here, it is not able to infer the correct type for
+        // edit action patch interface.
+        .post('/v1/data/actions/foo', {
+          actions: [
+            {actionType: 'sanity.action.document.create', ...action1.create},
+            {actionType: 'sanity.action.document.replaceDraft', ...action2.replaceDraft},
+            {actionType: 'sanity.action.document.edit', ...action3.edit},
+            {actionType: 'sanity.action.document.delete', ...action4.delete},
+            {actionType: 'sanity.action.document.discard', ...action5.discard},
+            {actionType: 'sanity.action.document.publish', ...action6.publish},
+            {actionType: 'sanity.action.document.unpublish', ...action7.unpublish},
+          ],
+        })
+        .reply(200, {
+          transactionId: 'foo',
+        })
+
+      await expect(
+        getClient().action([action1, action2, action3, action4, action5, action6, action7]),
+      ).resolves.not.toThrow()
+    })
+
+    test.skipIf(isEdge)('action() accepts optional parameters', async () => {
+      const action: Action = {
+        create: {
+          publishedId: 'post1',
+          attributes: {_id: 'post1', _type: 'post'},
+          ifExists: 'fail',
+        },
+      }
+
+      const options: BaseActionOptions = {
+        transactionId: 'txn1',
+        skipCrossDatasetReferenceValidation: true,
+        dryRun: true,
+      }
+
+      nock(projectHost())
+        .post('/v1/data/actions/foo', {
+          actions: [{actionType: 'sanity.action.document.create', ...action.create}],
+          transactionId: 'txn1',
+          skipCrossDatasetReferenceValidation: true,
+          dryRun: true,
+        })
+        .reply(200, {
+          transactionId: 'txn1',
+        })
+
+      await expect(getClient().action(action, options)).resolves.not.toThrow()
+    })
+
+    test.skipIf(isEdge)('action() handles undefined optional parameters gracefully', async () => {
+      const action: Action = {
+        create: {
+          publishedId: 'post1',
+          attributes: {_id: 'post1', _type: 'post'},
+          ifExists: 'fail',
+        },
+      }
+
+      const options: BaseActionOptions = {
+        transactionId: undefined,
+        skipCrossDatasetReferenceValidation: undefined,
+        dryRun: undefined,
+      }
+
+      nock(projectHost())
+        .post('/v1/data/actions/foo', {
+          actions: [{actionType: 'sanity.action.document.create', ...action.create}],
+        })
+        .reply(200, {
+          transactionId: 'foo',
+        })
+
+      await expect(getClient().action(action, options)).resolves.not.toThrow()
+    })
 
     test.skipIf(isEdge)('uses GET for queries below limit', async () => {
       // Please dont ever do this. Just... don't.
