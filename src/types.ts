@@ -513,13 +513,13 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
 
 /** @public */
 export type Action =
-  | {create: CreateAction}
-  | {replaceDraft: ReplaceDraftAction}
-  | {edit: EditAction}
-  | {delete: DeleteAction}
-  | {discard: DiscardAction}
-  | {publish: PublishAction}
-  | {unpublish: UnpublishAction}
+  | CreateAction
+  | ReplaceDraftAction
+  | EditAction
+  | DeleteAction
+  | DiscardAction
+  | PublishAction
+  | UnpublishAction
 
 /**
  * Creates a new draft document. The published version of the document must not already exist.
@@ -529,6 +529,8 @@ export type Action =
  * @public
  */
 export type CreateAction = {
+  actionType: 'sanity.action.document.create'
+
   /**
    * ID of the published document to create a draft for.
    */
@@ -552,6 +554,8 @@ export type CreateAction = {
  * @public
  */
 export type ReplaceDraftAction = {
+  actionType: 'sanity.action.document.replaceDraft'
+
   /**
    * Draft document ID to replace, if it exists.
    */
@@ -576,6 +580,8 @@ export type ReplaceDraftAction = {
  * @public
  */
 export type EditAction = {
+  actionType: 'sanity.action.document.edit'
+
   /**
    * Draft document ID to edit
    */
@@ -600,6 +606,8 @@ export type EditAction = {
  * @public
  */
 export type DeleteAction = {
+  actionType: 'sanity.action.document.delete'
+
   /**
    * Published document ID to delete
    */
@@ -623,6 +631,8 @@ export type DeleteAction = {
  * @public
  */
 export type DiscardAction = {
+  actionType: 'sanity.action.document.discard'
+
   /**
    * Draft document ID to delete
    */
@@ -644,6 +654,8 @@ export type DiscardAction = {
  * @public
  */
 export type PublishAction = {
+  actionType: 'sanity.action.document.publish'
+
   /**
    * Draft document ID to publish
    */
@@ -673,6 +685,8 @@ export type PublishAction = {
  * @public
  */
 export type UnpublishAction = {
+  actionType: 'sanity.action.document.unpublish'
+
   /**
    * Draft document ID to replace the published document with
    */

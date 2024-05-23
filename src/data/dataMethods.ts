@@ -257,31 +257,11 @@ export function _action(
     (options && options.skipCrossDatasetReferenceValidation) || undefined
   const dryRun = (options && options.dryRun) || undefined
 
-  const actionWithTypes = acts.map((act: Action) => {
-    if ('create' in act) {
-      return {actionType: 'sanity.action.document.create', ...act.create}
-    } else if ('replaceDraft' in act) {
-      return {actionType: 'sanity.action.document.replaceDraft', ...act.replaceDraft}
-    } else if ('edit' in act) {
-      return {actionType: 'sanity.action.document.edit', ...act.edit}
-    } else if ('delete' in act) {
-      return {actionType: 'sanity.action.document.delete', ...act.delete}
-    } else if ('discard' in act) {
-      return {actionType: 'sanity.action.document.discard', ...act.discard}
-    } else if ('publish' in act) {
-      return {actionType: 'sanity.action.document.publish', ...act.publish}
-    } else if ('unpublish' in act) {
-      return {actionType: 'sanity.action.document.unpublish', ...act.unpublish}
-    }
-
-    return act
-  })
-
   return _dataRequest(
     client,
     httpRequest,
     'actions',
-    {actions: actionWithTypes, transactionId, skipCrossDatasetReferenceValidation, dryRun},
+    {actions: acts, transactionId, skipCrossDatasetReferenceValidation, dryRun},
     options,
   )
 }
