@@ -10,9 +10,11 @@ import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
 import type {
+  Action,
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
   Any,
+  BaseActionOptions,
   BaseMutationOptions,
   ClientConfig,
   FilteredResponseQueryOptions,
@@ -21,6 +23,7 @@ import type {
   HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
+  MultipleActionResult,
   MultipleMutationResult,
   Mutation,
   MutationSelection,
@@ -34,6 +37,7 @@ import type {
   RawRequestOptions,
   SanityDocument,
   SanityDocumentStub,
+  SingleActionResult,
   SingleMutationResult,
   UnfilteredResponseQueryOptions,
   UnfilteredResponseWithoutQuery,
@@ -663,6 +667,19 @@ export class ObservableSanityClient {
     operations?: Mutation<R>[],
   ): ObservableTransaction {
     return new ObservableTransaction(operations, this)
+  }
+
+  /**
+   * Perform action operations against the configured dataset
+   *
+   * @param operations - Action operation(s) to execute
+   * @param options - Action options
+   */
+  action(
+    operations: Action | Action[],
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult> {
+    return dataMethods._action(this, this.#httpRequest, operations, options)
   }
 
   /**
@@ -1320,6 +1337,20 @@ export class SanityClient {
     operations?: Mutation<R>[],
   ): Transaction {
     return new Transaction(operations, this)
+  }
+
+  /**
+   * Perform action operations against the configured dataset
+   * Returns a promise that resolves to the transaction result
+   *
+   * @param operations - Action operation(s) to execute
+   * @param options - Action options
+   */
+  action(
+    operations: Action | Action[],
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult> {
+    return lastValueFrom(dataMethods._action(this, this.#httpRequest, operations, options))
   }
 
   /**

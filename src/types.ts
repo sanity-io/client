@@ -511,6 +511,193 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {delete: MutationSelection}
   | {patch: PatchMutationOperation}
 
+/** @public */
+export type Action =
+  | CreateAction
+  | ReplaceDraftAction
+  | EditAction
+  | DeleteAction
+  | DiscardAction
+  | PublishAction
+  | UnpublishAction
+
+/**
+ * Creates a new draft document. The published version of the document must not already exist.
+ * If the draft version of the document already exists the action will fail by default, but
+ * this can be adjusted to instead leave the existing document in place.
+ *
+ * @public
+ */
+export type CreateAction = {
+  actionType: 'sanity.action.document.create'
+
+  /**
+   * ID of the published document to create a draft for.
+   */
+  publishedId: string
+
+  /**
+   * Document to create. Requires a `_type` property.
+   */
+  attributes: IdentifiedSanityDocumentStub
+
+  /**
+   * ifExists controls what to do if the draft already exists
+   */
+  ifExists: 'fail' | 'ignore'
+}
+
+/**
+ * Replaces an existing draft document.
+ * At least one of the draft or published versions of the document must exist.
+ *
+ * @public
+ */
+export type ReplaceDraftAction = {
+  actionType: 'sanity.action.document.replaceDraft'
+
+  /**
+   * Draft document ID to replace, if it exists.
+   */
+  draftId: string
+
+  /**
+   * Published document ID to create draft from, if draft does not exist
+   */
+  publishedId: string
+
+  /**
+   * Document to create if it does not already exist. Requires `_id` and `_type` properties.
+   */
+  attributes: IdentifiedSanityDocumentStub
+}
+
+/**
+ * Modifies an existing draft document.
+ * It applies the given patch to the document referenced by draftId.
+ * If there is no such document then one is created using the current state of the published version and then that is updated accordingly.
+ *
+ * @public
+ */
+export type EditAction = {
+  actionType: 'sanity.action.document.edit'
+
+  /**
+   * Draft document ID to edit
+   */
+  draftId: string
+
+  /**
+   * Published document ID to create draft from, if draft does not exist
+   */
+  publishedId: string
+
+  /**
+   * Patch operations to apply
+   */
+  patch: PatchOperations
+}
+
+/**
+ * Deletes the published version of a document and optionally some (likely all known) draft versions.
+ * If any draft version exists that is not specified for deletion this is an error.
+ * If the purge flag is set then the document history is also deleted.
+ *
+ * @public
+ */
+export type DeleteAction = {
+  actionType: 'sanity.action.document.delete'
+
+  /**
+   * Published document ID to delete
+   */
+  publishedId: string
+
+  /**
+   * Draft document ID to delete
+   */
+  includeDrafts: string[]
+
+  /**
+   * Delete document history
+   */
+  purge: boolean
+}
+
+/**
+ * Delete the draft version of a document.
+ * It is an error if it does not exist. If the purge flag is set, the document history is also deleted.
+ *
+ * @public
+ */
+export type DiscardAction = {
+  actionType: 'sanity.action.document.discard'
+
+  /**
+   * Draft document ID to delete
+   */
+  draftId: string
+
+  /**
+   * Delete document history
+   */
+  purge: boolean
+}
+
+/**
+ * Publishes a draft document.
+ * If a published version of the document already exists this is replaced by the current draft document.
+ * In either case the draft document is deleted.
+ * The optional revision id parameters can be used for optimistic locking to ensure
+ * that the draft and/or published versions of the document have not been changed by another client.
+ *
+ * @public
+ */
+export type PublishAction = {
+  actionType: 'sanity.action.document.publish'
+
+  /**
+   * Draft document ID to publish
+   */
+  draftId: string
+
+  /**
+   * Draft revision ID to match
+   */
+  ifDraftRevisionId: string
+
+  /**
+   * Published document ID to replace
+   */
+  publishedId: string
+
+  /**
+   * Published revision ID to match
+   */
+  ifPublishedRevisionId: string
+}
+
+/**
+ * Retract a published document.
+ * If there is no draft version then this is created from the published version.
+ * In either case the published version is deleted.
+ *
+ * @public
+ */
+export type UnpublishAction = {
+  actionType: 'sanity.action.document.unpublish'
+
+  /**
+   * Draft document ID to replace the published document with
+   */
+  draftId: string
+
+  /**
+   * Published document ID to delete
+   */
+  publishedId: string
+}
+
 /**
  * A mutation was performed. Note that when updating multiple documents in a transaction,
  * each document affected will get a separate mutation event.
@@ -885,6 +1072,23 @@ export type TransactionMutationOptions =
   | TransactionAllDocumentIdsMutationOptions
 
 /** @internal */
+export type BaseActionOptions = RequestOptions & {
+  transactionId?: string
+  skipCrossDatasetReferenceValidation?: boolean
+  dryRun?: boolean
+}
+
+/** @internal */
+export interface SingleActionResult {
+  transactionId: string
+}
+
+/** @internal */
+export interface MultipleActionResult {
+  transactionId: string
+}
+
+/** @internal */
 export interface RawRequestOptions {
   url?: string
   uri?: string
@@ -925,6 +1129,25 @@ export interface MutationErrorItem {
     description: string
     value?: unknown
   }
+}
+
+/** @internal */
+export interface ActionError {
+  error: {
+    type: 'actionError'
+    description: string
+    items?: ActionErrorItem[]
+  }
+}
+
+/** @internal */
+export interface ActionErrorItem {
+  error: {
+    type: string
+    description: string
+    value?: unknown
+  }
+  index: number
 }
 
 /**

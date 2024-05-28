@@ -6,9 +6,11 @@ import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
 import type {
+  Action,
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
   Any,
+  BaseActionOptions,
   BaseMutationOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
@@ -16,6 +18,7 @@ import type {
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,
   InitializedStegaConfig,
+  MultipleActionResult,
   MultipleMutationResult,
   Mutation,
   MutationSelection,
@@ -24,6 +27,7 @@ import type {
   RequestObservableOptions,
   RequestOptions,
   SanityDocument,
+  SingleActionResult,
   SingleMutationResult,
 } from '../types'
 import {getSelection} from '../util/getSelection'
@@ -241,6 +245,30 @@ export function _mutate<R extends Record<string, Any>>(
 /**
  * @internal
  */
+export function _action(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  actions: Action | Action[],
+  options?: BaseActionOptions,
+): Observable<SingleActionResult | MultipleActionResult> {
+  const acts = Array.isArray(actions) ? actions : [actions]
+  const transactionId = (options && options.transactionId) || undefined
+  const skipCrossDatasetReferenceValidation =
+    (options && options.skipCrossDatasetReferenceValidation) || undefined
+  const dryRun = (options && options.dryRun) || undefined
+
+  return _dataRequest(
+    client,
+    httpRequest,
+    'actions',
+    {actions: acts, transactionId, skipCrossDatasetReferenceValidation, dryRun},
+    options,
+  )
+}
+
+/**
+ * @internal
+ */
 export function _dataRequest(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
@@ -249,12 +277,13 @@ export function _dataRequest(
   options: Any = {},
 ): Any {
   const isMutation = endpoint === 'mutate'
+  const isAction = endpoint === 'actions'
   const isQuery = endpoint === 'query'
 
   // Check if the query string is within a configured threshold,
   // in which case we can use GET. Otherwise, use POST.
-  const strQuery = isMutation ? '' : encodeQueryString(body)
-  const useGet = !isMutation && strQuery.length < getQuerySizeLimit
+  const strQuery = isMutation || isAction ? '' : encodeQueryString(body)
+  const useGet = !isMutation && !isAction && strQuery.length < getQuerySizeLimit
   const stringQuery = useGet ? strQuery : ''
   const returnFirst = options.returnFirst
   const {timeout, token, tag, headers, returnQuery, lastLiveEventId} = options
