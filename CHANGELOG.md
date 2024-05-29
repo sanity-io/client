@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.19.1](https://github.com/sanity-io/client/compare/v6.19.0...v6.19.1) (2024-05-29)
+
+
+### Bug Fixes
+
+* **types:** adjust action types to reflect Actions API ([#830](https://github.com/sanity-io/client/issues/830)) ([e116c62](https://github.com/sanity-io/client/commit/e116c628b38cb7b2b58b38ef60e615463463795b))
+
 ## [6.19.0](https://github.com/sanity-io/client/compare/v6.18.3...v6.19.0) (2024-05-28)
 
 
