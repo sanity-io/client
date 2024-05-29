@@ -557,11 +557,6 @@ export type ReplaceDraftAction = {
   actionType: 'sanity.action.document.replaceDraft'
 
   /**
-   * Draft document ID to replace, if it exists.
-   */
-  draftId: string
-
-  /**
    * Published document ID to create draft from, if draft does not exist
    */
   publishedId: string
@@ -621,7 +616,7 @@ export type DeleteAction = {
   /**
    * Delete document history
    */
-  purge: boolean
+  purge?: boolean
 }
 
 /**
@@ -641,7 +636,7 @@ export type DiscardAction = {
   /**
    * Delete document history
    */
-  purge: boolean
+  purge?: boolean
 }
 
 /**
@@ -664,7 +659,7 @@ export type PublishAction = {
   /**
    * Draft revision ID to match
    */
-  ifDraftRevisionId: string
+  ifDraftRevisionId?: string
 
   /**
    * Published document ID to replace
@@ -674,7 +669,7 @@ export type PublishAction = {
   /**
    * Published revision ID to match
    */
-  ifPublishedRevisionId: string
+  ifPublishedRevisionId?: string
 }
 
 /**

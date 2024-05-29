@@ -1500,7 +1500,6 @@ describe('client', async () => {
 
       const action2: ReplaceDraftAction = {
         actionType: 'sanity.action.document.replaceDraft',
-        draftId: 'drafts.post2',
         publishedId: 'post2',
         attributes: {_id: 'post2', _type: 'post'},
       }
