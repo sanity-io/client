@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>sanity-io/renovate-config", ":reviewer(team:ecosystem)"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["@sanity/eventsource", "@vercel/stega", "get-it"],
+      "rangeStrategy": "bump",
+      "semanticCommitType": "fix",
+      "groupName": null,
+      "groupSlug": null
+    }
+  ]
+}

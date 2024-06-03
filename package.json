@@ -1,0 +1,159 @@
+{
+  "name": "@sanity/client",
+  "version": "6.19.1",
+  "description": "Client for retrieving, creating and patching data from Sanity.io",
+  "keywords": [
+    "sanity",
+    "cms",
+    "headless",
+    "realtime",
+    "content",
+    "client",
+    "fetch",
+    "api"
+  ],
+  "homepage": "https://www.sanity.io/",
+  "bugs": {
+    "url": "https://github.com/sanity-io/client/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/client.git"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "browser": {
+        "source": "./src/index.browser.ts",
+        "import": "./dist/index.browser.js",
+        "require": "./dist/index.browser.cjs"
+      },
+      "react-native": {
+        "import": "./dist/index.browser.js",
+        "require": "./dist/index.browser.cjs"
+      },
+      "react-server": "./dist/index.browser.js",
+      "bun": "./dist/index.browser.js",
+      "deno": "./dist/index.browser.js",
+      "edge": "./dist/index.browser.js",
+      "edge-light": "./dist/index.browser.js",
+      "worker": "./dist/index.browser.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./csm": {
+      "source": "./src/csm/index.ts",
+      "import": "./dist/csm.js",
+      "require": "./dist/csm.cjs",
+      "default": "./dist/csm.js"
+    },
+    "./stega": {
+      "source": "./src/stega/index.ts",
+      "browser": {
+        "source": "./src/stega/index.ts",
+        "import": "./dist/stega.browser.js",
+        "require": "./dist/stega.browser.cjs"
+      },
+      "import": "./dist/stega.js",
+      "require": "./dist/stega.cjs",
+      "default": "./dist/stega.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "unpkg": "umd/sanityClient.min.js",
+  "module": "./dist/index.js",
+  "browser": {
+    "./dist/index.cjs": "./dist/index.browser.cjs",
+    "./dist/index.js": "./dist/index.browser.js"
+  },
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "csm": [
+        "./dist/csm.d.ts"
+      ],
+      "stega": [
+        "./dist/stega.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "umd"
+  ],
+  "scripts": {
+    "prebuild": "npm run clean",
+    "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
+    "clean": "npx rimraf dist coverage umd/*.js",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint . --ext .cjs,.js,.ts --max-warnings 0",
+    "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
+    "prepublishOnly": "npm run build",
+    "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
+    "test": "vitest",
+    "test:browser": "npm test -- --config ./vitest.browser.config.ts",
+    "test:bun": "bun test runtimes/bun",
+    "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
+    "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
+    "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
+    "test:next": "npm test -- --config ./vitest.next.config.ts",
+    "test:node-runtimes": "node --test runtimes/node | npx faucet"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "prettier": {
+    "bracketSpacing": false,
+    "plugins": [
+      "prettier-plugin-packagejson"
+    ],
+    "printWidth": 100,
+    "semi": false,
+    "singleQuote": true
+  },
+  "dependencies": {
+    "@sanity/eventsource": "^5.0.2",
+    "get-it": "^8.5.0",
+    "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/types": "^2.2.9",
+    "@edge-runtime/vm": "^3.2.0",
+    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@sanity/pkg-utils": "^6.8.18",
+    "@types/json-diff": "^1.0.3",
+    "@types/node": "^20.8.8",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "@vercel/stega": "0.1.2",
+    "@vitest/coverage-v8": "1.6.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-simple-import-sort": "^12.1.0",
+    "faucet": "^0.0.4",
+    "happy-dom": "^12.10.3",
+    "json-diff": "^1.0.6",
+    "ls-engines": "^0.9.1",
+    "next": "^14.2.3",
+    "nock": "^13.5.4",
+    "prettier": "^3.2.5",
+    "prettier-plugin-packagejson": "^2.5.0",
+    "rimraf": "^5.0.1",
+    "rollup": "^4.18.0",
+    "sse-channel": "^4.0.0",
+    "terser": "^5.31.0",
+    "typescript": "5.4.5",
+    "vitest": "1.6.0",
+    "vitest-github-actions-reporter": "0.11.1"
+  },
+  "engines": {
+    "node": ">=14.18"
+  }
+}

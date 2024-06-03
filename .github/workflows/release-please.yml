@@ -1,0 +1,56 @@
+---
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to NPM
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    permissions:
+      id-token: write # to enable use of OIDC for npm provenance
+      # permissions for pushing commits and opening PRs are handled by the `generate-token` step
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+      # This action will create a release PR when regular conventional commits are pushed to main, it'll also detect if a release PR is merged and npm publish should happen
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          release-type: node
+          token: ${{ steps.app-token.outputs.token }}
+
+      # Publish to NPM on new releases
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
+      - uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
+        with:
+          cache: npm
+          node-version: lts/*
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci --ignore-scripts
+        if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
+      #- run: npm audit signatures
+      #  if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
+      # Release Please has already incremented versions and published tags, so we just
+      # need to publish the new version to npm here
+      - run: npm publish --provenance
+        if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}

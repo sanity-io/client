@@ -1,0 +1,40 @@
+name: Maintain deno/import_map.json
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: deno run update_import_map.ts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: lts/*
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: vx.x.x
+      - run: npm run test:deno:update_import_map
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+      - uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6
+        with:
+          author: github-actions <41898282+github-actions[bot]@users.noreply.github.com>
+          body: I ran `npm run test:deno:update_import_map` 🧑‍💻
+          branch: actions/maintain-import-map
+          commit-message: 'chore(deno): update import_map.json'
+          labels: 🤖 bot
+          title: 'chore(deno): update import_map.json'
+          token: ${{ steps.app-token.outputs.token }}

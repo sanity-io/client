@@ -1,0 +1,18 @@
+# Logs
+*.log
+
+# Compiled files
+dist
+
+# Coverage directories used by tools like c8
+coverage
+
+# Dependency directories
+node_modules
+
+# UMD bundle
+umd
+
+# MacOS
+.DS_Store
+tsconfig.vitest-temp.json

@@ -1,0 +1,46 @@
+---
+name: Prettier
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: Can the code be prettier? 🤔
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: lts/*
+      - run: npm ci --ignore-scripts --only-dev
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/prettier/.prettier-cache
+          key: prettier-${{ hashFiles('package-lock.json') }}-${{ hashFiles('.gitignore') }}
+      - run: npx prettier --ignore-path .gitignore --cache --write .
+      - run: git restore .github/workflows CHANGELOG.md runtimes/deno/import_map.json
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+      - uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6
+        with:
+          author: github-actions <41898282+github-actions[bot]@users.noreply.github.com>
+          body: I ran `npx prettier --ignore-path .gitignore --cache --write .` 🧑‍💻
+          branch: actions/prettier
+          commit-message: 'chore(prettier): 🤖 ✨'
+          labels: 🤖 bot
+          title: 'chore(prettier): 🤖 ✨'
+          token: ${{ steps.app-token.outputs.token }}

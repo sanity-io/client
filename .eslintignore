@@ -1,0 +1,5 @@
+dist
+umd
+coverage
+runtimes/deno
+runtimes/node

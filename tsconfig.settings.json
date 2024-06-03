@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@sanity/client/*": ["./src/*"],
+      "@sanity/client": ["./src/index"]
+    },
+
+    "outDir": "./dist",
+    "rootDir": ".",
+    "noEmit": true,
+
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+
+    // Strict type-checking
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+
+    // Additional checks
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+
+    // Module resolution
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
