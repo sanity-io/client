@@ -306,7 +306,6 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   returnQuery?: boolean
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
-  /** @alpha this API is experimental and may change or even be removed */
   lastLiveEventId?: string
 }
 
@@ -929,7 +928,6 @@ export interface ResponseQueryOptions extends RequestOptions {
   // The `cache` and `next` options are specific to the Next.js App Router integration
   cache?: 'next' extends keyof RequestInit ? RequestInit['cache'] : never
   next?: ('next' extends keyof RequestInit ? RequestInit : never)['next']
-  /** @alpha this API is experimental and may change or even be removed */
   lastLiveEventId?: string | string[] | null
 }
 
@@ -973,7 +971,7 @@ export interface RawQueryResponse<R> {
   ms: number
   result: R
   resultSourceMap?: ContentSourceMap
-  /** @alpha this API is experimental and may change or even be removed */
+  /** Requires `apiVersion` to be `2021-03-26` or later. */
   syncTags?: SyncTag[]
 }
 
@@ -1225,13 +1223,13 @@ export interface ContentSourceMap {
   paths: ContentSourceMapPaths
 }
 
-/** @alpha this API is experimental and may change or even be removed */
+/** @public */
 export type SyncTag = `s1:${string}`
-/** @alpha this API is experimental and may change or even be removed */
+/** @public */
 export interface LiveEventRestart {
   type: 'restart'
 }
-/** @alpha this API is experimental and may change or even be removed */
+/** @public */
 export interface LiveEventMessage {
   type: 'message'
   id: string

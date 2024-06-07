@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.19.2",
+  "version": "6.20.0-canary.0",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -124,7 +124,7 @@
   "devDependencies": {
     "@edge-runtime/types": "^2.2.9",
     "@edge-runtime/vm": "^3.2.0",
-    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@sanity/pkg-utils": "^6.9.3",
     "@types/json-diff": "^1.0.3",
@@ -145,7 +145,7 @@
     "nock": "^13.5.4",
     "prettier": "^3.3.1",
     "prettier-plugin-packagejson": "^2.5.0",
-    "rimraf": "^5.0.1",
+    "rimraf": "^5.0.7",
     "rollup": "^4.18.0",
     "sse-channel": "^4.0.0",
     "terser": "^5.31.1",
