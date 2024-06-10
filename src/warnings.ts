@@ -6,6 +6,11 @@ const createWarningPrinter = (message: string[]) =>
   // eslint-disable-next-line no-console
   once((...args: Any[]) => console.warn(message.join(' '), ...args))
 
+export const printCdnAndWithCredentialsWarning = createWarningPrinter([
+  `Since you have set \`withCredentials\` to true, we will default`,
+  `\`useCdn\` to false.`,
+])
+
 export const printCdnWarning = createWarningPrinter([
   `Since you haven't set a value for \`useCdn\`, we will deliver content using our`,
   `global, edge-cached API-CDN. If you wish to have content delivered faster, set`,
