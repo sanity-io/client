@@ -4,8 +4,10 @@ import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {Any, LiveEventMessage, LiveEventRestart} from '../types'
 import {_getDataUrl} from './dataMethods'
 
+const requiredApiVersion = '2021-03-26'
+
 /**
- * @alpha this API is experimental and may change or even be removed
+ * @public
  */
 export class LiveClient {
   #client: SanityClient | ObservableSanityClient
@@ -13,7 +15,18 @@ export class LiveClient {
     this.#client = client
   }
 
+  /**
+   * Requires `apiVersion` to be `2021-03-26` or later.
+   */
   events(): Observable<LiveEventMessage | LiveEventRestart> {
+    const apiVersion = this.#client.config().apiVersion.replace(/^v/, '')
+    if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
+      throw new Error(
+        `The live events API requires API version ${requiredApiVersion} or later. ` +
+          `The current API version is ${apiVersion}. ` +
+          `Please update your API version to use this feature.`,
+      )
+    }
     const path = _getDataUrl(this.#client, 'live/events')
     const url = new URL(this.#client.getUrl(path, false))
 
