@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.20.0](https://github.com/sanity-io/client/compare/v6.19.2...v6.20.0) (2024-06-10)
+
+
+### Features
+
+* the `client.live.events()` API is now stable ([#843](https://github.com/sanity-io/client/issues/843)) ([d03fc09](https://github.com/sanity-io/client/commit/d03fc09acb712c7f2007a9821b37d3419e555b34))
+
 ## [6.19.2](https://github.com/sanity-io/client/compare/v6.19.1...v6.19.2) (2024-06-10)
 
 
