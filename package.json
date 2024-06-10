@@ -124,7 +124,7 @@
   "devDependencies": {
     "@edge-runtime/types": "^2.2.9",
     "@edge-runtime/vm": "^3.2.0",
-    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-commonjs": "^26.0.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@sanity/pkg-utils": "^6.9.3",
     "@types/json-diff": "^1.0.3",
