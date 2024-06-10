@@ -1176,12 +1176,16 @@ The following options are available for actions, and can be applied as the secon
 A document draft can be created by specifying a create action type:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.create',
-    publishedId: 'bike-123',
-    attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 1},
-    ifExists: 'fail'
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.create',
+      publishedId: 'bike-123',
+      attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 1},
+      ifExists: 'fail',
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike draft created')
   })
@@ -1195,11 +1199,15 @@ client.action({
 A published document can be deleted by specifying a delete action type, optionally including some drafts:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.delete',
-    publishedId: 'bike-123',
-    includeDrafts: ['draft.bike-123'],
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.delete',
+      publishedId: 'bike-123',
+      includeDrafts: ['draft.bike-123'],
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike deleted')
   })
@@ -1213,10 +1221,14 @@ client.action({
 A draft document can be deleted by specifying a discard action type:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.discard',
-    draftId: 'draft.bike-123',
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.discard',
+      draftId: 'draft.bike-123',
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike draft deleted')
   })
@@ -1230,11 +1242,15 @@ client.action({
 A patch can be applied to an existing document draft or create a new one by specifying an edit action type:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.edit',
-    publishedId: 'bike-123',
-    attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 2},
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.edit',
+      publishedId: 'bike-123',
+      attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 2},
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike draft edited')
   })
@@ -1248,13 +1264,17 @@ client.action({
 A draft document can be published by specifying a publish action type, optionally with revision ID checks:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.publish',
-    draftId: 'draft.bike-123',
-    ifDraftRevisionId: '<previously-known-revision>',
-    publishedId: 'bike-123',
-    ifPublishedRevisionId: '<previously-known-revision>',
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.publish',
+      draftId: 'draft.bike-123',
+      ifDraftRevisionId: '<previously-known-revision>',
+      publishedId: 'bike-123',
+      ifPublishedRevisionId: '<previously-known-revision>',
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike draft published')
   })
@@ -1268,11 +1288,15 @@ client.action({
 An existing document draft can be deleted and replaced by a new one by specifying a replaceDraft action type:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.replaceDraft',
-    publishedId: 'bike-123',
-    attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 1},
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.replaceDraft',
+      publishedId: 'bike-123',
+      attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 1},
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike draft replaced')
   })
@@ -1286,11 +1310,15 @@ client.action({
 A published document can be retracted by specifying an unpublish action type:
 
 ```js
-client.action({
-    actionType: 'sanity.action.document.unpublish',
-    draftId: 'draft.bike-123',
-    publishedId: 'bike-123',
-  }, actionOptions)
+client
+  .action(
+    {
+      actionType: 'sanity.action.document.unpublish',
+      draftId: 'draft.bike-123',
+      publishedId: 'bike-123',
+    },
+    actionOptions,
+  )
   .then(() => {
     console.log('Bike draft unpublished')
   })
