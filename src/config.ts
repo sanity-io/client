@@ -132,7 +132,7 @@ export const initConfig = (
   newConfig.isDefaultApi = newConfig.apiHost === defaultConfig.apiHost
 
   if (newConfig.useCdn === true && newConfig.withCredentials) {
-    warnings.printCdnAndWithCredentialsWarning();
+    warnings.printCdnAndWithCredentialsWarning()
   }
 
   // If `useCdn` is undefined, we treat it as `true`
