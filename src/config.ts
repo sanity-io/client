@@ -130,6 +130,11 @@ export const initConfig = (
 
   newConfig.apiVersion = `${newConfig.apiVersion}`.replace(/^v/, '')
   newConfig.isDefaultApi = newConfig.apiHost === defaultConfig.apiHost
+
+  if (newConfig.useCdn === true && newConfig.withCredentials) {
+    warnings.printCdnAndWithCredentialsWarning()
+  }
+
   // If `useCdn` is undefined, we treat it as `true`
   newConfig.useCdn = newConfig.useCdn !== false && !newConfig.withCredentials
 
