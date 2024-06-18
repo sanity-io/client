@@ -8,7 +8,7 @@ const createWarningPrinter = (message: string[]) =>
 
 export const printCdnAndWithCredentialsWarning = createWarningPrinter([
   `Because you set \`withCredentials\` to true, we will override your \`useCdn\``,
-  `setting to be false since (cookie-based) credentials are never set on the CDN`
+  `setting to be false since (cookie-based) credentials are never set on the CDN`,
 ])
 
 export const printCdnWarning = createWarningPrinter([
