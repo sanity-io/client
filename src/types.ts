@@ -1236,6 +1236,15 @@ export interface LiveEventMessage {
   tags: SyncTag[]
 }
 
+/** @public */
+export interface SanityQueries {}
+
+/** @public */
+export type ClientReturn<
+  GroqString extends string,
+  Fallback = Any,
+> = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
+
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,
