@@ -67,7 +67,7 @@ describe('domain sharding', async () => {
       },
     )
 
-    test('listen() uses sharding', async () => {
+    test.skipIf(isEdge || isBrowser)('listen() uses sharding', async () => {
       const client = getClient()
       const listenerName = 'QYdPOBgC3V0Os5QsphvTKu'
 
