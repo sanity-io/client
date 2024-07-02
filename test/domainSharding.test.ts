@@ -47,8 +47,8 @@ describe('domain sharding', async () => {
         const client = getClient()
 
         for (let i = 0; i <= 15; i++) {
-          const shard = i % 10
-          const mockHost = `https://${defaultProjectId}.api.s${shard}.sanity.url`
+          const shard = (i % 9) + 1
+          const mockHost = `https://${defaultProjectId}.api.r${shard}.sanity.url`
           const mockPath = `/v1/ping?req=${i}`
           nock(mockHost).get(mockPath).delay(25).reply(200, {req: i})
         }
@@ -71,7 +71,7 @@ describe('domain sharding', async () => {
       const client = getClient()
       const listenerName = 'QYdPOBgC3V0Os5QsphvTKu'
 
-      nock('https://bf1942.api.s0.sanity.url', {encodedQueryParams: true})
+      nock('https://bf1942.api.r1.sanity.url', {encodedQueryParams: true})
         .get('/v1/data/listen/foo')
         .query({query: 'true', includeResult: 'true'})
         .reply(200, `\n:\nevent: welcome\ndata: {"listenerName": "${listenerName}"}\n\n\n`, {
@@ -115,7 +115,7 @@ describe('domain sharding', async () => {
         url: 'https://bf1942.api.sanity.url/v1/ping',
         useDomainSharding: true,
       })
-      expect(out.url).toBe('https://bf1942.api.s0.sanity.url/v1/ping')
+      expect(out.url).toBe('https://bf1942.api.r1.sanity.url/v1/ping')
     })
 
     test('middleware uses first bucket with fewest pending requests', () => {
@@ -124,7 +124,7 @@ describe('domain sharding', async () => {
         url: 'https://bf1942.api.sanity.url/v1/ping',
         useDomainSharding: true,
       })
-      expect(out.url).toBe('https://bf1942.api.s4.sanity.url/v1/ping')
+      expect(out.url).toBe('https://bf1942.api.r5.sanity.url/v1/ping')
     })
 
     test('middleware increases bucket request number on request', () => {
@@ -132,7 +132,7 @@ describe('domain sharding', async () => {
       const {middleware} = getDomainSharder(buckets)
       middleware.onRequest({
         options: {
-          url: 'https://bf1942.api.s1.sanity.url/v1/ping',
+          url: 'https://bf1942.api.r2.sanity.url/v1/ping',
           useDomainSharding: true,
         },
       })
@@ -144,7 +144,7 @@ describe('domain sharding', async () => {
       const {middleware} = getDomainSharder(buckets)
       const context = {
         options: {
-          url: 'https://bf1942.api.s0.sanity.url/v1/ping',
+          url: 'https://bf1942.api.r1.sanity.url/v1/ping',
           useDomainSharding: true,
         },
       }

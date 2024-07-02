@@ -1,7 +1,8 @@
 import type {Middleware, RequestOptions} from 'get-it'
 
+const DEFAULT_NUM_SHARD_BUCKETS = 9
 const UNSHARDED_URL_RE = /^https:\/\/([a-z0-9]+)\.api\.(sanity\..*)/
-const SHARDED_URL_RE = /^https:\/\/[a-z0-9]+\.api\.s(\d+)\.sanity\.(.*)/
+const SHARDED_URL_RE = /^https:\/\/[a-z0-9]+\.api\.r(\d+)\.sanity\.(.*)/
 
 /**
  * Get a default sharding implementation where buckets are reused across instances.
@@ -14,7 +15,7 @@ export const domainSharder = getDomainSharder()
  * @internal
  */
 export function getDomainSharder(initialBuckets?: number[]) {
-  const buckets: number[] = initialBuckets || new Array(10).fill(0, 0)
+  const buckets: number[] = initialBuckets || new Array(DEFAULT_NUM_SHARD_BUCKETS).fill(0, 0)
 
   function incrementBucketForUrl(url: string) {
     const shard = getShardFromUrl(url)
@@ -42,12 +43,16 @@ export function getDomainSharder(initialBuckets?: number[]) {
       0,
     )
 
-    return `https://${projectId}.api.s${bucket}.${rest}`
+    // We start buckets at 1, not zero - so add 1 to the bucket index
+    return `https://${projectId}.api.r${bucket + 1}.${rest}`
   }
 
   function getShardFromUrl(url: string): number | null {
     const [isMatch, shard] = url.match(SHARDED_URL_RE) || []
-    return isMatch ? parseInt(shard, 10) : null
+
+    // We start buckets at 1, not zero, but buckets are zero-indexed.
+    // Substract one from the shard number in the URL to get the correct bucket index
+    return isMatch ? parseInt(shard, 10) - 1 : null
   }
 
   const middleware = {
@@ -87,7 +92,6 @@ export function getDomainSharder(initialBuckets?: number[]) {
     incrementBucketForUrl,
     decrementBucketForUrl,
     getShardedUrl,
-    getBuckets: () => buckets,
   }
 }
 
