@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.20.2](https://github.com/sanity-io/client/compare/v6.20.1...v6.20.2) (2024-07-09)
+
+
+### Bug Fixes
+
+* **deps:** update dependency get-it to ^8.6.3 ([#866](https://github.com/sanity-io/client/issues/866)) ([0661f5d](https://github.com/sanity-io/client/commit/0661f5d59aa9dbb3e10dc00b7fd434fa69ea37f4))
+
 ## [6.20.1](https://github.com/sanity-io/client/compare/v6.20.0...v6.20.1) (2024-06-18)
 
 
