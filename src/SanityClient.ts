@@ -880,9 +880,8 @@ export class SanityClient {
     params?: Q,
     options?: QueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
-    // @ts-expect-error --
     return lastValueFrom(
-      dataMethods._fetch<R, Q>(
+      dataMethods._fetch<ClientReturn<G, R>, Q>(
         this,
         this.#httpRequest,
         this.#clientConfig.stega,
