@@ -1,6 +1,5 @@
+import {createClient, type RawQueryResponse} from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
-
-import {createClient, RawQueryResponse} from '@sanity/client'
 
 type FooResult = {
   bar: number
