@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.21.0](https://github.com/sanity-io/client/compare/v6.20.2...v6.21.0) (2024-07-11)
+
+
+### Features
+
+* **codegen:** Allow query reponse types to be overridden through SanityQueries ([#858](https://github.com/sanity-io/client/issues/858)) ([c25d51a](https://github.com/sanity-io/client/commit/c25d51a749a758ebe9886370124fa0bfbd2afe03))
+
 ## [6.20.2](https://github.com/sanity-io/client/compare/v6.20.1...v6.20.2) (2024-07-09)
 
 
