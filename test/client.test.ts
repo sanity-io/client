@@ -20,7 +20,7 @@ import {
   Transaction,
   UnpublishAction,
 } from '@sanity/client'
-import {of as observableOf} from 'rxjs'
+import {firstValueFrom, lastValueFrom, of as observableOf, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'
 import {describe, expect, test, vi} from 'vitest'
 
@@ -426,7 +426,7 @@ describe('client', async () => {
         maxRetries: 0,
       })
 
-      expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
+      await expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
     })
 
     test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {
@@ -445,7 +445,7 @@ describe('client', async () => {
           return 100
         },
       })
-      expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
+      await expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
     })
 
     test.each([429, 502, 503])('retries requests %d', async (code) => {
@@ -2514,7 +2514,7 @@ describe('client', async () => {
         'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
         '',
         'event: mutation',
-        `data: ${JSON.stringify({document: doc})}`,
+        `data: ${JSON.stringify({result: doc})}`,
         '',
         'event: disconnect',
         'data: {"reason":"forcefully closed"}',
@@ -2528,21 +2528,8 @@ describe('client', async () => {
           'transfer-encoding': 'chunked',
         })
 
-      await new Promise<void>((resolve, reject) => {
-        const sub = getClient()
-          .listen('foo.bar')
-          .subscribe({
-            next: (evt: any) => {
-              expect(evt.document).toEqual(doc)
-              sub.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              sub.unsubscribe()
-              reject(err)
-            },
-          })
-      })
+      const evt = await firstValueFrom(getClient().listen('foo.bar'))
+      expect(evt.result).toEqual(doc)
     })
 
     test('listeners connect to listen endpoint with request tag, emits events', async () => {
@@ -2556,7 +2543,7 @@ describe('client', async () => {
         'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
         '',
         'event: mutation',
-        `data: ${JSON.stringify({document: doc})}`,
+        `data: ${JSON.stringify({result: doc})}`,
         '',
         'event: disconnect',
         'data: {"reason":"forcefully closed"}',
@@ -2572,21 +2559,10 @@ describe('client', async () => {
           'transfer-encoding': 'chunked',
         })
 
-      await new Promise<void>((resolve, reject) => {
-        const sub = getClient()
-          .listen('*[_type == "checkin"]', {}, {tag: 'sfcraft.checkins'})
-          .subscribe({
-            next: (evt: any) => {
-              expect(evt.document).toEqual(doc)
-              sub.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              sub.unsubscribe()
-              reject(err)
-            },
-          })
-      })
+      const evt = await firstValueFrom(
+        getClient().listen('*[_type == "checkin"]', {}, {tag: 'sfcraft.checkins'}),
+      )
+      expect(evt.type == 'mutation' && evt.result).toEqual(doc)
     })
 
     test('listeners connect to listen endpoint with prefixed request tag, emits events', async () => {
@@ -2600,7 +2576,7 @@ describe('client', async () => {
         'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
         '',
         'event: mutation',
-        `data: ${JSON.stringify({document: doc})}`,
+        `data: ${JSON.stringify({result: doc})}`,
         '',
         'event: disconnect',
         'data: {"reason":"forcefully closed"}',
@@ -2616,21 +2592,15 @@ describe('client', async () => {
           'transfer-encoding': 'chunked',
         })
 
-      await new Promise<void>((resolve, reject) => {
-        const sub = getClient({requestTagPrefix: 'sf.craft.'})
-          .listen('*[_type == "checkin"]', {}, {tag: 'checkins'})
-          .subscribe({
-            next: (evt: any) => {
-              expect(evt.document).toEqual(doc)
-              sub.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              sub.unsubscribe()
-              reject(err)
-            },
-          })
-      })
+      const evt = await firstValueFrom(
+        getClient({requestTagPrefix: 'sf.craft.'}).listen(
+          '*[_type == "checkin"]',
+          {},
+          {tag: 'checkins'},
+        ),
+      )
+
+      expect(evt.type === 'mutation' && evt.result).toEqual(doc)
     })
 
     test('listeners requests are lazy', async () => {
@@ -2656,20 +2626,9 @@ describe('client', async () => {
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
       await new Promise((resolve) => setTimeout(resolve, 10))
 
-      await new Promise<void>((resolve, reject) => {
-        expect(didRequest).toBe(false)
-        const sub = req.subscribe({
-          next: () => {
-            expect(didRequest).toBe(true)
-            sub.unsubscribe()
-            resolve()
-          },
-          error: (err) => {
-            sub.unsubscribe()
-            reject(err)
-          },
-        })
-      })
+      expect(didRequest).toBe(false)
+      await firstValueFrom(req)
+      expect(didRequest).toBe(true)
     })
 
     test('listener requests are cold', async () => {
@@ -2695,30 +2654,11 @@ describe('client', async () => {
 
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
 
-      await new Promise<void>((resolve, reject) => {
-        expect(requestCount).toBe(0)
-        const firstSub = req.subscribe({
-          next: () => {
-            expect(requestCount).toBe(1)
-            firstSub.unsubscribe()
-            const secondSub = req.subscribe({
-              next: () => {
-                expect(requestCount).toBe(2)
-                secondSub.unsubscribe()
-                resolve()
-              },
-              error: (err) => {
-                secondSub.unsubscribe()
-                reject(err)
-              },
-            })
-          },
-          error: (err) => {
-            firstSub.unsubscribe()
-            reject(err)
-          },
-        })
-      })
+      expect(requestCount).toBe(0)
+      await firstValueFrom(req)
+      expect(requestCount).toBe(1)
+      await firstValueFrom(req)
+      expect(requestCount).toBe(2)
     })
   })
 
@@ -2830,11 +2770,15 @@ describe('client', async () => {
         .post('/v1/assets/images/foo', isImage)
         .reply(201, {url: 'https://some.asset.url'})
 
-      await new Promise<void>((resolve, reject) => {
-        getClient()
-          .observable.assets.upload('image', fs.createReadStream(fixturePath))
-          .pipe(filter((event) => event.type === 'progress'))
-          .subscribe((event) => expect(event.type, 'progress').toEqual('progress'), reject, resolve)
+      const uploadProgress = getClient()
+        .observable.assets.upload('image', fs.createReadStream(fixturePath))
+        .pipe(filter((event) => event.type === 'progress'))
+
+      // note: the number of events emitted and their properties depends on
+      // the size of the file being uploaded and how the runtime will chunk them
+      const events = await lastValueFrom(uploadProgress.pipe(toArray()))
+      events.forEach((event) => {
+        expect(event.type, 'progress').toEqual('progress')
       })
     })
 

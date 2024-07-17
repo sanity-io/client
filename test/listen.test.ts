@@ -1,6 +1,7 @@
 import type {AddressInfo} from 'node:net'
 
 import {type ClientConfig, createClient} from '@sanity/client'
+import {catchError, firstValueFrom, of} from 'rxjs'
 import {describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
@@ -58,27 +59,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         process.nextTick(() => channel!.close())
       })
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const query = '*[_type == "beer" && title == $beerName]'
-          const params = {beerName: 'Headroom Double IPA'}
+      const query = '*[_type == "beer" && title == $beerName]'
+      const params = {beerName: 'Headroom Double IPA'}
 
-          const subscription = client.listen(query, params).subscribe({
-            next: (msg) => {
-              expect(msg, 'event data should be correct').toEqual({...eventData, type: 'mutation'})
-
-              subscription.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              subscription.unsubscribe()
-              reject(err)
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      const msg = await firstValueFrom(client.listen(query, params))
+      expect(msg, 'event data should be correct').toEqual({...eventData, type: 'mutation'})
+      server.close()
     })
 
     test('listener sends auth token if given (node)', async () => {
@@ -96,19 +82,9 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         {token: 'foobar'},
       )
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const subscription = client.listen('*').subscribe({
-            error: (err) => {
-              subscription.unsubscribe()
-              reject(err)
-            },
-            complete: resolve,
-          })
-        })
-      } finally {
-        server.close()
-      }
+      await firstValueFrom(client.listen('*'), {defaultValue: null})
+
+      server.close()
     })
 
     test('reconnects if disconnected', async () => {
@@ -148,20 +124,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         channel!.close()
         process.nextTick(() => channel!.close())
       })
-      try {
-        await new Promise<void>((resolve) => {
-          const subscription = client.listen('*').subscribe({
-            error: (err) => {
-              expect(err.message, 'should have passed error message').toBe('Unfortunate error')
 
-              subscription.unsubscribe()
-              resolve()
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      const error = await firstValueFrom(client.listen('*').pipe(catchError((err) => of(err))))
+
+      expect(error.message, 'should have passed error message').toBe('Unfortunate error')
+
+      server.close()
     })
 
     test('emits channel errors with deep error description', async () => {
@@ -172,19 +140,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         channel!.close()
         process.nextTick(() => channel!.close())
       })
-      try {
-        await new Promise<void>((resolve) => {
-          const subscription = client.listen('*').subscribe({
-            error: (err) => {
-              expect(err.message, 'should have passed error message').toBe('Expected error')
-              subscription.unsubscribe()
-              resolve()
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+
+      const error = await firstValueFrom(client.listen('*').pipe(catchError((err) => of(err))))
+
+      expect(error.message, 'should have passed error message').toBe('Expected error')
+
+      server.close()
     })
 
     test('emits error if request URL is too large', async () => {
@@ -195,22 +156,14 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         process.nextTick(() => channel!.close())
       })
 
-      try {
-        await new Promise<void>((resolve) => {
-          const pad = '_'.repeat(16000)
-          client.listen(`*{"foo":"${pad}"`).subscribe({
-            error: (err) => {
-              expect(err.message, 'should have passed error message').toBe(
-                'Query too large for listener',
-              )
+      const pad = '_'.repeat(16000)
 
-              resolve()
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      const err = await firstValueFrom(
+        client.listen(`*{"foo":"${pad}"`).pipe(catchError((error) => of(error))),
+      )
+
+      expect(err.message, 'should have passed error message').toBe('Query too large for listener')
+      server.close()
     })
 
     test('can immediately unsubscribe, does not connect to server', async () => {
