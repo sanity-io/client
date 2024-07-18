@@ -36,7 +36,7 @@ test('handles options', () => {
   )
 })
 
-test('skips falsy options', () => {
+test('skips falsy options unless they override server side defaults', () => {
   const query = 'gamedb.game[maxPlayers == 64]'
   expect(
     encodeQueryString({
@@ -47,7 +47,10 @@ test('skips falsy options', () => {
         includePreviousRevision: undefined,
         visibility: 0,
         tag: '',
+        // these defaults to 'true' server side
+        returnQuery: false,
+        includeMutations: false,
       },
     }),
-  ).toEqual('?query=gamedb.game%5BmaxPlayers+%3D%3D+64%5D')
+  ).toEqual('?query=gamedb.game%5BmaxPlayers+%3D%3D+64%5D&returnQuery=false&includeMutations=false')
 })

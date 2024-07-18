@@ -875,6 +875,13 @@ export interface ListenOptions {
   includeResult?: boolean
 
   /**
+   * Whether or not to include the mutations that was performed.
+   * If you do not need the mutations, set this to `false` to reduce bandwidth usage.
+   * @defaultValue `true`
+   */
+  includeMutations?: boolean
+
+  /**
    * Whether or not to include the document as it looked before the mutation event.
    * The previous revision will be available on the `.previous` property of the events,
    * and may be `null` in the case of a new document.

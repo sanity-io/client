@@ -15,6 +15,7 @@ const MAX_URL_LENGTH = 16000 - 1200
 const possibleOptions = [
   'includePreviousRevision',
   'includeResult',
+  'includeMutations',
   'visibility',
   'effectFormat',
   'tag',
