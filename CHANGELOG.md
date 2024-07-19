@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.21.1](https://github.com/sanity-io/client/compare/v6.21.0...v6.21.1) (2024-07-19)
+
+
+### Bug Fixes
+
+* add support for includeMutations listen parameter ([#872](https://github.com/sanity-io/client/issues/872)) ([5f0a991](https://github.com/sanity-io/client/commit/5f0a991a2f72632454be7489146c973399008c5d))
+
 ## [6.21.0](https://github.com/sanity-io/client/compare/v6.20.2...v6.21.0) (2024-07-11)
 
 
