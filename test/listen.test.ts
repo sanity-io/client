@@ -1,7 +1,7 @@
 import type {AddressInfo} from 'node:net'
 
 import {type ClientConfig, createClient} from '@sanity/client'
-import {catchError, firstValueFrom, of} from 'rxjs'
+import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
 import {describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
@@ -114,6 +114,37 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       } finally {
         server.close()
       }
+    })
+
+    test('sends last-event-id header when reconnecting', async () => {
+      expect.assertions(2)
+
+      let attempt = 0
+      const {server, client} = await testSse(({channel, request}) => {
+        attempt++
+        channel!.send({event: 'welcome'})
+        channel!.send({event: 'mutation', id: '123', data: {foo: 'bar'}})
+        if (attempt === 2) {
+          expect(request.headers['last-event-id'], 'should send last-event-id').toBe('123')
+        }
+        channel!.close()
+        process.nextTick(() => channel!.close())
+      })
+
+      const events = await lastValueFrom(
+        client.listen('*', {}, {events: ['reconnect', 'mutation']}).pipe(
+          take(3),
+          catchError((err) => of(err)),
+          toArray(),
+        ),
+      )
+      expect(events).toEqual([
+        {type: 'mutation', foo: 'bar'},
+        {type: 'reconnect'},
+        {type: 'mutation', foo: 'bar'},
+      ])
+
+      server.close()
     })
 
     test('emits channel errors', async () => {
