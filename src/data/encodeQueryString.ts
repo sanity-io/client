@@ -11,7 +11,7 @@ export const encodeQueryString = ({
 }) => {
   const searchParams = new URLSearchParams()
   // We generally want tag at the start of the query string
-  const {tag, returnQuery, ...opts} = options
+  const {tag, includeMutations, returnQuery, ...opts} = options
   // We're using `append` instead of `set` to support React Native: https://github.com/facebook/react-native/blob/1982c4722fcc51aa87e34cf562672ee4aff540f1/packages/react-native/Libraries/Blob/URL.js#L86-L88
   if (tag) searchParams.append('tag', tag)
   searchParams.append('query', query)
@@ -28,6 +28,9 @@ export const encodeQueryString = ({
 
   // `returnQuery` is default `true`, so needs an explicit `false` handling
   if (returnQuery === false) searchParams.append('returnQuery', 'false')
+
+  // `includeMutations` is default `true`, so needs an explicit `false` handling
+  if (includeMutations === false) searchParams.append('includeMutations', 'false')
 
   return `?${searchParams}`
 }

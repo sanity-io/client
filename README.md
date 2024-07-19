@@ -851,6 +851,8 @@ By default, the emitted update event will also contain a `result` property, whic
 
 Likewise, you can also have the client return the document _before_ the mutation was applied, by setting `includePreviousRevision` to `true` in the options, which will include a `previous` property in each emitted object.
 
+If it's not relevant to know what mutations that was applied, you can also set `includeMutation` to `false` in the options, which will save some additional bandwidth by omitting the `mutation` property from the received events.
+
 ### Fetch a single document
 
 This will fetch a document from the [Doc endpoint](https://www.sanity.io/docs/http-doc). This endpoint cuts through any caching/indexing middleware that may involve delayed processing. As it is less scalable/performant than the other query mechanisms, it should be used sparingly. Performing a query is usually a better option.
