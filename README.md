@@ -101,7 +101,7 @@ export async function updateDocumentTitle(_id, title) {
     - [2. Cancel a request by unsubscribing from the Observable](#2-cancel-a-request-by-unsubscribing-from-the-observable)
   - [Get client configuration](#get-client-configuration)
   - [Set client configuration](#set-client-configuration)
-  - [Server Side Actions](#server-side-actions)
+  - [Actions](#actions)
     - [Action options](#action-options)
     - [Create Action](#create-action)
     - [Delete Action](#delete-action)
@@ -1159,9 +1159,9 @@ client.mutate(transaction)
 
 An important note on this approach is that you cannot call `commit()` on transactions or patches instantiated this way, instead you have to pass them to `client.mutate()`
 
-### Server Side Actions
+### Actions
 
-The Server Side Actions API provides a new interface for creating, updating and publishing documents. It is a wrapper around the [Server Side Actions API](https://www.sanity.io/docs/http-actions).
+The Actions API provides a new interface for creating, updating and publishing documents. It is a wrapper around the [Actions API](https://www.sanity.io/docs/http-actions).
 
 This API is only available from API version `v2024-05-23`.
 
