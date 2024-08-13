@@ -372,6 +372,10 @@ export interface SanityProjectMember {
 export interface SanityProject {
   id: string
   displayName: string
+  /**
+   * @deprecated Use the `/user-applications` endpoint instead, which lists all deployed studios/applications
+   * @see https://www.sanity.io/help/studio-host-user-applications
+   */
   studioHost: string | null
   organizationId: string | null
   isBlocked: boolean
@@ -384,6 +388,10 @@ export interface SanityProject {
   metadata: {
     cliInitializedAt?: string
     color?: string
+    /**
+     * @deprecated Use the `/user-applications` endpoint instead, which lists all deployed studios/applications
+     * @see https://www.sanity.io/help/studio-host-user-applications
+     */
     externalStudioHost?: string
   }
 }
