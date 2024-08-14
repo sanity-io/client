@@ -893,28 +893,84 @@ describe('client', async () => {
       }
     })
 
-    test.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
+    describe.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
       'can cancel request with an abort controller signal',
-      async () => {
-        expect.assertions(2)
+      () => {
+        test('client.fetch', async () => {
+          expect.assertions(2)
 
-        nock(projectHost()).get(`/v1/data/query/foo?query=*`).delay(100).reply(200, {
-          ms: 123,
-          query: '*',
-          result: [],
+          nock(projectHost()).get(`/v1/data/query/foo?query=*`).delay(100).reply(200, {
+            ms: 123,
+            query: '*',
+            result: [],
+          })
+
+          const abortController = new AbortController()
+          const promise = getClient().fetch('*', {}, {signal: abortController.signal})
+          await new Promise((resolve) => setTimeout(resolve, 10))
+
+          try {
+            abortController.abort()
+            await promise
+          } catch (err: any) {
+            expect(err).toBeInstanceOf(Error)
+            expect(err.name, 'should throw AbortError').toBe('AbortError')
+          }
+        })
+        test('client.getDocument', async () => {
+          expect.assertions(2)
+
+          nock(projectHost())
+            .get('/v1/data/doc/foo/abc123dfg')
+            .delay(100)
+            .reply(200, {
+              ms: 123,
+              documents: [{_id: 'abc123dfg', mood: 'lax'}],
+            })
+
+          const abortController = new AbortController()
+          const promise = getClient().getDocument('abc123dfg', {signal: abortController.signal})
+          await new Promise((resolve) => setTimeout(resolve, 10))
+
+          try {
+            abortController.abort()
+            await promise
+          } catch (err: any) {
+            if (err.name === 'AssertionError') throw err
+            expect(err).toBeInstanceOf(Error)
+            expect(err.name, 'should throw AbortError').toBe('AbortError')
+          }
         })
 
-        const abortController = new AbortController()
-        const fetch = getClient().fetch('*', {}, {signal: abortController.signal})
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        test('client.getDocuments', async () => {
+          expect.assertions(2)
 
-        try {
-          abortController.abort()
-          await fetch
-        } catch (err: any) {
-          expect(err).toBeInstanceOf(Error)
-          expect(err.name, 'should throw AbortError').toBe('AbortError')
-        }
+          nock(projectHost())
+            .get('/v1/data/doc/foo/abc123dfg,abc321dfg')
+            .delay(100)
+            .reply(200, {
+              ms: 123,
+              documents: [
+                {_id: 'abc123dfg', mood: 'lax'},
+                {_id: 'abc321dfg', mood: 'tense'},
+              ],
+            })
+
+          const abortController = new AbortController()
+          const promise = getClient().getDocuments(['abc123dfg', 'abc321dfg'], {
+            signal: abortController.signal,
+          })
+          await new Promise((resolve) => setTimeout(resolve, 10))
+
+          try {
+            abortController.abort()
+            await promise
+          } catch (err: any) {
+            if (err.name === 'AssertionError') throw err
+            expect(err).toBeInstanceOf(Error)
+            expect(err.name, 'should throw AbortError').toBe('AbortError')
+          }
+        })
       },
     )
 

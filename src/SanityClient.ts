@@ -900,7 +900,7 @@ export class SanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
-    options?: {tag?: string},
+    options?: {signal?: AbortSignal; tag?: string},
   ): Promise<SanityDocument<R> | undefined> {
     return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
   }
@@ -916,7 +916,7 @@ export class SanityClient {
    */
   getDocuments<R extends Record<string, Any> = Record<string, Any>>(
     ids: string[],
-    options?: {tag?: string},
+    options?: {signal?: AbortSignal; tag?: string},
   ): Promise<(SanityDocument<R> | null)[]> {
     return lastValueFrom(dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options))
   }
