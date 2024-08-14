@@ -129,9 +129,14 @@ export function _getDocument<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   id: string,
-  opts: {tag?: string} = {},
+  opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<SanityDocument<R> | undefined> {
-  const options = {uri: _getDataUrl(client, 'doc', id), json: true, tag: opts.tag}
+  const options = {
+    uri: _getDataUrl(client, 'doc', id),
+    json: true,
+    tag: opts.tag,
+    signal: opts.signal,
+  }
   return _requestObservable<SanityDocument<R> | undefined>(client, httpRequest, options).pipe(
     filter(isResponse),
     map((event) => event.body.documents && event.body.documents[0]),
@@ -143,9 +148,14 @@ export function _getDocuments<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   ids: string[],
-  opts: {tag?: string} = {},
+  opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<(SanityDocument<R> | null)[]> {
-  const options = {uri: _getDataUrl(client, 'doc', ids.join(',')), json: true, tag: opts.tag}
+  const options = {
+    uri: _getDataUrl(client, 'doc', ids.join(',')),
+    json: true,
+    tag: opts.tag,
+    signal: opts.signal,
+  }
   return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
     filter(isResponse),
     map((event: Any) => {
