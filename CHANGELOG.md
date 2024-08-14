@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.21.3](https://github.com/sanity-io/client/compare/v6.21.2...v6.21.3) (2024-08-14)
+
+
+### Bug Fixes
+
+* deprecate studioHost, externalStudioHost in typings ([#879](https://github.com/sanity-io/client/issues/879)) ([ebe840b](https://github.com/sanity-io/client/commit/ebe840b156dd433bc9e12c6db3f340e32835dd44))
+* support `signal` on `getDocument(s)` to cancel requests ([#881](https://github.com/sanity-io/client/issues/881)) ([13d71bb](https://github.com/sanity-io/client/commit/13d71bb3e3085458bba809e65473166d69c6c376))
+
 ## [6.21.2](https://github.com/sanity-io/client/compare/v6.21.1...v6.21.2) (2024-08-09)
 
 
