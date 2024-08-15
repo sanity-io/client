@@ -42,6 +42,7 @@ export interface ClientConfig {
   token?: string
   /** @defaultValue 'raw' */
   perspective?: ClientPerspective
+  bundlePerspective?: string
   apiHost?: string
   apiVersion?: string
   proxy?: string
@@ -221,7 +222,7 @@ export type SanityDocument<T extends Record<string, Any> = Record<string, Any>> 
   _createdAt: string
   _updatedAt: string
   /**
-   * Present when `perspective` is set to `previewDrafts`
+   * Present when `perspective` is set to `previewDrafts` or `bundlePerspective` is specified
    */
   _originalId?: string
 }
@@ -306,6 +307,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   returnQuery?: boolean
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
+  bundlePerspective?: string
   lastLiveEventId?: string
 }
 
@@ -470,6 +472,8 @@ export interface QueryParams {
   next?: 'next' extends keyof RequestInit ? never : any
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   perspective?: never
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  bundlePerspective?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   query?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
@@ -937,6 +941,7 @@ export interface ListenOptions {
 /** @public */
 export interface ResponseQueryOptions extends RequestOptions {
   perspective?: ClientPerspective
+  bundlePerspective?: string
   resultSourceMap?: boolean | 'withKeyArraySelector'
   returnQuery?: boolean
   useCdn?: boolean

@@ -312,6 +312,7 @@ export function _dataRequest(
     tag,
     returnQuery,
     perspective: options.perspective,
+    bundlePerspective: options.bundlePerspective,
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     canUseCdn: isQuery,
@@ -405,6 +406,7 @@ export function _requestObservable<R>(
       options.query = {resultSourceMap, ...options.query}
     }
     const perspective = options.perspective || config.perspective
+    const bundlePerspective = options.bundlePerspective || config.bundlePerspective
     if (typeof perspective === 'string' && perspective !== 'raw') {
       validateApiPerspective(perspective)
       options.query = {perspective, ...options.query}
@@ -413,6 +415,13 @@ export function _requestObservable<R>(
         useCdn = false
         printCdnPreviewDraftsWarning()
       }
+    }
+
+    if (typeof bundlePerspective === 'string') {
+      if (perspective) {
+        // printWarning()
+      }
+      options.query = {perspective: undefined, bundlePerspective, ...options.query}
     }
 
     if (options.lastLiveEventId) {
