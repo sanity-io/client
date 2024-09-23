@@ -18,8 +18,14 @@ export class LiveClient {
   /**
    * Requires `apiVersion` to be `2021-03-26` or later.
    */
-  events(): Observable<LiveEventMessage | LiveEventRestart> {
-    const apiVersion = this.#client.config().apiVersion.replace(/^v/, '')
+  events({
+    includeDrafts = false,
+  }: {
+    /** @alpha this API is experimental and may change or even be removed */
+    includeDrafts?: boolean
+  } = {}): Observable<LiveEventMessage | LiveEventRestart> {
+    const {apiVersion: _apiVersion, token} = this.#client.config()
+    const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
       throw new Error(
         `The live events API requires API version ${requiredApiVersion} or later. ` +
@@ -27,10 +33,29 @@ export class LiveClient {
           `Please update your API version to use this feature.`,
       )
     }
+    if (includeDrafts && !token) {
+      throw new Error(
+        `The live events API requires a token when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
+      )
+    }
+    if (includeDrafts && apiVersion !== 'X') {
+      throw new Error(
+        `The live events API requires API version X when 'includeDrafts: true'. This API is experimental and may change or even be removed.`,
+      )
+    }
     const path = _getDataUrl(this.#client, 'live/events')
     const url = new URL(this.#client.getUrl(path, false))
+    if (includeDrafts) {
+      url.searchParams.set('includeDrafts', 'true')
+    }
 
     const listenFor = ['restart', 'message'] as const
+    const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
+    if (includeDrafts && token) {
+      esOptions.headers = {
+        Authorization: `Bearer ${token}`,
+      }
+    }
 
     return new Observable((observer) => {
       let es: InstanceType<typeof EventSource> | undefined
@@ -83,8 +108,8 @@ export class LiveClient {
 
       async function getEventSource() {
         const EventSourceImplementation: typeof EventSource =
-          typeof EventSource === 'undefined'
-            ? ((await import('@sanity/eventsource')).default as typeof EventSource)
+          typeof EventSource === 'undefined' || esOptions.headers
+            ? ((await import('@sanity/eventsource')).default as unknown as typeof EventSource)
             : EventSource
 
         // If the listener has been unsubscribed from before we managed to load the module,
@@ -93,7 +118,7 @@ export class LiveClient {
           return
         }
 
-        const evs = new EventSourceImplementation(url.toString())
+        const evs = new EventSourceImplementation(url.toString(), esOptions)
         evs.addEventListener('error', onError)
         for (const type of listenFor) {
           evs.addEventListener(type, onMessage)

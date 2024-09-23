@@ -64,6 +64,19 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         `[Error: The live events API requires API version 2021-03-26 or later. The current API version is 2020-01-01. Please update your API version to use this feature.]`,
       )
     })
+    test('requires token when includeDrafts is true', () => {
+      const client = getClient({apiVersion: 'vX', port: 1234})
+      expect(() => client.live.events({includeDrafts: true})).toThrowErrorMatchingInlineSnapshot(
+        `[Error: The live events API requires a token when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.]`,
+      )
+    })
+    test('requires apiVersion X when includeDrafts is true', () => {
+      const client = getClient({apiVersion: 'v2021-03-26', token: 'abc123', port: 1234})
+      expect(() => client.live.events({includeDrafts: true})).toThrowErrorMatchingInlineSnapshot(
+        `[Error: The live events API requires API version X when 'includeDrafts: true'. This API is experimental and may change or even be removed.]`,
+      )
+    })
+
     test('can listen for tags', async () => {
       expect.assertions(2)
 
@@ -81,6 +94,49 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       try {
         await new Promise<void>((resolve, reject) => {
           const subscription = client.live.events().subscribe({
+            next: (msg) => {
+              expect(msg, 'event data should be correct').toEqual({
+                ...eventData,
+                id: '123',
+                type: 'message',
+              })
+
+              subscription.unsubscribe()
+              resolve()
+            },
+            error: (err) => {
+              subscription.unsubscribe()
+              reject(err)
+            },
+          })
+        })
+      } finally {
+        server.close()
+      }
+    })
+
+    test('can listen for tags with includeDrafts', async () => {
+      expect.assertions(2)
+
+      const eventData = {
+        tags: ['tag1', 'tag2'],
+      }
+
+      const {server, client} = await testSse(
+        ({request, channel}) => {
+          expect(request.url, 'url should be correct').toEqual(
+            `/vX/data/live/events/prod?includeDrafts=true`,
+          )
+
+          channel!.send({id: '123', data: eventData})
+          process.nextTick(() => channel!.close())
+        },
+        {token: 'abc123'},
+      )
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const subscription = client.live.events({includeDrafts: true}).subscribe({
             next: (msg) => {
               expect(msg, 'event data should be correct').toEqual({
                 ...eventData,
