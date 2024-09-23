@@ -5,6 +5,18 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.0](https://github.com/sanity-io/client/compare/v6.21.3...v6.22.0) (2024-09-23)
+
+
+### Features
+
+* **live:** add experimental `includeDrafts` option ([#890](https://github.com/sanity-io/client/issues/890)) ([e1406b1](https://github.com/sanity-io/client/commit/e1406b148ff52a298d93b2d37f8d99576ce4d89a))
+
+
+### Bug Fixes
+
+* **deps:** update dependency get-it to ^8.6.5 ([#885](https://github.com/sanity-io/client/issues/885)) ([847ad5b](https://github.com/sanity-io/client/commit/847ad5b1c4e2ea9c3cd11b69817b5c386dd8ba26))
+
 ## [6.21.3](https://github.com/sanity-io/client/compare/v6.21.2...v6.21.3) (2024-08-14)
 
 
