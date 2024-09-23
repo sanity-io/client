@@ -31,10 +31,10 @@ jobs:
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
       - uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f # v7
         with:
-          author: github-actions <41898282+github-actions[bot]@users.noreply.github.com>
           body: I ran `npm run test:deno:update_import_map` 🧑‍💻
           branch: actions/maintain-import-map
           commit-message: 'chore(deno): update import_map.json'
           labels: 🤖 bot
+          sign-commits: true
           title: 'chore(deno): update import_map.json'
           token: ${{ steps.app-token.outputs.token }}
