@@ -850,6 +850,7 @@ export type ReconnectEvent = {
  */
 export type WelcomeEvent = {
   type: 'welcome'
+  listenerName: string
 }
 
 /** @public */
