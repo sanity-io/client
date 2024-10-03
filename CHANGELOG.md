@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.1](https://github.com/sanity-io/client/compare/v6.22.0...v6.22.1) (2024-10-03)
+
+
+### Bug Fixes
+
+* add missing `listenerName` property on welcome event ([#894](https://github.com/sanity-io/client/issues/894)) ([6173089](https://github.com/sanity-io/client/commit/6173089839f14a5a0142ef2e96fd58d9a21845a0))
+
 ## [6.22.0](https://github.com/sanity-io/client/compare/v6.21.3...v6.22.0) (2024-09-23)
 
 
