@@ -1244,12 +1244,21 @@ export type SyncTag = `s1:${string}`
 /** @public */
 export interface LiveEventRestart {
   type: 'restart'
+  id: string
+}
+/** @public */
+export interface LiveEventReconnect {
+  type: 'reconnect'
 }
 /** @public */
 export interface LiveEventMessage {
   type: 'message'
   id: string
   tags: SyncTag[]
+}
+/** @public */
+export interface LiveEventWelcome {
+  type: 'welcome'
 }
 
 /** @public */
