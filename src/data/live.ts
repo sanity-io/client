@@ -1,7 +1,13 @@
 import {Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {Any, LiveEventMessage, LiveEventRestart} from '../types'
+import type {
+  Any,
+  LiveEventMessage,
+  LiveEventReconnect,
+  LiveEventRestart,
+  LiveEventWelcome,
+} from '../types'
 import {_getDataUrl} from './dataMethods'
 
 const requiredApiVersion = '2021-03-26'
@@ -20,11 +26,23 @@ export class LiveClient {
    */
   events({
     includeDrafts = false,
+    tag: _tag,
   }: {
     /** @alpha this API is experimental and may change or even be removed */
     includeDrafts?: boolean
-  } = {}): Observable<LiveEventMessage | LiveEventRestart> {
-    const {apiVersion: _apiVersion, token} = this.#client.config()
+    /**
+     * Optional request tag for the listener. Use to identify the request in logs.
+     *
+     * @defaultValue `undefined`
+     */
+    tag?: string
+  } = {}): Observable<LiveEventMessage | LiveEventRestart | LiveEventReconnect | LiveEventWelcome> {
+    const {
+      apiVersion: _apiVersion,
+      token,
+      withCredentials,
+      requestTagPrefix,
+    } = this.#client.config()
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
       throw new Error(
@@ -33,9 +51,9 @@ export class LiveClient {
           `Please update your API version to use this feature.`,
       )
     }
-    if (includeDrafts && !token) {
+    if (includeDrafts && !token && !withCredentials) {
       throw new Error(
-        `The live events API requires a token when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
+        `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
       )
     }
     if (includeDrafts && apiVersion !== 'X') {
@@ -45,16 +63,23 @@ export class LiveClient {
     }
     const path = _getDataUrl(this.#client, 'live/events')
     const url = new URL(this.#client.getUrl(path, false))
+    const tag = _tag && requestTagPrefix ? [requestTagPrefix, _tag].join('.') : _tag
+    if (tag) {
+      url.searchParams.set('tag', tag)
+    }
     if (includeDrafts) {
       url.searchParams.set('includeDrafts', 'true')
     }
 
-    const listenFor = ['restart', 'message'] as const
+    const listenFor = ['restart', 'message', 'welcome', 'reconnect'] as const
     const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
     if (includeDrafts && token) {
       esOptions.headers = {
         Authorization: `Bearer ${token}`,
       }
+    }
+    if (includeDrafts && withCredentials) {
+      esOptions.withCredentials = true
     }
 
     return new Observable((observer) => {
@@ -108,7 +133,7 @@ export class LiveClient {
 
       async function getEventSource() {
         const EventSourceImplementation: typeof EventSource =
-          typeof EventSource === 'undefined' || esOptions.headers
+          typeof EventSource === 'undefined' || esOptions.headers || esOptions.withCredentials
             ? ((await import('@sanity/eventsource')).default as unknown as typeof EventSource)
             : EventSource
 

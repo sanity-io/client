@@ -22,7 +22,7 @@ jobs:
           node-version: lts/*
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: vx.x.x
+          deno-version: v1.x.x
       - run: npm run test:deno:update_import_map
       - uses: actions/create-github-app-token@v1
         id: app-token
