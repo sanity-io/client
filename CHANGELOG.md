@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.2](https://github.com/sanity-io/client/compare/v6.22.1...v6.22.2) (2024-10-17)
+
+
+### Bug Fixes
+
+* **live:** add `withCredentials` and `tag` support ([#898](https://github.com/sanity-io/client/issues/898)) ([4f882c9](https://github.com/sanity-io/client/commit/4f882c94d5cbf47f9c7b49b4698a9f05ad7c9819))
+
 ## [6.22.1](https://github.com/sanity-io/client/compare/v6.22.0...v6.22.1) (2024-10-03)
 
 
