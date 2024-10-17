@@ -26,11 +26,23 @@ export class LiveClient {
    */
   events({
     includeDrafts = false,
+    tag: _tag,
   }: {
     /** @alpha this API is experimental and may change or even be removed */
     includeDrafts?: boolean
+    /**
+     * Optional request tag for the listener. Use to identify the request in logs.
+     *
+     * @defaultValue `undefined`
+     */
+    tag?: string
   } = {}): Observable<LiveEventMessage | LiveEventRestart | LiveEventReconnect | LiveEventWelcome> {
-    const {apiVersion: _apiVersion, token, withCredentials} = this.#client.config()
+    const {
+      apiVersion: _apiVersion,
+      token,
+      withCredentials,
+      requestTagPrefix,
+    } = this.#client.config()
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
       throw new Error(
@@ -51,6 +63,10 @@ export class LiveClient {
     }
     const path = _getDataUrl(this.#client, 'live/events')
     const url = new URL(this.#client.getUrl(path, false))
+    const tag = _tag && requestTagPrefix ? [requestTagPrefix, _tag].join('.') : _tag
+    if (tag) {
+      url.searchParams.set('tag', tag)
+    }
     if (includeDrafts) {
       url.searchParams.set('includeDrafts', 'true')
     }

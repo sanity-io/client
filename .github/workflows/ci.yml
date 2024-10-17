@@ -135,7 +135,7 @@ jobs:
           name: build-output
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: vx.x.x
+          deno-version: v1.x.x
       - run: npm run test:deno
 
   bun-runtime:

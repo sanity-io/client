@@ -67,7 +67,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('requires token when includeDrafts is true', () => {
       const client = getClient({apiVersion: 'vX', port: 1234})
       expect(() => client.live.events({includeDrafts: true})).toThrowErrorMatchingInlineSnapshot(
-        `[Error: The live events API requires a token when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.]`,
+        `[Error: The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.]`,
       )
     })
     test('requires apiVersion X when includeDrafts is true', () => {
@@ -171,6 +171,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         await new Promise<void>((resolve, reject) => {
           const subscription = client.live.events().subscribe({
             next: (msg) => {
+              if (msg.type === 'welcome') return
               expect(msg.type, 'emits restart events to tell the client to reset local state').toBe(
                 'restart',
               )
