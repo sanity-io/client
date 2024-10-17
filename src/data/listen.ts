@@ -1,5 +1,6 @@
 import {Observable} from 'rxjs'
 
+import {domainSharder as sharder} from '../http/domainSharding'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {Any, ListenEvent, ListenOptions, ListenParams, MutationEvent} from '../types'
 import defaults from '../util/defaults'
@@ -65,7 +66,11 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   const listenOpts = pick(options, possibleOptions)
   const qs = encodeQueryString({query, params, options: {tag, ...listenOpts}})
 
-  const uri = `${url}${_getDataUrl(this, 'listen', qs)}`
+  let uri = `${url}${_getDataUrl(this, 'listen', qs)}`
+  if (this.config().useDomainSharding) {
+    uri = sharder.getShardedUrl(uri)
+  }
+
   if (uri.length > MAX_URL_LENGTH) {
     return new Observable((observer) => observer.error(new Error('Query too large for listener')))
   }
@@ -91,6 +96,12 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     // Unsubscribe differs from stopped in that we will never reopen.
     // Once it is`true`, it will never be `false` again.
     let unsubscribed = false
+
+    // We're about to connect, and will reuse the same shard/bucket for every reconnect henceforth.
+    // This may seem inoptimal, but once connected we should just consider this as a "permanent"
+    // connection, since we'll automatically retry on failures/disconnects. Once we explicitly
+    // unsubsccribe, we can decrement the bucket and free up the shard.
+    sharder.incrementBucketForUrl(uri)
 
     open()
 
@@ -188,6 +199,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
       stopped = true
       unsubscribe()
       unsubscribed = true
+      sharder.decrementBucketForUrl(uri)
     }
 
     return stop
