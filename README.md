@@ -887,7 +887,7 @@ client.getDocuments(ids).then((docs) => {
 
 > [!NOTE]
 >
-> Live Content is experimental and require your client config to be set up with `apiVersion: 'vX'`.
+> Live Content is experimental and requires your client config to be set up with `apiVersion: 'vX'`.
 
 ```ts
 // Subscribe to live updates
