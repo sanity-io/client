@@ -419,7 +419,11 @@ export function _requestObservable<R>(
     const bundlePerspective = options.bundlePerspective || config.bundlePerspective
     if (Array.isArray(bundlePerspective) && bundlePerspective.length > 0) {
       validateApiBundlePerspective(perspective, bundlePerspective)
-      options.query = {perspective: undefined, bundlePerspective, ...options.query}
+      options.query = {
+        perspective: undefined,
+        bundlePerspective: bundlePerspective.join(','),
+        ...options.query,
+      }
     }
 
     if (options.lastLiveEventId) {
