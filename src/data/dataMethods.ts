@@ -1,7 +1,7 @@
 import {from, type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {combineLatestWith, filter, map} from 'rxjs/operators'
 
-import {validateApiPerspective} from '../config'
+import {validateApiBundlePerspective, validateApiPerspective} from '../config'
 import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
@@ -312,6 +312,7 @@ export function _dataRequest(
     tag,
     returnQuery,
     perspective: options.perspective,
+    bundlePerspective: options.bundlePerspective,
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     canUseCdn: isQuery,
@@ -413,6 +414,12 @@ export function _requestObservable<R>(
         useCdn = false
         printCdnPreviewDraftsWarning()
       }
+    }
+
+    const bundlePerspective = options.bundlePerspective || config.bundlePerspective
+    if (Array.isArray(bundlePerspective) && bundlePerspective.length > 0) {
+      validateApiBundlePerspective(perspective, bundlePerspective)
+      options.query = {perspective: undefined, bundlePerspective, ...options.query}
     }
 
     if (options.lastLiveEventId) {
