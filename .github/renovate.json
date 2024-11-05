@@ -9,5 +9,8 @@
       "groupName": null,
       "groupSlug": null
     }
-  ]
+  ],
+  "bun": {
+    "enabled": false
+  }
 }
