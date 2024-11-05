@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.22.2",
+  "version": "6.22.3-canary.1",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -141,6 +141,7 @@
     "happy-dom": "^12.10.3",
     "json-diff": "^1.0.6",
     "ls-engines": "^0.9.3",
+    "msw": "^2.6.0",
     "next": "^15.0.2",
     "nock": "^13.5.5",
     "prettier": "^3.3.3",
@@ -153,6 +154,7 @@
     "vitest": "2.1.4",
     "vitest-github-actions-reporter": "0.11.1"
   },
+  "packageManager": "npm@10.5.2",
   "engines": {
     "node": ">=14.18"
   }

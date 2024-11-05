@@ -1,5 +1,6 @@
 import {Observable} from 'rxjs'
 
+import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
@@ -38,6 +39,7 @@ export class LiveClient {
     tag?: string
   } = {}): Observable<LiveEventMessage | LiveEventRestart | LiveEventReconnect | LiveEventWelcome> {
     const {
+      projectId,
       apiVersion: _apiVersion,
       token,
       withCredentials,
@@ -141,6 +143,22 @@ export class LiveClient {
         // do not set up the EventSource.
         if (unsubscribed) {
           return
+        }
+
+        // Detect if CORS is allowed, the way the CORS is checked supports preflight caching, so when the EventSource boots up it knows it sees the preflight was already made and we're good to go
+        try {
+          await fetch(url, {
+            method: 'OPTIONS',
+            mode: 'cors',
+            credentials: esOptions.withCredentials ? 'include' : 'omit',
+            headers: esOptions.headers,
+          })
+          if (unsubscribed) {
+            return
+          }
+        } catch {
+          // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
+          throw new CorsOriginError({projectId: projectId!})
         }
 
         const evs = new EventSourceImplementation(url.toString(), esOptions)
