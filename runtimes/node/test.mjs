@@ -11,7 +11,8 @@ import {
   ServerError,
   requester,
 } from '@sanity/client'
-import pkg from '@sanity/client/package.json' assert {type: 'json'}
+
+const {default: pkg} = await import('@sanity/client/package.json', {with: {type: 'json'}})
 
 test('top-level imports', async (t) => {
   await t.test('@sanity/client', () => {
