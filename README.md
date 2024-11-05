@@ -883,6 +883,47 @@ client.getDocuments(ids).then((docs) => {
   // [{_id: 'bike123', ...}, null, {_id: 'bike345', ...}]
 })
 ```
+### Listening to live content updates
+
+> [!NOTE]
+>
+> Live Content is experimental and requires your client config to be set up with `apiVersion: 'vX'`.
+
+```ts
+// Subscribe to live updates
+const subscription = client.live.events().subscribe(
+  (event) => { 
+    // Check if incoming tags match saved sync tags 
+    if (event.type === "message" && event.tags.some((tag) => syncTags.includes(tag))) { 
+      // Refetch with ID to get latest data
+      render(event.id)
+    }
+    if (event.type === "restart") {
+      // A restart event is sent when the `lastLiveEventId` we've been given earlier is no longer usable
+      render()
+    }
+})
+// Later, unsubscribe when no longer needed (such as on unmount)
+// subscription.unsubscribe()
+```
+
+
+`client.live.events(options)`
+
+Listen to live content updates. Returns an RxJS Observable. When calling `.subscribe()` on the returned observable, a subscription is returned, which can be used to unsubscribe from the events later on by calling `subscription.unsubscribe()`.
+
+The `options` object can contain the following properties:
+- `includeDrafts (boolean)` - Whether to include draft documents in the events. Default is false. Note: This is an experimental API and may change or be removed.
+- `tag (string)` - Optional request tag for the listener. Use to identify the request in logs.
+
+The method will emit different types of events:
+- `message`: Regular event messages.
+- `restart`: Emitted when the event stream restarts.
+- `reconnect`: Emitted when the client reconnects to the event stream.
+- `welcome`: Emitted when the client successfully connects to the event stream.
+
+To listen to updates in draft content, set `includeDrafts` to `true`
+and configure the client with a token or `withCredentials: true`. The token should have the lowest possible access role.
 
 ### Creating documents
 
