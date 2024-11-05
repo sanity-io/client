@@ -41,6 +41,16 @@ export const validateApiPerspective = function validateApiPerspective(perspectiv
   }
 }
 
+export const validateApiBundlePerspective = function validateApiBundlePerspective(
+  perspective?: string,
+  bundlePerspective?: string[],
+) {
+  if (perspective !== 'raw' && bundlePerspective) {
+    throw new TypeError(
+      'Invalid, perspective and bundlePerspective parameters are mutually exclusive',
+    )
+  }
+}
 export const initConfig = (
   config: Partial<ClientConfig>,
   prevConfig: Partial<ClientConfig>,
