@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-empty-interface
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import type {Requester} from 'get-it'
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type {ClientConfig, InitializedClientConfig, RawQueryResponse} from '@sanity/client'
 import type {
   ContentSourceMap,
