@@ -106,3 +106,26 @@ function stringifyBody(body: Any, res: Any) {
   const isJson = contentType.indexOf('application/json') !== -1
   return isJson ? JSON.stringify(body, null, 2) : body
 }
+
+/** @public */
+export class CorsOriginError extends Error {
+  projectId: string
+  addOriginUrl?: URL
+
+  constructor({projectId}: {projectId: string}) {
+    super('CorsOriginError')
+    this.name = 'CorsOriginError'
+    this.projectId = projectId
+
+    const url = new URL(`https://sanity.io/manage/project/${projectId}/api`)
+    if (typeof location !== 'undefined') {
+      const {origin} = location
+      url.searchParams.set('cors', 'add')
+      url.searchParams.set('origin', origin)
+      this.addOriginUrl = url
+      this.message = `The current origin is not allowed to connect to the Live Content API. Add it here: ${url}`
+    } else {
+      this.message = `The current origin is not allowed to connect to the Live Content API. Change your configuration here: ${url}`
+    }
+  }
+}

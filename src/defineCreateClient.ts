@@ -5,7 +5,7 @@ import type {Any, ClientConfig, HttpRequest} from './types'
 
 export * from './data/patch'
 export * from './data/transaction'
-export {ClientError, ServerError} from './http/errors'
+export {ClientError, CorsOriginError, ServerError} from './http/errors'
 export * from './SanityClient'
 export * from './types'
 

@@ -1,7 +1,10 @@
+/* eslint-disable no-shadow */
 import type {AddressInfo} from 'node:net'
 
-import {type ClientConfig, createClient} from '@sanity/client'
-import {describe, expect, test, vitest} from 'vitest'
+import {type ClientConfig, CorsOriginError, createClient} from '@sanity/client'
+import {http, HttpResponse} from 'msw'
+import {setupServer} from 'msw/node'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
 
@@ -24,6 +27,29 @@ const testSse = async (onRequest: OnRequest, options: ClientConfig = {}) => {
 describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefined')(
   '.live.events()',
   () => {
+    const server = setupServer(
+      http.options(
+        '/vX/data/live/events/prod',
+        () =>
+          new HttpResponse(null, {
+            status: 204,
+            headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
+          }),
+      ),
+    )
+
+    beforeAll(() => {
+      server.listen({onUnhandledRequest: 'bypass'})
+    })
+
+    afterEach(() => {
+      server.resetHandlers()
+    })
+
+    afterAll(() => {
+      server.close()
+    })
+
     test('allows apiVersion vX', () => {
       const client = getClient({apiVersion: 'vX', port: 1234})
       expect(() => client.live.events()).not.toThrow()
@@ -78,7 +104,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('can listen for tags', async () => {
-      expect.assertions(2)
+      expect.assertions(3)
 
       const eventData = {
         tags: ['tag1', 'tag2'],
@@ -116,7 +142,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('can listen for tags with includeDrafts', async () => {
-      expect.assertions(2)
+      expect.assertions(3)
 
       const eventData = {
         tags: ['tag1', 'tag2'],
@@ -212,6 +238,81 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       } finally {
         server.close()
       }
+    })
+
+    test('handles CORS errors', async () => {
+      expect.assertions(3)
+      const restoreFetch = global.fetch
+
+      global.fetch = async (info, init) => {
+        const response = await restoreFetch(info, init)
+        if (!response.headers.has('access-control-allow-origin')) {
+          throw new Error('CORS preflight request failed')
+        }
+        return response
+      }
+
+      const {default: nock} = await import('nock')
+
+      // The OPTIONS request is done with `global.fetch`, and so nock can't intercept it.
+      server.use(
+        http.options(
+          'https://abc123.api.sanity.io/vX/data/live/events/no-cors',
+          () => new HttpResponse(null, {status: 204, headers: {'Content-Length': '0'}}),
+        ),
+        http.options(
+          'https://abc123.api.sanity.io/vX/data/live/events/cors',
+          () =>
+            new HttpResponse(null, {
+              status: 204,
+              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
+            }),
+        ),
+      )
+
+      // The EventSource can't be intercepted by msw, so we use nock
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/cors')
+        .reply(200, ['event: welcome', 'data: {}', '', '.', ''].join('\n'), {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/event-stream',
+        })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'no-cors',
+        useCdn: false,
+        apiVersion: 'X',
+      })
+
+      await new Promise<void>((resolve) => {
+        const subscription = client.live.events().subscribe({
+          error: (err) => {
+            expect(err).toBeInstanceOf(CorsOriginError)
+            expect(err.message).toMatchInlineSnapshot(
+              `"The current origin is not allowed to connect to the Live Content API. Change your configuration here: https://sanity.io/manage/project/abc123/api"`,
+            )
+
+            subscription.unsubscribe()
+            resolve()
+          },
+        })
+      })
+
+      const client2 = client.withConfig({dataset: 'cors'})
+      await new Promise<void>((resolve, reject) => {
+        const subscription = client2.live.events().subscribe({
+          next: (event) => {
+            expect(event.type).toBe('welcome')
+
+            subscription.unsubscribe()
+            resolve()
+          },
+          error: reject,
+        })
+      })
+
+      global.fetch = restoreFetch
     })
 
     test('can immediately unsubscribe, does not connect to server', async () => {
