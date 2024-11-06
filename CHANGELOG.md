@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.3](https://github.com/sanity-io/client/compare/v6.22.2...v6.22.3) (2024-11-06)
+
+
+### Bug Fixes
+
+* **live:** detect CORS errors ([#910](https://github.com/sanity-io/client/issues/910)) ([553cb38](https://github.com/sanity-io/client/commit/553cb38d291d2f855f6c0be051785d8d5c20f9dd))
+
 ## [6.22.2](https://github.com/sanity-io/client/compare/v6.22.1...v6.22.2) (2024-10-17)
 
 
