@@ -12,8 +12,8 @@ export const filterDefault: FilterDefault = ({sourcePath, resultPath, value}) =>
     return false
   }
 
-  // Skip underscored keys, needs better heuristics but it works for now
-  if (typeof endPath === 'string' && endPath.startsWith('_')) {
+  // Skip underscored keys, and strings that end with `Id`, needs better heuristics but it works for now
+  if (typeof endPath === 'string' && endPath.startsWith('_') || endPath.endsWith('Id')) {
     return false
   }
 
