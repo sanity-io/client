@@ -98,6 +98,7 @@ const denylist = new Set([
   'template',
   'theme',
   'type',
+  'textTheme',
   'unit',
   'url',
   'username',
