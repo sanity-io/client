@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.4](https://github.com/sanity-io/client/compare/v6.22.3...v6.22.4) (2024-11-08)
+
+
+### Bug Fixes
+
+* **stega:** add `textTheme` to deny list ([39edfe1](https://github.com/sanity-io/client/commit/39edfe12abe453e39659430ab3a1d1272bdffb7b))
+* **stega:** ignore paths that end with `Id` ([81aa664](https://github.com/sanity-io/client/commit/81aa66449c718712764d27a90c0e138b482d790b))
+
 ## [6.22.3](https://github.com/sanity-io/client/compare/v6.22.2...v6.22.3) (2024-11-06)
 
 
