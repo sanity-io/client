@@ -25,6 +25,17 @@ export function walkMap(
   }
 
   if (isRecord(value)) {
+    // Handle Portable Text in a faster way
+    if (value._type === 'block' || value._type === 'span') {
+      const result = {...value}
+      if (value._type === 'block') {
+        result.children = walkMap(value.children, mappingFn, path.concat('children'))
+      } else if (value._type === 'span') {
+        result.text = walkMap(value.text, mappingFn, path.concat('text'))
+      }
+      return result
+    }
+
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, walkMap(v, mappingFn, path.concat(k))]),
     )

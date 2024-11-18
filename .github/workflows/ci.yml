@@ -30,6 +30,7 @@ jobs:
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
       - run: npm run coverage
+      - run: npm run benchmark
       - uses: actions/upload-artifact@v4
         name: Cache build output
         with:
