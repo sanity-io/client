@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.5](https://github.com/sanity-io/client/compare/v6.22.4...v6.22.5) (2024-11-18)
+
+
+### Bug Fixes
+
+* **stega:** 2x faster encoding of portable text ([#920](https://github.com/sanity-io/client/issues/920)) ([8ae6d30](https://github.com/sanity-io/client/commit/8ae6d30d33d89024887fb4ad9642eca7c40de207))
+
 ## [6.22.4](https://github.com/sanity-io/client/compare/v6.22.3...v6.22.4) (2024-11-08)
 
 
