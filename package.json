@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.22.4",
+  "version": "6.22.5-canary.0",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -89,6 +89,7 @@
     "umd"
   ],
   "scripts": {
+    "benchmark": "npm test -- bench",
     "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
     "clean": "npx rimraf dist coverage umd/*.js",
@@ -126,6 +127,7 @@
     "@edge-runtime/vm": "^4.0.4",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
+    "@sanity/client-latest": "npm:@sanity/client@latest",
     "@sanity/pkg-utils": "^6.11.11",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.9.0",

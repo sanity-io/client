@@ -73,7 +73,7 @@ exports[`resolveEditUrl '/' > logger.log 1`] = `
     "[@sanity/client]: Encoding source map into result",
   ],
   [
-    "[@sanity/client]: Paths encoded: 18, skipped: 81",
+    "[@sanity/client]: Paths encoded: 18, skipped: 36",
   ],
   [
     "[@sanity/client]: Table of encoded paths",
@@ -81,9 +81,6 @@ exports[`resolveEditUrl '/' > logger.log 1`] = `
   [
     "[@sanity/client]: List of skipped paths",
     [
-      "description[]._key",
-      "description[]._type",
-      "description[].style",
       "slug.current",
       "slug._type",
       "media[]._type",
@@ -227,7 +224,7 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
     "[@sanity/client]: Encoding source map into result",
   ],
   [
-    "[@sanity/client]: Paths encoded: 18, skipped: 81",
+    "[@sanity/client]: Paths encoded: 18, skipped: 36",
   ],
   [
     "[@sanity/client]: Table of encoded paths",
@@ -235,9 +232,6 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
   [
     "[@sanity/client]: List of skipped paths",
     [
-      "description[]._key",
-      "description[]._type",
-      "description[].style",
       "slug.current",
       "slug._type",
       "media[]._type",
