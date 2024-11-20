@@ -2,7 +2,7 @@ import {getIt, type Middlewares, Requester} from 'get-it'
 import {jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/middleware'
 import {Observable} from 'rxjs'
 
-import type {Any} from '../types'
+import type {Any, ClientConfig} from '../types'
 import {ClientError, ServerError} from './errors'
 
 const httpError = {
@@ -17,21 +17,25 @@ const httpError = {
   },
 }
 
-const printWarnings = {
-  onResponse: (res: Any) => {
-    const warn = res.headers['x-sanity-warning']
-    const warnings = Array.isArray(warn) ? warn : [warn]
-    warnings.filter(Boolean).forEach((msg) => console.warn(msg)) // eslint-disable-line no-console
-    return res
-  },
+function printWarnings(ignore?: boolean) {
+  return {
+    onResponse: (res: Any) => {
+      if (!ignore) {
+        const warn = res.headers['x-sanity-warning']
+        const warnings = Array.isArray(warn) ? warn : [warn]
+        warnings.filter(Boolean).forEach((msg) => console.warn(msg)) // eslint-disable-line no-console
+      }
+      return res
+    },
+  }
 }
 
 /** @internal */
-export function defineHttpRequest(envMiddleware: Middlewares): Requester {
+export function defineHttpRequest(envMiddleware: Middlewares, config?: ClientConfig): Requester {
   return getIt([
     retry({shouldRetry}),
     ...envMiddleware,
-    printWarnings,
+    printWarnings(config?.ignoreSanityAPIWarnings),
     jsonRequest(),
     jsonResponse(),
     progress(),

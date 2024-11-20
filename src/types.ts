@@ -52,6 +52,7 @@ export interface ClientConfig {
    */
   requestTagPrefix?: string
   ignoreBrowserTokenWarning?: boolean
+  ignoreSanityAPIWarnings?: boolean
   withCredentials?: boolean
   allowReconfigure?: boolean
   timeout?: number
