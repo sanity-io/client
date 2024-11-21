@@ -1114,6 +1114,7 @@ export interface RawRequestOptions {
   proxy?: string
   body?: Any
   maxRedirects?: number
+  signal?: AbortSignal
 }
 
 /** @internal */
