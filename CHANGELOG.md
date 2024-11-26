@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.22.6](https://github.com/sanity-io/client/compare/v6.22.5...v6.22.6) (2024-11-26)
+
+
+### Bug Fixes
+
+* **types:** add (abort) signal to raw request typings ([#926](https://github.com/sanity-io/client/issues/926)) ([fcd9a16](https://github.com/sanity-io/client/commit/fcd9a1661b48ccf7a0eba70dd53eb9e29f7aef94))
+
 ## [6.22.5](https://github.com/sanity-io/client/compare/v6.22.4...v6.22.5) (2024-11-18)
 
 
