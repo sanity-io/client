@@ -42,24 +42,26 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledWith('Friction endures')
   })
 
-  test.skipIf(isEdge)(
-    'does not warns if server sends warning back and configured to ignore',
-    async () => {
-      expect.assertions(1)
+  test.skipIf(isEdge)('only warns once', async () => {
+    expect.assertions(2)
 
-      const {default: nock} = await import('nock')
+    const {default: nock} = await import('nock')
 
-      nock('https://abc123.api.sanity.io')
-        .get('/v1/users/me')
-        .reply(200, {}, {'X-Sanity-Warning': 'Friction endures'})
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .times(2)
+      .reply(200, {}, {'X-Sanity-Warning': 'Friction endures'})
 
-      await createClient({
-        projectId: 'abc123',
-        useCdn: true,
-        apiVersion: '1',
-        ignoreSanityAPIWarnings: true,
-      }).users.getById('me')
-      expect(warn).not.toHaveBeenCalledWith('Friction endures')
-    },
-  )
+    const client = createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+    })
+
+    await client.users.getById('me')
+    await client.users.getById('me')
+
+    expect(warn).toHaveBeenCalledWith('Friction endures')
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
 })
