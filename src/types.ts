@@ -308,6 +308,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
   lastLiveEventId?: string
+  cacheMode?: 'noStale'
 }
 
 /** @public */
@@ -946,6 +947,14 @@ export interface ResponseQueryOptions extends RequestOptions {
   cache?: 'next' extends keyof RequestInit ? RequestInit['cache'] : never
   next?: ('next' extends keyof RequestInit ? RequestInit : never)['next']
   lastLiveEventId?: string | string[] | null
+
+  /**
+   * When set to `noStale`, APICDN will not return a cached response if the content is stale.
+   * Tradeoff between latency and freshness of content.
+   *
+   * Only to be used with live content queries and when useCdn is true.
+   */
+  cacheMode?: 'noStale'
 }
 
 /** @public */

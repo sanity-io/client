@@ -839,6 +839,34 @@ describe('client', async () => {
       expect(res[0].rating, 'data should match').toBe(5)
     })
 
+    test.skipIf(isEdge)('can query using cacheMode=noStale using APICDN', async () => {
+      nock('https://abc123.apicdn.sanity.io')
+        .get(`/v1/data/query/foo?query=*&returnQuery=false&cacheMode=noStale`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const client = createClient({projectId: 'abc123', dataset: 'foo'})
+      const res = await client.fetch('*', {}, {cacheMode: 'noStale'})
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)('cacheMode is ignored when useCdn:false', async () => {
+      nock('https://abc123.api.sanity.io')
+        .get(`/v1/data/query/foo?query=*&returnQuery=false`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const client = createClient({projectId: 'abc123', dataset: 'foo'})
+      const res = await client.fetch('*', {}, {cacheMode: 'noStale', useCdn: false})
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
     test.skipIf(isEdge)('handles api errors gracefully', async () => {
       expect.assertions(4)
 
