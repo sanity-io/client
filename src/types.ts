@@ -492,6 +492,8 @@ export interface QueryParams {
   useCdn?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   lastLiveEventId?: never
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  cacheMode?: never
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
