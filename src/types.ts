@@ -308,6 +308,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
   lastLiveEventId?: string
+  cacheMode?: 'noStale'
 }
 
 /** @public */
@@ -491,6 +492,8 @@ export interface QueryParams {
   useCdn?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   lastLiveEventId?: never
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  cacheMode?: never
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
@@ -946,6 +949,14 @@ export interface ResponseQueryOptions extends RequestOptions {
   cache?: 'next' extends keyof RequestInit ? RequestInit['cache'] : never
   next?: ('next' extends keyof RequestInit ? RequestInit : never)['next']
   lastLiveEventId?: string | string[] | null
+
+  /**
+   * When set to `noStale`, APICDN will not return a cached response if the content is stale.
+   * Tradeoff between latency and freshness of content.
+   *
+   * Only to be used with live content queries and when useCdn is true.
+   */
+  cacheMode?: 'noStale'
 }
 
 /** @public */
