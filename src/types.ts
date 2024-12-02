@@ -32,7 +32,14 @@ export interface RequestOptions {
 }
 
 /** @public */
-export type ClientPerspective = 'previewDrafts' | 'published' | 'raw'
+export type ReleaseId = `r${string}`
+
+/** @public */
+export type ClientPerspective =
+  | 'previewDrafts'
+  | 'published'
+  | 'raw'
+  | ('published' | 'drafts' | ReleaseId)[]
 
 /** @public */
 export interface ClientConfig {

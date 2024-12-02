@@ -178,6 +178,27 @@ describe('client', async () => {
       expect(() => createClient({projectId: 'abc123', perspective: 'preview drafts'})).toThrow(
         /Invalid API perspective/,
       )
+
+      // valid because it begins with `r`
+      const validReleaseIdentifier = 'rfoobar'
+      expect(() =>
+        createClient({
+          projectId: 'abc123',
+          perspective: ['published', 'drafts', validReleaseIdentifier],
+        }),
+      ).not.toThrow(/Invalid API perspective/)
+
+      // special case – "raw" would be a valid release id given that it starts with ´r`
+      // but 'raw' is not possible to use with multiple perspectives and is explicitly
+      // banned by the backend
+      expect(() =>
+        createClient({projectId: 'abc123', perspective: ['published', 'drafts', 'raw']}),
+      ).toThrow(/Invalid API perspective/)
+
+      expect(() =>
+        // @ts-expect-error -- we want to test that it throws an error
+        createClient({projectId: 'abc123', perspective: ['XyzAbC']}),
+      ).toThrow(/Invalid API perspective/)
     })
 
     test('throws on invalid project ids', () => {
