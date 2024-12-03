@@ -31,7 +31,9 @@ function validateApiVersion(apiVersion: string) {
 /**
  * @internal - it may have breaking changes in any release
  */
-export const validateApiPerspective = function validateApiPerspective(perspective: unknown) {
+export function validateApiPerspective(
+  perspective: unknown,
+): asserts perspective is ClientPerspective {
   if (Array.isArray(perspective)) {
     for (const perspectiveValue of perspective) {
       if (perspectiveValue === 'published') {
