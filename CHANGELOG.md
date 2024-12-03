@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.24.1](https://github.com/sanity-io/client/compare/v6.24.0...v6.24.1) (2024-12-03)
+
+
+### Bug Fixes
+
+* make `validateApiPerspective` a TS asserter ([#936](https://github.com/sanity-io/client/issues/936)) ([baaa62c](https://github.com/sanity-io/client/commit/baaa62c1bcebc7df3a69a842e60a774bf5509fe6))
+
 ## [6.24.0](https://github.com/sanity-io/client/compare/v6.23.0...v6.24.0) (2024-12-03)
 
 
