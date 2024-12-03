@@ -124,7 +124,7 @@
   },
   "devDependencies": {
     "@edge-runtime/types": "^3.0.3",
-    "@edge-runtime/vm": "^4.0.4",
+    "@edge-runtime/vm": "^5.0.0",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@sanity/client-latest": "npm:@sanity/client@latest",
