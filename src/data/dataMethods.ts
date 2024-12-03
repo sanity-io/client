@@ -405,12 +405,17 @@ export function _requestObservable<R>(
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
       options.query = {resultSourceMap, ...options.query}
     }
-    const perspective = options.perspective || config.perspective
-    if (typeof perspective === 'string' && perspective !== 'raw') {
-      validateApiPerspective(perspective)
-      options.query = {perspective, ...options.query}
+    const perspectiveOption = options.perspective || config.perspective
+    if (typeof perspectiveOption !== 'undefined') {
+      validateApiPerspective(perspectiveOption)
+      options.query = {
+        perspective: Array.isArray(perspectiveOption)
+          ? perspectiveOption.join(',')
+          : perspectiveOption,
+        ...options.query,
+      }
       // If the perspective is set to `previewDrafts` we can't use the CDN, the API will throw
-      if (perspective === 'previewDrafts' && useCdn) {
+      if (perspectiveOption === 'previewDrafts' && useCdn) {
         useCdn = false
         printCdnPreviewDraftsWarning()
       }

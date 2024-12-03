@@ -28,9 +28,31 @@ function validateApiVersion(apiVersion: string) {
   }
 }
 
-export const validateApiPerspective = function validateApiPerspective(perspective: string) {
+export const validateApiPerspective = function validateApiPerspective(perspective: unknown) {
+  if (Array.isArray(perspective)) {
+    for (const perspectiveValue of perspective) {
+      if (perspectiveValue === 'published') {
+        continue
+      }
+      if (perspectiveValue === 'drafts') {
+        continue
+      }
+      if (
+        typeof perspectiveValue === 'string' &&
+        perspectiveValue.startsWith('r') &&
+        perspectiveValue !== 'raw'
+      ) {
+        continue
+      }
+      throw new TypeError(
+        'Invalid API perspective value, expected `published`, `drafts` or a valid release identifier string',
+      )
+    }
+    return
+  }
   switch (perspective as ClientPerspective) {
     case 'previewDrafts':
+    case 'drafts':
     case 'published':
     case 'raw':
       return
@@ -74,7 +96,7 @@ export const initConfig = (
     throw new Error('Configuration must contain `projectId`')
   }
 
-  if (typeof newConfig.perspective === 'string') {
+  if (typeof newConfig.perspective !== 'undefined') {
     validateApiPerspective(newConfig.perspective)
   }
 
