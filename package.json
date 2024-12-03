@@ -123,7 +123,7 @@
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
-    "@edge-runtime/types": "^3.0.3",
+    "@edge-runtime/types": "^4.0.0",
     "@edge-runtime/vm": "^4.0.4",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-node-resolve": "^15.3.0",
