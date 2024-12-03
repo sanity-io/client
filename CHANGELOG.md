@@ -5,6 +5,18 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.24.0](https://github.com/sanity-io/client/compare/v6.23.0...v6.24.0) (2024-12-03)
+
+
+### Features
+
+* **query:** add support for release perspectives ([#934](https://github.com/sanity-io/client/issues/934)) ([59bd477](https://github.com/sanity-io/client/commit/59bd477e4f9f7fcc8aaead6f37243127e18c96b8))
+
+
+### Bug Fixes
+
+* export `validateApiPerspective` ([b73ae46](https://github.com/sanity-io/client/commit/b73ae466ddd7b0ee5896fce8a177bae6901c66a5))
+
 ## [6.23.0](https://github.com/sanity-io/client/compare/v6.22.5...v6.23.0) (2024-12-02)
 
 
