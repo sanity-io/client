@@ -38,6 +38,7 @@ export type ReleaseId = `r${string}`
 export type ClientPerspective =
   | 'previewDrafts'
   | 'published'
+  | 'drafts'
   | 'raw'
   | ('published' | 'drafts' | ReleaseId)[]
 

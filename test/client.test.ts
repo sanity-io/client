@@ -171,6 +171,9 @@ describe('client', async () => {
       expect(() => createClient({projectId: 'abc123', perspective: 'previewDrafts'})).not.toThrow(
         /Invalid API perspective/,
       )
+      expect(() => createClient({projectId: 'abc123', perspective: 'drafts'})).not.toThrow(
+        /Invalid API perspective/,
+      )
       expect(() => createClient({projectId: 'abc123', perspective: 'raw'})).not.toThrow(
         /Invalid API perspective/,
       )

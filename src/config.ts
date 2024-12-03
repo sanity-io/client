@@ -52,6 +52,7 @@ export const validateApiPerspective = function validateApiPerspective(perspectiv
   }
   switch (perspective as ClientPerspective) {
     case 'previewDrafts':
+    case 'drafts':
     case 'published':
     case 'raw':
       return
