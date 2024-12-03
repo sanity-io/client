@@ -3,6 +3,7 @@ import type {Middlewares} from 'get-it'
 import {defineHttpRequest} from './http/request'
 import type {Any, ClientConfig, HttpRequest} from './types'
 
+export {validateApiPerspective} from './config'
 export * from './data/patch'
 export * from './data/transaction'
 export {ClientError, CorsOriginError, ServerError} from './http/errors'

@@ -28,6 +28,9 @@ function validateApiVersion(apiVersion: string) {
   }
 }
 
+/**
+ * @internal - it may have breaking changes in any release
+ */
 export const validateApiPerspective = function validateApiPerspective(perspective: unknown) {
   if (Array.isArray(perspective)) {
     for (const perspectiveValue of perspective) {
