@@ -56,6 +56,14 @@ export interface ClientConfig {
   proxy?: string
 
   /**
+   * Spread the requests over a number of hostnames to work around HTTP/1.1 limitations.
+   * Only applicable in browsers, and for certain allowed projects.
+   *
+   * @alpha
+   */
+  useDomainSharding?: boolean
+
+  /**
    * Optional request tag prefix for all request tags
    */
   requestTagPrefix?: string
