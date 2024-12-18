@@ -126,7 +126,7 @@
     "@edge-runtime/types": "^4.0.0",
     "@edge-runtime/vm": "^4.0.4",
     "@rollup/plugin-commonjs": "^28.0.2",
-    "@rollup/plugin-node-resolve": "^15.3.1",
+    "@rollup/plugin-node-resolve": "^16.0.0",
     "@sanity/client-latest": "npm:@sanity/client@latest",
     "@sanity/pkg-utils": "^6.12.1",
     "@types/json-diff": "^1.0.3",
