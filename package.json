@@ -128,7 +128,7 @@
     "@rollup/plugin-commonjs": "^28.0.2",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@sanity/client-latest": "npm:@sanity/client@latest",
-    "@sanity/pkg-utils": "^6.12.1",
+    "@sanity/pkg-utils": "^6.12.2",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.9.0",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
