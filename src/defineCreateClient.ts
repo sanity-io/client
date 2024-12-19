@@ -27,10 +27,11 @@ export default function defineCreateClientExports<
   // Set the http client to use for requests, and its environment specific middleware
   const defaultRequester = defineHttpRequest(envMiddleware)
 
-  const createClient = (config: ClientConfigType) =>
-    new ClassConstructor(
+  const createClient = (config: ClientConfigType) => {
+    const clientRequester = defineHttpRequest(envMiddleware)
+    return new ClassConstructor(
       (options, requester) =>
-        (requester || defaultRequester)({
+        (requester || clientRequester)({
           maxRedirects: 0,
           maxRetries: config.maxRetries,
           retryDelay: config.retryDelay,
@@ -38,6 +39,7 @@ export default function defineCreateClientExports<
         } as Any),
       config,
     )
+  }
 
   return {requester: defaultRequester, createClient}
 }
