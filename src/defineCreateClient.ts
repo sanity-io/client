@@ -4,6 +4,17 @@ import {defineHttpRequest} from './http/request'
 import type {Any, ClientConfig, HttpRequest} from './types'
 
 export {validateApiPerspective} from './config'
+export {
+  ChannelError,
+  connectEventSource,
+  ConnectionFailedError,
+  DisconnectError,
+  type EventSourceEvent,
+  type EventSourceInstance,
+  MessageError,
+  MessageParseError,
+  type ServerSentEvent,
+} from './data/eventsource'
 export * from './data/patch'
 export * from './data/transaction'
 export {ClientError, CorsOriginError, ServerError} from './http/errors'
