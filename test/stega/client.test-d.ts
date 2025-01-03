@@ -1,6 +1,6 @@
 import {createClient, SanityClient} from '@sanity/client'
 import {
-  ContentSourceMap,
+  type ContentSourceMap,
   createClient as createStegaClient,
   SanityStegaClient,
 } from '@sanity/client/stega'

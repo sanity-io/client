@@ -3,7 +3,7 @@ import {describe, expect, test} from 'vitest'
 
 import {jsonPathToStudioPath} from '../../src/csm/jsonPath'
 import {fromString, get, toString} from '../../src/csm/studioPath'
-import {ContentSourceMapParsedPath} from '../../src/csm/types'
+import {type ContentSourceMapParsedPath} from '../../src/csm/types'
 
 const srcObject = {
   title: 'Hei',

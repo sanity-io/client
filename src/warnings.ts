@@ -1,5 +1,5 @@
 import {generateHelpUrl} from './generateHelpUrl'
-import {Any} from './types'
+import {type Any} from './types'
 import {once} from './util/once'
 
 const createWarningPrinter = (message: string[]) =>

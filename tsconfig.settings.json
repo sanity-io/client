@@ -21,6 +21,7 @@
     "strictPropertyInitialization": false,
     "noImplicitThis": true,
     "alwaysStrict": true,
+    "verbatimModuleSyntax": true,
 
     // Additional checks
     "noUnusedLocals": true,

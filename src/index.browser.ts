@@ -1,4 +1,4 @@
-import defineCreateClientExports, {ClientConfig, SanityClient} from './defineCreateClient'
+import defineCreateClientExports, {type ClientConfig, SanityClient} from './defineCreateClient'
 import {defineDeprecatedCreateClient} from './defineDeprecatedCreateClient'
 import envMiddleware from './http/browserMiddleware'
 
