@@ -6,7 +6,11 @@ import {resolveStudioBaseRoute} from '../csm/resolveEditInfo'
 import {reKeySegment, toString as studioPathToString} from '../csm/studioPath'
 import {encodeIntoResult} from './encodeIntoResult'
 import {filterDefault} from './filterDefault'
-import {ContentSourceMap, ContentSourceMapParsedPath, InitializedStegaConfig} from './types'
+import {
+  type ContentSourceMap,
+  type ContentSourceMapParsedPath,
+  type InitializedStegaConfig,
+} from './types'
 
 const TRUNCATE_LENGTH = 20
 

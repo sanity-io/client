@@ -1,4 +1,4 @@
-import {getIt, type Middlewares, Requester} from 'get-it'
+import {getIt, type Middlewares, type Requester} from 'get-it'
 import {jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/middleware'
 import {Observable} from 'rxjs'
 

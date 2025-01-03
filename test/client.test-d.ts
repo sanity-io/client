@@ -1,10 +1,10 @@
 import {
-  ContentSourceMap,
+  type ContentSourceMap,
   createClient,
-  QueryOptions,
-  QueryParams,
-  QueryWithoutParams,
-  RawQueryResponse,
+  type QueryOptions,
+  type QueryParams,
+  type QueryWithoutParams,
+  type RawQueryResponse,
 } from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
 

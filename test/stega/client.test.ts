@@ -1,4 +1,4 @@
-import {ClientConfig, ContentSourceMap, createClient, SanityClient} from '@sanity/client'
+import {type ClientConfig, type ContentSourceMap, createClient, SanityClient} from '@sanity/client'
 import {
   vercelStegaCombine,
   vercelStegaDecode,

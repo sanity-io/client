@@ -2,23 +2,23 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {
-  BaseActionOptions,
+  type BaseActionOptions,
   type ClientConfig,
   ClientError,
-  ContentSourceMap,
-  CreateAction,
+  type ContentSourceMap,
+  type CreateAction,
   createClient,
   type DatasetsResponse,
-  DeleteAction,
-  DiscardAction,
-  EditAction,
+  type DeleteAction,
+  type DiscardAction,
+  type EditAction,
   Patch,
-  PublishAction,
-  ReplaceDraftAction,
+  type PublishAction,
+  type ReplaceDraftAction,
   type SanityProject,
   ServerError,
   Transaction,
-  UnpublishAction,
+  type UnpublishAction,
 } from '@sanity/client'
 import {firstValueFrom, lastValueFrom, of as observableOf, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'

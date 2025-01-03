@@ -1,4 +1,4 @@
-import {Any} from '../types'
+import {type Any} from '../types'
 
 export const pick = (obj: Any, props: Any) =>
   props.reduce((selection: Any, prop: Any) => {
