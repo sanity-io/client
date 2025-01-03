@@ -4,6 +4,7 @@ import type {AddressInfo} from 'node:net'
 import {type ClientConfig, CorsOriginError, createClient} from '@sanity/client'
 import {http, HttpResponse} from 'msw'
 import {setupServer} from 'msw/node'
+import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
@@ -117,28 +118,14 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         process.nextTick(() => channel!.close())
       })
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const subscription = client.live.events().subscribe({
-            next: (msg) => {
-              expect(msg, 'event data should be correct').toEqual({
-                ...eventData,
-                id: '123',
-                type: 'message',
-              })
+      const message = await firstValueFrom(client.live.events())
+      expect(message, 'event data should be correct').toEqual({
+        ...eventData,
+        id: '123',
+        type: 'message',
+      })
 
-              subscription.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              subscription.unsubscribe()
-              reject(err)
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      server.close()
     })
 
     test('can listen for tags with includeDrafts', async () => {
@@ -160,28 +147,14 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         {token: 'abc123'},
       )
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const subscription = client.live.events({includeDrafts: true}).subscribe({
-            next: (msg) => {
-              expect(msg, 'event data should be correct').toEqual({
-                ...eventData,
-                id: '123',
-                type: 'message',
-              })
+      const message = await firstValueFrom(client.live.events({includeDrafts: true}))
+      expect(message, 'event data should be correct').toEqual({
+        ...eventData,
+        id: '123',
+        type: 'message',
+      })
 
-              subscription.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              subscription.unsubscribe()
-              reject(err)
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      server.close()
     })
 
     test('supports restart events', async () => {
@@ -193,27 +166,11 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         process.nextTick(() => channel!.close())
       })
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const subscription = client.live.events().subscribe({
-            next: (msg) => {
-              if (msg.type === 'welcome') return
-              expect(msg.type, 'emits restart events to tell the client to reset local state').toBe(
-                'restart',
-              )
-
-              subscription.unsubscribe()
-              resolve()
-            },
-            error: (err) => {
-              subscription.unsubscribe()
-              reject(err)
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      const msg = await lastValueFrom(client.live.events().pipe(take(2)))
+      expect(msg.type, 'emits restart events to tell the client to reset local state').toBe(
+        'restart',
+      )
+      server.close()
     })
 
     test('emits errors', async () => {
@@ -224,20 +181,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         channel!.close()
         process.nextTick(() => channel!.close())
       })
-      try {
-        await new Promise<void>((resolve) => {
-          const subscription = client.live.events().subscribe({
-            error: (err) => {
-              expect(err.message, 'should have passed error message').toBe('Unfortunate error')
 
-              subscription.unsubscribe()
-              resolve()
-            },
-          })
-        })
-      } finally {
-        server.close()
-      }
+      const error = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
+
+      expect(error.message, 'should have passed error message').toBe('Unfortunate error')
+
+      server.close()
     })
 
     test('handles CORS errors', async () => {
@@ -285,33 +234,15 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         apiVersion: 'X',
       })
 
-      await new Promise<void>((resolve) => {
-        const subscription = client.live.events().subscribe({
-          error: (err) => {
-            expect(err).toBeInstanceOf(CorsOriginError)
-            expect(err.message).toMatchInlineSnapshot(
-              `"The current origin is not allowed to connect to the Live Content API. Change your configuration here: https://sanity.io/manage/project/abc123/api"`,
-            )
-
-            subscription.unsubscribe()
-            resolve()
-          },
-        })
-      })
+      const error = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
+      expect(error).toBeInstanceOf(CorsOriginError)
+      expect(error.message).toMatchInlineSnapshot(
+        `"The current origin is not allowed to connect to the Live Content API. Change your configuration here: https://sanity.io/manage/project/abc123/api"`,
+      )
 
       const client2 = client.withConfig({dataset: 'cors'})
-      await new Promise<void>((resolve, reject) => {
-        const subscription = client2.live.events().subscribe({
-          next: (event) => {
-            expect(event.type).toBe('welcome')
-
-            subscription.unsubscribe()
-            resolve()
-          },
-          error: reject,
-        })
-      })
-
+      const event = await firstValueFrom(client2.live.events().pipe(catchError((err) => of(err))))
+      expect(event.type).toBe('welcome')
       global.fetch = restoreFetch
     })
 
