@@ -74,16 +74,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         ({request, channel}) => {
           expect(request.headers.authorization, 'should send token').toBe('Bearer foobar')
 
-          channel!.send({event: 'disconnect'})
-          process.nextTick(() => {
-            channel!.close()
-          })
+          channel!.send({event: 'welcome'})
         },
         {token: 'foobar'},
       )
 
-      await firstValueFrom(client.listen('*'), {defaultValue: null})
-
+      await firstValueFrom(client.listen('*', {}, {events: ['welcome']}), {defaultValue: null})
       server.close()
     })
 
@@ -168,8 +164,6 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const {server, client} = await testSse(({channel}) => {
         channel!.send({event: 'channelError', data: {error: {description: 'Expected error'}}})
-        channel!.close()
-        process.nextTick(() => channel!.close())
       })
 
       const error = await firstValueFrom(client.listen('*').pipe(catchError((err) => of(err))))

@@ -1,15 +1,19 @@
-import {Observable} from 'rxjs'
+import {catchError, concat, EMPTY, mergeMap, Observable, of} from 'rxjs'
+import {map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
-  Any,
   LiveEventMessage,
   LiveEventReconnect,
   LiveEventRestart,
   LiveEventWelcome,
+  SyncTag,
 } from '../types'
 import {_getDataUrl} from './dataMethods'
+import {connectEventSource} from './eventsource'
+import {eventSourcePolyfill} from './eventsourcePolyfill'
+import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 
 const requiredApiVersion = '2021-03-26'
 
@@ -72,8 +76,6 @@ export class LiveClient {
     if (includeDrafts) {
       url.searchParams.set('includeDrafts', 'true')
     }
-
-    const listenFor = ['restart', 'message', 'welcome', 'reconnect'] as const
     const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
     if (includeDrafts && token) {
       esOptions.headers = {
@@ -84,124 +86,62 @@ export class LiveClient {
       esOptions.withCredentials = true
     }
 
-    return new Observable((observer) => {
-      let es: InstanceType<typeof EventSource> | undefined
-      let reconnectTimer: NodeJS.Timeout
-      let stopped = false
-      // Unsubscribe differs from stopped in that we will never reopen.
-      // Once it is`true`, it will never be `false` again.
-      let unsubscribed = false
+    const initEventSource = () =>
+      // use polyfill if there is no global EventSource or if we need to set headers
+      (typeof EventSource === 'undefined' || esOptions.headers
+        ? eventSourcePolyfill
+        : of(EventSource)
+      ).pipe(map((EventSource) => new EventSource(url.href, esOptions)))
 
-      open()
-
-      // EventSource will emit a regular event if it fails to connect, however the API will emit an `error` MessageEvent if the server goes down
-      // So we need to handle both cases
-      function onError(evt: MessageEvent | Event) {
-        if (stopped) {
-          return
+    const events = connectEventSource(initEventSource, [
+      'message',
+      'restart',
+      'welcome',
+      'reconnect',
+    ]).pipe(
+      reconnectOnConnectionFailure(),
+      map((event) => {
+        if (event.type === 'message') {
+          const {data, ...rest} = event
+          // Splat data properties from the eventsource message onto the returned event
+          return {...rest, tags: (data as {tags: SyncTag[]}).tags} as LiveEventMessage
         }
+        return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome
+      }),
+    )
 
-        // If the event has a `data` property, then it`s a MessageEvent emitted by the API and we should forward the error and close the connection
-        if ('data' in evt) {
-          const event = parseEvent(evt)
-          observer.error(new Error(event.message, {cause: event}))
-        }
-
-        // Unless we've explicitly stopped the ES (in which case `stopped` should be true),
-        // we should never be in a disconnected state. By default, EventSource will reconnect
-        // automatically, in which case it sets readyState to `CONNECTING`, but in some cases
-        // (like when a laptop lid is closed), it closes the connection. In these cases we need
-        // to explicitly reconnect.
-        if (es!.readyState === es!.CLOSED) {
-          unsubscribe()
-          clearTimeout(reconnectTimer)
-          reconnectTimer = setTimeout(open, 100)
-        }
-      }
-
-      function onMessage(evt: Any) {
-        const event = parseEvent(evt)
-        return event instanceof Error ? observer.error(event) : observer.next(event)
-      }
-
-      function unsubscribe() {
-        if (!es) return
-        es.removeEventListener('error', onError)
-        for (const type of listenFor) {
-          es.removeEventListener(type, onMessage)
-        }
-        es.close()
-      }
-
-      async function getEventSource() {
-        const EventSourceImplementation: typeof EventSource =
-          typeof EventSource === 'undefined' || esOptions.headers || esOptions.withCredentials
-            ? ((await import('@sanity/eventsource')).default as unknown as typeof EventSource)
-            : EventSource
-
-        // If the listener has been unsubscribed from before we managed to load the module,
-        // do not set up the EventSource.
-        if (unsubscribed) {
-          return
-        }
-
-        // Detect if CORS is allowed, the way the CORS is checked supports preflight caching, so when the EventSource boots up it knows it sees the preflight was already made and we're good to go
-        try {
-          await fetch(url, {
-            method: 'OPTIONS',
-            mode: 'cors',
-            credentials: esOptions.withCredentials ? 'include' : 'omit',
-            headers: esOptions.headers,
-          })
-          if (unsubscribed) {
-            return
-          }
-        } catch {
-          // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
-          throw new CorsOriginError({projectId: projectId!})
-        }
-
-        const evs = new EventSourceImplementation(url.toString(), esOptions)
-        evs.addEventListener('error', onError)
-        for (const type of listenFor) {
-          evs.addEventListener(type, onMessage)
-        }
-        return evs
-      }
-
-      function open() {
-        getEventSource()
-          .then((eventSource) => {
-            if (eventSource) {
-              es = eventSource
-              // Handle race condition where the observer is unsubscribed before the EventSource is set up
-              if (unsubscribed) {
-                unsubscribe()
-              }
-            }
-          })
-          .catch((reason) => {
-            observer.error(reason)
-            stop()
-          })
-      }
-
-      function stop() {
-        stopped = true
-        unsubscribe()
-        unsubscribed = true
-      }
-
-      return stop
-    })
+    // Detect if CORS is allowed, the way the CORS is checked supports preflight caching, so when the EventSource boots up it knows it sees the preflight was already made and we're good to go
+    const checkCors = fetchObservable(url, {
+      method: 'OPTIONS',
+      mode: 'cors',
+      credentials: esOptions.withCredentials ? 'include' : 'omit',
+      headers: esOptions.headers,
+    }).pipe(
+      mergeMap(() => EMPTY),
+      catchError(() => {
+        // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
+        throw new CorsOriginError({projectId: projectId!})
+      }),
+    )
+    return concat(checkCors, events)
   }
 }
 
-function parseEvent(event: MessageEvent) {
-  try {
-    const data = (event.data && JSON.parse(event.data)) || {}
-    return {type: event.type, id: event.lastEventId, ...data}
-  } catch (err) {
-    return err
-  }
+function fetchObservable(url: URL, init: RequestInit) {
+  return new Observable((observer) => {
+    const controller = new AbortController()
+    const signal = controller.signal
+    fetch(url, {...init, signal: controller.signal}).then(
+      (response) => {
+        observer.next(response)
+        observer.complete()
+      },
+      (err) => {
+        if (!signal.aborted) {
+          observer.error(err)
+        }
+      },
+    )
+    return () => controller.abort()
+  })
 }
