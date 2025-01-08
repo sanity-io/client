@@ -881,6 +881,7 @@ export type ListenEvent<R extends Record<string, Any>> =
   | DisconnectEvent
   | ReconnectEvent
   | WelcomeEvent
+  | OpenEvent
 
 /** @public */
 export type ListenEventName =
