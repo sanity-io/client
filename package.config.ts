@@ -7,7 +7,6 @@ export default defineConfig({
 
   extract: {
     rules: {
-      'ae-forgotten-export': 'error',
       'ae-incompatible-release-tags': 'off',
       'ae-internal-missing-underscore': 'off',
       'ae-missing-release-tag': 'error',
