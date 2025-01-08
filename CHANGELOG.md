@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.24.2](https://github.com/sanity-io/client/compare/v6.24.1...v6.24.2) (2025-01-08)
+
+
+### Bug Fixes
+
+* **deps:** update non-major ([#952](https://github.com/sanity-io/client/issues/952)) ([479ea80](https://github.com/sanity-io/client/commit/479ea80d1955787a83646f1c354b8ee183992379))
+
 ## [6.24.1](https://github.com/sanity-io/client/compare/v6.24.0...v6.24.1) (2024-12-03)
 
 
