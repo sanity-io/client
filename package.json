@@ -128,7 +128,7 @@
     "@rollup/plugin-commonjs": "^28.0.2",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@sanity/client-latest": "npm:@sanity/client@latest",
-    "@sanity/pkg-utils": "^6.13.2",
+    "@sanity/pkg-utils": "^6.13.3",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.9.0",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
@@ -152,7 +152,7 @@
     "rollup": "^4.30.1",
     "sse-channel": "^4.0.0",
     "terser": "^5.37.0",
-    "typescript": "5.7.2",
+    "typescript": "5.7.3",
     "vitest": "2.1.8",
     "vitest-github-actions-reporter": "0.11.1"
   },
