@@ -7,6 +7,7 @@ import type {
   IdentifiedSanityDocumentStub,
   MultipleMutationResult,
   Mutation,
+  MutationSelection,
   PatchOperations,
   SanityDocument,
   SanityDocumentStub,
@@ -214,15 +215,28 @@ export class Transaction extends BaseTransaction {
    */
   patch(documentId: string, patchOps?: PatchBuilder | PatchOperations): this
   /**
+   * Performs a patch on the given selection. Can either be a builder function or an object of patch operations.
+   *
+   * @param selection - An object with `query` and optional `params`, defining which document(s) to patch
+   * @param patchOps - Operations to perform, or a builder function
+   */
+  patch(patch: MutationSelection, patchOps?: PatchBuilder | PatchOperations): this
+  /**
    * Adds the given patch instance to the transaction.
    * The operation is added to the current transaction, ready to be commited by `commit()`
    *
    * @param patch - Patch to execute
    */
   patch(patch: Patch): this
-  patch(patchOrDocumentId: Patch | string, patchOps?: PatchBuilder | PatchOperations): this {
+  patch(
+    patchOrDocumentId: Patch | MutationSelection | string,
+    patchOps?: PatchBuilder | PatchOperations,
+  ): this {
     const isBuilder = typeof patchOps === 'function'
     const isPatch = typeof patchOrDocumentId !== 'string' && patchOrDocumentId instanceof Patch
+    const isMutationSelection =
+      typeof patchOrDocumentId === 'object' &&
+      ('query' in patchOrDocumentId || 'id' in patchOrDocumentId)
 
     // transaction.patch(client.patch('documentId').inc({visits: 1}))
     if (isPatch) {
@@ -236,6 +250,17 @@ export class Transaction extends BaseTransaction {
         throw new Error('function passed to `patch()` must return the patch')
       }
 
+      return this._add({patch: patch.serialize()})
+    }
+
+    /**
+     * transaction.patch(
+     *   {query: "*[_type == 'person' && points >= $threshold]", params: { threshold: 100 }},
+     *   {dec: { points: 100 }, inc: { bonuses: 1 }}
+     * )
+     */
+    if (isMutationSelection) {
+      const patch = new Patch(patchOrDocumentId, patchOps || {}, this.#client)
       return this._add({patch: patch.serialize()})
     }
 
