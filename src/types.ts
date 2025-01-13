@@ -855,6 +855,15 @@ export type ReconnectEvent = {
 }
 
 /**
+ * The listener connection has been established
+ * note: it's usually a better option to use the 'welcome' event
+ * @public
+ */
+export type OpenEvent = {
+  type: 'open'
+}
+
+/**
  * The listener has been established, and will start receiving events.
  * Note that this is also emitted upon _reconnection_.
  *
@@ -872,6 +881,7 @@ export type ListenEvent<R extends Record<string, Any>> =
   | DisconnectEvent
   | ReconnectEvent
   | WelcomeEvent
+  | OpenEvent
 
 /** @public */
 export type ListenEventName =
