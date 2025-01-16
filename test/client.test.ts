@@ -2379,6 +2379,48 @@ describe('client', async () => {
       ])
     })
 
+    test('patch can use a mutation selector', () => {
+      const transaction = getClient()
+        .transaction()
+        .patch(
+          {
+            query: '*[_id in $ids]',
+            params: {ids: ['abc123', 'foo.456']},
+          },
+          {inc: {count: 1}},
+        )
+
+      expect(transaction.serialize()).toEqual([
+        {
+          patch: {
+            query: '*[_id in $ids]',
+            params: {ids: ['abc123', 'foo.456']},
+            inc: {count: 1},
+          },
+        },
+      ])
+
+      const transactionWithCallback = getClient()
+        .transaction()
+        .patch(
+          {
+            query: '*[_id in $ids]',
+            params: {ids: ['abc123', 'foo.456']},
+          },
+          (p) => p.inc({count: 1}),
+        )
+
+      expect(transactionWithCallback.serialize()).toEqual([
+        {
+          patch: {
+            query: '*[_id in $ids]',
+            params: {ids: ['abc123', 'foo.456']},
+            inc: {count: 1},
+          },
+        },
+      ])
+    })
+
     test.skipIf(isEdge)('executes transaction when commit() is called', async () => {
       const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
       nock(projectHost())
