@@ -17,13 +17,20 @@ const httpError = {
   },
 }
 
-const printWarnings = {
-  onResponse: (res: Any) => {
-    const warn = res.headers['x-sanity-warning']
-    const warnings = Array.isArray(warn) ? warn : [warn]
-    warnings.filter(Boolean).forEach((msg) => console.warn(msg)) // eslint-disable-line no-console
-    return res
-  },
+function printWarnings() {
+  const seen: Record<string, boolean> = {}
+  return {
+    onResponse: (res: Any) => {
+      const warn = res.headers['x-sanity-warning']
+      const warnings = Array.isArray(warn) ? warn : [warn]
+      for (const msg of warnings) {
+        if (!msg || seen[msg]) continue
+        seen[msg] = true
+        console.warn(msg) // eslint-disable-line no-console
+      }
+      return res
+    },
+  }
 }
 
 /** @internal */
@@ -31,7 +38,7 @@ export function defineHttpRequest(envMiddleware: Middlewares): Requester {
   return getIt([
     retry({shouldRetry}),
     ...envMiddleware,
-    printWarnings,
+    printWarnings(),
     jsonRequest(),
     jsonResponse(),
     progress(),

@@ -41,4 +41,27 @@ describe('Client config warnings', async () => {
     await createClient({projectId: 'abc123', useCdn: true, apiVersion: '1'}).users.getById('me')
     expect(warn).toHaveBeenCalledWith('Friction endures')
   })
+
+  test.skipIf(isEdge)('only warns once', async () => {
+    expect.assertions(2)
+
+    const {default: nock} = await import('nock')
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .times(2)
+      .reply(200, {}, {'X-Sanity-Warning': 'Friction endures'})
+
+    const client = createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+    })
+
+    await client.users.getById('me')
+    await client.users.getById('me')
+
+    expect(warn).toHaveBeenCalledWith('Friction endures')
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
 })
