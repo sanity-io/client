@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.25.0](https://github.com/sanity-io/client/compare/v6.24.4...v6.25.0) (2025-01-17)
+
+
+### Features
+
+* **request:** add flag to disable logging api warnings ([#925](https://github.com/sanity-io/client/issues/925)) ([3f90ab0](https://github.com/sanity-io/client/commit/3f90ab0faa993e83585caea05f8be654b1149c4a))
+
 ## [6.24.4](https://github.com/sanity-io/client/compare/v6.24.3...v6.24.4) (2025-01-16)
 
 
