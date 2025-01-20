@@ -501,19 +501,19 @@ const cases = [
     path: 'products[0].title',
     studioUrl: 'https://test.sanity.studio',
     expected:
-      'https://test.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title?baseUrl=https://test.sanity.studio&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=title&isDraft=',
+      'https://test.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title?baseUrl=https://test.sanity.studio&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=title',
   },
   {
     path: 'products[0].media.alt',
     studioUrl: '/',
     expected:
-      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=media[_key=="cee5fbb69da2"].alt&isDraft=',
+      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=media[_key=="cee5fbb69da2"].alt',
   },
   {
     path: 'products[0].description[0].children[0].text',
     studioUrl: '/',
     expected:
-      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[0].children[0].text?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=description[0].children[0].text&isDraft=',
+      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[0].children[0].text?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=description[0].children[0].text',
   },
 ]
 

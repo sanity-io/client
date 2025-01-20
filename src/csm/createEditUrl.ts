@@ -1,4 +1,4 @@
-import {DRAFTS_PREFIX, getPublishedId} from './getPublishedId'
+import {getPublishedId, getVersionFromId, isPublishedId, isVersionId} from './draftUtils'
 import {jsonPathToStudioPath} from './jsonPath'
 import * as studioPath from './studioPath'
 import type {CreateEditUrlOptions, EditIntentUrl, StudioBaseUrl} from './types'
@@ -56,8 +56,11 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   if (dataset) {
     searchParams.set('dataset', dataset)
   }
-  if (_id.startsWith(DRAFTS_PREFIX)) {
-    searchParams.set('isDraft', '')
+  if (isPublishedId(_id)) {
+    searchParams.set('perspective', 'published')
+  } else if (isVersionId(_id)) {
+    const versionId = getVersionFromId(_id)!
+    searchParams.set('perspective', versionId)
   }
 
   const segments = [baseUrl === '/' ? '' : baseUrl]
