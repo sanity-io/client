@@ -1,4 +1,4 @@
-import {type ContentSourceMap, resolveEditUrl} from '@sanity/client/csm'
+import {type ContentSourceMap, getDraftId, getVersionId, resolveEditUrl} from '@sanity/client/csm'
 import {expect, test} from 'vitest'
 
 const mock = {
@@ -233,23 +233,23 @@ const mock = {
   resultSourceMap: {
     documents: [
       {
-        _id: 'drafts.462efcc6-3c8b-47c6-8474-5544e1a4acde',
+        _id: '462efcc6-3c8b-47c6-8474-5544e1a4acde',
         _type: 'product',
       },
       {
-        _id: 'drafts.807cc05c-8c4c-443a-a9c1-198fd3fd7b16',
+        _id: getDraftId('807cc05c-8c4c-443a-a9c1-198fd3fd7b16'),
         _type: 'product',
       },
       {
-        _id: 'drafts.a643da0c-2cc6-439e-92b7-9f31c822ee05',
+        _id: getVersionId('a643da0c-2cc6-439e-92b7-9f31c822ee05', 'rABC123'),
         _type: 'product',
       },
       {
-        _id: 'drafts.c9de5527-ebd9-4f90-8c30-a26e3439ca2d',
+        _id: 'c9de5527-ebd9-4f90-8c30-a26e3439ca2d',
         _type: 'product',
       },
       {
-        _id: 'drafts.e1bf9f1f-efdb-4105-8c26-6b64f897e9c1',
+        _id: 'e1bf9f1f-efdb-4105-8c26-6b64f897e9c1',
         _type: 'product',
       },
       {
@@ -501,19 +501,55 @@ const cases = [
     path: 'products[0].title',
     studioUrl: 'https://test.sanity.studio',
     expected:
-      'https://test.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title?baseUrl=https://test.sanity.studio&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=title&isDraft=',
+      'https://test.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=title?baseUrl=https://test.sanity.studio&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=title&perspective=published',
   },
   {
     path: 'products[0].media.alt',
     studioUrl: '/',
     expected:
-      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=media[_key=="cee5fbb69da2"].alt&isDraft=',
+      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=media[_key=="cee5fbb69da2"].alt&perspective=published',
   },
   {
     path: 'products[0].description[0].children[0].text',
     studioUrl: '/',
     expected:
-      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[0].children[0].text?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=description[0].children[0].text&isDraft=',
+      '/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[0].children[0].text?baseUrl=/&id=462efcc6-3c8b-47c6-8474-5544e1a4acde&type=product&path=description[0].children[0].text&perspective=published',
+  },
+  {
+    path: 'products[1].title',
+    studioUrl: 'https://test.sanity.studio',
+    expected:
+      'https://test.sanity.studio/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=title?baseUrl=https://test.sanity.studio&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=title&isDraft=',
+  },
+  {
+    path: 'products[1].media.alt',
+    studioUrl: '/',
+    expected:
+      '/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=media[_key=="55659c72ec46"].alt?baseUrl=/&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=media[_key=="55659c72ec46"].alt&isDraft=',
+  },
+  {
+    path: 'products[1].description[0].children[0].text',
+    studioUrl: '/',
+    expected:
+      '/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[0].children[0].text?baseUrl=/&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=description[0].children[0].text&isDraft=',
+  },
+  {
+    path: 'products[2].title',
+    studioUrl: 'https://test.sanity.studio',
+    expected:
+      'https://test.sanity.studio/intent/edit/mode=presentation;id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=title?baseUrl=https://test.sanity.studio&id=a643da0c-2cc6-439e-92b7-9f31c822ee05&type=product&path=title&perspective=rABC123',
+  },
+  {
+    path: 'products[2].media.alt',
+    studioUrl: '/',
+    expected:
+      '/intent/edit/mode=presentation;id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=media[_key=="f304342d5bb0"].alt?baseUrl=/&id=a643da0c-2cc6-439e-92b7-9f31c822ee05&type=product&path=media[_key=="f304342d5bb0"].alt&perspective=rABC123',
+  },
+  {
+    path: 'products[2].description[0].children[0].text',
+    studioUrl: '/',
+    expected:
+      '/intent/edit/mode=presentation;id=a643da0c-2cc6-439e-92b7-9f31c822ee05;type=product;path=description[0].children[0].text?baseUrl=/&id=a643da0c-2cc6-439e-92b7-9f31c822ee05&type=product&path=description[0].children[0].text&perspective=rABC123',
   },
 ]
 
