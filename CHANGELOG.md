@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.26.0](https://github.com/sanity-io/client/compare/v6.25.0...v6.26.0) (2025-01-22)
+
+
+### Features
+
+* **csm:** add document id utils ([#976](https://github.com/sanity-io/client/issues/976)) ([0d4cd76](https://github.com/sanity-io/client/commit/0d4cd76d861178ce1f7ebdc132d5315602141dbc))
+
 ## [6.25.0](https://github.com/sanity-io/client/compare/v6.24.4...v6.25.0) (2025-01-17)
 
 
