@@ -1,4 +1,4 @@
-import {DRAFTS_PREFIX, getPublishedId} from './getPublishedId'
+import {getDraftId, getPublishedId, isDraftId} from './draftUtils'
 import {parseJsonPath} from './jsonPath'
 import {resolveMapping} from './resolveMapping'
 import * as paths from './studioPath'
@@ -66,13 +66,13 @@ export function applySourceDocuments<Result = unknown>(
       let cachedDocument: Partial<SanityDocument> | null | undefined
       if (perspective === 'previewDrafts') {
         cachedDocument = getCachedDocument(
-          sourceDocument._id.startsWith(DRAFTS_PREFIX)
+          isDraftId(sourceDocument._id)
             ? sourceDocument
-            : {...sourceDocument, _id: `${DRAFTS_PREFIX}${sourceDocument._id}}`},
+            : {...sourceDocument, _id: getDraftId(sourceDocument._id)},
         )
         if (!cachedDocument) {
           cachedDocument = getCachedDocument(
-            sourceDocument._id.startsWith(DRAFTS_PREFIX)
+            isDraftId(sourceDocument._id)
               ? {...sourceDocument, _id: getPublishedId(sourceDocument._id)}
               : sourceDocument,
           )

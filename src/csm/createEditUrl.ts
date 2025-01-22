@@ -1,4 +1,4 @@
-import {DRAFTS_PREFIX, getPublishedId} from './getPublishedId'
+import {getPublishedId, isDraftId} from './draftUtils'
 import {jsonPathToStudioPath} from './jsonPath'
 import * as studioPath from './studioPath'
 import type {CreateEditUrlOptions, EditIntentUrl, StudioBaseUrl} from './types'
@@ -56,7 +56,7 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   if (dataset) {
     searchParams.set('dataset', dataset)
   }
-  if (_id.startsWith(DRAFTS_PREFIX)) {
+  if (isDraftId(_id)) {
     searchParams.set('isDraft', '')
   }
 
