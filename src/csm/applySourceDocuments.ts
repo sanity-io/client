@@ -33,7 +33,7 @@ export function applySourceDocuments<Result = unknown>(
   if (!resultSourceMap) return result
 
   const resolveDocument = createSourceDocumentResolver(getCachedDocument, perspective)
-  const cachedDocuments = resultSourceMap.documents.map(resolveDocument)
+  const cachedDocuments = resultSourceMap.documents?.map?.(resolveDocument) || []
 
   return walkMap(JSON.parse(JSON.stringify(result)), (value, path) => {
     const resolveMappingResult = resolveMapping(path, resultSourceMap)
