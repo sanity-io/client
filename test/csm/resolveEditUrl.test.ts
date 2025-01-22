@@ -519,19 +519,19 @@ const cases = [
     path: 'products[1].title',
     studioUrl: 'https://test.sanity.studio',
     expected:
-      'https://test.sanity.studio/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=title?baseUrl=https://test.sanity.studio&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=title&isDraft=',
+      'https://test.sanity.studio/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=title?baseUrl=https://test.sanity.studio&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=title',
   },
   {
     path: 'products[1].media.alt',
     studioUrl: '/',
     expected:
-      '/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=media[_key=="55659c72ec46"].alt?baseUrl=/&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=media[_key=="55659c72ec46"].alt&isDraft=',
+      '/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=media[_key=="55659c72ec46"].alt?baseUrl=/&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=media[_key=="55659c72ec46"].alt',
   },
   {
     path: 'products[1].description[0].children[0].text',
     studioUrl: '/',
     expected:
-      '/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[0].children[0].text?baseUrl=/&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=description[0].children[0].text&isDraft=',
+      '/intent/edit/mode=presentation;id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16;type=product;path=description[0].children[0].text?baseUrl=/&id=807cc05c-8c4c-443a-a9c1-198fd3fd7b16&type=product&path=description[0].children[0].text',
   },
   {
     path: 'products[2].title',
