@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.26.1](https://github.com/sanity-io/client/compare/v6.26.0...v6.26.1) (2025-01-22)
+
+
+### Bug Fixes
+
+* **stega:** append `perspective` to edit links ([#979](https://github.com/sanity-io/client/issues/979)) ([65ce82d](https://github.com/sanity-io/client/commit/65ce82dc84765c7a5a189edc64085b5be2d97c9f))
+* **stega:** remove `isDraft` search param ([#978](https://github.com/sanity-io/client/issues/978)) ([08d189d](https://github.com/sanity-io/client/commit/08d189dbfd3be6756da07d0b8282dbef769acdd6))
+
 ## [6.26.0](https://github.com/sanity-io/client/compare/v6.25.0...v6.26.0) (2025-01-22)
 
 
