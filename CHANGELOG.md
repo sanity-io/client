@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.27.0](https://github.com/sanity-io/client/compare/v6.26.1...v6.27.0) (2025-01-22)
+
+
+### Features
+
+* **csm:** support releases in `applySourceDocuments` ([#981](https://github.com/sanity-io/client/issues/981)) ([ab82a35](https://github.com/sanity-io/client/commit/ab82a35e1d37e98aa69c6af7fe3a8959b4057abb))
+
 ## [6.26.1](https://github.com/sanity-io/client/compare/v6.26.0...v6.26.1) (2025-01-22)
 
 
