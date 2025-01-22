@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.27.1](https://github.com/sanity-io/client/compare/v6.27.0...v6.27.1) (2025-01-22)
+
+
+### Bug Fixes
+
+* **csm:** handle `Cannot read properties of undefined` ([cb80d68](https://github.com/sanity-io/client/commit/cb80d689f7b0ab4bfc57a3a1c666e947e74fa182))
+
 ## [6.27.0](https://github.com/sanity-io/client/compare/v6.26.1...v6.27.0) (2025-01-22)
 
 
