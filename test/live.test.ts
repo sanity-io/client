@@ -63,32 +63,32 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       const client = getClient({apiVersion: '2024-06-07', port: 1234})
       expect(() => client.live.events()).not.toThrow()
     })
-    test('allows apiVersion v2021-03-26', () => {
-      const client = getClient({apiVersion: 'v2021-03-26', port: 1234})
+    test('allows apiVersion v2021-03-25', () => {
+      const client = getClient({apiVersion: 'v2021-03-25', port: 1234})
       expect(() => client.live.events()).not.toThrow()
     })
     test('disallows apiVersion 1', () => {
       const client = getClient({apiVersion: '1', port: 1234})
       expect(() => client.live.events()).toThrowErrorMatchingInlineSnapshot(
-        `[Error: The live events API requires API version 2021-03-26 or later. The current API version is 1. Please update your API version to use this feature.]`,
+        `[Error: The live events API requires API version 2021-03-25 or later. The current API version is 1. Please update your API version to use this feature.]`,
       )
     })
     test('disallows apiVersion v1', () => {
       const client = getClient({apiVersion: 'v1', port: 1234})
       expect(() => client.live.events()).toThrowErrorMatchingInlineSnapshot(
-        `[Error: The live events API requires API version 2021-03-26 or later. The current API version is 1. Please update your API version to use this feature.]`,
+        `[Error: The live events API requires API version 2021-03-25 or later. The current API version is 1. Please update your API version to use this feature.]`,
       )
     })
-    test('disallows apiVersion 2021-03-25', () => {
-      const client = getClient({apiVersion: '2021-03-25', port: 1234})
+    test('disallows apiVersion 2021-03-24', () => {
+      const client = getClient({apiVersion: '2021-03-24', port: 1234})
       expect(() => client.live.events()).toThrowErrorMatchingInlineSnapshot(
-        `[Error: The live events API requires API version 2021-03-26 or later. The current API version is 2021-03-25. Please update your API version to use this feature.]`,
+        `[Error: The live events API requires API version 2021-03-25 or later. The current API version is 2021-03-24. Please update your API version to use this feature.]`,
       )
     })
     test('disallows apiVersion v2020-01-01', () => {
       const client = getClient({apiVersion: 'v2020-01-01', port: 1234})
       expect(() => client.live.events()).toThrowErrorMatchingInlineSnapshot(
-        `[Error: The live events API requires API version 2021-03-26 or later. The current API version is 2020-01-01. Please update your API version to use this feature.]`,
+        `[Error: The live events API requires API version 2021-03-25 or later. The current API version is 2020-01-01. Please update your API version to use this feature.]`,
       )
     })
     test('requires token when includeDrafts is true', () => {
@@ -97,11 +97,9 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         `[Error: The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.]`,
       )
     })
-    test('requires apiVersion X when includeDrafts is true', () => {
-      const client = getClient({apiVersion: 'v2021-03-26', token: 'abc123', port: 1234})
-      expect(() => client.live.events({includeDrafts: true})).toThrowErrorMatchingInlineSnapshot(
-        `[Error: The live events API requires API version X when 'includeDrafts: true'. This API is experimental and may change or even be removed.]`,
-      )
+    test('allows apiVersion 2021-03-26 when includeDrafts is true', () => {
+      const client = getClient({apiVersion: 'v2021-03-25', token: 'abc123', port: 1234})
+      expect(() => client.live.events({includeDrafts: true})).not.toThrowError()
     })
 
     test('can listen for tags', async () => {

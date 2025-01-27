@@ -1017,7 +1017,7 @@ export interface RawQueryResponse<R> {
   ms: number
   result: R
   resultSourceMap?: ContentSourceMap
-  /** Requires `apiVersion` to be `2021-03-26` or later. */
+  /** Requires `apiVersion` to be `2021-03-25` or later. */
   syncTags?: SyncTag[]
 }
 
@@ -1291,6 +1291,9 @@ export interface LiveEventMessage {
 export interface LiveEventWelcome {
   type: 'welcome'
 }
+
+/** @public */
+export type LiveEvent = LiveEventRestart | LiveEventReconnect | LiveEventMessage | LiveEventWelcome
 
 /** @public */
 export interface SanityQueries {}
