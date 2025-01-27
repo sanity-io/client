@@ -269,5 +269,83 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(onRequest).not.toHaveBeenCalled()
       server.close()
     })
+
+    test('deduplicates EventSource instances for same URL and options', async () => {
+      expect.assertions(5)
+      let instanceCount = 0
+
+      const restoreFetch = global.fetch
+
+      global.fetch = async (info, init) => {
+        const response = await restoreFetch(info, init)
+        if (!response.headers.has('access-control-allow-origin')) {
+          throw new Error('CORS preflight request failed')
+        }
+        return response
+      }
+
+      const {default: nock} = await import('nock')
+
+      // The OPTIONS request is done with `global.fetch`, and so nock can't intercept it.
+      server.use(
+        http.options(
+          'https://abc123.api.sanity.io/v2021-03-26/data/live/events/dedupe',
+          () =>
+            new HttpResponse(null, {
+              status: 204,
+              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
+            }),
+        ),
+      )
+
+      // The EventSource can't be intercepted by msw, so we use nock
+      nock('https://abc123.api.sanity.io')
+        .get('/v2021-03-26/data/live/events/dedupe')
+        .reply(() => {
+          instanceCount++
+          return [
+            200,
+            [
+              'id: NjA5MDk3MTQ0fFduQzE3KzVTTTBv',
+              'event: welcome',
+              'data: {}',
+              '',
+              '.',
+              'id: NjI0MTk4MzExfHFkS2twak9CcjRF',
+              'event: message',
+              'data: {"tags": []}',
+              '',
+              '.',
+            ].join('\n'),
+            {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'text/event-stream',
+            },
+          ]
+        })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'dedupe',
+        useCdn: false,
+        apiVersion: '2021-03-26',
+      })
+
+      // Create two subscriptions with same parameters
+      const first1 = firstValueFrom(client.live.events())
+      const first2 = firstValueFrom(client.live.events())
+      const last1 = lastValueFrom(client.live.events().pipe(take(2)))
+      const last2 = lastValueFrom(client.live.events().pipe(take(2)))
+
+      const [msg1a, msg1b, msg2a, msg2b] = await Promise.all([first1, first2, last1, last2])
+
+      expect(instanceCount, 'should create only one EventSource instance').toBe(1)
+      expect(msg1a).toEqual(msg1b)
+      expect(msg2a).toEqual(msg2b)
+      expect(msg1a).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
+      expect(msg2a).toEqual({id: 'NjI0MTk4MzExfHFkS2twak9CcjRF', type: 'message', tags: []})
+
+      global.fetch = restoreFetch
+    })
   },
 )

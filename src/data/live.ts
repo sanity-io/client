@@ -1,5 +1,5 @@
 import {catchError, concat, EMPTY, mergeMap, Observable, of} from 'rxjs'
-import {map} from 'rxjs/operators'
+import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
@@ -11,6 +11,7 @@ import type {
   LiveEventWelcome,
   SyncTag,
 } from '../types'
+import {shareReplayLatest} from '../util/shareReplayLatest'
 import {_getDataUrl} from './dataMethods'
 import {connectEventSource} from './eventsource'
 import {eventSourcePolyfill} from './eventsourcePolyfill'
@@ -81,6 +82,13 @@ export class LiveClient {
       esOptions.withCredentials = true
     }
 
+    const key = `${url.href}::${JSON.stringify(esOptions)}`
+    const existing = eventsCache.get(key)
+
+    if (existing) {
+      return existing
+    }
+
     const initEventSource = () =>
       // use polyfill if there is no global EventSource or if we need to set headers
       (typeof EventSource === 'undefined' || esOptions.headers
@@ -118,7 +126,14 @@ export class LiveClient {
         throw new CorsOriginError({projectId: projectId!})
       }),
     )
-    return concat(checkCors, events)
+    const observable = concat(checkCors, events).pipe(
+      finalize(() => eventsCache.delete(key)),
+      shareReplayLatest({
+        predicate: (event) => event.type === 'welcome',
+      }),
+    )
+    eventsCache.set(key, observable)
+    return observable
   }
 }
 
@@ -140,3 +155,5 @@ function fetchObservable(url: URL, init: RequestInit) {
     return () => controller.abort()
   })
 }
+
+const eventsCache = new Map<string, Observable<LiveEvent>>()
