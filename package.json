@@ -139,6 +139,7 @@
     "@vitest/coverage-v8": "3.0.4",
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
+    "eslint-formatter-compact": "^8.40.0",
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "faucet": "^0.0.4",
