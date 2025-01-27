@@ -1,8 +1,8 @@
 {
   "imports": {
     "@sanity/eventsource": "https://esm.sh/@sanity/eventsource@^5.0.2/browser",
-    "get-it": "https://esm.sh/get-it@^8.6.6",
-    "get-it/middleware": "https://esm.sh/get-it@^8.6.6/middleware",
+    "get-it": "https://esm.sh/get-it@^8.6.7",
+    "get-it/middleware": "https://esm.sh/get-it@^8.6.7/middleware",
     "rxjs": "https://esm.sh/rxjs@^7.0.0",
     "rxjs/operators": "https://esm.sh/rxjs@^7.0.0/operators"
   }
