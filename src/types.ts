@@ -105,7 +105,6 @@ export interface ClientConfig {
    */
   stega?: StegaConfig | boolean
 
-
   /**
    * @deprecated Don't use
    */
