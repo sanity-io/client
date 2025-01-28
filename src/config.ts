@@ -90,6 +90,13 @@ export const initConfig = (
     ...defaultConfig,
     ...specifiedConfig,
   } as InitializedClientConfig
+
+  // resource oriented clients should not use project hostname in base url
+  const experimentalResource = newConfig.experimental_resource
+  if (experimentalResource) {
+    newConfig.useProjectHostname = false
+  }
+
   const projectBased = newConfig.useProjectHostname
 
   if (typeof Promise === 'undefined') {
@@ -178,6 +185,12 @@ export const initConfig = (
   } else {
     newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}`
     newConfig.cdnUrl = newConfig.url
+  }
+
+  if (experimentalResource) {
+    const resourceSuffix = `${experimentalResource.type}/${experimentalResource.id}`
+    newConfig.url = `${newConfig.url}/${resourceSuffix}`
+    newConfig.cdnUrl = `${newConfig.cdnUrl}/${resourceSuffix}`
   }
 
   return newConfig

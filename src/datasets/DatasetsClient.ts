@@ -106,6 +106,28 @@ export class DatasetsClient {
   }
 }
 
+export class ThrowingDatasetsClient extends DatasetsClient {
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
+    super(client, httpRequest)
+  }
+
+  create(): Promise<DatasetResponse> {
+    throw new Error('cannot create dataset with the current client configuration')
+  }
+
+  edit(): Promise<DatasetResponse> {
+    throw new Error('cannot edit dataset with the current client configuration')
+  }
+
+  delete(): Promise<{deleted: true}> {
+    throw new Error('cannot delete dataset with the current client configuration')
+  }
+
+  list(): Promise<DatasetsResponse> {
+    throw new Error('cannot list dataset with the current client configuration')
+  }
+}
+
 function _modify<R = unknown>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
