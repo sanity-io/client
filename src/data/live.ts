@@ -4,6 +4,7 @@ import {map} from 'rxjs/operators'
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
+  LiveEvent,
   LiveEventMessage,
   LiveEventReconnect,
   LiveEventRestart,
@@ -15,7 +16,7 @@ import {connectEventSource} from './eventsource'
 import {eventSourcePolyfill} from './eventsourcePolyfill'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 
-const requiredApiVersion = '2021-03-26'
+const requiredApiVersion = '2021-03-25'
 
 /**
  * @public
@@ -27,13 +28,12 @@ export class LiveClient {
   }
 
   /**
-   * Requires `apiVersion` to be `2021-03-26` or later.
+   * Requires `apiVersion` to be `2021-03-25` or later.
    */
   events({
     includeDrafts = false,
     tag: _tag,
   }: {
-    /** @alpha this API is experimental and may change or even be removed */
     includeDrafts?: boolean
     /**
      * Optional request tag for the listener. Use to identify the request in logs.
@@ -41,7 +41,7 @@ export class LiveClient {
      * @defaultValue `undefined`
      */
     tag?: string
-  } = {}): Observable<LiveEventMessage | LiveEventRestart | LiveEventReconnect | LiveEventWelcome> {
+  } = {}): Observable<LiveEvent> {
     const {
       projectId,
       apiVersion: _apiVersion,
@@ -60,11 +60,6 @@ export class LiveClient {
     if (includeDrafts && !token && !withCredentials) {
       throw new Error(
         `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
-      )
-    }
-    if (includeDrafts && apiVersion !== 'X') {
-      throw new Error(
-        `The live events API requires API version X when 'includeDrafts: true'. This API is experimental and may change or even be removed.`,
       )
     }
     const path = _getDataUrl(this.#client, 'live/events')
