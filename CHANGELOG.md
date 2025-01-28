@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.27.2](https://github.com/sanity-io/client/compare/v6.27.1...v6.27.2) (2025-01-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency get-it to ^8.6.7 ([#989](https://github.com/sanity-io/client/issues/989)) ([b36339c](https://github.com/sanity-io/client/commit/b36339c88071ee82d0ec25117a1c9925e623c199))
+* **live:** `includeDrafts` no longer require vX ([#991](https://github.com/sanity-io/client/issues/991)) ([22e50aa](https://github.com/sanity-io/client/commit/22e50aa0d62daf5abba8549a56d14240d620fbeb))
+
 ## [6.27.1](https://github.com/sanity-io/client/compare/v6.27.0...v6.27.1) (2025-01-22)
 
 
