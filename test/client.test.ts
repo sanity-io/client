@@ -508,7 +508,27 @@ describe('client', async () => {
         getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.create(
           '*foo*',
         ),
-      ).toThrow(/Datasets can only contain/i)
+      ).toThrow(/cannot create dataset with the current client configuration/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.delete(
+          '*foo*',
+        ),
+      ).toThrow(/cannot delete dataset with the current client configuration/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.edit('*foo*'),
+      ).toThrow(/cannot edit dataset with the current client configuration/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.list(),
+      ).toThrow(/cannot list dataset with the current client configuration/i)
     })
 
     test.skipIf(isEdge)('can create dataset', async () => {
