@@ -26,6 +26,7 @@ const possibleOptions = [
   'includePreviousRevision',
   'includeResult',
   'includeMutations',
+  'includeAllVersions',
   'visibility',
   'effectFormat',
   'tag',
