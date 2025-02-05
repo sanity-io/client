@@ -927,6 +927,17 @@ export interface ListenOptions {
   includePreviousRevision?: boolean
 
   /**
+   * Whether to include events for drafts and versions. As of API Version >= v2025-02-19, only events
+   * for published documents will be included by default.
+   * If you need events from drafts and versions, set this to `true`.
+   * Note: Keep in mind that additional document variants may be introduced in the future, so it's
+   * recommended to respond to events in a way that's tolerant of potential future variants, e.g. by
+   * explicitly checking whether the event is for a draft or a version.
+   * @defaultValue `false`
+   */
+  includeAllVersions?: boolean
+
+  /**
    * Whether events should be sent as soon as a transaction has been committed (`transaction`, default),
    * or only after they are available for queries (query). Note that this is on a best-effort basis,
    * and listeners with `query` may in certain cases (notably with deferred transactions) receive events
