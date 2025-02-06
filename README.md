@@ -501,7 +501,7 @@ Perform a query using the given parameters (if any).
 
 ### Using perspectives
 
-The `perspective` option can be used to specify special filtering behavior for queries. The default value is `raw`, which means no special filtering is applied, while [`published`](#published) and [`previewDrafts`](#previewdrafts) can be used to optimize for specific use cases.
+The `perspective` option can be used to specify special filtering behavior for queries. The default value is [`published`](#published) if API version >= v2025-02-19, (if API version is <  v2025-02-19, [`raw`](#raw) is the default). Using the [`published`](#published) perspective will exclude drafts, versions and potential future document variants. Using the [`raw`](#raw) perspective means no special filtering is applied, so it's recommended to apply filtering client side that only includes the variants you want to process.
 
 #### `published`
 
@@ -537,13 +537,13 @@ import {createClient} from '@sanity/client'
 const client = createClient({
   ...config,
   useCdn: true, // set to `false` to bypass the edge cache
-  perspective: 'published',
+  perspective: 'published', // default starting from API version v2025-02-19
 })
 
 const authors = await client.fetch('*[_type == "author"]')
 ```
 
-Then `authors` will only contain documents that don't have a `drafts.` prefix in their `_id`, in this case just "George Martin":
+Then `authors` will only contain published documents, and not include documents with `drafts.`, `versions.` or other prefixes in their `_id`, in this case just "George Martin":
 
 ```json
 [

@@ -60,7 +60,7 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
-  /** @defaultValue 'raw' */
+  /** @defaultValue 'published' if API version >= v2025-02-19, 'raw' if apiVersion < v2025-02-19 */
   perspective?: ClientPerspective
   apiHost?: string
   apiVersion?: string
