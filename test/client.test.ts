@@ -1099,6 +1099,24 @@ describe('client', async () => {
       })
     })
 
+    test.skipIf(isEdge)('can query for single document using hacky resource config', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/resource-type/res-id/doc/abc123')
+        .reply(200, {
+          ms: 123,
+          documents: [{_id: 'abc123', mood: 'lax'}],
+        })
+
+      await expect(
+        getClient({projectId: 'resource.resource-type.res-id', dataset: 'unused'}).getDocument(
+          'abc123',
+        ),
+        'data should match',
+      ).resolves.toMatchObject({
+        mood: 'lax',
+      })
+    })
+
     test.skipIf(isEdge)('can query for single document with request tag', async () => {
       nock(projectHost())
         .get('/v1/data/doc/foo/abc123?tag=some.tag')

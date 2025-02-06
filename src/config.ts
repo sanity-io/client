@@ -91,6 +91,16 @@ export const initConfig = (
     ...specifiedConfig,
   } as InitializedClientConfig
 
+  const projectId = newConfig.projectId
+  if (projectId?.startsWith('resource.')) {
+    const [, resourceType, resourceId] = projectId.split('.')
+    if (resourceType && resourceId) {
+      newConfig.experimental_resource = {
+        type: resourceType,
+        id: resourceId,
+      }
+    }
+  }
   // resource oriented clients should not use project hostname in base url
   const experimentalResource = newConfig.experimental_resource
   if (experimentalResource) {
