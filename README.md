@@ -69,7 +69,8 @@ export async function updateDocumentTitle(_id, title) {
   - [Performing queries](#performing-queries)
   - [Using perspectives](#using-perspectives)
     - [`published`](#published)
-    - [`previewDrafts`](#previewdrafts)
+    - [`drafts`](#drafts)
+    - [`raw`](#raw)
   - [Fetching Content Source Maps](#fetching-content-source-maps)
     - [Using Visual editing with steganography](#using-visual-editing-with-steganography)
     - [Creating Studio edit intent links](#creating-studio-edit-intent-links)
@@ -554,7 +555,9 @@ Then `authors` will only contain documents that don't have a `drafts.` prefix in
 ]
 ```
 
-#### `previewDrafts`
+#### `drafts`
+
+> Note: this was previously named `previewDrafts`. The `previewDrafts` perspective is still supported, but deprecated and may be removed in a future API version, so we recommend changing to `drafts`.
 
 Designed to help answer the question "What is our app going to look like after all the draft documents are published?".
 
@@ -592,8 +595,8 @@ import {createClient} from '@sanity/client'
 
 const client = createClient({
   ...config,
-  useCdn: false, // the `previewDrafts` perspective requires this to be `false`
-  perspective: 'previewDrafts',
+  useCdn: false, // the `drafts` perspective requires this to be `false`
+  perspective: 'drafts',
 })
 
 const authors = await client.fetch('*[_type == "author"]')
@@ -624,7 +627,7 @@ Then `authors` will look like this. Note that the result dedupes documents with 
 ]
 ```
 
-Since the query simulates what the result will be after publishing the drafts, the `_id` doesn't contain the `drafts.` prefix. If you want to check if a document is a draft or not you can use the `_originalId` field, which is only available when using the `previewDrafts` perspective.
+Since the query simulates what the result will be after publishing the drafts, the `_id` doesn't contain the `drafts.` prefix. If you want to check if a document is a draft or not you can use the `_originalId` field, which is only available when using the `drafts` perspective.
 
 ```ts
 const authors = await client.fetch(`*[_type == "author"]{..., "status": select(
@@ -653,6 +656,83 @@ Which changes the result to be:
   }
 ]
 ```
+
+#### `raw`
+
+Designed for working with all variations of documents, including, but not limited to, drafts and versions.
+
+Given a dataset like this:
+
+```json
+[
+  {
+    "_type": "author",
+    "_id": "ecfef291-60f0-4609-bbfc-263d11a48c43",
+    "name": "George Martin"
+  },
+  {
+    "_type": "author",
+    "_id": "drafts.ecfef291-60f0-4609-bbfc-263d11a48c43",
+    "name": "George R.R. Martin"
+  },
+  {
+    "_type": "author",
+    "_id": "versions.r273M8K2Q.ecfef291-60f0-4609-bbfc-263d11a48c43",
+    "name": "George R.R. Martin"
+  },
+  {
+    "_type": "author",
+    "_id": "drafts.f4898efe-92c4-4dc0-9c8c-f7480aef17e2",
+    "name": "Stephen King"
+  }
+]
+```
+
+And a query like this:
+
+```ts
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  ...config,
+  useCdn: false, // the `raw` perspective can be used with CDN, but versions and drafts will not be returned unless a token is provided
+  perspective: 'raw',
+})
+
+const authors = await client.fetch('*[_type == "author"]')
+```
+
+Then `authors` will include the complete set:
+
+```json
+[
+  {
+    "_type": "author",
+    "_id": "ecfef291-60f0-4609-bbfc-263d11a48c43",
+    "name": "George Martin"
+  },
+  {
+    "_type": "author",
+    "_id": "drafts.ecfef291-60f0-4609-bbfc-263d11a48c43",
+    "name": "George R.R. Martin"
+  },
+  {
+    "_type": "author",
+    "_id": "versions.r273M8K2Q.ecfef291-60f0-4609-bbfc-263d11a48c43",
+    "name": "George R.R. Martin"
+  },
+  {
+    "_type": "author",
+    "_id": "drafts.f4898efe-92c4-4dc0-9c8c-f7480aef17e2",
+    "name": "Stephen King"
+  }
+]
+```
+
+Currently, Sanity supports two types of document variations: drafts and versions. Drafts and versions will not be visible to queries as long as the client is unauthenticated.
+However, using the `raw` perspective with an authenticated client will cause both drafts and versions to appear in query results, so if using `raw` with an authenticated client, make sure this is the behavior you want.
+
+Also keep in mind that additional document variations may be introduced by Sanity in the future.
 
 ### Fetching Content Source Maps
 

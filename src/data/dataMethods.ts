@@ -33,7 +33,7 @@ import type {
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
-import {printCdnPreviewDraftsWarning} from '../warnings'
+import {printCdnPreviewDraftsWarning, printPreviewDraftsDeprecationWarning} from '../warnings'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
@@ -407,6 +407,9 @@ export function _requestObservable<R>(
     }
     const perspectiveOption = options.perspective || config.perspective
     if (typeof perspectiveOption !== 'undefined') {
+      if (perspectiveOption === 'previewDrafts') {
+        printPreviewDraftsDeprecationWarning()
+      }
       validateApiPerspective(perspectiveOption)
       options.query = {
         perspective: Array.isArray(perspectiveOption)
@@ -414,8 +417,14 @@ export function _requestObservable<R>(
           : perspectiveOption,
         ...options.query,
       }
-      // If the perspective is set to `previewDrafts` we can't use the CDN, the API will throw
-      if (perspectiveOption === 'previewDrafts' && useCdn) {
+      // If the perspective is set to `drafts` or multiple perspectives we can't use the CDN, the API will throw
+      if (
+        ((Array.isArray(perspectiveOption) && perspectiveOption.length > 0) ||
+          // previewDrafts was renamed to drafts, but keep for backwards compat
+          perspectiveOption === 'previewDrafts' ||
+          perspectiveOption === 'drafts') &&
+        useCdn
+      ) {
         useCdn = false
         printCdnPreviewDraftsWarning()
       }

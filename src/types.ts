@@ -37,12 +37,17 @@ export interface RequestOptions {
  */
 export type ReleaseId = `r${string}`
 
+/**
+ * @deprecated use 'drafts' instead
+ */
+type DeprecatedPreviewDrafts = 'previewDrafts'
+
 /** @public */
 export type StackablePerspective = ('published' | 'drafts' | string) & {}
 
 /** @public */
 export type ClientPerspective =
-  | 'previewDrafts'
+  | DeprecatedPreviewDrafts
   | 'published'
   | 'drafts'
   | 'raw'
