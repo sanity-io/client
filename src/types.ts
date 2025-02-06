@@ -31,8 +31,14 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
-/** @public */
+/**
+ * @public
+ * @deprecated – The `r`-prefix is not required, use `string` instead
+ */
 export type ReleaseId = `r${string}`
+
+/** @public */
+export type StackablePerspective = ('published' | 'drafts' | string) & {}
 
 /** @public */
 export type ClientPerspective =
@@ -40,7 +46,7 @@ export type ClientPerspective =
   | 'published'
   | 'drafts'
   | 'raw'
-  | ('published' | 'drafts' | ReleaseId)[]
+  | StackablePerspective[]
 
 /** @public */
 export interface ClientConfig {

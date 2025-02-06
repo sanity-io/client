@@ -177,13 +177,16 @@ describe('client', async () => {
       expect(() => createClient({projectId: 'abc123', perspective: 'raw'})).not.toThrow(
         /Invalid API perspective/,
       )
+      expect(() => createClient({projectId: 'abc123', perspective: undefined})).not.toThrow(
+        /Invalid API perspective/,
+      )
+      // no whitespace allowed
       // @ts-expect-error -- we want to test that it throws an error
       expect(() => createClient({projectId: 'abc123', perspective: 'preview drafts'})).toThrow(
         /Invalid API perspective/,
       )
 
-      // valid because it begins with `r`
-      const validReleaseIdentifier = 'rfoobar'
+      const validReleaseIdentifier = 'foobar'
       expect(() =>
         createClient({
           projectId: 'abc123',
@@ -191,16 +194,17 @@ describe('client', async () => {
         }),
       ).not.toThrow(/Invalid API perspective/)
 
-      // special case – "raw" would be a valid release id given that it starts with ´r`
-      // but 'raw' is not possible to use with multiple perspectives and is explicitly
+      expect(() =>
+        createClient({
+          projectId: 'abc123',
+          perspective: ['published', 'drafts', 'this is not valid'],
+        }),
+      ).toThrow(/Invalid API perspective/)
+
+      // special case – 'raw' can not be combined with multiple perspectives and is explicitly
       // banned by the backend
       expect(() =>
         createClient({projectId: 'abc123', perspective: ['published', 'drafts', 'raw']}),
-      ).toThrow(/Invalid API perspective/)
-
-      expect(() =>
-        // @ts-expect-error -- we want to test that it throws an error
-        createClient({projectId: 'abc123', perspective: ['XyzAbC']}),
       ).toThrow(/Invalid API perspective/)
     })
 
