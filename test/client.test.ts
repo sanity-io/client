@@ -237,6 +237,22 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)(
+      'can use request() for API-relative requests using resource config',
+      async () => {
+        nock(`https://${apiHost}`)
+          .post('/v1/resource/res-id/assist/task/instruction')
+          .reply(201, {response: 'Started...'})
+
+        await expect(
+          getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).request({
+            uri: '/assist/task/instruction',
+            method: 'POST',
+          }),
+        ).resolves.toMatchObject({response: 'Started...'})
+      },
+    )
+
+    test.skipIf(isEdge)(
       'can use request() for API-relative requests (custom api version)',
       async () => {
         nock(projectHost()).get('/v2019-01-29/ping').reply(200, {pong: true})
@@ -489,6 +505,34 @@ describe('client', async () => {
 
     test('throws when trying to delete dataset with invalid name', () => {
       expect(() => dsClient.datasets.delete('*foo*')).toThrow(/Datasets can only contain/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.create(
+          '*foo*',
+        ),
+      ).toThrow(/cannot create dataset with the current client configuration/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.delete(
+          '*foo*',
+        ),
+      ).toThrow(/cannot delete dataset with the current client configuration/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.edit('*foo*'),
+      ).toThrow(/cannot edit dataset with the current client configuration/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).datasets.list(),
+      ).toThrow(/cannot list dataset with the current client configuration/i)
     })
 
     test.skipIf(isEdge)('can create dataset', async () => {
@@ -1043,6 +1087,40 @@ describe('client', async () => {
       })
     })
 
+    test.skipIf(isEdge)('can query for single document using resource config', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/resource/res-id/doc/abc123')
+        .reply(200, {
+          ms: 123,
+          documents: [{_id: 'abc123', mood: 'lax'}],
+        })
+
+      await expect(
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).getDocument('abc123'),
+        'data should match',
+      ).resolves.toMatchObject({
+        mood: 'lax',
+      })
+    })
+
+    test.skipIf(isEdge)('can query for single document using hacky resource config', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/resource-type/res-id/doc/abc123')
+        .reply(200, {
+          ms: 123,
+          documents: [{_id: 'abc123', mood: 'lax'}],
+        })
+
+      await expect(
+        getClient({projectId: 'resource.resource-type.res-id', dataset: 'unused'}).getDocument(
+          'abc123',
+        ),
+        'data should match',
+      ).resolves.toMatchObject({
+        mood: 'lax',
+      })
+    })
+
     test.skipIf(isEdge)('can query for single document with request tag', async () => {
       nock(projectHost())
         .get('/v1/data/doc/foo/abc123?tag=some.tag')
@@ -1168,6 +1246,30 @@ describe('client', async () => {
         })
 
       const res = await getClient().create(doc)
+      expect(res._id, 'document id returned').toBe(doc._id)
+      expect(res._createdAt, 'server-generated attributes are included').toBeTruthy()
+    })
+
+    test.skipIf(isEdge)('can create documents using resource config', async () => {
+      const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
+
+      nock(`https://${apiHost}`)
+        .post('/v1/resource/res-id/mutate?returnIds=true&returnDocuments=true&visibility=sync', {
+          mutations: [{create: doc}],
+        })
+        .reply(200, {
+          transactionId: 'abc123',
+          results: [
+            {
+              document: {_id: 'abc123', _createdAt: '2016-10-24T08:09:32.997Z', name: 'Raptor'},
+              operation: 'create',
+            },
+          ],
+        })
+
+      const res = await getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).create(
+        doc,
+      )
       expect(res._id, 'document id returned').toBe(doc._id)
       expect(res._createdAt, 'server-generated attributes are included').toBeTruthy()
     })
@@ -2440,6 +2542,23 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)(
+      'executes transaction using resrouce path when commit() is called',
+      async () => {
+        const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
+        nock(`https://${apiHost}`)
+          .post('/v1/resource/res-id/mutate?returnIds=true&visibility=sync', {mutations})
+          .reply(200, {transactionId: 'blatti'})
+
+        const res = await getClient({experimental_resource: {type: 'resource', id: 'res-id'}})
+          .transaction()
+          .create({_type: 'foo', bar: true})
+          .delete('barfoo')
+          .commit()
+        expect(res.transactionId, 'applies given transaction').toEqual('blatti')
+      },
+    )
+
+    test.skipIf(isEdge)(
       'executes transaction with request tag when commit() is called with tag',
       async () => {
         const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
@@ -2575,6 +2694,37 @@ describe('client', async () => {
         })
 
       const evt = await firstValueFrom(getClient().listen('foo.bar'))
+      expect(evt.result).toEqual(doc)
+    })
+
+    test('listeners connect to listen resource configured endpoint, emits events', async () => {
+      expect.assertions(1)
+
+      const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
+      const response = [
+        ':',
+        '',
+        'event: welcome',
+        'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+        '',
+        'event: mutation',
+        `data: ${JSON.stringify({result: doc})}`,
+        '',
+        'event: disconnect',
+        'data: {"reason":"forcefully closed"}',
+      ].join('\n')
+
+      nock(`https://${apiHost}`)
+        .get('/v1/resource/res-id/listen?query=foo.bar&includeResult=true')
+        .reply(200, response, {
+          'cache-control': 'no-cache',
+          'content-type': 'text/event-stream; charset=utf-8',
+          'transfer-encoding': 'chunked',
+        })
+
+      const evt = await firstValueFrom(
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).listen('foo.bar'),
+      )
       expect(evt.result).toEqual(doc)
     })
 
@@ -2719,6 +2869,21 @@ describe('client', async () => {
         .reply(201, {document: {url: 'https://some.asset.url'}})
 
       const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath))
+      expect(document.url).toEqual('https://some.asset.url')
+    })
+
+    test('uploads images using resource config', async () => {
+      const fixturePath = fixture('horsehead-nebula.jpg')
+      const isImage = (body: any) =>
+        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+
+      nock(`https://${apiHost}`)
+        .post('/v1/resource/res-id/assets/images', isImage)
+        .reply(201, {document: {url: 'https://some.asset.url'}})
+
+      const document = await getClient({
+        experimental_resource: {type: 'resource', id: 'res-id'},
+      }).assets.upload('image', fs.createReadStream(fixturePath))
       expect(document.url).toEqual('https://some.asset.url')
     })
 
@@ -2896,6 +3061,22 @@ describe('client', async () => {
       const body = await getClient().users.getById('me')
       expect(body).toEqual(response)
     })
+
+    test('can retrieve global user for resource configured client ', async () => {
+      const response = {
+        role: null,
+        id: 'Z29vZA2MTc2MDY5MDI1MDA3MzA5MTAwOjozMjM',
+        name: 'Mannen i Gata',
+        email: 'some@email.com',
+      }
+
+      nock(`https://${apiHost}`).get('/v1/users/me').reply(200, response)
+
+      const body = await getClient({
+        experimental_resource: {type: 'resource', id: 'res-id'},
+      }).users.getById('me')
+      expect(body).toEqual(response)
+    })
   })
 
   describe.skipIf(isEdge)('CDN API USAGE', () => {
@@ -2989,6 +3170,17 @@ describe('client', async () => {
       nock(projectHost(), {reqheaders}).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
 
       const docs = await getClient({token}).fetch('foo.bar')
+      expect(docs.length).toEqual(0)
+    })
+
+    test.skipIf(isEdge)('can query using resource config', async () => {
+      nock(`https://${apiHost}`)
+        .get(`/v1/resource/res-id/query?query=foo.bar`)
+        .reply(200, {result: []})
+
+      const docs = await getClient({
+        experimental_resource: {type: 'resource', id: 'res-id'},
+      }).fetch('foo.bar')
       expect(docs.length).toEqual(0)
     })
 
@@ -3175,6 +3367,12 @@ describe('client', async () => {
         `${projectHost()}/v2019-01-29/bar/baz`,
       )
     })
+
+    test('can use getUrl() to get API-relative paths to a resrouce', () => {
+      expect(
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).getUrl('/bar/baz'),
+      ).toEqual(`https://${apiHost}/v1/resource/res-id/bar/baz`)
+    })
   })
 
   describe('getDataUrl', () => {
@@ -3183,6 +3381,18 @@ describe('client', async () => {
       expect(getClient({dataset: 'bikeshop'}).getDataUrl('doc', 'bike-123')).toBe(
         '/data/doc/bikeshop/bike-123',
       )
+    })
+
+    test('can use getDataUrl() to get API paths for a resource', () => {
+      expect(
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).getDataUrl('doc'),
+      ).toBe('/doc')
+      expect(
+        getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).getDataUrl(
+          'doc',
+          'bike-123',
+        ),
+      ).toBe('/doc/bike-123')
     })
   })
 })
