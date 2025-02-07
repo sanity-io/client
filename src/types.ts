@@ -1297,7 +1297,6 @@ export interface LiveEventMessage {
 export interface LiveEventWelcome {
   type: 'welcome'
 }
-
 /** @public */
 export type LiveEvent = LiveEventRestart | LiveEventReconnect | LiveEventMessage | LiveEventWelcome
 
