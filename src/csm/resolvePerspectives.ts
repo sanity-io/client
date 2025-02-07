@@ -1,5 +1,5 @@
 import {validateApiPerspective} from '../config'
-import type {ReleaseId} from '../types'
+import type {StackablePerspective} from '../types'
 import type {ClientPerspective} from './types'
 
 /**
@@ -9,7 +9,7 @@ import type {ClientPerspective} from './types'
  */
 export function resolvePerspectives(
   perspective: Exclude<ClientPerspective, 'raw'>,
-): ('published' | 'drafts' | ReleaseId)[] {
+): ('published' | 'drafts' | StackablePerspective)[] {
   validateApiPerspective(perspective)
 
   if (Array.isArray(perspective)) {
