@@ -27,8 +27,8 @@ export const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
-  // token: process.env.SANITY_SECRET_TOKEN // Needed for certain operations like updating content or accessing previewDrafts perspective
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+  // token: process.env.SANITY_SECRET_TOKEN // Needed for certain operations like updating content, accessing drafts or using draft perspectives
 })
 
 // uses GROQ to query content: https://www.sanity.io/docs/groq
@@ -164,7 +164,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 const data = await client.fetch(`count(*)`)
@@ -180,7 +180,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 client
@@ -198,7 +198,7 @@ const config: ClientConfig = {
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 }
 const client = createClient(config)
 
@@ -218,7 +218,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 const schema = z.number()
@@ -238,7 +238,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 export default async function ReactServerComponent() {
@@ -282,7 +282,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 const data = await client.fetch<number>(`count(*)`)
@@ -310,7 +310,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 const data = await client.fetch<number>(`count(*)`)
@@ -343,7 +343,7 @@ export default async function handler(req: NextRequest) {
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
     useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+    apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
   })
 
   const count = await client.fetch<number>(`count(*)`)
@@ -374,7 +374,7 @@ Using [esm.sh] you can either load the client using a `<script type="module">` t
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
     useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+    apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
   })
 
   const data = await client.fetch(`count(*)`)
@@ -393,7 +393,7 @@ const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
-  apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+  apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
 })
 
 const data = await client.fetch(`count(*)`)
@@ -415,7 +415,7 @@ Loading the UMD script creates a `SanityClient` global that have the same export
     projectId: 'your-project-id',
     dataset: 'your-dataset-name',
     useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+    apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
   })
 
   client.fetch(`count(*)`).then((data) => console.log(`Number of documents: ${data}`))
@@ -436,7 +436,7 @@ The `require-unpkg` library lets you consume `npm` packages from `unpkg.com` sim
       projectId: 'your-project-id',
       dataset: 'your-dataset-name',
       useCdn: true, // set to `false` to bypass the edge cache
-      apiVersion: '2023-05-03', // use current date (YYYY-MM-DD) to target the latest API version
+      apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
     })
 
     const data = await client.fetch(`count(*)`)
@@ -471,7 +471,7 @@ const client = createClient({
   projectId: '<project>',
   dataset: '<dataset>',
   useCdn: true,
-  apiVersion: '2024-01-24',
+  apiVersion: '2025-02-06',
   requestTagPrefix: 'website', // Added to every request
 })
 
@@ -1567,7 +1567,7 @@ import {createClient} from '@sanity/client'
 export const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
-  apiVersion: '2023-03-12',
+  apiVersion: '2025-02-06',
 + useCdn: false, // set to `true` to use the edge cache
 })
 ```
