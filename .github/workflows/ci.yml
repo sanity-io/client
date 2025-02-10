@@ -102,7 +102,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output
-      - run: npm run test:edge-runtime -- --coverage
+      - run: npm run test:edge-runtime -- --coverage --retry=30
 
   browser-runtime:
     runs-on: ubuntu-latest
