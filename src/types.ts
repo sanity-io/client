@@ -932,6 +932,12 @@ export interface ListenOptions {
   includePreviousRevision?: boolean
 
   /**
+   * @internal
+   * @defaultValue `false`
+   */
+  includeAllVersions?: boolean
+
+  /**
    * Whether events should be sent as soon as a transaction has been committed (`transaction`, default),
    * or only after they are available for queries (query). Note that this is on a best-effort basis,
    * and listeners with `query` may in certain cases (notably with deferred transactions) receive events

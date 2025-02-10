@@ -83,6 +83,22 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
+    test('listener sends includeAllVersions=true if given', async () => {
+      expect.assertions(1)
+
+      const {server, client} = await testSse(({request, channel}) => {
+        expect(request.url).toContain('includeAllVersions=true')
+
+        channel!.send({event: 'welcome'})
+      })
+
+      await firstValueFrom(
+        client.listen('*', {}, {events: ['welcome'], includeAllVersions: true}),
+        {defaultValue: null},
+      )
+      server.close()
+    })
+
     test('reconnects if disconnected', async () => {
       expect.assertions(1)
 
