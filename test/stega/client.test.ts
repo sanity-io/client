@@ -261,41 +261,36 @@ describe('@sanity/client', () => {
       ).not.toThrow()
     })
   })
-  describe('client.fetch', async () => {
+  describe.skipIf(typeof EdgeRuntime === 'string')('client.fetch', async () => {
     const client = createClient(clientConfig)
-    const isEdge = typeof EdgeRuntime === 'string'
-    let nock: typeof import('nock') = (() => {
-      throw new Error('Not supported in EdgeRuntime')
-    }) as any
-    if (!isEdge) {
-      const _nock = await import('nock')
-      nock = _nock.default
+    const nock = (await import('nock')).default
 
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*`)
-        .reply(200, {ms: 123, query: '*', result: []})
-    }
+    nock(projectHost())
+      .get(`/v1/data/query/foo?query=*`)
+      .reply(200, {ms: 123, query: '*', result: []})
 
-    test('allows passing stega: undefined', () => {
-      expect(() =>
-        client.fetch(
-          '*',
-          {},
-          {
-            stega: undefined,
-          },
-        ),
+    test('allows passing stega: undefined', async () => {
+      await expect(
+        async () =>
+          await client.fetch(
+            '*',
+            {},
+            {
+              stega: undefined,
+            },
+          ),
       ).not.toThrow()
     })
-    test('allows passing stega: false', () => {
-      expect(() =>
-        client.fetch(
-          '*',
-          {},
-          {
-            stega: false,
-          },
-        ),
+    test('allows passing stega: false', async () => {
+      await expect(
+        async () =>
+          await client.fetch(
+            '*',
+            {},
+            {
+              stega: false,
+            },
+          ),
       ).not.toThrow()
     })
   })
