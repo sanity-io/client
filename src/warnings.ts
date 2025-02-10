@@ -18,8 +18,12 @@ export const printCdnWarning = createWarningPrinter([
 ])
 
 export const printCdnPreviewDraftsWarning = createWarningPrinter([
-  `The Sanity client is configured with the \`perspective\` set to \`previewDrafts\`, which doesn't support the API-CDN.`,
+  `The Sanity client is configured with the \`perspective\` set to \`drafts\` or \`previewDrafts\`, which doesn't support the API-CDN.`,
   `The Live API will be used instead. Set \`useCdn: false\` in your configuration to hide this warning.`,
+])
+
+export const printPreviewDraftsDeprecationWarning = createWarningPrinter([
+  `The \`previewDrafts\` perspective has been renamed to  \`drafts\` and will be removed in a future API version`,
 ])
 
 export const printBrowserTokenWarning = createWarningPrinter([
