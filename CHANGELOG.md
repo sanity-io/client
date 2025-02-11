@@ -5,6 +5,20 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.28.0](https://github.com/sanity-io/client/compare/v6.27.2...v6.28.0) (2025-02-11)
+
+
+### Features
+
+* **listener:** add support for includeAllVersions ([#1003](https://github.com/sanity-io/client/issues/1003)) ([fff3a76](https://github.com/sanity-io/client/commit/fff3a76f8ca8e0cfba2c8a16e3c2b3b662fe80bb))
+
+
+### Bug Fixes
+
+* deprecate `previewDrafts`-perspective in favor of `drafts` ([#1007](https://github.com/sanity-io/client/issues/1007)) ([3b03ac5](https://github.com/sanity-io/client/commit/3b03ac5e50b5cda37e7a36e9b17950ba4e200147))
+* lift restriction on release perspective name ([#1005](https://github.com/sanity-io/client/issues/1005)) ([cdfacc9](https://github.com/sanity-io/client/commit/cdfacc93d77ca9c98ac19c75672e23fc966ed08c))
+* **live:** dedupe event source instances ([#990](https://github.com/sanity-io/client/issues/990)) ([a26714d](https://github.com/sanity-io/client/commit/a26714d9a7f86d2a41c37b250573b6dfef9bd7c3))
+
 ## [6.27.2](https://github.com/sanity-io/client/compare/v6.27.1...v6.27.2) (2025-01-28)
 
 
