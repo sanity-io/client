@@ -149,7 +149,9 @@ function _upload(
     meta = ['none']
   }
 
-  const dataset = validators.hasDataset(client.config())
+  const config = client.config()
+  const resource = config.experimental_resource
+  const dataset = resource ? undefined : validators.hasDataset(config)
   const assetEndpoint = assetType === 'image' ? 'images' : 'files'
   const options = optionsFromFile(opts, body)
   const {tag, label, title, description, creditLine, filename, source} = options
@@ -170,7 +172,9 @@ function _upload(
     tag,
     method: 'POST',
     timeout: options.timeout || 0,
-    uri: `/assets/${assetEndpoint}/${dataset}`,
+    uri: resource
+      ? `/assets/${resource.type}/${resource.id}/${assetEndpoint}`
+      : `/assets/${assetEndpoint}/${dataset}`,
     headers: options.contentType ? {'Content-Type': options.contentType} : {},
     query,
     body,
