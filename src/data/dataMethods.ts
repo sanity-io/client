@@ -528,7 +528,7 @@ export function _getUrl(
   let base = canUseCdn ? cdnUrl : url
 
   if (experimental_resource) {
-    if (uri.indexOf('/users') !== -1) {
+    if (uri.indexOf('/users') !== -1 || uri.indexOf('/assets') !== -1) {
       base = base.replace(_resourceBase(experimental_resource), '')
     }
   }

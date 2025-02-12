@@ -2878,7 +2878,7 @@ describe('client', async () => {
         Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
 
       nock(`https://${apiHost}`)
-        .post('/v1/resource/res-id/assets/images', isImage)
+        .post('/v1/assets/resource/res-id/images', isImage)
         .reply(201, {document: {url: 'https://some.asset.url'}})
 
       const document = await getClient({
