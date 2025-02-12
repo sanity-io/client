@@ -12,6 +12,7 @@ import type {
   Any,
   BaseActionOptions,
   BaseMutationOptions,
+  ClientConfig,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
@@ -37,6 +38,8 @@ import {printCdnPreviewDraftsWarning, printPreviewDraftsDeprecationWarning} from
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
+
+type ExperimentalResourceConfig = Exclude<ClientConfig['experimental_resource'], undefined>
 
 const excludeFalsey = (param: Any, defValue: Any) => {
   const value = typeof param === 'undefined' ? defValue : param
@@ -367,6 +370,24 @@ export function _create<R extends Record<string, Any>>(
   return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
+function _resourceBase(resource: ExperimentalResourceConfig) {
+  return `/${resource.type}/${resource.id}`
+}
+
+function isDataRequestUri(uri: string, resource?: ExperimentalResourceConfig) {
+  if (resource) {
+    return uri.indexOf(`/${_resourceBase(resource)}/data/`) === 0
+  }
+  return uri.indexOf('/data/') === 0
+}
+
+function isDataQueryRequestUri(uri: string, resource?: ExperimentalResourceConfig) {
+  if (resource) {
+    return uri.indexOf(`/${_resourceBase(resource)}/data/query`) === 0
+  }
+  return uri.indexOf('/data/query') === 0
+}
+
 /**
  * @internal
  */
@@ -382,7 +403,8 @@ export function _requestObservable<R>(
   // Only the /data endpoint is currently available through API-CDN.
   const canUseCdn =
     typeof options.canUseCdn === 'undefined'
-      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && uri.indexOf('/data/') === 0
+      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 &&
+        isDataRequestUri(uri, config.experimental_resource)
       : options.canUseCdn
 
   let useCdn = (options.useCdn ?? config.useCdn) && canUseCdn
@@ -399,7 +421,7 @@ export function _requestObservable<R>(
   // GROQ query-only parameters
   if (
     ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
-    uri.indexOf('/data/query/') === 0
+    isDataQueryRequestUri(uri, config.experimental_resource)
   ) {
     const resultSourceMap = options.resultSourceMap ?? config.resultSourceMap
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
@@ -482,6 +504,12 @@ export function _getDataUrl(
   path?: string,
 ): string {
   const config = client.config()
+
+  if (config.experimental_resource) {
+    const baseUri = `/${operation}`
+    const uri = path ? `${baseUri}/${path}` : baseUri
+    return uri.replace(/\/($|\?)/, '$1')
+  }
   const catalog = validators.hasDataset(config)
   const baseUri = `/${operation}/${catalog}`
   const uri = path ? `${baseUri}/${path}` : baseUri
@@ -496,8 +524,15 @@ export function _getUrl(
   uri: string,
   canUseCdn = false,
 ): string {
-  const {url, cdnUrl} = client.config()
-  const base = canUseCdn ? cdnUrl : url
+  const {url, cdnUrl, experimental_resource} = client.config()
+  let base = canUseCdn ? cdnUrl : url
+
+  if (experimental_resource) {
+    if (uri.indexOf('/users') !== -1) {
+      base = base.replace(_resourceBase(experimental_resource), '')
+    }
+  }
+
   return `${base}/${uri.replace(/^\//, '')}`
 }
 

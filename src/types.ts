@@ -115,6 +115,14 @@ export interface ClientConfig {
    * Options for how, if enabled, Content Source Maps are encoded into query results using steganography
    */
   stega?: StegaConfig | boolean
+
+  /**
+   * @deprecated Don't use
+   */
+  experimental_resource?: {
+    id: string
+    type: string
+  }
 }
 
 /** @public */

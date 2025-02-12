@@ -16,3 +16,7 @@ umd
 # MacOS
 .DS_Store
 tsconfig.vitest-temp.json
+
+# JetBrains stuff
+.idea
+*.iml
