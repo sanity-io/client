@@ -60,9 +60,19 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
-  /** @defaultValue 'published' if API version >= v2025-02-19, 'raw' if apiVersion < v2025-02-19 */
+
+  /**
+   * @remarks
+   * As of API version `v2025-02-19`, the default perspective has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/TODO|Changelog}
+   * @defaultValue 'published'
+   */
   perspective?: ClientPerspective
   apiHost?: string
+
+  /**
+   @remarks
+   * As of API version `v2025-02-19`, the default perspective has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/TODO|Changelog}
+   */
   apiVersion?: string
   proxy?: string
 
