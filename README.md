@@ -501,7 +501,7 @@ Perform a query using the given parameters (if any).
 
 ### Using perspectives
 
-The `perspective` option can be used to specify special filtering behavior for queries. The default value is [`published`](#published) if API version >= v2025-02-19, (if API version is <  v2025-02-19, [`raw`](#raw) is the default). Using the [`published`](#published) perspective will exclude drafts, versions and potential future document variants. Using the [`raw`](#raw) perspective means no special filtering is applied, so it's recommended to apply filtering client side that only includes the variants you want to process.
+Use the `perspective` option to filter queries from a specific viewpoint. The default value is [`published`](#published) if API version >= v2025-02-19, (if API version is < v2025-02-19, [`raw`](#raw) is the default). Using the [`published`](#published) perspective will exclude drafts, versions, and potential future document variants. Using the [`raw`](#raw) perspective returns all document variants,  so it's recommended to apply additional client side filtering to limit the variants you want to process.
 
 #### `published`
 
