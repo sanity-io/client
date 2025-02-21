@@ -2,28 +2,33 @@
 
 import type {Any, SanityDocumentStub} from '@sanity/client'
 
+/** @beta */
 export interface ConstantInstructionParam {
   type: 'constant'
   value: string
 }
 
+/** @beta */
 export interface FieldInstructionParam {
   type: 'field'
   path: string
 }
 
+/** @beta */
 export interface GroqInstructionParam {
   type: 'groq'
   query: string
   params?: Record<string, string>
 }
 
+/** @beta */
 export type InstructionParam =
   | string
   | ConstantInstructionParam
   | FieldInstructionParam
   | GroqInstructionParam
 
+/** @beta */
 export type InstructionParams = Record<string, InstructionParam>
 
 interface AssistRequestBase {
@@ -133,13 +138,15 @@ interface Async {
 
 /**
  * Instruction for an existing document.
+ * @beta
  */
 interface ExistingDocumentRequest {
   documentId: string
 }
 
 /**
- * Create
+ * Instruction to create a new document
+ * @beta
  */
 interface CreateDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
   createDocument: {
@@ -149,6 +156,7 @@ interface CreateDocumentRequest<T extends Record<string, Any> = Record<string, A
   } & SanityDocumentStub<T>
 }
 
+/** @beta */
 export type AssistSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | ExistingDocumentRequest
   | CreateDocumentRequest<T>
@@ -156,6 +164,7 @@ export type AssistSyncInstruction<T extends Record<string, Any> = Record<string,
   AssistRequestBase &
   Sync
 
+/** @beta */
 export type AssistAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | ExistingDocumentRequest
   | CreateDocumentRequest<T>
@@ -163,6 +172,7 @@ export type AssistAsyncInstruction<T extends Record<string, Any> = Record<string
   AssistRequestBase &
   Async
 
+/** @beta */
 export type AssistInstruction<T extends Record<string, Any> = Record<string, Any>> =
   | AssistSyncInstruction<T>
   | AssistAsyncInstruction<T>
