@@ -9,7 +9,11 @@ const exp = defineCreateClientExports<SanityClient, ClientConfig>(envMiddleware,
 /** @public */
 export const requester = exp.requester
 
-/** @public */
+/**
+ * @remarks
+ * As of API version `v2025-02-19`, the default perspective used by the client has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/e93a2d5a-9cee-4801-829e-8d3394bfed85|Changelog}
+ * @public
+ */
 export const createClient = exp.createClient
 
 /**
