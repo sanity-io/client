@@ -5,56 +5,26 @@ import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {DatasetAclMode, DatasetResponse, DatasetsResponse, HttpRequest} from '../types'
 import * as validate from '../validators'
 
-/** @internal */
-export class ObservableDatasetsClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
-  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
-  }
-
-  /**
-   * Create a new dataset with the given name
-   *
-   * @param name - Name of the dataset to create
-   * @param options - Options for the dataset
-   */
-  create(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse> {
-    return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options)
-  }
-
-  /**
-   * Edit a dataset with the given name
-   *
-   * @param name - Name of the dataset to edit
-   * @param options - New options for the dataset
-   */
-  edit(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse> {
-    return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options)
-  }
-
-  /**
-   * Delete a dataset with the given name
-   *
-   * @param name - Name of the dataset to delete
-   */
-  delete(name: string): Observable<{deleted: true}> {
-    return _modify<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name)
-  }
-
-  /**
-   * Fetch a list of datasets for the configured project
-   */
-  list(): Observable<DatasetsResponse> {
-    return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
-      uri: '/datasets',
-      tag: null,
-    })
-  }
-}
-
-/** @internal */
+/**
+ * Client for managing datasets in a Sanity project.
+ * Provides methods for creating, deleting, and managing datasets.
+ * 
+ * @example
+ * ```ts
+ * // List all datasets
+ * const datasets = await client.datasets.list()
+ * 
+ * // Create a new dataset
+ * await client.datasets.create('staging', {
+ *   aclMode: 'private'
+ * })
+ * 
+ * // Delete a dataset
+ * await client.datasets.delete('staging')
+ * ```
+ * 
+ * @public
+ */
 export class DatasetsClient {
   #client: SanityClient
   #httpRequest: HttpRequest
@@ -103,6 +73,67 @@ export class DatasetsClient {
     return lastValueFrom(
       _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets', tag: null}),
     )
+  }
+}
+
+/**
+ * Observable version of the DatasetsClient.
+ * All methods return RxJS Observables instead of Promises.
+ * 
+ * @example
+ * ```ts
+ * client.datasets.list().subscribe(datasets => {
+ *   console.log('Available datasets:', datasets)
+ * })
+ * ```
+ * 
+ * @public
+ */
+export class ObservableDatasetsClient {
+  #client: ObservableSanityClient
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
+    this.#client = client
+    this.#httpRequest = httpRequest
+  }
+
+  /**
+   * Create a new dataset with the given name
+   *
+   * @param name - Name of the dataset to create
+   * @param options - Options for the dataset
+   */
+  create(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse> {
+    return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options)
+  }
+
+  /**
+   * Edit a dataset with the given name
+   *
+   * @param name - Name of the dataset to edit
+   * @param options - New options for the dataset
+   */
+  edit(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse> {
+    return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options)
+  }
+
+  /**
+   * Delete a dataset with the given name
+   *
+   * @param name - Name of the dataset to delete
+   */
+  delete(name: string): Observable<{deleted: true}> {
+    return _modify<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name)
+  }
+
+  /**
+   * Fetch a list of datasets for the configured project
+   */
+  list(): Observable<DatasetsResponse> {
+    return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
+      uri: '/datasets',
+      tag: null,
+    })
   }
 }
 

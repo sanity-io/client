@@ -140,7 +140,7 @@ export class ObservableSanityClient {
 
   /**
    * Perform a GROQ-query against the configured dataset.
-   *
+   * 
    * @param query - GROQ-query to perform
    */
   fetch<
@@ -150,7 +150,7 @@ export class ObservableSanityClient {
   >(query: G, params?: Q | QueryWithoutParams): Observable<ClientReturn<G, R>>
   /**
    * Perform a GROQ-query against the configured dataset.
-   *
+   * 
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
    * @param options - Optional request options
@@ -166,7 +166,7 @@ export class ObservableSanityClient {
   ): Observable<ClientReturn<G, R>>
   /**
    * Perform a GROQ-query against the configured dataset.
-   *
+   * 
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
    * @param options - Request options
@@ -182,7 +182,7 @@ export class ObservableSanityClient {
   ): Observable<RawQueryResponse<ClientReturn<G, R>>>
   /**
    * Perform a GROQ-query against the configured dataset.
-   *
+   * 
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
    * @param options - Request options
@@ -213,7 +213,7 @@ export class ObservableSanityClient {
 
   /**
    * Fetch a single document with the given ID.
-   *
+   * 
    * @param id - Document ID to fetch
    * @param options - Request options
    */
@@ -229,7 +229,7 @@ export class ObservableSanityClient {
    * Should be used sparingly - performing a query is usually a better option.
    * The order/position of documents is preserved based on the original array of IDs.
    * If any of the documents are missing, they will be replaced by a `null` entry in the returned array
-   *
+   * 
    * @param ids - Document IDs to fetch
    * @param options - Request options
    */
@@ -568,7 +568,7 @@ export class ObservableSanityClient {
   /**
    * Perform mutation operations against the configured dataset
    * Returns an observable that resolves to the first mutated document.
-   *
+   * 
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
    */
@@ -579,7 +579,7 @@ export class ObservableSanityClient {
   /**
    * Perform mutation operations against the configured dataset.
    * Returns an observable that resolves to an array of the mutated documents.
-   *
+   * 
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
    */
@@ -590,7 +590,7 @@ export class ObservableSanityClient {
   /**
    * Perform mutation operations against the configured dataset
    * Returns an observable that resolves to a mutation result object containing the document ID of the first mutated document.
-   *
+   * 
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
    */
@@ -601,7 +601,7 @@ export class ObservableSanityClient {
   /**
    * Perform mutation operations against the configured dataset
    * Returns an observable that resolves to a mutation result object containing the mutated document IDs.
-   *
+   * 
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
    */
@@ -612,7 +612,7 @@ export class ObservableSanityClient {
   /**
    * Perform mutation operations against the configured dataset
    * Returns an observable that resolves to the first mutated document.
-   *
+   * 
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
    */
