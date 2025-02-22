@@ -1,7 +1,7 @@
 import {lastValueFrom, type Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
-import {_requestObservable} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
@@ -15,62 +15,28 @@ import type {
 } from '../types'
 import * as validators from '../validators'
 
-/** @internal */
-export class ObservableAssetsClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
-  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
-  }
-
-  /**
-   * Uploads a file asset to the configured dataset
-   *
-   * @param assetType - Asset type (file)
-   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
-   * @param options - Options to use for the upload
-   */
-  upload(
-    assetType: 'file',
-    body: UploadBody,
-    options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
-
-  /**
-   * Uploads an image asset to the configured dataset
-   *
-   * @param assetType - Asset type (image)
-   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
-   * @param options - Options to use for the upload
-   */
-  upload(
-    assetType: 'image',
-    body: UploadBody,
-    options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
-  /**
-   * Uploads a file or an image asset to the configured dataset
-   *
-   * @param assetType - Asset type (file/image)
-   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
-   * @param options - Options to use for the upload
-   */
-  upload(
-    assetType: 'file' | 'image',
-    body: UploadBody,
-    options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
-  upload(
-    assetType: 'file' | 'image',
-    body: UploadBody,
-    options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
-    return _upload(this.#client, this.#httpRequest, assetType, body, options)
-  }
-}
-
-/** @internal */
+/**
+ * Client for managing assets (files and images) in Sanity.
+ * Provides methods for uploading, deleting and managing assets.
+ *
+ * @example
+ * ```ts
+ * // Upload an image from Node.js
+ * const imageAsset = await client.assets.upload('image', fs.createReadStream('image.jpg'), {
+ *   filename: 'image.jpg'
+ * })
+ *
+ * // Upload a file from the browser
+ * const fileAsset = await client.assets.upload('file', new File(['foo'], 'file.txt'), {
+ *   filename: 'file.txt'
+ * })
+ *
+ * // Delete an asset
+ * await client.delete('image-abc123_foobar-123x123-png')
+ * ```
+ *
+ * @public
+ */
 export class AssetsClient {
   #client: SanityClient
   #httpRequest: HttpRequest
@@ -131,6 +97,89 @@ export class AssetsClient {
         ),
       ),
     )
+  }
+
+  /**
+   * Delete an asset by ID.
+   * This will also delete the actual asset file/image.
+   *
+   * @param id - Asset document ID to delete
+   * @returns Promise resolving when asset is deleted
+   */
+  delete(id: string): Promise<void> {
+    return lastValueFrom(
+      _request(this.#client, this.#httpRequest, {
+        method: 'DELETE',
+        uri: `/assets/${id}`,
+      }),
+    )
+  }
+}
+
+/**
+ * Observable version of the AssetsClient.
+ * All methods return RxJS Observables instead of Promises.
+ *
+ * @example
+ * ```ts
+ * client.assets.upload('image', imageFile).subscribe(asset => {
+ *   console.log('Image uploaded:', asset)
+ * })
+ * ```
+ *
+ * @public
+ */
+export class ObservableAssetsClient {
+  #client: ObservableSanityClient
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
+    this.#client = client
+    this.#httpRequest = httpRequest
+  }
+
+  /**
+   * Uploads a file asset to the configured dataset
+   *
+   * @param assetType - Asset type (file)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'file',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
+
+  /**
+   * Uploads an image asset to the configured dataset
+   *
+   * @param assetType - Asset type (image)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
+  /**
+   * Uploads a file or an image asset to the configured dataset
+   *
+   * @param assetType - Asset type (file/image)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'file' | 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
+  upload(
+    assetType: 'file' | 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+    return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
 }
 
