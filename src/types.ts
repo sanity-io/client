@@ -54,67 +54,102 @@ export type ClientPerspective =
   | StackablePerspective[]
 
 /** @public */
-export interface ClientConfig {
+export type ClientConfig = {
+  /** Project ID to connect to */
   projectId?: string
+
+  /** Dataset name to use */
   dataset?: string
-  /** @defaultValue true */
+
+  /**
+   * Whether to use the Sanity CDN API.
+   * Set to `true` to use edge caching for better performance.
+   * Set to `false` to always use the live API for fresh data.
+   * @defaultValue true
+   */
   useCdn?: boolean
+
+  /** Token for authentication. Required for certain operations like mutations or accessing drafts */
   token?: string
-  /** @defaultValue 'raw' */
+
+  /**
+   * The perspective to use when querying documents.
+   * - 'published': Only published documents (no drafts)
+   * - 'drafts': Published + draft documents (draft preferred if both exist)
+   * - 'raw': All documents including drafts and versions
+   * @defaultValue 'raw'
+   */
   perspective?: ClientPerspective
+
+  /** API host to use. Defaults to 'api.sanity.io' */
   apiHost?: string
+
+  /**
+   * API version in YYYY-MM-DD format.
+   * Required to prevent breaking changes.
+   * Use current date to get latest features.
+   */
   apiVersion?: string
+
+  /** HTTP/HTTPS proxy URL to use */
   proxy?: string
 
   /**
-   * Optional request tag prefix for all request tags
+   * Optional prefix added to all request tags.
+   * Used to filter and aggregate log data in request logs.
    */
   requestTagPrefix?: string
+
+  /** Ignore warning about tokens in browser environments */
   ignoreBrowserTokenWarning?: boolean
+
+  /** Whether to send credentials with requests */
   withCredentials?: boolean
+
+  /** Whether the client can be reconfigured after initialization */
   allowReconfigure?: boolean
+
+  /** Request timeout in milliseconds */
   timeout?: number
 
-  /** Number of retries for requests. Defaults to 5. */
+  /**
+   * Number of times to retry failed requests
+   * @defaultValue 5
+   */
   maxRetries?: number
 
   /**
-   * The amount of time, in milliseconds, to wait before retrying, given an attemptNumber (starting at 0).
-   *
-   * Defaults to exponential back-off, starting at 100ms, doubling for each attempt, together with random
-   * jitter between 0 and 100 milliseconds. More specifically the following algorithm is used:
-   *
-   *   Delay = 100 * 2^attemptNumber + randomNumberBetween0and100
+   * Function to calculate retry delay in milliseconds.
+   * Default is exponential backoff with random jitter:
+   * delay = 100 * 2^attemptNumber + random(0,100)
    */
   retryDelay?: (attemptNumber: number) => number
 
   /**
-   * @deprecated Don't use
-   */
-  useProjectHostname?: boolean
-
-  /**
-   * @deprecated Don't use
-   */
-  requester?: Requester
-
-  /**
-   * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
+   * Whether to include Content Source Maps in API responses.
+   * Useful for visual editing and debugging.
    */
   resultSourceMap?: boolean | 'withKeyArraySelector'
+
   /**
-   *@deprecated set `cache` and `next` options on `client.fetch` instead
+   * Options for encoding Content Source Maps using steganography.
+   * Used for visual editing features.
    */
+  stega?: StegaConfig | boolean
+
+  /** @deprecated Don't use */
+  useProjectHostname?: boolean
+
+  /** @deprecated Don't use */
+  requester?: Requester
+
+  /** @deprecated set `cache` and `next` options on `client.fetch` instead */
   fetch?:
     | {
         cache?: ResponseQueryOptions['cache']
         next?: ResponseQueryOptions['next']
       }
     | boolean
-  /**
-   * Options for how, if enabled, Content Source Maps are encoded into query results using steganography
-   */
-  stega?: StegaConfig | boolean
 }
 
 /** @public */
@@ -460,17 +495,138 @@ export type InsertPatch =
   | {after: string; items: Any[]}
   | {replace: string; items: Any[]}
 
-// Note: this is actually incorrect/invalid, but implemented as-is for backwards compatibility
-/** @internal */
+/**
+ * Base options for mutations like create, update, delete, etc.
+ * Controls how mutations are executed and what data is returned.
+ *
+ * @public
+ */
+export type BaseMutationOptions = RequestOptions & {
+  /**
+   * When to make changes visible:
+   * - 'sync': Wait until changes are visible to queries (default)
+   * - 'async': Return immediately after commit
+   * - 'deferred': Fastest, bypasses real-time indexing
+   */
+  visibility?: 'sync' | 'async' | 'deferred'
+
+  /** Whether to return the affected documents */
+  returnDocuments?: boolean
+
+  /** Whether to return only the first affected document */
+  returnFirst?: boolean
+
+  /** Simulate the mutation without making changes */
+  dryRun?: boolean
+
+  /**
+   * Automatically add `_key` to array items.
+   * Helps prevent race conditions in real-time editing.
+   */
+  autoGenerateArrayKeys?: boolean
+
+  /** Skip validation of cross dataset references */
+  skipCrossDatasetReferenceValidation?: boolean
+
+  /** Custom transaction ID for the mutation */
+  transactionId?: string
+}
+
+/**
+ * Operations that can be applied in a patch.
+ * Used to modify existing documents.
+ *
+ * @example
+ * ```ts
+ * client.patch('bike-123')
+ *   .set({inStock: false})
+ *   .inc({numSold: 1})
+ *   .unset(['price'])
+ *   .commit()
+ * ```
+ *
+ * @public
+ */
 export interface PatchOperations {
+  /** Shallow merge of the provided object */
   set?: {[key: string]: Any}
+
+  /** Set fields only if they're not already present */
   setIfMissing?: {[key: string]: Any}
+
+  /** Apply diff-match-patch operations */
   diffMatchPatch?: {[key: string]: Any}
+
+  /** Remove fields from the document */
   unset?: string[]
+
+  /** Increment numeric fields by the given amount */
   inc?: {[key: string]: number}
+
+  /** Decrement numeric fields by the given amount */
   dec?: {[key: string]: number}
+
+  /** Insert items in arrays at specific positions */
   insert?: InsertPatch
+
+  /** Only apply patch if document has this revision */
   ifRevisionID?: string
+}
+
+/**
+ * A mutation operation to be performed.
+ * Used in transactions to batch multiple changes.
+ *
+ * @example
+ * ```ts
+ * client.transaction()
+ *   .create({_type: 'bike', name: 'New Bike'})
+ *   .delete('old-bike')
+ *   .patch('bike-123', p => p.set({inStock: false}))
+ *   .commit()
+ * ```
+ *
+ * @public
+ */
+export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
+  | {create: SanityDocumentStub<R>}
+  | {createOrReplace: IdentifiedSanityDocumentStub<R>}
+  | {createIfNotExists: IdentifiedSanityDocumentStub<R>}
+  | {delete: MutationSelection}
+  | {patch: PatchMutationOperation}
+
+/**
+ * Result of a single mutation operation.
+ * Contains the transaction ID and affected document.
+ *
+ * @public
+ */
+export interface SingleMutationResult {
+  /** ID of the transaction that performed the mutation */
+  transactionId: string
+
+  /** ID of the affected document */
+  documentId: string
+
+  /** Details about what happened to each document */
+  results: {id: string; operation: MutationOperation}[]
+}
+
+/**
+ * Result of multiple mutation operations.
+ * Contains the transaction ID and affected documents.
+ *
+ * @public
+ */
+export interface MultipleMutationResult {
+  /** ID of the transaction that performed the mutations */
+  transactionId: string
+
+  /** IDs of all affected documents */
+  documentIds: string[]
+
+  /** Details about what happened to each document */
+  results: {id: string; operation: MutationOperation}[]
 }
 
 /** @public */
@@ -534,201 +690,6 @@ export type PatchSelection = string | string[] | MutationSelection
 export type PatchMutationOperation = PatchOperations & MutationSelection
 
 /** @public */
-export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
-  | {create: SanityDocumentStub<R>}
-  | {createOrReplace: IdentifiedSanityDocumentStub<R>}
-  | {createIfNotExists: IdentifiedSanityDocumentStub<R>}
-  | {delete: MutationSelection}
-  | {patch: PatchMutationOperation}
-
-/** @public */
-export type Action =
-  | CreateAction
-  | ReplaceDraftAction
-  | EditAction
-  | DeleteAction
-  | DiscardAction
-  | PublishAction
-  | UnpublishAction
-
-/**
- * Creates a new draft document. The published version of the document must not already exist.
- * If the draft version of the document already exists the action will fail by default, but
- * this can be adjusted to instead leave the existing document in place.
- *
- * @public
- */
-export type CreateAction = {
-  actionType: 'sanity.action.document.create'
-
-  /**
-   * ID of the published document to create a draft for.
-   */
-  publishedId: string
-
-  /**
-   * Document to create. Requires a `_type` property.
-   */
-  attributes: IdentifiedSanityDocumentStub
-
-  /**
-   * ifExists controls what to do if the draft already exists
-   */
-  ifExists: 'fail' | 'ignore'
-}
-
-/**
- * Replaces an existing draft document.
- * At least one of the draft or published versions of the document must exist.
- *
- * @public
- */
-export type ReplaceDraftAction = {
-  actionType: 'sanity.action.document.replaceDraft'
-
-  /**
-   * Published document ID to create draft from, if draft does not exist
-   */
-  publishedId: string
-
-  /**
-   * Document to create if it does not already exist. Requires `_id` and `_type` properties.
-   */
-  attributes: IdentifiedSanityDocumentStub
-}
-
-/**
- * Modifies an existing draft document.
- * It applies the given patch to the document referenced by draftId.
- * If there is no such document then one is created using the current state of the published version and then that is updated accordingly.
- *
- * @public
- */
-export type EditAction = {
-  actionType: 'sanity.action.document.edit'
-
-  /**
-   * Draft document ID to edit
-   */
-  draftId: string
-
-  /**
-   * Published document ID to create draft from, if draft does not exist
-   */
-  publishedId: string
-
-  /**
-   * Patch operations to apply
-   */
-  patch: PatchOperations
-}
-
-/**
- * Deletes the published version of a document and optionally some (likely all known) draft versions.
- * If any draft version exists that is not specified for deletion this is an error.
- * If the purge flag is set then the document history is also deleted.
- *
- * @public
- */
-export type DeleteAction = {
-  actionType: 'sanity.action.document.delete'
-
-  /**
-   * Published document ID to delete
-   */
-  publishedId: string
-
-  /**
-   * Draft document ID to delete
-   */
-  includeDrafts: string[]
-
-  /**
-   * Delete document history
-   */
-  purge?: boolean
-}
-
-/**
- * Delete the draft version of a document.
- * It is an error if it does not exist. If the purge flag is set, the document history is also deleted.
- *
- * @public
- */
-export type DiscardAction = {
-  actionType: 'sanity.action.document.discard'
-
-  /**
-   * Draft document ID to delete
-   */
-  draftId: string
-
-  /**
-   * Delete document history
-   */
-  purge?: boolean
-}
-
-/**
- * Publishes a draft document.
- * If a published version of the document already exists this is replaced by the current draft document.
- * In either case the draft document is deleted.
- * The optional revision id parameters can be used for optimistic locking to ensure
- * that the draft and/or published versions of the document have not been changed by another client.
- *
- * @public
- */
-export type PublishAction = {
-  actionType: 'sanity.action.document.publish'
-
-  /**
-   * Draft document ID to publish
-   */
-  draftId: string
-
-  /**
-   * Draft revision ID to match
-   */
-  ifDraftRevisionId?: string
-
-  /**
-   * Published document ID to replace
-   */
-  publishedId: string
-
-  /**
-   * Published revision ID to match
-   */
-  ifPublishedRevisionId?: string
-}
-
-/**
- * Retract a published document.
- * If there is no draft version then this is created from the published version.
- * In either case the published version is deleted.
- *
- * @public
- */
-export type UnpublishAction = {
-  actionType: 'sanity.action.document.unpublish'
-
-  /**
-   * Draft document ID to replace the published document with
-   */
-  draftId: string
-
-  /**
-   * Published document ID to delete
-   */
-  publishedId: string
-}
-
-/**
- * A mutation was performed. Note that when updating multiple documents in a transaction,
- * each document affected will get a separate mutation event.
- *
- * @public
- */
 export type MutationEvent<R extends Record<string, Any> = Record<string, Any>> = {
   type: 'mutation'
 
@@ -906,71 +867,59 @@ export type ListenEventName =
 /** @public */
 export type ListenParams = {[key: string]: Any}
 
-/** @public */
+/**
+ * Options for listening to real-time updates.
+ * Used with `client.listen()` to subscribe to document changes.
+ *
+ * @public
+ */
 export interface ListenOptions {
   /**
-   * Whether or not to include the resulting document in addition to the mutations performed.
-   * If you do not need the actual document, set this to `false` to reduce bandwidth usage.
-   * The result will be available on the `.result` property of the events.
-   * @defaultValue `true`
+   * Whether to include the resulting document in addition to mutations.
+   * Set to `false` to reduce bandwidth if you only need mutation info.
+   * @defaultValue true
    */
   includeResult?: boolean
 
   /**
-   * Whether or not to include the mutations that was performed.
-   * If you do not need the mutations, set this to `false` to reduce bandwidth usage.
-   * @defaultValue `true`
+   * Whether to include the mutations that were performed.
+   * Set to `false` to reduce bandwidth if you only need the final document.
+   * @defaultValue true
    */
   includeMutations?: boolean
 
   /**
-   * Whether or not to include the document as it looked before the mutation event.
-   * The previous revision will be available on the `.previous` property of the events,
-   * and may be `null` in the case of a new document.
-   * @defaultValue `false`
+   * Whether to include the document state before the mutation.
+   * Useful for tracking what changed.
+   * @defaultValue false
    */
   includePreviousRevision?: boolean
 
   /**
-   * @internal
-   * @defaultValue `false`
-   */
-  includeAllVersions?: boolean
-
-  /**
-   * Whether events should be sent as soon as a transaction has been committed (`transaction`, default),
-   * or only after they are available for queries (query). Note that this is on a best-effort basis,
-   * and listeners with `query` may in certain cases (notably with deferred transactions) receive events
-   * that are not yet visible to queries.
-   *
-   * @defaultValue `'transaction'`
+   * When to send events:
+   * - 'transaction': As soon as transaction is committed (default)
+   * - 'query': Only after changes are visible to queries
+   * @defaultValue 'transaction'
    */
   visibility?: 'transaction' | 'query'
 
   /**
-   * Array of event names to include in the observable. By default, only mutation events are included.
-   *
-   * @defaultValue `['mutation']`
+   * Event types to include in the observable.
+   * @defaultValue ['mutation']
    */
   events?: ListenEventName[]
 
   /**
-   * Format of "effects", eg the resulting changes of a mutation.
-   * Currently only `mendoza` is supported, and (if set) will include `apply` and `revert` arrays
-   * in the mutation events under the `effects` property.
-   *
-   * See {@link https://github.com/sanity-io/mendoza | The mendoza docs} for more info
-   *
-   * @defaultValue `undefined`
+   * Format for mutation effects.
+   * 'mendoza' includes `apply` and `revert` arrays.
    */
   effectFormat?: 'mendoza'
 
-  /**
-   * Optional request tag for the listener. Use to identify the request in logs.
-   *
-   * @defaultValue `undefined`
-   */
+  /** Optional tag to identify the listener in logs */
   tag?: string
+
+  /** @internal */
+  includeAllVersions?: boolean
 }
 
 /** @public */
@@ -1040,52 +989,6 @@ export interface RawQueryResponse<R> {
 
 /** @public */
 export type RawQuerylessQueryResponse<R> = Omit<RawQueryResponse<R>, 'query'>
-
-/** @internal */
-export type BaseMutationOptions = RequestOptions & {
-  visibility?: 'sync' | 'async' | 'deferred'
-  returnDocuments?: boolean
-  returnFirst?: boolean
-  dryRun?: boolean
-  autoGenerateArrayKeys?: boolean
-  skipCrossDatasetReferenceValidation?: boolean
-  transactionId?: string
-}
-
-/** @internal */
-export type FirstDocumentMutationOptions = BaseMutationOptions & {
-  returnFirst?: true
-  returnDocuments?: true
-}
-
-/** @internal */
-export type FirstDocumentIdMutationOptions = BaseMutationOptions & {
-  returnFirst?: true
-  returnDocuments: false
-}
-
-/** @internal */
-export type AllDocumentsMutationOptions = BaseMutationOptions & {
-  returnFirst: false
-  returnDocuments?: true
-}
-
-/** @internal */
-export type MutationOperation = 'create' | 'delete' | 'update' | 'none'
-
-/** @internal */
-export interface SingleMutationResult {
-  transactionId: string
-  documentId: string
-  results: {id: string; operation: MutationOperation}[]
-}
-
-/** @internal */
-export interface MultipleMutationResult {
-  transactionId: string
-  documentIds: string[]
-  results: {id: string; operation: MutationOperation}[]
-}
 
 /** @internal */
 export type AllDocumentIdsMutationOptions = BaseMutationOptions & {
@@ -1333,3 +1236,267 @@ export type {
   StudioBaseUrl,
   StudioUrl,
 } from './stega/types'
+
+/**
+ * Actions that can be performed on documents.
+ * These are high-level operations that combine multiple mutations.
+ *
+ * @example
+ * ```ts
+ * // Create a draft
+ * await client.action({
+ *   actionType: 'sanity.action.document.create',
+ *   publishedId: 'bike-123',
+ *   attributes: {name: 'New Bike', _type: 'bike'},
+ *   ifExists: 'fail'
+ * })
+ *
+ * // Publish a draft
+ * await client.action({
+ *   actionType: 'sanity.action.document.publish',
+ *   draftId: 'drafts.bike-123',
+ *   publishedId: 'bike-123'
+ * })
+ * ```
+ *
+ * @public
+ */
+export type Action =
+  | CreateAction
+  | ReplaceDraftAction
+  | EditAction
+  | DeleteAction
+  | DiscardAction
+  | PublishAction
+  | UnpublishAction
+
+/**
+ * Creates a new draft document.
+ * The published version must not already exist.
+ * If a draft exists, the action will fail by default.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.create',
+ *   publishedId: 'bike-123',
+ *   attributes: {name: 'New Bike', _type: 'bike'},
+ *   ifExists: 'fail' // or 'ignore' to keep existing draft
+ * })
+ * ```
+ *
+ * @public
+ */
+export type CreateAction = {
+  actionType: 'sanity.action.document.create'
+
+  /** ID of the published document to create a draft for */
+  publishedId: string
+
+  /** Document to create. Must have `_type` property */
+  attributes: IdentifiedSanityDocumentStub
+
+  /** What to do if draft exists: 'fail' or 'ignore' */
+  ifExists: 'fail' | 'ignore'
+}
+
+/**
+ * Replaces an existing draft document.
+ * At least one of draft or published versions must exist.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.replaceDraft',
+ *   publishedId: 'bike-123',
+ *   attributes: {
+ *     _id: 'drafts.bike-123',
+ *     _type: 'bike',
+ *     name: 'Updated Bike'
+ *   }
+ * })
+ * ```
+ *
+ * @public
+ */
+export type ReplaceDraftAction = {
+  actionType: 'sanity.action.document.replaceDraft'
+
+  /** Published document ID to base draft on */
+  publishedId: string
+
+  /** Document to create. Must have `_id` and `_type` */
+  attributes: IdentifiedSanityDocumentStub
+}
+
+/**
+ * Modifies an existing draft document.
+ * If no draft exists, creates one from published version.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.edit',
+ *   draftId: 'drafts.bike-123',
+ *   publishedId: 'bike-123',
+ *   patch: {set: {inStock: false}}
+ * })
+ * ```
+ *
+ * @public
+ */
+export type EditAction = {
+  actionType: 'sanity.action.document.edit'
+
+  /** Draft document ID to edit */
+  draftId: string
+
+  /** Published document ID to base draft on */
+  publishedId: string
+
+  /** Patch operations to apply */
+  patch: PatchOperations
+}
+
+/**
+ * Deletes the published version and optionally drafts.
+ * Fails if any unspecified drafts exist.
+ * Can optionally purge document history.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.delete',
+ *   publishedId: 'bike-123',
+ *   includeDrafts: ['drafts.bike-123'],
+ *   purge: true
+ * })
+ * ```
+ *
+ * @public
+ */
+export type DeleteAction = {
+  actionType: 'sanity.action.document.delete'
+
+  /** Published document ID to delete */
+  publishedId: string
+
+  /** Draft document IDs to delete */
+  includeDrafts: string[]
+
+  /** Whether to delete document history */
+  purge?: boolean
+}
+
+/**
+ * Deletes a draft document.
+ * Fails if draft doesn't exist.
+ * Can optionally purge document history.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.discard',
+ *   draftId: 'drafts.bike-123',
+ *   purge: false
+ * })
+ * ```
+ *
+ * @public
+ */
+export type DiscardAction = {
+  actionType: 'sanity.action.document.discard'
+
+  /** Draft document ID to delete */
+  draftId: string
+
+  /** Whether to delete document history */
+  purge?: boolean
+}
+
+/**
+ * Publishes a draft document.
+ * Replaces published version if it exists.
+ * Deletes the draft after publishing.
+ * Can check revision IDs for optimistic locking.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.publish',
+ *   draftId: 'drafts.bike-123',
+ *   publishedId: 'bike-123',
+ *   ifDraftRevisionId: 'abc123',
+ *   ifPublishedRevisionId: 'def456'
+ * })
+ * ```
+ *
+ * @public
+ */
+export type PublishAction = {
+  actionType: 'sanity.action.document.publish'
+
+  /** Draft document ID to publish */
+  draftId: string
+
+  /** Draft revision ID to match (optional) */
+  ifDraftRevisionId?: string
+
+  /** Published document ID to replace */
+  publishedId: string
+
+  /** Published revision ID to match (optional) */
+  ifPublishedRevisionId?: string
+}
+
+/**
+ * Retracts (unpublishes) a published document.
+ * Creates draft from published if none exists.
+ * Deletes the published version.
+ *
+ * @example
+ * ```ts
+ * await client.action({
+ *   actionType: 'sanity.action.document.unpublish',
+ *   draftId: 'drafts.bike-123',
+ *   publishedId: 'bike-123'
+ * })
+ * ```
+ *
+ * @public
+ */
+export type UnpublishAction = {
+  actionType: 'sanity.action.document.unpublish'
+
+  /** Draft document ID to keep/create */
+  draftId: string
+
+  /** Published document ID to delete */
+  publishedId: string
+}
+
+/** @internal */
+export type MutationOperation =
+  | 'create'
+  | 'createOrReplace'
+  | 'createIfNotExists'
+  | 'delete'
+  | 'patch'
+
+/** @internal */
+export type FirstDocumentMutationOptions = BaseMutationOptions & {
+  returnFirst: true
+  returnDocuments: true
+}
+
+/** @internal */
+export type FirstDocumentIdMutationOptions = BaseMutationOptions & {
+  returnFirst: true
+  returnDocuments?: false
+}
+
+/** @internal */
+export type AllDocumentsMutationOptions = BaseMutationOptions & {
+  returnFirst?: false
+  returnDocuments: true
+}

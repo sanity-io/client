@@ -4,7 +4,19 @@ import {_request} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, SanityProject} from '../types'
 
-/** @internal */
+/**
+ * Observable version of the ProjectsClient.
+ * All methods return RxJS Observables instead of Promises.
+ * 
+ * @example
+ * ```ts
+ * client.projects.list().subscribe(projects => {
+ *   console.log('Available projects:', projects)
+ * })
+ * ```
+ * 
+ * @public
+ */
 export class ObservableProjectsClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -38,7 +50,21 @@ export class ObservableProjectsClient {
   }
 }
 
-/** @internal */
+/**
+ * Client for managing Sanity projects.
+ * Provides methods for fetching project information and managing project settings.
+ * 
+ * @example
+ * ```ts
+ * // Get current project info
+ * const project = await client.projects.getById('myproject')
+ * 
+ * // List all projects user has access to
+ * const projects = await client.projects.list()
+ * ```
+ * 
+ * @public
+ */
 export class ProjectsClient {
   #client: SanityClient
   #httpRequest: HttpRequest
