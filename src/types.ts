@@ -60,9 +60,20 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
-  /** @defaultValue 'raw' */
+
+  /**
+   * What perspective to use for the client. See {@link https://www.sanity.io/docs/perspectives|perspective documentation}
+   * @remarks
+   * As of API version `v2025-02-19`, the default perspective has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/e93a2d5a-9cee-4801-829e-8d3394bfed85|Changelog}
+   * @defaultValue 'published'
+   */
   perspective?: ClientPerspective
   apiHost?: string
+
+  /**
+   @remarks
+   * As of API version `v2025-02-19`, the default perspective has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/e93a2d5a-9cee-4801-829e-8d3394bfed85|Changelog}
+   */
   apiVersion?: string
   proxy?: string
 
@@ -932,7 +943,12 @@ export interface ListenOptions {
   includePreviousRevision?: boolean
 
   /**
-   * @internal
+   * Whether to include events for drafts and versions. As of API Version >= v2025-02-19, only events
+   * for published documents will be included by default (see {@link https://www.sanity.io/changelog/e93a2d5a-9cee-4801-829e-8d3394bfed85|Changelog})
+   * If you need events from drafts and versions, set this to `true`.
+   * Note: Keep in mind that additional document variants may be introduced in the future, so it's
+   * recommended to respond to events in a way that's tolerant of potential future variants, e.g. by
+   * explicitly checking whether the event is for a draft or a version.
    * @defaultValue `false`
    */
   includeAllVersions?: boolean
