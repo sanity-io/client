@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.28.1](https://github.com/sanity-io/client/compare/v6.28.0...v6.28.1) (2025-02-24)
+
+
+### Bug Fixes
+
+* trigger semantic release version bump ([#1024](https://github.com/sanity-io/client/issues/1024)) ([6ccc8bd](https://github.com/sanity-io/client/commit/6ccc8bd2d724a79e1286d42fe9d43e214fce2691))
+
 ## [6.28.0](https://github.com/sanity-io/client/compare/v6.27.2...v6.28.0) (2025-02-11)
 
 
