@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-empty-interface
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
-import type { Requester } from 'get-it'
+import type {Requester} from 'get-it'
 
-import type { InitializedStegaConfig, StegaConfig } from './stega/types'
+import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
 /**
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future
@@ -1337,16 +1337,15 @@ export type ClientReturn<
 > = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
 
 export type {
-    ContentSourceMapParsedPath,
-    ContentSourceMapParsedPathKeyedSegment,
-    FilterDefault,
-    InitializedStegaConfig,
-    Logger,
-    ResolveStudioUrl,
-    StegaConfig,
-    StegaConfigRequiredKeys,
-    StudioBaseRoute,
-    StudioBaseUrl,
-    StudioUrl
+  ContentSourceMapParsedPath,
+  ContentSourceMapParsedPathKeyedSegment,
+  FilterDefault,
+  InitializedStegaConfig,
+  Logger,
+  ResolveStudioUrl,
+  StegaConfig,
+  StegaConfigRequiredKeys,
+  StudioBaseRoute,
+  StudioBaseUrl,
+  StudioUrl,
 } from './stega/types'
-
