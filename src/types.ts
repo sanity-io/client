@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-empty-interface
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
-import type {Requester} from 'get-it'
+import type { Requester } from 'get-it'
 
-import type {InitializedStegaConfig, StegaConfig} from './stega/types'
+import type { InitializedStegaConfig, StegaConfig } from './stega/types'
 
 /**
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future
@@ -375,12 +375,12 @@ export interface AuthProvider {
 /** @internal */
 export type AuthProviderResponse = {providers: AuthProvider[]}
 
-/** @internal */
+/** @public */
 export type DatasetAclMode = 'public' | 'private' | 'custom'
 
-/** @internal */
+/** @public */
 export type DatasetResponse = {datasetName: string; aclMode: DatasetAclMode}
-/** @internal */
+/** @public */
 export type DatasetsResponse = {
   name: string
   aclMode: DatasetAclMode
@@ -392,7 +392,7 @@ export type DatasetsResponse = {
   tags: string[]
 }[]
 
-/** @internal */
+/** @public */
 export interface SanityProjectMember {
   id: string
   role: string
@@ -400,7 +400,7 @@ export interface SanityProjectMember {
   isCurrentUser: boolean
 }
 
-/** @internal */
+/** @public */
 export interface SanityProject {
   id: string
   displayName: string
@@ -428,7 +428,7 @@ export interface SanityProject {
   }
 }
 
-/** @internal */
+/** @public */
 export interface SanityUser {
   id: string
   projectId: string
@@ -442,7 +442,7 @@ export interface SanityUser {
   isCurrentUser: boolean
 }
 
-/** @internal */
+/** @public */
 export interface CurrentSanityUser {
   id: string
   name: string
@@ -1337,15 +1337,16 @@ export type ClientReturn<
 > = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
 
 export type {
-  ContentSourceMapParsedPath,
-  ContentSourceMapParsedPathKeyedSegment,
-  FilterDefault,
-  InitializedStegaConfig,
-  Logger,
-  ResolveStudioUrl,
-  StegaConfig,
-  StegaConfigRequiredKeys,
-  StudioBaseRoute,
-  StudioBaseUrl,
-  StudioUrl,
+    ContentSourceMapParsedPath,
+    ContentSourceMapParsedPathKeyedSegment,
+    FilterDefault,
+    InitializedStegaConfig,
+    Logger,
+    ResolveStudioUrl,
+    StegaConfig,
+    StegaConfigRequiredKeys,
+    StudioBaseRoute,
+    StudioBaseUrl,
+    StudioUrl
 } from './stega/types'
+
