@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.28.2](https://github.com/sanity-io/client/compare/v6.28.1...v6.28.2) (2025-02-28)
+
+
+### Bug Fixes
+
+* **docs:** make dataset and project related types public ([#1026](https://github.com/sanity-io/client/issues/1026)) ([b0a622a](https://github.com/sanity-io/client/commit/b0a622a3f6614ec79e4c9bca22a0f25e5ed132fa))
+
 ## [6.28.1](https://github.com/sanity-io/client/compare/v6.28.0...v6.28.1) (2025-02-24)
 
 
