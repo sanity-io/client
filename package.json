@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "6.28.1",
+  "version": "6.28.2",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
