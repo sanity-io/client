@@ -375,12 +375,12 @@ export interface AuthProvider {
 /** @internal */
 export type AuthProviderResponse = {providers: AuthProvider[]}
 
-/** @internal */
+/** @public */
 export type DatasetAclMode = 'public' | 'private' | 'custom'
 
-/** @internal */
+/** @public */
 export type DatasetResponse = {datasetName: string; aclMode: DatasetAclMode}
-/** @internal */
+/** @public */
 export type DatasetsResponse = {
   name: string
   aclMode: DatasetAclMode
@@ -392,7 +392,7 @@ export type DatasetsResponse = {
   tags: string[]
 }[]
 
-/** @internal */
+/** @public */
 export interface SanityProjectMember {
   id: string
   role: string
@@ -400,7 +400,7 @@ export interface SanityProjectMember {
   isCurrentUser: boolean
 }
 
-/** @internal */
+/** @public */
 export interface SanityProject {
   id: string
   displayName: string
@@ -428,7 +428,7 @@ export interface SanityProject {
   }
 }
 
-/** @internal */
+/** @public */
 export interface SanityUser {
   id: string
   projectId: string
@@ -442,7 +442,7 @@ export interface SanityUser {
   isCurrentUser: boolean
 }
 
-/** @internal */
+/** @public */
 export interface CurrentSanityUser {
   id: string
   name: string
