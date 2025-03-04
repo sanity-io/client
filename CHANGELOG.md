@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.28.3](https://github.com/sanity-io/client/compare/v6.28.2...v6.28.3) (2025-03-04)
+
+
+### Bug Fixes
+
+* **docs:** invalid changelog url ([#1029](https://github.com/sanity-io/client/issues/1029)) ([0ddde6f](https://github.com/sanity-io/client/commit/0ddde6f2473450e96a897b48cafc38786a4889e7))
+* invalid changelog url ([0ddde6f](https://github.com/sanity-io/client/commit/0ddde6f2473450e96a897b48cafc38786a4889e7))
+
 ## [6.28.2](https://github.com/sanity-io/client/compare/v6.28.1...v6.28.2) (2025-02-28)
 
 
