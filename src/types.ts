@@ -576,12 +576,37 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
 /** @public */
 export type Action =
   | CreateAction
+  | CreateVersionAction
   | ReplaceDraftAction
   | EditAction
   | DeleteAction
   | DiscardAction
   | PublishAction
   | UnpublishAction
+  | CreateReleaseAction
+
+/**
+ * Creates a new release under the given id, with metadata.
+ *
+ * @public
+ */
+export interface CreateReleaseAction {
+  actionType: 'sanity.action.release.create'
+  releaseId: string
+  metadata?: Partial<ReleaseDocument['metadata']>
+}
+
+/**
+ * Creates a new version of an existing document, attached to the release as given
+ * by `document._id`
+ *
+ * @public
+ */
+export interface CreateVersionAction {
+  actionType: 'sanity.action.document.version.create'
+  publishedId: string
+  document: IdentifiedSanityDocumentStub
+}
 
 /**
  * Creates a new draft document. The published version of the document must not already exist.
@@ -1242,6 +1267,69 @@ export interface ActionErrorItem {
     value?: unknown
   }
   index: number
+}
+
+/** @internal */
+export type PartialExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>
+
+/** @beta */
+export type ReleaseState =
+  | 'active'
+  | 'archiving'
+  | 'unarchiving'
+  | 'archived'
+  | 'published'
+  | 'publishing'
+  | 'scheduled'
+  | 'scheduling'
+
+/** @internal */
+export type ReleaseType = 'asap' | 'scheduled' | 'undecided'
+
+/** @internal */
+export interface ReleaseDocument extends SanityDocument {
+  /**
+   * typically
+   * `_.releases.<name>`
+   */
+  _id: string
+  _type: 'system.release'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  state: ReleaseState
+  error?: {
+    message: string
+  }
+  finalDocumentStates?: {
+    /** Document ID */
+    id: string
+  }[]
+  /**
+   * If defined, it takes precedence over the intendedPublishAt, the state should be 'scheduled'
+   */
+  publishAt?: string
+  /**
+   * If defined, it provides the time the release was actually published
+   */
+  publishedAt?: string
+  metadata: {
+    title: string
+    description?: string
+
+    intendedPublishAt?: string
+    // todo: the below properties should probably live at the system document
+    releaseType: ReleaseType
+  }
+}
+
+/** @internal */
+export type EditableReleaseDocument = Omit<
+  PartialExcept<ReleaseDocument, '_id'>,
+  'metadata' | '_type'
+> & {
+  _id: string
+  metadata: Partial<ReleaseDocument['metadata']>
 }
 
 /**
