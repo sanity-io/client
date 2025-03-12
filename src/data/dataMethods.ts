@@ -12,6 +12,7 @@ import type {
   Any,
   BaseActionOptions,
   BaseMutationOptions,
+  CreateVersionAction,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
@@ -202,6 +203,26 @@ export function _createOrReplace<R extends Record<string, Any>>(
 > {
   validators.requireDocumentId('createOrReplace', doc)
   return _create<R>(client, httpRequest, doc, 'createOrReplace', options)
+}
+
+/** @internal */
+export function _createVersion<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  publishedId: string,
+  options?: FirstDocumentMutationOptions,
+): Observable<SingleActionResult | MultipleActionResult> {
+  validators.requireDocumentId('createVersion', doc)
+  validators.requireDocumentType('createVersion', doc)
+
+  const createVersionAction: CreateVersionAction = {
+    actionType: 'sanity.action.document.version.create',
+    publishedId,
+    document: doc,
+  }
+
+  return _action(client, httpRequest, createVersionAction, options)
 }
 
 /** @internal */
