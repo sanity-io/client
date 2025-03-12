@@ -584,6 +584,13 @@ export type Action =
   | PublishAction
   | UnpublishAction
   | CreateReleaseAction
+  | EditReleaseAction
+  | PublishReleaseAction
+  | ArchiveReleaseAction
+  | UnarchiveReleaseAction
+  | ScheduleReleaseAction
+  | UnscheduleReleaseAction
+  | DeleteReleaseAction
 
 /**
  * Creates a new release under the given id, with metadata.
@@ -594,6 +601,78 @@ export interface CreateReleaseAction {
   actionType: 'sanity.action.release.create'
   releaseId: string
   metadata?: Partial<ReleaseDocument['metadata']>
+}
+
+/**
+ * Edits an existing release, updating the metadata.
+ *
+ * @public
+ */
+export interface EditReleaseAction {
+  actionType: 'sanity.action.release.edit'
+  releaseId: string
+  patch: PatchMutationOperation
+}
+
+/**
+ * Publishes all documents in a release at once.
+ *
+ * @public
+ */
+export interface PublishReleaseAction {
+  actionType: 'sanity.action.release.publish'
+  releaseId: string
+}
+
+/**
+ * Archives an `active` release, and deletes all the release documents.
+ *
+ * @public
+ */
+export interface ArchiveReleaseAction {
+  actionType: 'sanity.action.release.archive'
+  releaseId: string
+}
+
+/**
+ * Unarchived an `archived` release, and restores all the release documents.
+ *
+ * @public
+ */
+export interface UnarchiveReleaseAction {
+  actionType: 'sanity.action.release.unarchive'
+  releaseId: string
+}
+
+/**
+ * Queues release for publishing at the given future time.
+ *
+ * @public
+ */
+export interface ScheduleReleaseAction {
+  actionType: 'sanity.action.release.schedule'
+  releaseId: string
+  publishAt: string
+}
+
+/**
+ * Unschedules a `scheduled` release, stopping it from being published.
+ *
+ * @public
+ */
+export interface UnscheduleReleaseAction {
+  actionType: 'sanity.action.release.unschedule'
+  releaseId: string
+}
+
+/**
+ * Deletes a `archived` or `published` release, and all the release documents versions.
+ *
+ * @public
+ */
+export interface DeleteReleaseAction {
+  actionType: 'sanity.action.release.delete'
+  releaseId: string
 }
 
 /**
