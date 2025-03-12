@@ -9,6 +9,7 @@ import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
+import {ObservableReleasesClient, ReleasesClient} from './releases/ReleasesClient'
 import type {
   Action,
   AllDocumentIdsMutationOptions,
@@ -65,6 +66,7 @@ export class ObservableSanityClient {
   live: LiveClient
   projects: ObservableProjectsClient
   users: ObservableUsersClient
+  releases: ObservableReleasesClient
 
   /**
    * Private properties
@@ -87,6 +89,7 @@ export class ObservableSanityClient {
     this.live = new LiveClient(this)
     this.projects = new ObservableProjectsClient(this, this.#httpRequest)
     this.users = new ObservableUsersClient(this, this.#httpRequest)
+    this.releases = new ObservableReleasesClient(this, this.#httpRequest)
   }
 
   /**
@@ -448,6 +451,25 @@ export class ObservableSanityClient {
   }
 
   /**
+   * Create a new version of a published document. Requires a `_type` and `_id` property.
+   * Returns an observable that resolves to the `transactionId`.
+   *
+   * @param document - Document to create (must include the version `_id` and `_type`).
+   *
+   *  Note: `document._id` must have either `drafts.` or `versions.<release>.` as a prefix
+   * and the portion following that prefix must be equal to `publishedId`.
+   * @param publishedId
+   * @param options - Action options
+   */
+  createVersion<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    publishedId: string,
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult> {
+    return dataMethods._createVersion<R>(this, this.#httpRequest, document, publishedId, options)
+  }
+
+  /**
    * Deletes a document with the given document ID.
    * Returns an observable that resolves to the deleted document.
    *
@@ -733,6 +755,7 @@ export class SanityClient {
   live: LiveClient
   projects: ProjectsClient
   users: UsersClient
+  releases: ReleasesClient
 
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
@@ -760,6 +783,7 @@ export class SanityClient {
     this.live = new LiveClient(this)
     this.projects = new ProjectsClient(this, this.#httpRequest)
     this.users = new UsersClient(this, this.#httpRequest)
+    this.releases = new ReleasesClient(this, this.#httpRequest)
 
     this.observable = new ObservableSanityClient(httpRequest, config)
   }
@@ -1131,6 +1155,27 @@ export class SanityClient {
   > {
     return lastValueFrom(
       dataMethods._createOrReplace<R>(this, this.#httpRequest, document, options),
+    )
+  }
+
+  /**
+   * Create a new version of a published document. Requires a `_type` and `_id` property.
+   * Returns a promise that resolves to the `transactionId`.
+   *
+   * @param document - Document to create (must include the version `_id` and `_type`).
+   *
+   *  Note: `document._id` must have either `drafts.` or `versions.<release>.` as a prefix
+   * and the portion following that prefix must be equal to `publishedId`.
+   * @param publishedId
+   * @param options - Action options
+   */
+  createVersion<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    publishedId: string,
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult> {
+    return lastValueFrom(
+      dataMethods._createVersion<R>(this, this.#httpRequest, document, publishedId, options),
     )
   }
 
