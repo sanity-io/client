@@ -16,7 +16,7 @@ export interface ConstantInstructionParam {
 export interface FieldInstructionParam {
   type: 'field'
   /**
-   * Examples: 'title', 'array[_key=="key"].field
+   * Examples: 'title', array[_key=="key"].field
    */
   path: string
   /**
