@@ -211,7 +211,7 @@ export function _createVersion<R extends Record<string, Any>>(
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   publishedId: string,
-  options?: FirstDocumentMutationOptions,
+  options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   validators.requireDocumentId('createVersion', doc)
   validators.requireDocumentType('createVersion', doc)
@@ -254,7 +254,7 @@ export function _discardVersion(
   httpRequest: HttpRequest,
   versionId: string,
   purge: boolean = false,
-  options?: FirstDocumentMutationOptions,
+  options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   const discardVersionAction: DiscardVersionAction = {
     actionType: 'sanity.action.document.version.discard',
@@ -270,7 +270,7 @@ export function _replaceVersion<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
-  options?: FirstDocumentMutationOptions,
+  options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   const replaceVersionAction: ReplaceVersionAction = {
     actionType: 'sanity.action.document.version.replace',
@@ -286,7 +286,7 @@ export function _unpublishVersion(
   httpRequest: HttpRequest,
   versionId: string,
   publishedId: string,
-  options?: FirstDocumentMutationOptions,
+  options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   const unpublishVersionAction: UnpublishVersionAction = {
     actionType: 'sanity.action.document.version.unpublish',
