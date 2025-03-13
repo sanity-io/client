@@ -1310,6 +1310,33 @@ export class SanityClient {
     return lastValueFrom(dataMethods._delete<R>(this, this.#httpRequest, selection, options))
   }
 
+  discardVersion(
+    versionId: string,
+    purge?: boolean,
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult> {
+    return lastValueFrom(
+      dataMethods._discardVersion(this, this.#httpRequest, versionId, purge, options),
+    )
+  }
+
+  replaceVersion<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult> {
+    return lastValueFrom(dataMethods._replaceVersion<R>(this, this.#httpRequest, document, options))
+  }
+
+  unpublishVersion(
+    versionId: string,
+    publishedId: string,
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult> {
+    return lastValueFrom(
+      dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options),
+    )
+  }
+
   /**
    * Perform mutation operations against the configured dataset
    * Returns a promise that resolves to the first mutated document.
