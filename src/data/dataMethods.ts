@@ -13,6 +13,7 @@ import type {
   BaseActionOptions,
   BaseMutationOptions,
   CreateVersionAction,
+  DiscardVersionAction,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
@@ -26,11 +27,13 @@ import type {
   MutationSelection,
   QueryOptions,
   RawQueryResponse,
+  ReplaceVersionAction,
   RequestObservableOptions,
   RequestOptions,
   SanityDocument,
   SingleActionResult,
   SingleMutationResult,
+  UnpublishVersionAction,
 } from '../types'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
@@ -246,6 +249,55 @@ export function _delete<R extends Record<string, Any>>(
     {mutations: [{delete: getSelection(selection)}]},
     options,
   )
+}
+
+/** @internal */
+export function _discardVersion(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  versionId: string,
+  purge: boolean = false,
+  options?: FirstDocumentMutationOptions,
+): Observable<SingleActionResult> {
+  const discardVersionAction: DiscardVersionAction = {
+    actionType: 'sanity.action.document.version.discard',
+    versionId,
+    purge,
+  }
+
+  return _action(client, httpRequest, discardVersionAction, options)
+}
+
+/** @internal */
+export function _replaceVersion<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  options?: FirstDocumentMutationOptions,
+): Observable<SingleActionResult> {
+  const replaceVersionAction: ReplaceVersionAction = {
+    actionType: 'sanity.action.document.version.replace',
+    document: doc,
+  }
+
+  return _action(client, httpRequest, replaceVersionAction, options)
+}
+
+/** @internal */
+export function _unpublishVersion(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  versionId: string,
+  publishedId: string,
+  options?: FirstDocumentMutationOptions,
+): Observable<SingleActionResult> {
+  const unpublishVersionAction: UnpublishVersionAction = {
+    actionType: 'sanity.action.document.version.unpublish',
+    versionId,
+    publishedId,
+  }
+
+  return _action(client, httpRequest, unpublishVersionAction, options)
 }
 
 /** @internal */
