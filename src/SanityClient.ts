@@ -472,7 +472,7 @@ export class ObservableSanityClient {
     document: IdentifiedSanityDocumentStub<R>,
     publishedId: string,
     options?: BaseActionOptions,
-  ): Observable<SingleActionResult | MultipleActionResult> {
+  ): Observable<SingleActionResult> {
     return dataMethods._createVersion<R>(this, this.#httpRequest, document, publishedId, options)
   }
 

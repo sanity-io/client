@@ -212,7 +212,7 @@ export function _createVersion<R extends Record<string, Any>>(
   doc: IdentifiedSanityDocumentStub<R>,
   publishedId: string,
   options?: FirstDocumentMutationOptions,
-): Observable<SingleActionResult | MultipleActionResult> {
+): Observable<SingleActionResult> {
   validators.requireDocumentId('createVersion', doc)
   validators.requireDocumentType('createVersion', doc)
 
