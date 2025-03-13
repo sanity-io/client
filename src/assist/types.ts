@@ -38,7 +38,10 @@ export interface DocumentInstructionParam {
   documentId?: string
 }
 
-/** @beta */
+/**
+ * Includes a LLM-friendly version of GROQ query result in the instruction
+ * @beta
+ * */
 export interface GroqInstructionParam {
   type: 'groq'
   query: string
