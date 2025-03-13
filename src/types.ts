@@ -553,15 +553,7 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {patch: PatchMutationOperation}
 
 /** @public */
-export type Action =
-  | CreateAction
-  | CreateVersionAction
-  | ReplaceDraftAction
-  | EditAction
-  | DeleteAction
-  | DiscardAction
-  | PublishAction
-  | UnpublishAction
+export type ReleaseAction =
   | CreateReleaseAction
   | EditReleaseAction
   | PublishReleaseAction
@@ -570,6 +562,25 @@ export type Action =
   | ScheduleReleaseAction
   | UnscheduleReleaseAction
   | DeleteReleaseAction
+
+/** @public */
+export type VersionAction =
+  | CreateVersionAction
+  | DiscardVersionAction
+  | ReplaceVersionAction
+  | UnpublishVersionAction
+
+/** @public */
+export type Action =
+  | CreateAction
+  | ReplaceDraftAction
+  | EditAction
+  | DeleteAction
+  | DiscardAction
+  | PublishAction
+  | UnpublishAction
+  | VersionAction
+  | ReleaseAction
 
 /**
  * Creates a new release under the given id, with metadata.
@@ -590,7 +601,7 @@ export interface CreateReleaseAction {
 export interface EditReleaseAction {
   actionType: 'sanity.action.release.edit'
   releaseId: string
-  patch: PatchMutationOperation
+  patch: PatchOperations
 }
 
 /**
@@ -664,6 +675,39 @@ export interface CreateVersionAction {
   actionType: 'sanity.action.document.version.create'
   publishedId: string
   document: IdentifiedSanityDocumentStub
+}
+
+/**
+ * Delete a version of a document.
+ *
+ * @public
+ */
+export interface DiscardVersionAction {
+  actionType: 'sanity.action.document.version.discard'
+  versionId: string
+  purge?: boolean
+}
+
+/**
+ * Replace an existing version of a document.
+ *
+ * @public
+ */
+export interface ReplaceVersionAction {
+  actionType: 'sanity.action.document.version.replace'
+  document: IdentifiedSanityDocumentStub
+}
+
+/**
+ * Identify that a version of a document should be unpublished when
+ * the release that version is contained within is published.
+ *
+ * @public
+ */
+export interface UnpublishVersionAction {
+  actionType: 'sanity.action.document.version.unpublish'
+  versionId: string
+  publishedId: string
 }
 
 /**
@@ -1376,7 +1420,6 @@ export interface ReleaseDocument extends SanityDocument {
     description?: string
 
     intendedPublishAt?: string
-    // todo: the below properties should probably live at the system document
     releaseType: ReleaseType
   }
 }
