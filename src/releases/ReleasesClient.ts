@@ -10,7 +10,7 @@ import type {
   EditableReleaseDocument,
   EditReleaseAction,
   HttpRequest,
-  PatchMutationOperation,
+  PatchOperations,
   PublishReleaseAction,
   ScheduleReleaseAction,
   SingleActionResult,
@@ -55,7 +55,7 @@ export class ObservableReleasesClient {
    */
   edit(
     releaseId: string,
-    patch: PatchMutationOperation,
+    patch: PatchOperations,
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const editAction: EditReleaseAction = {
@@ -211,7 +211,7 @@ export class ReleasesClient {
    */
   edit(
     releaseId: string,
-    patch: PatchMutationOperation,
+    patch: PatchOperations,
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const editAction: EditReleaseAction = {
