@@ -8,10 +8,34 @@ export interface ConstantInstructionParam {
   value: string
 }
 
-/** @beta */
+/**
+ *
+ * Includes a LLM-friendly version of the field value in the instruction
+ * @beta
+ * */
 export interface FieldInstructionParam {
   type: 'field'
+  /**
+   * Examples: 'title', 'array[_key=="key"].field
+   */
   path: string
+  /**
+   * If omitted, implicitly uses the documentId of the instruction target
+   */
+  documentId?: string
+}
+
+/**
+ *
+ * Includes a LLM-friendly version of the document in the instruction
+ * @beta
+ * */
+export interface DocumentInstructionParam {
+  type: 'document'
+  /**
+   * If omitted, implicitly uses the documentId of the instruction target
+   */
+  documentId?: string
 }
 
 /** @beta */
@@ -26,6 +50,7 @@ export type InstructionParam =
   | string
   | ConstantInstructionParam
   | FieldInstructionParam
+  | DocumentInstructionParam
   | GroqInstructionParam
 
 /** @beta */

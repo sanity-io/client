@@ -3427,6 +3427,10 @@ describe('client', async () => {
             query: '*[id=$id].title',
             params: {id: 'abc'},
           },
+          d: {
+            type: 'document',
+            documentId: 'somewhere',
+          },
         },
         path: 'body',
         skipWrite: true,
