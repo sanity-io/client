@@ -28,6 +28,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
+    "erasableSyntaxOnly": true,
 
     // Module resolution
     "allowSyntheticDefaultImports": true,
