@@ -130,13 +130,13 @@
     "@rollup/plugin-commonjs": "^28.0.2",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@sanity/client-latest": "npm:@sanity/client@latest",
-    "@sanity/pkg-utils": "^7.0.4",
+    "@sanity/pkg-utils": "^7.1.0",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.9.0",
     "@typescript-eslint/eslint-plugin": "^8.24.0",
     "@typescript-eslint/parser": "^8.24.0",
     "@vercel/stega": "0.1.2",
-    "@vitest/coverage-v8": "3.0.5",
+    "@vitest/coverage-v8": "^3.0.9",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-formatter-compact": "^8.40.0",
@@ -144,7 +144,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "faucet": "^0.0.4",
     "globals": "^15.14.0",
-    "happy-dom": "^12.10.3",
+    "happy-dom": "^17.4.4",
     "json-diff": "^1.0.6",
     "ls-engines": "^0.9.3",
     "msw": "^2.7.0",
@@ -157,7 +157,7 @@
     "sse-channel": "^4.0.0",
     "terser": "^5.38.2",
     "typescript": "5.7.3",
-    "vitest": "3.0.5"
+    "vitest": "^3.0.9"
   },
   "packageManager": "npm@11.0.0",
   "engines": {
