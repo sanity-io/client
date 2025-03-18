@@ -1,3 +1,4 @@
+import {getDraftId, getVersionId} from '@sanity/client/csm'
 import {lastValueFrom, Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
@@ -458,22 +459,38 @@ export class ObservableSanityClient {
   }
 
   /**
-   * Create a new version of a published document. Requires a `_type` and `_id` property.
-   * Returns an observable that resolves to the `transactionId`.
+   * Creates a new version of a published document.
+   * Requires a `_type` property in the document.
+   * Overrides the `_id` property in the document.
    *
-   * @param document - Document to create (must include the version `_id` and `_type`).
+   * @returns an observable that resolves to the `transactionId`.
    *
-   *  Note: `document._id` must have either `drafts.` or `versions.<release>.` as a prefix
-   * and the portion following that prefix must be equal to `publishedId`.
-   * @param publishedId
-   * @param options - Action options
+   * @param params - Object containing:
+   * - `document`: The document to create as a new version (must include `_type`).
+   * >- if defined `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   * - `publishedId`: The ID of the published document being versioned.
+   * @param options - Additional action options.
    */
   createVersion<R extends Record<string, Any> = Record<string, Any>>(
-    document: IdentifiedSanityDocumentStub<R>,
-    publishedId: string,
+    {
+      document,
+      publishedId,
+      releaseId,
+    }: {document: IdentifiedSanityDocumentStub<R>; publishedId: string; releaseId?: string},
     options?: BaseActionOptions,
-  ): Observable<SingleActionResult> {
-    return dataMethods._createVersion<R>(this, this.#httpRequest, document, publishedId, options)
+  ): Observable<SingleActionResult | MultipleActionResult> {
+    const documentVersionId = releaseId
+      ? getVersionId(publishedId, releaseId)
+      : getDraftId(publishedId)
+    const documentVersion = {...document, _id: documentVersionId}
+
+    return dataMethods._createVersion<R>(
+      this,
+      this.#httpRequest,
+      documentVersion,
+      publishedId,
+      options,
+    )
   }
 
   /**
@@ -592,6 +609,84 @@ export class ObservableSanityClient {
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     return dataMethods._delete<R>(this, this.#httpRequest, selection, options)
+  }
+
+  /**
+   * used to delete the draft or release version of a document.
+   * It is an error if it does not exist.
+   * If the `purge`flag is set, the document history is also deleted.
+   *
+   * @returns an observable that resolves to the `transactionId`.
+   *
+   * @param params - Object containing:
+   * - `releaseId`: The ID of the release to discard the document from.
+   * >- if omitted then the `draft.` version of the document will be discarded.
+   * - `publishedId`: The published ID of the document to discard.
+   * @param purge - if `true` the document history is also deleted.
+   * @param options - Additional action options.
+   *
+   */
+  discardVersion(
+    {releaseId, publishedId}: {releaseId?: string; publishedId: string},
+    purge?: boolean,
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult> {
+    const documentVersionId = releaseId
+      ? getVersionId(releaseId, publishedId)
+      : getDraftId(publishedId)
+
+    return dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options)
+  }
+
+  /**
+   * Replaces an existing version document. At least one of the version or published documents must exist.
+   * @returns an observable that resolves to the `transactionId`.
+   *
+   * @param params - Object containing:
+   * - `document`: The document to replace the version with.
+   * >- `_type` is required.
+   * >- `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   * - `releaseId`: The ID of the release to replace the document in.
+   * >- if omitted then the `draft.` version of the document will be replaced.
+   * - `publishedId`: The published ID of the document to replace.
+   * @param options - Additional action options.
+   *
+   */
+  replaceVersion<R extends Record<string, Any> = Record<string, Any>>(
+    {
+      document,
+      releaseId,
+      publishedId,
+    }: {document: IdentifiedSanityDocumentStub<R>; releaseId?: string; publishedId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult> {
+    const documentVersionId = releaseId
+      ? getVersionId(releaseId, publishedId)
+      : getDraftId(publishedId)
+    const documentVersion = {...document, _id: documentVersionId}
+
+    return dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options)
+  }
+
+  /**
+   * Used to indicate when a document within a release should be unpublished when
+   * the release is published.
+   * Note that `publishedId` must currently exist.
+   *
+   * @returns an observable that resolves to the `transactionId`.
+   *
+   * @param param: Object containing:
+   * - `releaseId`: The ID of the release to unpublish the document from.
+   * - `publishedId`: The published ID of the document to unpublish.
+   * @param options - Additional action options.
+   */
+  unpublishVersion(
+    {releaseId, publishedId}: {releaseId: string; publishedId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult> {
+    const versionId = getVersionId(releaseId, publishedId)
+
+    return dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options)
   }
 
   /**
@@ -1172,23 +1267,33 @@ export class SanityClient {
   }
 
   /**
-   * Create a new version of a published document. Requires a `_type` and `_id` property.
-   * Returns a promise that resolves to the `transactionId`.
+   * Creates a new version of a published document.
+   * Requires a `_type` property in the document.
+   * Overrides the `_id` property in the document.
    *
-   * @param document - Document to create (must include the version `_id` and `_type`).
+   * @returns a promise that resolves to the `transactionId`.
    *
-   *  Note: `document._id` must have either `drafts.` or `versions.<release>.` as a prefix
-   * and the portion following that prefix must be equal to `publishedId`.
-   * @param publishedId
-   * @param options - Action options
+   * @param params - Object containing:
+   *  - `document`: The document to create as a new version (must include `_type`).
+   *  >- if defined `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   *  - `publishedId`: The ID of the published document being versioned.
+   * @param options - Additional action options.
    */
   createVersion<R extends Record<string, Any> = Record<string, Any>>(
-    document: IdentifiedSanityDocumentStub<R>,
-    publishedId: string,
+    {
+      document,
+      publishedId,
+      releaseId,
+    }: {document: IdentifiedSanityDocumentStub<R>; publishedId: string; releaseId?: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
+    const documentVersionId = releaseId
+      ? getVersionId(publishedId, releaseId)
+      : getDraftId(publishedId)
+    const documentVersion = {...document, _id: documentVersionId}
+
     return lastValueFrom(
-      dataMethods._createVersion<R>(this, this.#httpRequest, document, publishedId, options),
+      dataMethods._createVersion<R>(this, this.#httpRequest, documentVersion, publishedId, options),
     )
   }
 
@@ -1310,28 +1415,85 @@ export class SanityClient {
     return lastValueFrom(dataMethods._delete<R>(this, this.#httpRequest, selection, options))
   }
 
+  /**
+   * used to delete the draft or release version of a document.
+   * It is an error if it does not exist.
+   * If the `purge`flag is set, the document history is also deleted.
+   *
+   * @returns a promise that resolves to the `transactionId`.
+   *
+   * @param params - Object containing:
+   * - `releaseId`: The ID of the release to discard the document from.
+   * >- if omitted then the `draft.` version of the document will be discarded.
+   * - `publishedId`: The published ID of the document to discard.
+   * @param purge - if `true` the document history is also deleted.
+   * @param options - Additional action options.
+   *
+   */
   discardVersion(
-    versionId: string,
+    {releaseId, publishedId}: {releaseId?: string; publishedId: string},
     purge?: boolean,
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
+    const documentVersionId = releaseId
+      ? getVersionId(releaseId, publishedId)
+      : getDraftId(publishedId)
+
     return lastValueFrom(
-      dataMethods._discardVersion(this, this.#httpRequest, versionId, purge, options),
+      dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options),
     )
   }
 
+  /**
+   * Replaces an existing version document. At least one of the version or published documents must exist.
+   * @returns a promise that resolves to the `transactionId`.
+   *
+   * @param params - Object containing:
+   * - `document`: The document to replace the version with.
+   * >- `_type` is required.
+   * >- `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   * - `releaseId`: The ID of the release to replace the document in.
+   * >- if omitted then the `draft.` version of the document will be replaced.
+   * - `publishedId`: The published ID of the document to replace.
+   * @param options - Additional action options.
+   *
+   */
   replaceVersion<R extends Record<string, Any> = Record<string, Any>>(
-    document: IdentifiedSanityDocumentStub<R>,
+    {
+      document,
+      releaseId,
+      publishedId,
+    }: {document: IdentifiedSanityDocumentStub<R>; releaseId?: string; publishedId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    return lastValueFrom(dataMethods._replaceVersion<R>(this, this.#httpRequest, document, options))
+    const documentVersionId = releaseId
+      ? getVersionId(releaseId, publishedId)
+      : getDraftId(publishedId)
+    const documentVersion = {...document, _id: documentVersionId}
+
+    return lastValueFrom(
+      dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options),
+    )
   }
 
+  /**
+   * Used to indicate when a document within a release should be unpublished when
+   * the release is published.
+   * Note that `publishedId` must currently exist.
+   *
+   * @returns a promise that resolves to the `transactionId`.
+   *
+   * @param params - Object containing:
+   * - `releaseId`: The ID of the release to unpublish the document from.
+   * - `publishedId`: The published ID of the document to unpublish.
+   * @param options - Additional action options.
+   */
   unpublishVersion(
-    versionId: string,
-    publishedId: string,
+    {releaseId, publishedId}: {releaseId: string; publishedId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
+    const versionId = getVersionId(releaseId, publishedId)
+
     return lastValueFrom(
       dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options),
     )
