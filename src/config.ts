@@ -28,30 +28,15 @@ function validateApiVersion(apiVersion: string) {
   }
 }
 
-const VALID_PERSPECTIVE = /^[a-z0-9_]+$/i
-
 /**
  * @internal - it may have breaking changes in any release
  */
 export function validateApiPerspective(
   perspective: unknown,
 ): asserts perspective is ClientPerspective {
-  if (Array.isArray(perspective)) {
-    if (perspective.includes('raw')) {
-      throw new TypeError(
-        `Invalid API perspective value: "raw". The raw-perspective can not be combined with other perspectives`,
-      )
-    }
-  }
-
-  const invalid = (Array.isArray(perspective) ? perspective : [perspective]).filter(
-    (perspectiveName) =>
-      typeof perspectiveName !== 'string' || !VALID_PERSPECTIVE.test(perspectiveName),
-  )
-  if (invalid.length > 0) {
-    const formatted = invalid.map((v) => JSON.stringify(v))
+  if (Array.isArray(perspective) && perspective.length > 1 && perspective.includes('raw')) {
     throw new TypeError(
-      `Invalid API perspective value${invalid.length === 1 ? '' : 's'}: ${formatted.join(', ')}, expected \`published\`, \`drafts\`, \`raw\` or a release identifier string`,
+      `Invalid API perspective value: "raw". The raw-perspective can not be combined with other perspectives`,
     )
   }
 }
