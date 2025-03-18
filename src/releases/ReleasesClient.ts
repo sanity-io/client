@@ -12,6 +12,7 @@ import type {
   HttpRequest,
   PatchOperations,
   PublishReleaseAction,
+  ReleaseDocument,
   ScheduleReleaseAction,
   SingleActionResult,
   UnarchiveReleaseAction,
@@ -186,12 +187,13 @@ export class ReleasesClient {
   /**
    * Creates a new release under the given id, with metadata.
    *
-   * @param releaseId - The id of the release to create (with no prefix)
-   * @param metadata - The metadata to associate with the release {@link EditableReleaseDocument}
+   * @param releaseId - The id of the release to create
+   * @param metadata - The metadata to associate with the release {@link ReleaseDocument}.
+   * Must include a `title` and `releaseType`
    */
   create(
     releaseId: string,
-    metadata: EditableReleaseDocument['metadata'],
+    metadata: ReleaseDocument['metadata'],
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const createAction: CreateReleaseAction = {
@@ -206,7 +208,7 @@ export class ReleasesClient {
   /**
    * Edits an existing release, updating the metadata.
    *
-   * @param releaseId - The id of the release to edit (with no prefix)
+   * @param releaseId - The id of the release to edit
    * @param patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}
    */
   edit(
@@ -232,7 +234,7 @@ export class ReleasesClient {
    * During this period both the source and target documents are locked and cannot be
    * modified through any other means.
    *
-   * @param releaseId - The id of the release to publish (with no prefix)
+   * @param releaseId - The id of the release to publish
    */
   publish(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
     const publishAction: PublishReleaseAction = {
@@ -249,7 +251,7 @@ export class ReleasesClient {
    *
    * While the documents remain in retention the last version can still be accessed using document history endpoint.
    *
-   * @param releaseId - The id of the release to archive (with no prefix)
+   * @param releaseId - The id of the release to archive
    */
   archive(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
     const archiveAction: ArchiveReleaseAction = {
@@ -264,7 +266,7 @@ export class ReleasesClient {
    * An unarchive action is used to restore an archived release and all documents
    * with the content they had just prior to archiving.
    *
-   * @param releaseId - The id of the release to unarchive (with no prefix)
+   * @param releaseId - The id of the release to unarchive
    */
   unarchive(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
     const unarchiveAction: UnarchiveReleaseAction = {
@@ -281,7 +283,7 @@ export class ReleasesClient {
    * no documents that it references can be deleted as this would make the publish fail.
    * At the given time, the same logic as for the publish action is triggered.
    *
-   * @param releaseId - The id of the release to schedle (with no prefix)
+   * @param releaseId - The id of the release to schedule
    */
   schedule(
     releaseId: string,
@@ -303,7 +305,7 @@ export class ReleasesClient {
    * This may fail if another release is scheduled to be published after this one and
    * has a reference to a document created by this one.
    *
-   * @param releaseId - The id of the release to unschedule (with no prefix)
+   * @param releaseId - The id of the release to unschedule
    */
   unschedule(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
     const unscheduleAction: UnscheduleReleaseAction = {
@@ -318,7 +320,7 @@ export class ReleasesClient {
    * A delete action is used to delete a published or archived release.
    * The backing system document will be removed from the dataset.
    *
-   * @param releaseId - The id of the release to delete (with no prefix)
+   * @param releaseId - The id of the release to delete
    */
   delete(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
     const deleteAction: DeleteReleaseAction = {
