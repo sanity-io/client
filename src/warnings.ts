@@ -33,6 +33,11 @@ export const printBrowserTokenWarning = createWarningPrinter([
   )} for more information and how to hide this warning.`,
 ])
 
+export const printCredentialedTokenWarning = createWarningPrinter([
+  'You have configured Sanity client to use a token, but also provided `withCredentials: true`.',
+  'This is no longer supported - only token will be used - remove `withCredentials: true`.',
+])
+
 export const printNoApiVersionSpecifiedWarning = createWarningPrinter([
   'Using the Sanity client without specifying an API version is deprecated.',
   `See ${generateHelpUrl('js-client-api-version')}`,
