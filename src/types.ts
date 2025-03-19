@@ -1416,7 +1416,7 @@ export interface ReleaseDocument extends SanityDocument {
    */
   publishedAt?: string
   metadata: {
-    title: string
+    title?: string
     description?: string
     intendedPublishAt?: string
     releaseType: ReleaseType
