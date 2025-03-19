@@ -632,18 +632,22 @@ export class ObservableSanityClient {
   }
 
   /**
-   * Replaces an existing version document. At least one of the version or published documents must exist.
+   * Replaces an existing version document.
+   *
+   * At least one of the **version** or **published** documents must exist.
+   * If the `releaseId` is provided, the version will be stored under the corresponding release.
+   * Otherwise, the **draft version** of the document will be replaced.
+   *
    * @returns an observable that resolves to the `transactionId`.
    *
-   * @param params - Object containing:
-   * - `document`: The document to replace the version with.
-   * >- `_type` is required.
-   * >- `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
-   * - `releaseId`: The ID of the release to replace the document in.
-   * >- if omitted then the `draft.` version of the document will be replaced.
-   * - `publishedId`: The published ID of the document to replace.
-   * @param options - Additional action options.
-   *
+   * @param params - Object containing the parameters for placement action.
+   * @param params.document - The document to replace the version with.
+   * - `_type` is required.
+   * - `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   * @param params.releaseId - *(Optional)* The ID of the release where the document version is replaced.
+   * If omitted, the **draft version** will be replaced.
+   * @param params.publishedId - The ID of the published document to replace.
+   * @param options - *(Optional)* Additional action options.
    */
   replaceVersion<R extends Record<string, Any> = Record<string, Any>>(
     {
@@ -668,9 +672,10 @@ export class ObservableSanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   * @param param: Object containing:
-   * - `releaseId`: The ID of the release to unpublish the document from.
-   * - `publishedId`: The published ID of the document to unpublish.
+   *
+   * @param params - Object containing:
+   * @param params.releaseId - The ID of the release to unpublish the document from.
+   * @param params.publishedId - The published ID of the document to unpublish.
    * @param options - Additional action options.
    */
   unpublishVersion(
