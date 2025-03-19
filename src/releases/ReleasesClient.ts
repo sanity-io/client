@@ -7,7 +7,6 @@ import type {
   BaseActionOptions,
   CreateReleaseAction,
   DeleteReleaseAction,
-  EditableReleaseDocument,
   EditReleaseAction,
   HttpRequest,
   PatchOperations,
@@ -32,11 +31,11 @@ export class ObservableReleasesClient {
    * Creates a new release under the given id, with metadata.
    *
    * @param releaseId - The id of the release to create (with no prefix)
-   * @param metadata - The metadata to associate with the release {@link EditableReleaseDocument}
+   * @param metadata - The metadata to associate with the release {@link ReleaseDocument}
+   * Must include a `releaseType` {@link ReleaseType}
    */
   create(
-    releaseId: string,
-    metadata: EditableReleaseDocument['metadata'],
+    {releaseId, metadata}: {releaseId: string; metadata: ReleaseDocument['metadata']},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const createAction: CreateReleaseAction = {
@@ -55,8 +54,7 @@ export class ObservableReleasesClient {
    * @param patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}
    */
   edit(
-    releaseId: string,
-    patch: PatchOperations,
+    {releaseId, patch}: {releaseId: string; patch: PatchOperations},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const editAction: EditReleaseAction = {
@@ -79,7 +77,10 @@ export class ObservableReleasesClient {
    *
    * @param releaseId - The id of the release to publish (with no prefix)
    */
-  publish(releaseId: string, options?: BaseActionOptions): Observable<SingleActionResult> {
+  publish(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult> {
     const publishAction: PublishReleaseAction = {
       actionType: 'sanity.action.release.publish',
       releaseId,
@@ -96,7 +97,10 @@ export class ObservableReleasesClient {
    *
    * @param releaseId - The id of the release to archive (with no prefix)
    */
-  archive(releaseId: string, options?: BaseActionOptions): Observable<SingleActionResult> {
+  archive(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult> {
     const archiveAction: ArchiveReleaseAction = {
       actionType: 'sanity.action.release.archive',
       releaseId,
@@ -111,7 +115,10 @@ export class ObservableReleasesClient {
    *
    * @param releaseId - The id of the release to unarchive (with no prefix)
    */
-  unarchive(releaseId: string, options?: BaseActionOptions): Observable<SingleActionResult> {
+  unarchive(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult> {
     const unarchiveAction: UnarchiveReleaseAction = {
       actionType: 'sanity.action.release.unarchive',
       releaseId,
@@ -129,8 +136,7 @@ export class ObservableReleasesClient {
    * @param releaseId - The id of the release to schedule (with no prefix)
    */
   schedule(
-    releaseId: string,
-    publishAt: string,
+    {releaseId, publishAt}: {releaseId: string; publishAt: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const scheduleAction: ScheduleReleaseAction = {
@@ -150,7 +156,10 @@ export class ObservableReleasesClient {
    *
    * @param releaseId - The id of the release to unschedule (with no prefix)
    */
-  unschedule(releaseId: string, options?: BaseActionOptions): Observable<SingleActionResult> {
+  unschedule(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult> {
     const unscheduleAction: UnscheduleReleaseAction = {
       actionType: 'sanity.action.release.unschedule',
       releaseId,
@@ -165,7 +174,10 @@ export class ObservableReleasesClient {
    *
    * @param releaseId - The id of the release to delete (with no prefix)
    */
-  delete(releaseId: string, options?: BaseActionOptions): Observable<SingleActionResult> {
+  delete(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult> {
     const deleteAction: DeleteReleaseAction = {
       actionType: 'sanity.action.release.delete',
       releaseId,
@@ -189,11 +201,10 @@ export class ReleasesClient {
    *
    * @param releaseId - The id of the release to create
    * @param metadata - The metadata to associate with the release {@link ReleaseDocument}.
-   * Must include a `title` and `releaseType`
+   * Must include a `releaseType` {@link ReleaseType}
    */
   create(
-    releaseId: string,
-    metadata: ReleaseDocument['metadata'],
+    {releaseId, metadata}: {releaseId: string; metadata: ReleaseDocument['metadata']},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const createAction: CreateReleaseAction = {
@@ -212,8 +223,7 @@ export class ReleasesClient {
    * @param patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}
    */
   edit(
-    releaseId: string,
-    patch: PatchOperations,
+    {releaseId, patch}: {releaseId: string; patch: PatchOperations},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const editAction: EditReleaseAction = {
@@ -236,7 +246,10 @@ export class ReleasesClient {
    *
    * @param releaseId - The id of the release to publish
    */
-  publish(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
+  publish(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult> {
     const publishAction: PublishReleaseAction = {
       actionType: 'sanity.action.release.publish',
       releaseId,
@@ -253,7 +266,10 @@ export class ReleasesClient {
    *
    * @param releaseId - The id of the release to archive
    */
-  archive(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
+  archive(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult> {
     const archiveAction: ArchiveReleaseAction = {
       actionType: 'sanity.action.release.archive',
       releaseId,
@@ -268,7 +284,10 @@ export class ReleasesClient {
    *
    * @param releaseId - The id of the release to unarchive
    */
-  unarchive(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
+  unarchive(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult> {
     const unarchiveAction: UnarchiveReleaseAction = {
       actionType: 'sanity.action.release.unarchive',
       releaseId,
@@ -286,8 +305,7 @@ export class ReleasesClient {
    * @param releaseId - The id of the release to schedule
    */
   schedule(
-    releaseId: string,
-    publishAt: string,
+    {releaseId, publishAt}: {releaseId: string; publishAt: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const scheduleAction: ScheduleReleaseAction = {
@@ -307,7 +325,10 @@ export class ReleasesClient {
    *
    * @param releaseId - The id of the release to unschedule
    */
-  unschedule(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
+  unschedule(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult> {
     const unscheduleAction: UnscheduleReleaseAction = {
       actionType: 'sanity.action.release.unschedule',
       releaseId,
@@ -320,9 +341,13 @@ export class ReleasesClient {
    * A delete action is used to delete a published or archived release.
    * The backing system document will be removed from the dataset.
    *
-   * @param releaseId - The id of the release to delete
+   * @param params - Object containing:
+   * - `releaseId` - The id of the release to delete
    */
-  delete(releaseId: string, options?: BaseActionOptions): Promise<SingleActionResult> {
+  delete(
+    {releaseId}: {releaseId: string},
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult> {
     const deleteAction: DeleteReleaseAction = {
       actionType: 'sanity.action.release.delete',
       releaseId,
