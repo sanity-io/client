@@ -119,11 +119,9 @@ export interface ClientConfig {
   /**
    * @deprecated Don't use
    */
-  experimental_resource?: {
-    id: string
-    type: string
-    scope?: 'project'
-  }
+  experimental_resource?:
+    | {type: 'projects'; id: string; dataset: string}
+    | {type: string; id: string}
 }
 
 /** @public */
