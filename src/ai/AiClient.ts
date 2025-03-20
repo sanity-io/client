@@ -4,17 +4,17 @@ import {_request} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
-  AssistAsyncInstruction,
-  AssistInstruction,
-  AssistSyncInstruction,
   HttpRequest,
   IdentifiedSanityDocumentStub,
+  InstructAsyncInstruction,
+  InstructInstruction,
+  InstructSyncInstruction,
 } from '../types'
 import {hasDataset} from '../validators'
 
 function _instruct<
   DocumentShape extends Record<string, Any>,
-  Req extends AssistInstruction<DocumentShape>,
+  Req extends InstructInstruction<DocumentShape>,
 >(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
@@ -31,7 +31,7 @@ function _instruct<
 }
 
 /** @public */
-export class ObservableAssistClient {
+export class ObservableAiClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
@@ -39,17 +39,20 @@ export class ObservableAssistClient {
     this.#httpRequest = httpRequest
   }
 
-  instruct(request: AssistAsyncInstruction): Observable<{_id: string}>
+  instruct(request: InstructAsyncInstruction): Observable<{_id: string}>
 
   instruct<DocumentShape extends Record<string, Any>>(
-    request: AssistSyncInstruction<DocumentShape>,
+    request: InstructSyncInstruction<DocumentShape>,
   ): Observable<IdentifiedSanityDocumentStub & DocumentShape>
 
   /**
    * Run an ad-hoc instruction for a target document.
    * @param request instruction request
    */
-  instruct<DocumentShape extends Record<string, Any>, Req extends AssistInstruction<DocumentShape>>(
+  instruct<
+    DocumentShape extends Record<string, Any>,
+    Req extends InstructInstruction<DocumentShape>,
+  >(
     request: Req,
   ): Observable<
     Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape
@@ -59,7 +62,7 @@ export class ObservableAssistClient {
 }
 
 /** @public */
-export class AssistClient {
+export class AiClient {
   #client: SanityClient
   #httpRequest: HttpRequest
   constructor(client: SanityClient, httpRequest: HttpRequest) {
@@ -67,17 +70,20 @@ export class AssistClient {
     this.#httpRequest = httpRequest
   }
 
-  instruct(request: AssistAsyncInstruction): Promise<{_id: string}>
+  instruct(request: InstructAsyncInstruction): Promise<{_id: string}>
 
   instruct<DocumentShape extends Record<string, Any>>(
-    request: AssistSyncInstruction<DocumentShape>,
+    request: InstructSyncInstruction<DocumentShape>,
   ): Promise<IdentifiedSanityDocumentStub & DocumentShape>
 
   /**
    * Run an ad-hoc instruction for a target document.
    * @param request instruction request
    */
-  instruct<DocumentShape extends Record<string, Any>, Req extends AssistInstruction<DocumentShape>>(
+  instruct<
+    DocumentShape extends Record<string, Any>,
+    Req extends InstructInstruction<DocumentShape>,
+  >(
     request: Req,
   ): Promise<
     Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape

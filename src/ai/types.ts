@@ -3,7 +3,7 @@
 import type {Any, SanityDocumentStub} from '@sanity/client'
 
 /** @beta */
-export interface ConstantInstructionParam {
+export interface InstructConstantInstructionParam {
   type: 'constant'
   value: string
 }
@@ -13,7 +13,7 @@ export interface ConstantInstructionParam {
  * Includes a LLM-friendly version of the field value in the instruction
  * @beta
  * */
-export interface FieldInstructionParam {
+export interface InstructFieldInstructionParam {
   type: 'field'
   /**
    * Examples: 'title', 'array[_key=="key"].field'
@@ -42,30 +42,30 @@ export interface DocumentInstructionParam {
  * Includes a LLM-friendly version of GROQ query result in the instruction
  * @beta
  * */
-export interface GroqInstructionParam {
+export interface InstructGroqInstructionParam {
   type: 'groq'
   query: string
   params?: Record<string, string>
 }
 
 /** @beta */
-export type InstructionParam =
+export type InstructInstructionParam =
   | string
-  | ConstantInstructionParam
-  | FieldInstructionParam
+  | InstructConstantInstructionParam
+  | InstructFieldInstructionParam
   | DocumentInstructionParam
-  | GroqInstructionParam
+  | InstructGroqInstructionParam
 
 /** @beta */
-export type InstructionParams = Record<string, InstructionParam>
+export type InstructInstructionParams = Record<string, InstructInstructionParam>
 
-interface AssistRequestBase {
+interface InstructRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
   /** string template using $variable – more on this below under "Dynamic instruction" */
   instruction: string
   /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
-  instructionParams?: InstructionParams
+  instructionParams?: InstructInstructionParams
   /**
    *  Optional document path output target for the instruction.
    *  When provided, the instruction will apply to this path in the document and its children.
@@ -84,23 +84,23 @@ interface AssistRequestBase {
    * Note: these path strings are less strictly validated than the `path` param itself:
    * if an relative-path does not exist or is invalid, it will be silently ignored.
    *
-   * @see AssistRequestBase#conditionalPaths
-   * @see AssistRequestBase#outputTypes
+   * @see InstructRequestBase#conditionalPaths
+   * @see InstructRequestBase#outputTypes
    */
   relativeOutputPaths?: {include: string[]} | {exclude: string[]}
 
   /**
    * Controls which types the instruction is allowed to output to.
    *
-   * @see AssistRequestBase#relativeOutputPaths
-   * @see AssistRequestBase#conditionalPaths
+   * @see InstructRequestBase#relativeOutputPaths
+   * @see InstructRequestBase#conditionalPaths
    */
   outputTypes?: {include: string[]} | {exclude: string[]}
 
   /**
    * When a type or field in the schema has a function set for `hidden` or `readOnly`, it is conditional.
    *
-   * By default, AI Assist will not output to conditional `readOnly` and `hidden` fields,
+   * By default, AI Instruct will not output to conditional `readOnly` and `hidden` fields,
    * ie, they are considered to resolve to `readOnly: true` / `hidden: true`.
    *
    * `conditionalPaths` param allows setting the default conditional value for
@@ -108,13 +108,13 @@ interface AssistRequestBase {
    * or individually set `hidden` and `readOnly` state for individual document paths.
    *
    *
-   * Note: fields and types with explicit readOnly: true or hidden: true in the schema, are not available to AI Assist,
+   * Note: fields and types with explicit readOnly: true or hidden: true in the schema, are not available to AI Instruct,
    * and cannot be changed via conditionalPaths.
    *
    * conditionalPaths state only apply to fields and types that have conditional `hidden` or `readOnly` in their schema definition.
    *
-   * @see AssistRequestBase#relativeOutputPaths
-   * @see AssistRequestBase#outputTypes
+   * @see InstructRequestBase#relativeOutputPaths
+   * @see InstructRequestBase#outputTypes
    */
   conditionalPaths?: {
     defaultReadOnly?: boolean
@@ -185,22 +185,22 @@ interface CreateDocumentRequest<T extends Record<string, Any> = Record<string, A
 }
 
 /** @beta */
-export type AssistSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
+export type InstructSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | ExistingDocumentRequest
   | CreateDocumentRequest<T>
 ) &
-  AssistRequestBase &
+  InstructRequestBase &
   Sync
 
 /** @beta */
-export type AssistAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
+export type InstructAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | ExistingDocumentRequest
   | CreateDocumentRequest<T>
 ) &
-  AssistRequestBase &
+  InstructRequestBase &
   Async
 
 /** @beta */
-export type AssistInstruction<T extends Record<string, Any> = Record<string, Any>> =
-  | AssistSyncInstruction<T>
-  | AssistAsyncInstruction<T>
+export type InstructInstruction<T extends Record<string, Any> = Record<string, Any>> =
+  | InstructSyncInstruction<T>
+  | InstructAsyncInstruction<T>
