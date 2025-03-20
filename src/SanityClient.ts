@@ -1,5 +1,6 @@
 import {lastValueFrom, Observable} from 'rxjs'
 
+import {AiClient, ObservableAiClient} from './ai/AiClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
@@ -65,7 +66,7 @@ export class ObservableSanityClient {
   live: LiveClient
   projects: ObservableProjectsClient
   users: ObservableUsersClient
-
+  ai: ObservableAiClient
   /**
    * Private properties
    */
@@ -87,6 +88,7 @@ export class ObservableSanityClient {
     this.live = new LiveClient(this)
     this.projects = new ObservableProjectsClient(this, this.#httpRequest)
     this.users = new ObservableUsersClient(this, this.#httpRequest)
+    this.ai = new ObservableAiClient(this, this.#httpRequest)
   }
 
   /**
@@ -733,6 +735,7 @@ export class SanityClient {
   live: LiveClient
   projects: ProjectsClient
   users: UsersClient
+  ai: AiClient
 
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
@@ -760,6 +763,7 @@ export class SanityClient {
     this.live = new LiveClient(this)
     this.projects = new ProjectsClient(this, this.#httpRequest)
     this.users = new UsersClient(this, this.#httpRequest)
+    this.ai = new AiClient(this, this.#httpRequest)
 
     this.observable = new ObservableSanityClient(httpRequest, config)
   }
