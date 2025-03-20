@@ -84,7 +84,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   const listenFor = options.events ? options.events : ['mutation']
 
   const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
-  if (token || withCredentials) {
+  if (withCredentials) {
     esOptions.withCredentials = true
   }
 

@@ -29,6 +29,25 @@ describe('Client config warnings', async () => {
     global.window = restoreWindow
   })
 
+  test('warns if both token and `withCredentials` is set', () => {
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'bar',
+      useCdn: false,
+      token: 'abc123',
+      withCredentials: true,
+      apiVersion: '1',
+    })
+    expect(warn).toHaveBeenCalledWith(
+      'You have configured Sanity client to use a token, but also provided `withCredentials: true`. This is no longer supported - only token will be used - remove `withCredentials: true`.',
+    )
+
+    expect(client.config()).toMatchObject({
+      token: 'abc123',
+      withCredentials: false,
+    })
+  })
+
   test.skipIf(isEdge)('warns if server sends warning back', async () => {
     expect.assertions(1)
 

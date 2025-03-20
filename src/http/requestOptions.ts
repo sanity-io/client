@@ -18,7 +18,7 @@ export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOp
 
   const withCredentials = Boolean(
     typeof overrides.withCredentials === 'undefined'
-      ? config.token || config.withCredentials
+      ? config.withCredentials
       : overrides.withCredentials,
   )
 

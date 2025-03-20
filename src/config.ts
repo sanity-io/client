@@ -107,7 +107,13 @@ export const initConfig = (
   const isBrowser = typeof window !== 'undefined' && window.location && window.location.hostname
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 
-  if (isBrowser && isLocalhost && newConfig.token && newConfig.ignoreBrowserTokenWarning !== true) {
+  const hasToken = Boolean(newConfig.token)
+  if (newConfig.withCredentials && hasToken) {
+    warnings.printCredentialedTokenWarning()
+    newConfig.withCredentials = false
+  }
+
+  if (isBrowser && isLocalhost && hasToken && newConfig.ignoreBrowserTokenWarning !== true) {
     warnings.printBrowserTokenWarning()
   } else if (typeof newConfig.useCdn === 'undefined') {
     warnings.printCdnWarning()
