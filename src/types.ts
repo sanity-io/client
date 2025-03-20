@@ -122,6 +122,7 @@ export interface ClientConfig {
   experimental_resource?: {
     id: string
     type: string
+    scope?: 'project'
   }
 }
 

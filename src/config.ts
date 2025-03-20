@@ -187,10 +187,14 @@ export const initConfig = (
     newConfig.cdnUrl = newConfig.url
   }
 
-  if (experimentalResource) {
+  if (experimentalResource && !experimentalResource.scope) {
     const resourceSuffix = `${experimentalResource.type}/${experimentalResource.id}`
     newConfig.url = `${newConfig.url}/${resourceSuffix}`
     newConfig.cdnUrl = `${newConfig.cdnUrl}/${resourceSuffix}`
+  }
+
+  if (experimentalResource && experimentalResource?.scope === 'project') {
+    newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}/projects/${experimentalResource.id}/datasets/${experimentalResource.type}`
   }
 
   return newConfig
