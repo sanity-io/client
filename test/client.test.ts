@@ -3373,6 +3373,18 @@ describe('client', async () => {
         getClient({experimental_resource: {type: 'resource', id: 'res-id'}}).getUrl('/bar/baz'),
       ).toEqual(`https://${apiHost}/v1/resource/res-id/bar/baz`)
     })
+
+    test('can use getUrl() to get API-relative paths for a dataset resource with project scope', () => {
+      expect(
+        getClient({
+          experimental_resource: {
+            type: 'projects',
+            id: 'project-id',
+            dataset: 'dataset-name',
+          },
+        }).getUrl('/query?query=*'),
+      ).toEqual(`https://${apiHost}/v1/projects/project-id/datasets/dataset-name/query?query=*`)
+    })
   })
 
   describe('getDataUrl', () => {
