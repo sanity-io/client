@@ -7,6 +7,7 @@ import type {
   Any,
   HttpRequest,
   HttpRequestEvent,
+  InitializedClientConfig,
   ResponseEvent,
   SanityAssetDocument,
   SanityImageAssetDocument,
@@ -149,8 +150,7 @@ function _upload(
     meta = ['none']
   }
 
-  const dataset = validators.hasDataset(client.config())
-  const assetEndpoint = assetType === 'image' ? 'images' : 'files'
+  const config = client.config()
   const options = optionsFromFile(opts, body)
   const {tag, label, title, description, creditLine, filename, source} = options
   const query: Any = {
@@ -166,15 +166,46 @@ function _upload(
     query.sourceName = source.name
     query.sourceUrl = source.url
   }
+
   return _requestObservable(client, httpRequest, {
     tag,
     method: 'POST',
     timeout: options.timeout || 0,
-    uri: `/assets/${assetEndpoint}/${dataset}`,
+    uri: buildAssetUploadUrl(config, assetType),
     headers: options.contentType ? {'Content-Type': options.contentType} : {},
     query,
     body,
   })
+}
+
+function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image' | 'file'): string {
+  const assetTypeEndpoint = assetType === 'image' ? 'images' : 'files'
+
+  if (config['~experimental_resource']) {
+    const {type, id} = config['~experimental_resource']
+    switch (type) {
+      case 'dataset': {
+        throw new Error(
+          'Assets are not supported for dataset resources, yet. Configure the client with `{projectId: <projectId>, dataset: <datasetId>}` instead.',
+        )
+      }
+      case 'canvas': {
+        return `/canvases/${id}/assets/${assetTypeEndpoint}`
+      }
+      case 'media-library': {
+        return `/media-libraries/${id}/upload`
+      }
+      case 'dashboard': {
+        return `/dashboards/${id}/assets/${assetTypeEndpoint}`
+      }
+      default:
+        // @ts-expect-error - handle all supported resource types
+        throw new Error(`Unsupported resource type: ${type.toString()}`)
+    }
+  }
+
+  const dataset = validators.hasDataset(config)
+  return `assets/${assetTypeEndpoint}/${dataset}`
 }
 
 function optionsFromFile(opts: Record<string, Any>, file: Any) {

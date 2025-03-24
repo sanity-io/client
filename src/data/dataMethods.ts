@@ -17,6 +17,7 @@ import type {
   HttpRequest,
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,
+  InitializedClientConfig,
   InitializedStegaConfig,
   MultipleActionResult,
   MultipleMutationResult,
@@ -367,6 +368,27 @@ export function _create<R extends Record<string, Any>>(
   return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
+const hasDataConfig = (client: SanityClient | ObservableSanityClient) =>
+  (client.config().dataset !== undefined && client.config().projectId !== undefined) ||
+  client.config()['~experimental_resource'] !== undefined
+const isQuery = (client: SanityClient | ObservableSanityClient, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'query'))
+const isMutate = (client: SanityClient | ObservableSanityClient, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'mutate'))
+const isDoc = (client: SanityClient | ObservableSanityClient, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'doc', ''))
+const isListener = (client: SanityClient | ObservableSanityClient, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'listen'))
+const isHistory = (client: SanityClient | ObservableSanityClient, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'history', ''))
+const isData = (client: SanityClient | ObservableSanityClient, uri: string) =>
+  uri.startsWith('/data/') ||
+  isQuery(client, uri) ||
+  isMutate(client, uri) ||
+  isDoc(client, uri) ||
+  isListener(client, uri) ||
+  isHistory(client, uri)
+
 /**
  * @internal
  */
@@ -382,7 +404,7 @@ export function _requestObservable<R>(
   // Only the /data endpoint is currently available through API-CDN.
   const canUseCdn =
     typeof options.canUseCdn === 'undefined'
-      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && uri.indexOf('/data/') === 0
+      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && isData(client, uri)
       : options.canUseCdn
 
   let useCdn = (options.useCdn ?? config.useCdn) && canUseCdn
@@ -397,10 +419,7 @@ export function _requestObservable<R>(
   }
 
   // GROQ query-only parameters
-  if (
-    ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
-    uri.indexOf('/data/query/') === 0
-  ) {
+  if (['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 && isQuery(client, uri)) {
     const resultSourceMap = options.resultSourceMap ?? config.resultSourceMap
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
       options.query = {resultSourceMap, ...options.query}
@@ -482,9 +501,15 @@ export function _getDataUrl(
   path?: string,
 ): string {
   const config = client.config()
+  if (config['~experimental_resource']) {
+    validators.resourceConfig(config)
+    const resourceBase = resourceDataBase(config)
+    const uri = path !== undefined ? `${operation}/${path}` : operation
+    return `${resourceBase}/${uri}`.replace(/\/($|\?)/, '$1')
+  }
   const catalog = validators.hasDataset(config)
   const baseUri = `/${operation}/${catalog}`
-  const uri = path ? `${baseUri}/${path}` : baseUri
+  const uri = path !== undefined ? `${baseUri}/${path}` : baseUri
   return `/data${uri}`.replace(/\/($|\?)/, '$1')
 }
 
@@ -546,4 +571,33 @@ function _createAbortError(signal?: AbortSignal) {
   error.name = 'AbortError'
 
   return error
+}
+
+const resourceDataBase = (config: InitializedClientConfig): string => {
+  if (!config['~experimental_resource']) {
+    throw new Error('`resource` must be provided to perform resource queries')
+  }
+  const {type, id} = config['~experimental_resource']
+
+  switch (type) {
+    case 'dataset': {
+      const segments = id.split('.')
+      if (segments.length !== 2) {
+        throw new Error('Dataset ID must be in the format "project.dataset"')
+      }
+      return `/projects/${segments[0]}/datasets/${segments[1]}`
+    }
+    case 'canvas': {
+      return `/canvases/${id}`
+    }
+    case 'media-library': {
+      return `/media-libraries/${id}`
+    }
+    case 'dashboard': {
+      return `/dashboards/${id}`
+    }
+    default:
+      // @ts-expect-error - handle all supported resource types
+      throw new Error(`Unsupported resource type: ${type.toString()}`)
+  }
 }

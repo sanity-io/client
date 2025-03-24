@@ -76,3 +76,34 @@ export const requestTag = (tag: string) => {
 
   return tag
 }
+
+export const resourceConfig = (config: InitializedClientConfig): void => {
+  if (!config['~experimental_resource']) {
+    throw new Error('`resource` must be provided to perform resource queries')
+  }
+  const {type, id} = config['~experimental_resource']
+
+  switch (type) {
+    case 'dataset': {
+      const segments = id.split('.')
+      if (segments.length !== 2) {
+        throw new Error('Dataset resource ID must be in the format "project.dataset"')
+      }
+      return
+    }
+    case 'dashboard':
+    case 'media-library':
+    case 'canvas': {
+      return
+    }
+    default:
+      // @ts-expect-error - handle all supported resource types
+      throw new Error(`Unsupported resource type: ${type.toString()}`)
+  }
+}
+
+export const resourceGuard = (service: string, config: InitializedClientConfig): void => {
+  if (config['~experimental_resource']) {
+    throw new Error(`\`${service}\` does not support resource-based operations`)
+  }
+}

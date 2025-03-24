@@ -3,6 +3,7 @@ import {lastValueFrom, type Observable} from 'rxjs'
 import {_request} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, SanityProject} from '../types'
+import * as validate from '../validators'
 
 /** @internal */
 export class ObservableProjectsClient {
@@ -24,6 +25,7 @@ export class ObservableProjectsClient {
   list(options?: {
     includeMembers?: boolean
   }): Observable<SanityProject[] | Omit<SanityProject, 'members'>[]> {
+    validate.resourceGuard('projects', this.#client.config())
     const uri = options?.includeMembers === false ? '/projects?includeMembers=false' : '/projects'
     return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri})
   }
@@ -34,6 +36,7 @@ export class ObservableProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Observable<SanityProject> {
+    validate.resourceGuard('projects', this.#client.config())
     return _request<SanityProject>(this.#client, this.#httpRequest, {uri: `/projects/${projectId}`})
   }
 }
@@ -56,6 +59,7 @@ export class ProjectsClient {
   list(options?: {includeMembers?: true}): Promise<SanityProject[]>
   list(options?: {includeMembers?: false}): Promise<Omit<SanityProject, 'members'>[]>
   list(options?: {includeMembers?: boolean}): Promise<SanityProject[]> {
+    validate.resourceGuard('projects', this.#client.config())
     const uri = options?.includeMembers === false ? '/projects?includeMembers=false' : '/projects'
     return lastValueFrom(_request<SanityProject[]>(this.#client, this.#httpRequest, {uri}))
   }
@@ -66,6 +70,7 @@ export class ProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Promise<SanityProject> {
+    validate.resourceGuard('projects', this.#client.config())
     return lastValueFrom(
       _request<SanityProject>(this.#client, this.#httpRequest, {uri: `/projects/${projectId}`}),
     )
