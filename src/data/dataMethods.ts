@@ -170,6 +170,24 @@ export function _getDocuments<R extends Record<string, Any>>(
 }
 
 /** @internal */
+export function _getReleaseDocuments<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  releaseId: string,
+  opts: BaseMutationOptions = {},
+): Observable<RawQueryResponse<SanityDocument<R>[]>> {
+  return _dataRequest(
+    client,
+    httpRequest,
+    'query',
+    {
+      query: `*[_id in path("versions.${releaseId}.*")]`,
+    },
+    opts,
+  )
+}
+
+/** @internal */
 export function _createIfNotExists<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,

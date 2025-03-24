@@ -1,17 +1,20 @@
 import {lastValueFrom, Observable} from 'rxjs'
 
-import {_action} from '../data/dataMethods'
+import {_action, _getDocument, _getReleaseDocuments} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   ArchiveReleaseAction,
   BaseActionOptions,
+  BaseMutationOptions,
   CreateReleaseAction,
   DeleteReleaseAction,
   EditReleaseAction,
   HttpRequest,
   PatchOperations,
   PublishReleaseAction,
+  RawQueryResponse,
   ReleaseDocument,
+  SanityDocument,
   ScheduleReleaseAction,
   SingleActionResult,
   UnarchiveReleaseAction,
@@ -25,6 +28,18 @@ export class ObservableReleasesClient {
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
     this.#httpRequest = httpRequest
+  }
+
+  get(
+    {releaseId}: {releaseId: string},
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Observable<ReleaseDocument | undefined> {
+    return _getDocument<ReleaseDocument>(
+      this.#client,
+      this.#httpRequest,
+      `_.releases.${releaseId}`,
+      options,
+    )
   }
 
   /**
@@ -185,6 +200,13 @@ export class ObservableReleasesClient {
 
     return _action(this.#client, this.#httpRequest, deleteAction, options)
   }
+
+  getDocuments(
+    {releaseId}: {releaseId: string},
+    options?: BaseMutationOptions,
+  ): Observable<RawQueryResponse<SanityDocument[]>> {
+    return _getReleaseDocuments(this.#client, this.#httpRequest, releaseId, options)
+  }
 }
 
 /** @internal */
@@ -194,6 +216,20 @@ export class ReleasesClient {
   constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
     this.#httpRequest = httpRequest
+  }
+
+  get(
+    {releaseId}: {releaseId: string},
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Promise<ReleaseDocument | undefined> {
+    return lastValueFrom(
+      _getDocument<ReleaseDocument>(
+        this.#client,
+        this.#httpRequest,
+        `_.releases.${releaseId}`,
+        options,
+      ),
+    )
   }
 
   /**
@@ -354,5 +390,12 @@ export class ReleasesClient {
     }
 
     return lastValueFrom(_action(this.#client, this.#httpRequest, deleteAction, options))
+  }
+
+  getDocuments(
+    {releaseId}: {releaseId: string},
+    options?: BaseMutationOptions,
+  ): Promise<RawQueryResponse<SanityDocument[]>> {
+    return lastValueFrom(_getReleaseDocuments(this.#client, this.#httpRequest, releaseId, options))
   }
 }
