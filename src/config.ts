@@ -187,10 +187,16 @@ export const initConfig = (
     newConfig.cdnUrl = newConfig.url
   }
 
-  if (experimentalResource) {
+  if (experimentalResource && experimentalResource.type !== 'projects') {
     const resourceSuffix = `${experimentalResource.type}/${experimentalResource.id}`
     newConfig.url = `${newConfig.url}/${resourceSuffix}`
     newConfig.cdnUrl = `${newConfig.cdnUrl}/${resourceSuffix}`
+  }
+
+  if (experimentalResource?.type === 'projects' && 'dataset' in experimentalResource) {
+    const suffix = `projects/${experimentalResource.id}/datasets/${experimentalResource.dataset}`
+    newConfig.url = `${newConfig.url}/${suffix}`
+    newConfig.cdnUrl = `${newConfig.cdnUrl}/${suffix}`
   }
 
   return newConfig

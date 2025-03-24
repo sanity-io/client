@@ -3375,6 +3375,42 @@ describe('client', async () => {
     })
   })
 
+  describe('experimental resource with project scope', () => {
+    test('can use getUrl() to get API-relative paths for a dataset resource with project scope', () => {
+      expect(
+        getClient({
+          experimental_resource: {
+            type: 'projects',
+            id: 'project-id',
+            dataset: 'dataset-name',
+          },
+        }).getUrl('/query?query=*'),
+      ).toEqual(`https://${apiHost}/v1/projects/project-id/datasets/dataset-name/query?query=*`)
+    })
+  })
+
+  test.skipIf(isEdge)('should send raw perspective', async () => {
+    nock(`https://${apiHost}`)
+      .get(
+        `/vX/projects/proj-id/datasets/dataset-name/query?query=*&returnQuery=false&perspective=raw`,
+      )
+      .reply(200, {
+        ms: 123,
+        result: [{_id: 'whatever'}],
+      })
+
+    const res = await getClient({
+      perspective: 'raw',
+      apiVersion: 'vX',
+      experimental_resource: {
+        type: 'projects',
+        id: 'proj-id',
+        dataset: 'dataset-name',
+      },
+    }).fetch('*', {})
+    expect(res).toEqual([{_id: 'whatever'}])
+  })
+
   describe('getDataUrl', () => {
     test('can use getDataUrl() to get API paths to a dataset', () => {
       expect(getClient({dataset: 'bikeshop'}).getDataUrl('doc')).toBe('/data/doc/bikeshop')

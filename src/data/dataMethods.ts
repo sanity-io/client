@@ -371,6 +371,10 @@ export function _create<R extends Record<string, Any>>(
 }
 
 function _resourceBase(resource: ExperimentalResourceConfig) {
+  if (resource.type === 'projects' && 'dataset' in resource) {
+    return `/projects/${resource.id}/datasets/${resource.dataset}`
+  }
+
   return `/${resource.type}/${resource.id}`
 }
 
@@ -382,6 +386,10 @@ function isDataRequestUri(uri: string, resource?: ExperimentalResourceConfig) {
 }
 
 function isDataQueryRequestUri(uri: string, resource?: ExperimentalResourceConfig) {
+  if (resource && resource.type === 'projects' && 'dataset' in resource) {
+    return uri.indexOf(`/projects/${resource.id}/datasets/${resource.dataset}/query`) === 0
+  }
+
   if (resource) {
     return uri.indexOf(`/${_resourceBase(resource)}/data/query`) === 0
   }
@@ -506,6 +514,14 @@ export function _getDataUrl(
   const config = client.config()
 
   if (config.experimental_resource) {
+    const resource = config.experimental_resource
+
+    if (resource.type === 'projects' && 'dataset' in resource) {
+      const baseUri = `${_resourceBase(resource)}/${operation}`
+      const uri = path ? `${baseUri}/${path}` : baseUri
+      return uri.replace(/\/($|\?)/, '$1')
+    }
+
     const baseUri = `/${operation}`
     const uri = path ? `${baseUri}/${path}` : baseUri
     return uri.replace(/\/($|\?)/, '$1')
@@ -528,8 +544,15 @@ export function _getUrl(
   let base = canUseCdn ? cdnUrl : url
 
   if (experimental_resource) {
-    if (uri.indexOf('/users') !== -1 || uri.indexOf('/assets') !== -1) {
-      base = base.replace(_resourceBase(experimental_resource), '')
+    const resourceBase = _resourceBase(experimental_resource)
+
+    const shouldRemoveBase =
+      uri.indexOf('/users') !== -1 ||
+      uri.indexOf('/assets') !== -1 ||
+      (experimental_resource.type === 'projects' && uri.indexOf(resourceBase) === 0)
+
+    if (shouldRemoveBase) {
+      base = base.replace(resourceBase, '')
     }
   }
 
