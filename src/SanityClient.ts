@@ -1,4 +1,4 @@
-import {getDraftId, getVersionId} from '@sanity/client/csm'
+import {getDraftId, getVersionId, isDraftId, isVersionId} from '@sanity/client/csm'
 import {lastValueFrom, Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
@@ -230,9 +230,38 @@ export class ObservableSanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
-    options?: {tag?: string},
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Observable<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    releaseId: string,
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Observable<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    maybeReleaseIdOrOptions?: string | {signal?: AbortSignal; tag?: string},
+    maybeOptions?: {signal?: AbortSignal; tag?: string},
   ): Observable<SanityDocument<R> | undefined> {
-    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options)
+    const getDocId = () => {
+      if (typeof maybeReleaseIdOrOptions !== 'string') {
+        return id
+      }
+
+      if (isDraftId(id) || isVersionId(id)) {
+        // eslint-disable-next-line no-console
+        console.warn('Document ID is already a draft or version ID; the releaseId is ignored')
+
+        return id
+      }
+
+      return getVersionId(id, maybeReleaseIdOrOptions)
+    }
+
+    const docId = getDocId()
+    const options =
+      typeof maybeReleaseIdOrOptions === 'string' ? maybeOptions : maybeReleaseIdOrOptions
+
+    return dataMethods._getDocument<R>(this, this.#httpRequest, docId, options)
   }
 
   /**
@@ -1038,8 +1067,37 @@ export class SanityClient {
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
     options?: {signal?: AbortSignal; tag?: string},
+  ): Promise<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    releaseId: string,
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Promise<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    maybeReleaseIdOrOptions?: string | {signal?: AbortSignal; tag?: string},
+    maybeOptions?: {signal?: AbortSignal; tag?: string},
   ): Promise<SanityDocument<R> | undefined> {
-    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
+    const getDocId = () => {
+      if (typeof maybeReleaseIdOrOptions !== 'string') {
+        return id
+      }
+
+      if (isDraftId(id) || isVersionId(id)) {
+        // eslint-disable-next-line no-console
+        console.warn('Document ID is already a draft or version ID; the releaseId is ignored')
+
+        return id
+      }
+
+      return getVersionId(id, maybeReleaseIdOrOptions)
+    }
+
+    const docId = getDocId()
+    const options =
+      typeof maybeReleaseIdOrOptions === 'string' ? maybeOptions : maybeReleaseIdOrOptions
+
+    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, docId, options))
   }
 
   /**
