@@ -1345,7 +1345,7 @@ export type {
   InstructInstructionParam,
   InstructInstructionParams,
   InstructSyncInstruction,
-} from './ai/types'
+} from './instruct/types'
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,
