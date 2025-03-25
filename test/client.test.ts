@@ -2869,15 +2869,13 @@ describe('client', async () => {
     })
   })
 
-  describe.skipIf(isEdge)('ASSIST', () => {
+  describe.skipIf(isEdge)('INSTRUCT', () => {
     test('can create new document', async () => {
       const response = {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       const body = await getClient().instruct({
         createDocument: {_type: 'some-type'},
@@ -2892,9 +2890,7 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       const body = await getClient().instruct({
         createDocument: {_id: 'new', _type: 'some-type'},
@@ -2909,9 +2905,7 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       const body = await getClient().instruct({
         documentId: 'some-id',
@@ -2927,9 +2921,7 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       const body = await getClient().instruct<{title?: string}>({
         documentId: 'some-id',
@@ -2946,9 +2938,7 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       const body = await getClient().instruct({
         documentId: 'some-id',
@@ -2965,9 +2955,7 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       //@ts-expect-error cannot assign true to false
       const body = await getClient().instruct({
@@ -2986,9 +2974,7 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
-        .reply(200, response)
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
 
       const body = await getClient().instruct<{title?: string}>({
         documentId: 'some-id',

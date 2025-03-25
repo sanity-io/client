@@ -18,7 +18,7 @@ export function _instruct<
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/assist/tasks/instruct/${dataset}`,
+    uri: `/instruct/${dataset}`,
     body: request,
   })
 }
