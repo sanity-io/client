@@ -3302,7 +3302,7 @@ describe('client', async () => {
         .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
         .reply(200, response)
 
-      const body = await getClient().ai.instruct({
+      const body = await getClient().instruct({
         createDocument: {_type: 'some-type'},
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3319,7 +3319,7 @@ describe('client', async () => {
         .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
         .reply(200, response)
 
-      const body = await getClient().ai.instruct({
+      const body = await getClient().instruct({
         createDocument: {_id: 'new', _type: 'some-type'},
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3336,7 +3336,7 @@ describe('client', async () => {
         .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
         .reply(200, response)
 
-      const body = await getClient().ai.instruct({
+      const body = await getClient().instruct({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3354,7 +3354,7 @@ describe('client', async () => {
         .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
         .reply(200, response)
 
-      const body = await getClient().ai.instruct<{title?: string}>({
+      const body = await getClient().instruct<{title?: string}>({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3373,7 +3373,7 @@ describe('client', async () => {
         .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
         .reply(200, response)
 
-      const body = await getClient().ai.instruct({
+      const body = await getClient().instruct({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3393,7 +3393,7 @@ describe('client', async () => {
         .reply(200, response)
 
       //@ts-expect-error cannot assign true to false
-      const body = await getClient().ai.instruct({
+      const body = await getClient().instruct({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3413,7 +3413,7 @@ describe('client', async () => {
         .post(`/v1/assist/tasks/instruct/${clientConfig.dataset}`)
         .reply(200, response)
 
-      const body = await getClient().ai.instruct<{title?: string}>({
+      const body = await getClient().instruct<{title?: string}>({
         documentId: 'some-id',
         instruction: '$a $b $s',
         instructionParams: {
