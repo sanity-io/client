@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.28.4](https://github.com/sanity-io/client/compare/v6.28.3...v6.28.4) (2025-03-27)
+
+
+### Bug Fixes
+
+* do not set `withCredentials` if token is set ([#1037](https://github.com/sanity-io/client/issues/1037)) ([0d0730a](https://github.com/sanity-io/client/commit/0d0730a05cc1644a8dbde64c0b2129b9deede0aa))
+* remove client side validation of api perspective ([#1036](https://github.com/sanity-io/client/issues/1036)) ([f10b170](https://github.com/sanity-io/client/commit/f10b1707346d0acf692833add8ead2f814c0ed59))
+
 ## [6.28.3](https://github.com/sanity-io/client/compare/v6.28.2...v6.28.3) (2025-03-04)
 
 
