@@ -53,6 +53,24 @@ export type ClientPerspective =
   | 'raw'
   | StackablePerspective[]
 
+type ClientConfigResource =
+  | {
+      type: 'canvas'
+      id: string
+    }
+  | {
+      type: 'media-library'
+      id: string
+    }
+  | {
+      type: 'dataset'
+      id: string
+    }
+  | {
+      type: 'dashboard'
+      id: string
+    }
+
 /** @public */
 export interface ClientConfig {
   projectId?: string
@@ -60,6 +78,9 @@ export interface ClientConfig {
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
+
+  /** @internal */
+  '~experimental_resource'?: ClientConfigResource
 
   /**
    * What perspective to use for the client. See {@link https://www.sanity.io/docs/perspectives|perspective documentation}

@@ -63,7 +63,7 @@ export const initConfig = (
     ...defaultConfig,
     ...specifiedConfig,
   } as InitializedClientConfig
-  const projectBased = newConfig.useProjectHostname
+  const projectBased = newConfig.useProjectHostname && !newConfig['~experimental_resource']
 
   if (typeof Promise === 'undefined') {
     const helpUrl = generateHelpUrl('js-client-promise-polyfill')
@@ -72,6 +72,10 @@ export const initConfig = (
 
   if (projectBased && !newConfig.projectId) {
     throw new Error('Configuration must contain `projectId`')
+  }
+
+  if (newConfig['~experimental_resource']) {
+    validate.resourceConfig(newConfig)
   }
 
   if (typeof newConfig.perspective !== 'undefined') {
@@ -151,7 +155,7 @@ export const initConfig = (
   const host = hostParts[1]
   const cdnHost = newConfig.isDefaultApi ? defaultCdnHost : host
 
-  if (newConfig.useProjectHostname) {
+  if (projectBased) {
     newConfig.url = `${protocol}://${newConfig.projectId}.${host}/v${newConfig.apiVersion}`
     newConfig.cdnUrl = `${protocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
   } else {
