@@ -126,6 +126,35 @@ interface InstructRequestBase {
       hidden: boolean
     }[]
   }
+
+  /**
+   * When localeSettings is provided on the request, instruct can write to date and datetime fields.
+   * Otherwise, such fields will be ignored.
+   */
+  localeSettings?: {
+    /**
+     * A valid Unicode BCP 47 locale identifier used to interpret and format
+     * natural language inputs and date output. Examples include "en-US", "fr-FR", or "ja-JP".
+     *
+     * This affects how phrases like "next Friday" or "in two weeks" are parsed,
+     * and how resulting dates are presented (e.g., 12-hour vs 24-hour format).
+     *
+     * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl#getcanonicalocales
+     */
+    locale: string
+
+    /**
+     * A valid IANA time zone identifier used to resolve relative and absolute
+     * date expressions to a specific point in time. Examples include
+     * "America/New_York", "Europe/Paris", or "Asia/Tokyo".
+     *
+     * This ensures phrases like "tomorrow at 9am" are interpreted correctly
+     * based on the user's local time.
+     *
+     * @see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+     */
+    timeZone: string
+  }
 }
 
 interface Sync {
