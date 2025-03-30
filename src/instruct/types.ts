@@ -129,7 +129,7 @@ interface InstructRequestBase {
 
   /**
    * When localeSettings is provided on the request, instruct can write to date and datetime fields.
-   * Otherwise, such fields will be ignored.
+   * Otherwise, such<> fields will be ignored.
    */
   localeSettings?: {
     /**
@@ -155,6 +155,20 @@ interface InstructRequestBase {
      */
     timeZone: string
   }
+
+  /**
+   * The max depth for document paths instruction can write to.
+   *
+   * Depth is based on field path segments:
+   * - `title` has depth 1
+   * - `array[_key="no"].title` has depth 3
+   *
+   * Be careful not to set this too high in studios with recursive document schemas, as it could have
+   * negative impact on performance; both runtime and quality of responses.
+   *
+   * Default: 4
+   */
+  maxPathDepth?: number
 }
 
 interface Sync {
