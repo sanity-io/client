@@ -120,6 +120,7 @@
   "dependencies": {
     "@sanity/eventsource": "^5.0.2",
     "get-it": "^8.6.7",
+    "nanoid": "^5.1.5",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
