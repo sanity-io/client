@@ -1,5 +1,5 @@
-import {getDraftId, getVersionId, isDraftId, isVersionId} from '@sanity/client/csm'
-import {lastValueFrom, Observable} from 'rxjs'
+import {getDraftId, getPublishedId, getVersionId, isDraftId, isVersionId} from '@sanity/client/csm'
+import {firstValueFrom, lastValueFrom, Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
@@ -47,6 +47,7 @@ import type {
   UnfilteredResponseWithoutQuery,
 } from './types'
 import {ObservableUsersClient, UsersClient} from './users/UsersClient'
+import {deriveDocumentVersionId, getDocumentVersionId} from './util/createVersionId'
 
 export type {
   _listen,
@@ -500,24 +501,44 @@ export class ObservableSanityClient {
    * - `publishedId`: The ID of the published document being versioned.
    * @param options - Additional action options.
    */
-  createVersion<R extends Record<string, Any> = Record<string, Any>>(
+  createVersion<R extends Record<string, Any>>(
+    args: {
+      document: SanityDocumentStub<R>
+      publishedId: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult>
+  createVersion<R extends Record<string, Any>>(
+    args: {
+      document: IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult>
+  createVersion<R extends Record<string, Any>>(
     {
       document,
       publishedId,
       releaseId,
-    }: {document: IdentifiedSanityDocumentStub<R>; publishedId: string; releaseId?: string},
+    }: {
+      document: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = releaseId
-      ? getVersionId(publishedId, releaseId)
-      : getDraftId(publishedId)
+    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+
     const documentVersion = {...document, _id: documentVersionId}
+    const versionPublishedId = publishedId || getPublishedId(document._id)
 
     return dataMethods._createVersion<R>(
       this,
       this.#httpRequest,
       documentVersion,
-      publishedId,
+      versionPublishedId,
       options,
     )
   }
@@ -660,9 +681,7 @@ export class ObservableSanityClient {
     purge?: boolean,
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = releaseId
-      ? getVersionId(releaseId, publishedId)
-      : getDraftId(publishedId)
+    const documentVersionId = getDocumentVersionId(publishedId, releaseId)
 
     return dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options)
   }
@@ -685,17 +704,36 @@ export class ObservableSanityClient {
    * @param params.publishedId - The ID of the published document to replace.
    * @param options - *(Optional)* Additional action options.
    */
-  replaceVersion<R extends Record<string, Any> = Record<string, Any>>(
+  replaceVersion<R extends Record<string, Any>>(
+    args: {
+      document: SanityDocumentStub<R>
+      publishedId: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult>
+  replaceVersion<R extends Record<string, Any>>(
+    args: {
+      document: IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult>
+  replaceVersion<R extends Record<string, Any>>(
     {
       document,
-      releaseId,
       publishedId,
-    }: {document: IdentifiedSanityDocumentStub<R>; releaseId?: string; publishedId: string},
+      releaseId,
+    }: {
+      document: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = releaseId
-      ? getVersionId(releaseId, publishedId)
-      : getDraftId(publishedId)
+    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+
     const documentVersion = {...document, _id: documentVersionId}
 
     return dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options)
@@ -1342,21 +1380,47 @@ export class SanityClient {
    *  - `publishedId`: The ID of the published document being versioned.
    * @param options - Additional action options.
    */
-  createVersion<R extends Record<string, Any> = Record<string, Any>>(
+  createVersion<R extends Record<string, Any>>(
+    args: {
+      document: SanityDocumentStub<R>
+      publishedId: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult>
+  createVersion<R extends Record<string, Any>>(
+    args: {
+      document: IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult>
+  createVersion<R extends Record<string, Any>>(
     {
       document,
       publishedId,
       releaseId,
-    }: {document: IdentifiedSanityDocumentStub<R>; publishedId: string; releaseId?: string},
+    }: {
+      document: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = releaseId
-      ? getVersionId(publishedId, releaseId)
-      : getDraftId(publishedId)
-    const documentVersion = {...document, _id: documentVersionId}
+    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
 
-    return lastValueFrom(
-      dataMethods._createVersion<R>(this, this.#httpRequest, documentVersion, publishedId, options),
+    const documentVersion = {...document, _id: documentVersionId}
+    const versionPublishedId = publishedId || getPublishedId(document._id)
+
+    return firstValueFrom(
+      dataMethods._createVersion<R>(
+        this,
+        this.#httpRequest,
+        documentVersion,
+        versionPublishedId,
+        options,
+      ),
     )
   }
 
@@ -1521,20 +1585,39 @@ export class SanityClient {
    * @param options - Additional action options.
    *
    */
-  replaceVersion<R extends Record<string, Any> = Record<string, Any>>(
+  replaceVersion<R extends Record<string, Any>>(
+    args: {
+      document: SanityDocumentStub<R>
+      publishedId: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult>
+  replaceVersion<R extends Record<string, Any>>(
+    args: {
+      document: IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult>
+  replaceVersion<R extends Record<string, Any>>(
     {
       document,
-      releaseId,
       publishedId,
-    }: {document: IdentifiedSanityDocumentStub<R>; releaseId?: string; publishedId: string},
+      releaseId,
+    }: {
+      document: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
+      publishedId?: string
+      releaseId?: string
+    },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = releaseId
-      ? getVersionId(releaseId, publishedId)
-      : getDraftId(publishedId)
+    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+
     const documentVersion = {...document, _id: documentVersionId}
 
-    return lastValueFrom(
+    return firstValueFrom(
       dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options),
     )
   }
