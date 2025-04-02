@@ -1,4 +1,4 @@
-import type {Any, InitializedClientConfig} from './types'
+import type {Any, InitializedClientConfig, SanityDocumentStub} from './types'
 
 const VALID_ASSET_TYPES = ['image', 'file']
 const VALID_INSERT_LOCATIONS = ['before', 'after', 'replace']
@@ -32,6 +32,14 @@ export const validateObject = (op: string, val: Any) => {
 export const validateDocumentId = (op: string, id: string) => {
   if (typeof id !== 'string' || !/^[a-z0-9_][a-z0-9_.-]{0,127}$/i.test(id) || id.includes('..')) {
     throw new Error(`${op}(): "${id}" is not a valid document ID`)
+  }
+}
+
+export const validateVersionIdMatch = (builtVersionId: string, document: SanityDocumentStub) => {
+  if (document._id && document._id !== builtVersionId) {
+    throw new Error(
+      `The provided document ID (${document._id}) does not match the generated version ID (${builtVersionId})`,
+    )
   }
 }
 

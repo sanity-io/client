@@ -1,4 +1,4 @@
-import {lastValueFrom, Observable} from 'rxjs'
+import {lastValueFrom, map, Observable} from 'rxjs'
 
 import {_action, _getDocument, _getReleaseDocuments} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
@@ -20,6 +20,7 @@ import type {
   UnarchiveReleaseAction,
   UnscheduleReleaseAction,
 } from '../types'
+import {generateReleaseId} from '../util/createVersionId'
 
 /** @internal */
 export class ObservableReleasesClient {
@@ -50,16 +51,22 @@ export class ObservableReleasesClient {
    * Must include a `releaseType` {@link ReleaseType}
    */
   create(
-    {releaseId, metadata}: {releaseId: string; metadata: ReleaseDocument['metadata']},
+    {releaseId, metadata}: {releaseId?: string; metadata: ReleaseDocument['metadata']},
     options?: BaseActionOptions,
-  ): Observable<SingleActionResult> {
+  ): Observable<SingleActionResult & {releaseId: string}> {
+    const finalReleaseId = releaseId || generateReleaseId()
     const createAction: CreateReleaseAction = {
       actionType: 'sanity.action.release.create',
-      releaseId,
+      releaseId: finalReleaseId,
       metadata,
     }
 
-    return _action(this.#client, this.#httpRequest, createAction, options)
+    return _action(this.#client, this.#httpRequest, createAction, options).pipe(
+      map((actionResult) => ({
+        ...actionResult,
+        releaseId: finalReleaseId,
+      })),
+    )
   }
 
   /**
@@ -239,17 +246,22 @@ export class ReleasesClient {
    * @param metadata - The metadata to associate with the release {@link ReleaseDocument}.
    * Must include a `releaseType` {@link ReleaseType}
    */
-  create(
-    {releaseId, metadata}: {releaseId: string; metadata: ReleaseDocument['metadata']},
+  async create(
+    {releaseId, metadata}: {releaseId?: string; metadata: ReleaseDocument['metadata']},
     options?: BaseActionOptions,
-  ): Promise<SingleActionResult> {
+  ): Promise<SingleActionResult & {releaseId: string}> {
+    const finalReleaseId = releaseId || generateReleaseId()
     const createAction: CreateReleaseAction = {
       actionType: 'sanity.action.release.create',
-      releaseId,
+      releaseId: finalReleaseId,
       metadata,
     }
 
-    return lastValueFrom(_action(this.#client, this.#httpRequest, createAction, options))
+    const actionResult = await lastValueFrom(
+      _action(this.#client, this.#httpRequest, createAction, options),
+    )
+
+    return {...actionResult, releaseId: finalReleaseId}
   }
 
   /**

@@ -17,6 +17,7 @@ import type {
   TransactionFirstDocumentIdMutationOptions,
   TransactionFirstDocumentMutationOptions,
 } from '../types'
+import {getDocumentVersionId} from '../util/createVersionId'
 import * as validators from '../validators'
 import {ObservablePatch, Patch} from './patch'
 
@@ -74,6 +75,27 @@ export class BaseTransaction {
     validators.validateObject(op, doc)
     validators.requireDocumentId(op, doc)
     return this._add({[op]: doc})
+  }
+
+  createVersion<R extends Record<string, Any> = Record<string, Any>>({
+    document,
+    publishedId,
+    releaseId,
+  }: {
+    document: SanityDocumentStub<R>
+    publishedId: string
+    releaseId?: string
+  }): this {
+    const op = 'create'
+
+    const documentVersionId = getDocumentVersionId(publishedId, releaseId)
+
+    validators.validateObject(op, document)
+    validators.validateVersionIdMatch(documentVersionId, document)
+
+    const documentVersion = {...document, _id: documentVersionId}
+
+    return this._add({[op]: documentVersion})
   }
 
   /**
