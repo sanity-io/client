@@ -62,7 +62,7 @@ describe('createVersionId', () => {
         title: 'Test document',
       }
 
-      const result = deriveDocumentVersionId({document}, 'test')
+      const result = deriveDocumentVersionId('test', {document})
       expect(result).toBe('doc123')
     })
 
@@ -70,7 +70,7 @@ describe('createVersionId', () => {
       const document = {title: 'Test without ID', _type: 'post'}
       const publishedId = 'pub123'
 
-      const result = deriveDocumentVersionId({publishedId, document}, 'test')
+      const result = deriveDocumentVersionId('test', {publishedId, document})
       expect(result).toBe('drafts.pub123')
     })
 
@@ -78,7 +78,7 @@ describe('createVersionId', () => {
       const document = {title: 'Test without ID', _type: 'post'}
       const publishedId = 'pub123'
       const releaseId = 'release456'
-      const result = deriveDocumentVersionId({publishedId, releaseId, document}, 'test')
+      const result = deriveDocumentVersionId('test', {publishedId, releaseId, document})
       expect(result).toBe('versions.release456.pub123')
     })
 
@@ -90,7 +90,7 @@ describe('createVersionId', () => {
         _type: 'post',
       }
 
-      const result = deriveDocumentVersionId({publishedId, document: documentWithDraftId}, 'test')
+      const result = deriveDocumentVersionId('test', {publishedId, document: documentWithDraftId})
       expect(result).toBe('drafts.pub123')
     })
 
@@ -104,10 +104,11 @@ describe('createVersionId', () => {
         _type: 'post',
       }
 
-      const result = deriveDocumentVersionId(
-        {publishedId, releaseId, document: documentWithVersionId},
-        'test',
-      )
+      const result = deriveDocumentVersionId('test', {
+        publishedId,
+        releaseId,
+        document: documentWithVersionId,
+      })
       expect(result).toBe(versionId)
     })
 
@@ -121,7 +122,7 @@ describe('createVersionId', () => {
       }
 
       try {
-        deriveDocumentVersionId({publishedId, document}, 'test')
+        deriveDocumentVersionId('test', {publishedId, document})
       } catch (error: any) {
         expect(error.message).toBe(
           'The provided document ID (drafts.different123) does not match the generated version ID (drafts.pub123)',
@@ -133,7 +134,7 @@ describe('createVersionId', () => {
       const document = {title: 'Test without ID'} as unknown as SanityDocumentStub
 
       expect(() => {
-        deriveDocumentVersionId({document}, 'test')
+        deriveDocumentVersionId('test', {document})
       }).toThrow('test() requires either a publishedId or a document with an _id')
     })
 
@@ -149,7 +150,7 @@ describe('createVersionId', () => {
       }
 
       try {
-        deriveDocumentVersionId({publishedId, releaseId, document}, 'test')
+        deriveDocumentVersionId('test', {publishedId, releaseId, document})
       } catch (error: any) {
         expect(error.message).toBe(
           `The provided document ID (versions.${wrongReleaseId}.${publishedId}) does not match the generated version ID (versions.${releaseId}.${publishedId})`,
@@ -165,7 +166,7 @@ describe('createVersionId', () => {
         _type: 'post',
       }
 
-      const result = deriveDocumentVersionId({publishedId, document}, 'test')
+      const result = deriveDocumentVersionId('test', {publishedId, document})
       expect(result).toBe('drafts.pub123')
     })
   })

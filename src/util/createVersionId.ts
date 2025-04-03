@@ -16,6 +16,7 @@ export const getDocumentVersionId = (publishedId: string, releaseId?: string) =>
   releaseId ? getVersionId(publishedId, releaseId) : getDraftId(publishedId)
 
 export function deriveDocumentVersionId(
+  op: string,
   {
     releaseId,
     publishedId,
@@ -25,7 +26,6 @@ export function deriveDocumentVersionId(
     publishedId?: string
     document: SanityDocumentStub | IdentifiedSanityDocumentStub
   },
-  op: string,
 ): string {
   if (publishedId && document._id) {
     const documentVersionId = getDocumentVersionId(publishedId, releaseId)
