@@ -13,7 +13,7 @@ export const generateReleaseId = customAlphabet(
 )
 
 export const getDocumentVersionId = (publishedId: string, releaseId?: string) =>
-  releaseId ? getVersionId(releaseId, publishedId) : getDraftId(publishedId)
+  releaseId ? getVersionId(publishedId, releaseId) : getDraftId(publishedId)
 
 export function deriveDocumentVersionId(
   {
