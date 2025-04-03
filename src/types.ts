@@ -1416,6 +1416,11 @@ export interface ReleaseDocument extends SanityDocument {
    * `_.releases.<name>`
    */
   _id: string
+  /**
+   * typically
+   * `<name>`
+   */
+  name: string
   _type: 'system.release'
   _createdAt: string
   _updatedAt: string
