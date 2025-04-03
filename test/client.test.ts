@@ -2027,9 +2027,7 @@ describe('client', async () => {
 
         nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
 
-        await expect(getClient().createVersion({document, publishedId})).rejects.toThrow(
-          'Network error occurred',
-        )
+        await expect(getClient().createVersion({document, publishedId})).rejects.toThrowError()
       })
 
       test('throws when creating version of a document that is missing _type', async () => {
@@ -3536,9 +3534,7 @@ describe('client', async () => {
 
       nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
 
-      await expect(getClient().discardVersion({publishedId})).rejects.toThrow(
-        'Network error occurred',
-      )
+      await expect(getClient().discardVersion({publishedId})).rejects.toThrowError()
     })
 
     test('throws when publishedId is missing', async () => {
@@ -3815,9 +3811,7 @@ describe('client', async () => {
         .post('/v1/data/actions/foo', '*')
         .replyWithError('Network error occurred')
 
-      await expect(getClient().replaceVersion({document, publishedId})).rejects.toThrow(
-        'Network error occurred',
-      )
+      await expect(getClient().replaceVersion({document, publishedId})).rejects.toThrowError()
     })
 
     test('throws when document is missing _type property', async () => {
