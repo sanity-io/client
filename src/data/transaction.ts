@@ -88,7 +88,7 @@ export class BaseTransaction {
   }): this {
     const op = 'createVersion'
 
-    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId}, op)
+    const documentVersionId = deriveDocumentVersionId(op, {document, publishedId, releaseId})
     validators.validateObject(op, document)
     validators.requireDocumentType(op, document)
     validators.validateVersionIdMatch(documentVersionId, document)
