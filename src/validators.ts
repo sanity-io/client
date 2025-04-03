@@ -35,14 +35,6 @@ export const validateDocumentId = (op: string, id: string) => {
   }
 }
 
-export const validateVersionIdMatch = (builtVersionId: string, document: SanityDocumentStub) => {
-  if (document._id && document._id !== builtVersionId) {
-    throw new Error(
-      `The provided document ID (${document._id}) does not match the generated version ID (${builtVersionId})`,
-    )
-  }
-}
-
 export const requireDocumentId = (op: string, doc: Record<string, Any>) => {
   if (!doc._id) {
     throw new Error(`${op}() requires that the document contains an ID ("_id" property)`)
@@ -63,6 +55,14 @@ export const requireDocumentType = (op: string, doc: Record<string, Any>) => {
   }
 
   validateDocumentType(op, doc._type)
+}
+
+export const validateVersionIdMatch = (builtVersionId: string, document: SanityDocumentStub) => {
+  if (document._id && document._id !== builtVersionId) {
+    throw new Error(
+      `The provided document ID (${document._id}) does not match the generated version ID (${builtVersionId})`,
+    )
+  }
 }
 
 export const validateInsert = (at: string, selector: string, items: Any[]) => {
