@@ -532,7 +532,10 @@ export class ObservableSanityClient {
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+    const documentVersionId = deriveDocumentVersionId(
+      {document, publishedId, releaseId},
+      'createVersion',
+    )
 
     const documentVersion = {...document, _id: documentVersionId}
     const versionPublishedId = publishedId || getPublishedId(document._id)
@@ -735,7 +738,10 @@ export class ObservableSanityClient {
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+    const documentVersionId = deriveDocumentVersionId(
+      {document, publishedId, releaseId},
+      'replaceVersion',
+    )
 
     const documentVersion = {...document, _id: documentVersionId}
 
@@ -1408,7 +1414,10 @@ export class SanityClient {
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+    const documentVersionId = deriveDocumentVersionId(
+      {document, publishedId, releaseId},
+      'createVersion',
+    )
 
     const documentVersion = {...document, _id: documentVersionId}
     const versionPublishedId = publishedId || getPublishedId(document._id)
@@ -1613,7 +1622,10 @@ export class SanityClient {
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId})
+    const documentVersionId = deriveDocumentVersionId(
+      {document, publishedId, releaseId},
+      'replaceVersion',
+    )
 
     const documentVersion = {...document, _id: documentVersionId}
 
