@@ -1,10 +1,4 @@
-import {
-  getDraftId,
-  getPublishedId,
-  getVersionFromId,
-  getVersionId,
-  isDraftId,
-} from '@sanity/client/csm'
+import {getPublishedId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
 import {firstValueFrom, lastValueFrom, Observable} from 'rxjs'
 
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
@@ -187,7 +181,7 @@ export class ObservableSanityClient {
     Q extends QueryWithoutParams | QueryParams = QueryParams,
     const G extends string = string,
   >(
-    query: string,
+    query: G,
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>>>
@@ -525,10 +519,11 @@ export class ObservableSanityClient {
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId(
-      {document, publishedId, releaseId},
-      'createVersion',
-    )
+    const documentVersionId = deriveDocumentVersionId('createVersion', {
+      document,
+      publishedId,
+      releaseId,
+    })
 
     const documentVersion = {...document, _id: documentVersionId}
     const versionPublishedId = publishedId || getPublishedId(document._id)
@@ -731,10 +726,11 @@ export class ObservableSanityClient {
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId(
-      {document, publishedId, releaseId},
-      'replaceVersion',
-    )
+    const documentVersionId = deriveDocumentVersionId('replaceVersion', {
+      document,
+      publishedId,
+      releaseId,
+    })
 
     const documentVersion = {...document, _id: documentVersionId}
 
@@ -1401,10 +1397,11 @@ export class SanityClient {
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId(
-      {document, publishedId, releaseId},
-      'createVersion',
-    )
+    const documentVersionId = deriveDocumentVersionId('createVersion', {
+      document,
+      publishedId,
+      releaseId,
+    })
 
     const documentVersion = {...document, _id: documentVersionId}
     const versionPublishedId = publishedId || getPublishedId(document._id)
@@ -1558,9 +1555,7 @@ export class SanityClient {
     purge?: boolean,
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = releaseId
-      ? getVersionId(publishedId, releaseId)
-      : getDraftId(publishedId)
+    const documentVersionId = getDocumentVersionId(publishedId, releaseId)
 
     return lastValueFrom(
       dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options),
@@ -1568,18 +1563,22 @@ export class SanityClient {
   }
 
   /**
-   * Replaces an existing version document. At least one of the version or published documents must exist.
-   * @returns a promise that resolves to the `transactionId`.
+   * Replaces an existing version document.
    *
-   * @param params - Object containing:
-   * - `document`: The document to replace the version with.
-   * >- `_type` is required.
-   * >- `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
-   * - `releaseId`: The ID of the release to replace the document in.
-   * >- if omitted then the `draft.` version of the document will be replaced.
-   * - `publishedId`: The published ID of the document to replace.
-   * @param options - Additional action options.
+   * At least one of the **version** or **published** documents must exist.
+   * If the `releaseId` is provided, the version will be stored under the corresponding release.
+   * Otherwise, the **draft version** of the document will be replaced.
    *
+   * @returns an observable that resolves to the `transactionId`.
+   *
+   * @param params - Object containing the parameters for placement action.
+   * @param params.document - The document to replace the version with.
+   * - `_type` is required.
+   * - `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   * @param params.releaseId - *(Optional)* The ID of the release where the document version is replaced.
+   * If omitted, the **draft version** will be replaced.
+   * @param params.publishedId - The ID of the published document to replace.
+   * @param options - *(Optional)* Additional action options.
    */
   replaceVersion<R extends Record<string, Any>>(
     args: {
@@ -1609,10 +1608,11 @@ export class SanityClient {
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const documentVersionId = deriveDocumentVersionId(
-      {document, publishedId, releaseId},
-      'replaceVersion',
-    )
+    const documentVersionId = deriveDocumentVersionId('replaceVersion', {
+      document,
+      publishedId,
+      releaseId,
+    })
 
     const documentVersion = {...document, _id: documentVersionId}
 
@@ -1626,11 +1626,12 @@ export class SanityClient {
    * the release is published.
    * Note that `publishedId` must currently exist.
    *
-   * @returns a promise that resolves to the `transactionId`.
+   * @returns an observable that resolves to the `transactionId`.
+   *
    *
    * @param params - Object containing:
-   * - `releaseId`: The ID of the release to unpublish the document from.
-   * - `publishedId`: The published ID of the document to unpublish.
+   * @param params.releaseId - The ID of the release to unpublish the document from.
+   * @param params.publishedId - The published ID of the document to unpublish.
    * @param options - Additional action options.
    */
   unpublishVersion(
@@ -1646,7 +1647,7 @@ export class SanityClient {
 
   /**
    * Perform mutation operations against the configured dataset
-   * Returns a promise that resolves to the first mutated document.
+   * Returns an observable that resolves to the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1657,7 +1658,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R>>
   /**
    * Perform mutation operations against the configured dataset.
-   * Returns a promise that resolves to an array of the mutated documents.
+   * Returns an observable that resolves to an array of the mutated documents.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1668,7 +1669,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R>[]>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns a promise that resolves to a mutation result object containing the document ID of the first mutated document.
+   * Returns an observable that resolves to a mutation result object containing the document ID of the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1679,18 +1680,18 @@ export class SanityClient {
   ): Promise<SingleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns a promise that resolves to a mutation result object containing the mutated document IDs.
+   * Returns an observable that resolves to a mutation result object containing the mutated document IDs.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
    */
-  mutate<R extends Record<string, Any>>(
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
     operations: Mutation<R>[] | Patch | Transaction,
     options: AllDocumentIdsMutationOptions,
   ): Promise<MultipleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns a promise that resolves to the first mutated document.
+   * Returns an observable that resolves to the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1764,7 +1765,6 @@ export class SanityClient {
 
   /**
    * Perform action operations against the configured dataset
-   * Returns a promise that resolves to the transaction result
    *
    * @param operations - Action operation(s) to execute
    * @param options - Action options
