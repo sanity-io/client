@@ -1,29 +1,74 @@
 import {createClient} from '@sanity/client'
 import nock from 'nock'
-import {firstValueFrom} from 'rxjs'
+import {firstValueFrom, Observable} from 'rxjs'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ObservableReleasesClient, ReleasesClient} from '../src/releases/ReleasesClient'
-import type {ReleaseType} from '../src/types'
+import type {BaseActionOptions, ReleaseType, SingleActionResult} from '../src/types'
 import * as createVersionIdModule from '../src/util/createVersionId'
 
 vi.mock('../src/util/createVersionId', () => ({
   generateReleaseId: vi.fn().mockReturnValue('generatedReleaseId'),
 }))
 
-describe('ReleasesClient', () => {
-  const projectId = 'test123'
-  const dataset = 'test-dataset'
-  const projectHost = `https://${projectId}.api.sanity.io`
+// Common test data
+const TEST_PROJECT_ID = 'test123'
+const TEST_DATASET = 'test-dataset'
+const TEST_PROJECT_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
+const TEST_RELEASE_ID = 'release123'
+const TEST_METADATA = {
+  releaseType: 'scheduled' as ReleaseType,
+  name: 'Test Release',
+}
+const TEST_PUBLISH_AT = '2023-12-31T12:00:00.000Z'
+const TEST_PATCH = {
+  set: {
+    'metadata.name': 'Updated Release Name',
+  },
+}
+const TEST_TXN_ID = 'txn123'
 
+// Shared helper functions
+const mockHttpSuccess = (httpRequest: any, transactionId: string) => {
+  return httpRequest.mockImplementationOnce(() => ({
+    subscribe: (subscriber: any) => {
+      subscriber.next({type: 'response', body: {transactionId}})
+      subscriber.complete()
+      return {unsubscribe: () => {}}
+    },
+  }))
+}
+
+const mockHttpError = (httpRequest: any, errorMessage: string, details?: any) => {
+  return httpRequest.mockImplementationOnce(() => ({
+    subscribe: (subscriber: any) => {
+      const error = new Error(errorMessage) as any
+      if (details) error.details = details
+      subscriber.error(error)
+      return {unsubscribe: () => {}}
+    },
+  }))
+}
+
+const mockHttpDocumentResponse = (httpRequest: any, document: any) => {
+  return httpRequest.mockImplementationOnce(() => ({
+    subscribe: (subscriber: any) => {
+      subscriber.next({type: 'response', body: {documents: [document]}})
+      subscriber.complete()
+      return {unsubscribe: () => {}}
+    },
+  }))
+}
+
+describe('ReleasesClient', () => {
   let client: any
   let releasesClient: ReleasesClient
   let httpRequest: any
 
   beforeEach(() => {
     client = createClient({
-      projectId,
-      dataset,
+      projectId: TEST_PROJECT_ID,
+      dataset: TEST_DATASET,
       apiVersion: '1',
       useCdn: false,
     })
@@ -47,46 +92,78 @@ describe('ReleasesClient', () => {
     vi.resetAllMocks()
   })
 
-  describe('get()', () => {
-    test('fetches a release document by ID', async () => {
-      const releaseId = 'release123'
-      const releaseDocument = {
-        _id: `_.releases.${releaseId}`,
-        _type: 'release',
-        metadata: {
-          releaseType: 'scheduled' as ReleaseType,
-          name: 'Test Release',
-        },
+  const testActionMethod = (
+    methodName: string,
+    actionType: string,
+    executeMethod: (options?: BaseActionOptions) => Promise<SingleActionResult>,
+    expectedAction: Record<string, any>,
+  ) => {
+    test(`${methodName} executes with correct action`, async () => {
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
+
+      const result = await executeMethod()
+
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+      const requestArgs = httpRequest.mock.calls[0][0]
+      expect(requestArgs.body.actions).toContainEqual({
+        actionType,
+        ...expectedAction,
+      })
+
+      expect(result).toEqual({
+        transactionId: TEST_TXN_ID,
+      })
+    })
+
+    test(`${methodName} forwards options to action method`, async () => {
+      const options = {
+        transactionId: 'custom-txn',
+        tag: `releases.${methodName}`,
       }
 
-      nock(projectHost)
-        .get(`/v1/data/doc/${dataset}/_.releases.${releaseId}`)
+      mockHttpSuccess(httpRequest, 'custom-txn')
+
+      await executeMethod(options)
+
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+      const requestArgs = httpRequest.mock.calls[0][0]
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
+    })
+  }
+
+  describe('get()', () => {
+    test('fetches a release document by ID', async () => {
+      const releaseDocument = {
+        _id: `_.releases.${TEST_RELEASE_ID}`,
+        _type: 'release',
+        metadata: TEST_METADATA,
+      }
+
+      nock(TEST_PROJECT_HOST)
+        .get(`/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
         .reply(200, {
           documents: [releaseDocument],
         })
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {documents: [releaseDocument]}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpDocumentResponse(httpRequest, releaseDocument)
 
-      const result = await releasesClient.get({releaseId})
+      const result = await releasesClient.get({releaseId: TEST_RELEASE_ID})
       expect(result).toEqual(releaseDocument)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toEqual(`/data/doc/${dataset}/_.releases.${releaseId}`)
+      expect(requestArgs.uri).toEqual(`/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
     })
 
     test('returns undefined when release does not exist', async () => {
       const releaseId = 'nonexistent'
 
-      nock(projectHost).get(`/v1/data/doc/${dataset}/_.releases.${releaseId}`).reply(200, {
-        documents: [],
-      })
+      nock(TEST_PROJECT_HOST)
+        .get(`/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
+        .reply(200, {
+          documents: [],
+        })
 
       httpRequest.mockImplementationOnce(() => ({
         subscribe: (subscriber: any) => {
@@ -101,11 +178,10 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toEqual(`/data/doc/${dataset}/_.releases.${releaseId}`)
+      expect(requestArgs.uri).toEqual(`/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
     })
 
     test('forwards signal and tag options', async () => {
-      const releaseId = 'release123'
       const abortController = new AbortController()
       const options = {
         signal: abortController.signal,
@@ -120,7 +196,7 @@ describe('ReleasesClient', () => {
         },
       }))
 
-      await releasesClient.get({releaseId}, options)
+      await releasesClient.get({releaseId: TEST_RELEASE_ID}, options)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
@@ -131,7 +207,6 @@ describe('ReleasesClient', () => {
 
   describe('create()', () => {
     test('creates a release with provided ID and metadata', async () => {
-      const releaseId = 'release456'
       const metadata = {
         releaseType: 'scheduled' as ReleaseType,
         name: 'Custom Release',
@@ -139,66 +214,52 @@ describe('ReleasesClient', () => {
 
       const expectedAction = {
         actionType: 'sanity.action.release.create',
-        releaseId,
+        releaseId: TEST_RELEASE_ID,
         metadata,
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
 
-      const result = await releasesClient.create({releaseId, metadata})
+      const result = await releasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.body.actions).toContainEqual(expectedAction)
 
       expect(result).toEqual({
-        transactionId: 'txn123',
-        releaseId: 'release456',
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
         metadata,
       })
     })
 
     test('creates a release with undefined metadata', async () => {
-      const releaseId = 'release789'
       const expectedMetadata = {
         releaseType: 'undecided',
       }
 
       const expectedAction = {
         actionType: 'sanity.action.release.create',
-        releaseId,
+        releaseId: TEST_RELEASE_ID,
         metadata: expectedMetadata,
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
 
-      const result = await releasesClient.create({releaseId})
+      const result = await releasesClient.create({releaseId: TEST_RELEASE_ID})
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.body.actions).toContainEqual(expectedAction)
 
       expect(result).toEqual({
-        transactionId: 'txn123',
-        releaseId: 'release789',
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
         metadata: expectedMetadata,
       })
     })
 
     test('creates a release with metadata missing releaseType', async () => {
-      const releaseId = 'release101'
       const metadata = {
         title: 'Release without type',
       }
@@ -210,27 +271,21 @@ describe('ReleasesClient', () => {
 
       const expectedAction = {
         actionType: 'sanity.action.release.create',
-        releaseId,
+        releaseId: TEST_RELEASE_ID,
         metadata: expectedMetadata,
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
 
-      const result = await releasesClient.create({releaseId, metadata})
+      const result = await releasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.body.actions).toContainEqual(expectedAction)
 
       expect(result).toEqual({
-        transactionId: 'txn123',
-        releaseId: 'release101',
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
         metadata: expectedMetadata,
       })
     })
@@ -241,21 +296,7 @@ describe('ReleasesClient', () => {
         name: 'Generated ID Release',
       }
 
-      httpRequest.mockImplementationOnce((options: any) => {
-        const action = options.body.actions[0]
-        action.releaseId = 'generatedReleaseId'
-
-        return {
-          subscribe: (subscriber: any) => {
-            subscriber.next({
-              type: 'response',
-              body: {transactionId: 'txn123'},
-            })
-            subscriber.complete()
-            return {unsubscribe: () => {}}
-          },
-        }
-      })
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
 
       const result = await releasesClient.create({metadata})
 
@@ -264,14 +305,13 @@ describe('ReleasesClient', () => {
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
       expect(result).toEqual({
-        transactionId: 'txn123',
+        transactionId: TEST_TXN_ID,
         releaseId: 'generatedReleaseId',
         metadata,
       })
     })
 
     test('forwards options to action method', async () => {
-      const releaseId = 'release123'
       const metadata = {
         releaseType: 'scheduled' as ReleaseType,
         name: 'Test Release',
@@ -282,15 +322,9 @@ describe('ReleasesClient', () => {
         tag: 'releases.create',
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpSuccess(httpRequest, 'custom-txn')
 
-      await releasesClient.create({releaseId, metadata}, options)
+      await releasesClient.create({releaseId: TEST_RELEASE_ID, metadata}, options)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
@@ -299,16 +333,7 @@ describe('ReleasesClient', () => {
     })
 
     test('auto-generates both releaseId and metadata.releaseType when neither is provided', async () => {
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({
-            type: 'response',
-            body: {transactionId: 'txn123'},
-          })
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
 
       const result = await releasesClient.create({})
 
@@ -322,7 +347,7 @@ describe('ReleasesClient', () => {
       expect(action.metadata.releaseType).toEqual('undecided')
 
       expect(result).toEqual({
-        transactionId: 'txn123',
+        transactionId: TEST_TXN_ID,
         releaseId: 'generatedReleaseId',
         metadata: {
           releaseType: 'undecided',
@@ -336,16 +361,7 @@ describe('ReleasesClient', () => {
         tag: 'releases.create.options',
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({
-            type: 'response',
-            body: {transactionId: options.transactionId},
-          })
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      mockHttpSuccess(httpRequest, options.transactionId)
 
       const result = await releasesClient.create(options)
 
@@ -371,391 +387,71 @@ describe('ReleasesClient', () => {
   })
 
   describe('edit()', () => {
-    test('edits a release with patch operations', async () => {
-      const releaseId = 'release123'
-      const patch = {
-        set: {
-          'metadata.name': 'Updated Release Name',
-        },
-      }
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.edit',
-        releaseId,
-        patch,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.edit({releaseId, patch})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({transactionId: 'txn123'})
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-      const patch = {
-        set: {
-          'metadata.name': 'Updated Release Name',
-        },
-      }
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.edit',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.edit({releaseId, patch}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'edit',
+      'sanity.action.release.edit',
+      (options) => releasesClient.edit({releaseId: TEST_RELEASE_ID, patch: TEST_PATCH}, options),
+      {releaseId: TEST_RELEASE_ID, patch: TEST_PATCH},
+    )
   })
 
   describe('publish()', () => {
-    test('publishes a release by ID', async () => {
-      const releaseId = 'release123'
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.publish',
-        releaseId,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.publish({releaseId})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({
-        transactionId: 'txn123',
-      })
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.publish',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.publish({releaseId}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'publish',
+      'sanity.action.release.publish',
+      (options) => releasesClient.publish({releaseId: TEST_RELEASE_ID}, options),
+      {releaseId: TEST_RELEASE_ID},
+    )
   })
 
   describe('archive()', () => {
-    test('archives a release by ID', async () => {
-      const releaseId = 'release123'
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.archive',
-        releaseId,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.archive({releaseId})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({
-        transactionId: 'txn123',
-      })
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.archive',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.archive({releaseId}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'archive',
+      'sanity.action.release.archive',
+      (options) => releasesClient.archive({releaseId: TEST_RELEASE_ID}, options),
+      {releaseId: TEST_RELEASE_ID},
+    )
   })
 
   describe('unarchive()', () => {
-    test('unarchives a release by ID', async () => {
-      const releaseId = 'release123'
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.unarchive',
-        releaseId,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.unarchive({releaseId})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({
-        transactionId: 'txn123',
-      })
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.unarchive',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.unarchive({releaseId}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'unarchive',
+      'sanity.action.release.unarchive',
+      (options) => releasesClient.unarchive({releaseId: TEST_RELEASE_ID}, options),
+      {releaseId: TEST_RELEASE_ID},
+    )
   })
 
   describe('schedule()', () => {
-    test('schedules a release by ID and publishAt time', async () => {
-      const releaseId = 'release123'
-      const publishAt = '2023-12-31T12:00:00.000Z'
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.schedule',
-        releaseId,
-        publishAt,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.schedule({releaseId, publishAt})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({
-        transactionId: 'txn123',
-      })
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-      const publishAt = '2023-12-31T12:00:00.000Z'
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.schedule',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.schedule({releaseId, publishAt}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'schedule',
+      'sanity.action.release.schedule',
+      (options) =>
+        releasesClient.schedule({releaseId: TEST_RELEASE_ID, publishAt: TEST_PUBLISH_AT}, options),
+      {releaseId: TEST_RELEASE_ID, publishAt: TEST_PUBLISH_AT},
+    )
   })
 
   describe('unschedule()', () => {
-    test('unschedules a release by ID', async () => {
-      const releaseId = 'release123'
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.unschedule',
-        releaseId,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.unschedule({releaseId})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({
-        transactionId: 'txn123',
-      })
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.unschedule',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.unschedule({releaseId}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'unschedule',
+      'sanity.action.release.unschedule',
+      (options) => releasesClient.unschedule({releaseId: TEST_RELEASE_ID}, options),
+      {releaseId: TEST_RELEASE_ID},
+    )
   })
 
   describe('delete()', () => {
-    test('deletes a release by ID', async () => {
-      const releaseId = 'release123'
-
-      const expectedAction = {
-        actionType: 'sanity.action.release.delete',
-        releaseId,
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = await releasesClient.delete({releaseId})
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.body.actions).toContainEqual(expectedAction)
-
-      expect(result).toEqual({
-        transactionId: 'txn123',
-      })
-    })
-
-    test('forwards options to action method', async () => {
-      const releaseId = 'release123'
-
-      const options = {
-        transactionId: 'custom-txn',
-        tag: 'releases.delete',
-      }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'custom-txn'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await releasesClient.delete({releaseId}, options)
-
-      expect(httpRequest).toHaveBeenCalledTimes(1)
-      const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
-      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
-    })
+    testActionMethod(
+      'delete',
+      'sanity.action.release.delete',
+      (options) => releasesClient.delete({releaseId: TEST_RELEASE_ID}, options),
+      {releaseId: TEST_RELEASE_ID},
+    )
   })
 
   describe('getDocuments()', () => {
     test('retrieves documents for a release by ID', async () => {
-      const releaseId = 'release123'
       const documents = [
         {_id: 'doc1', _type: 'post', title: 'Document 1'},
         {_id: 'doc2', _type: 'post', title: 'Document 2'},
@@ -769,18 +465,17 @@ describe('ReleasesClient', () => {
         },
       }))
 
-      const result = await releasesClient.getDocuments({releaseId})
+      const result = await releasesClient.getDocuments({releaseId: TEST_RELEASE_ID})
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toContain(`/data/query/${dataset}`)
-      expect(requestArgs.uri).toContain(`versions.${releaseId}`)
+      expect(requestArgs.uri).toContain(`/data/query/${TEST_DATASET}`)
+      expect(requestArgs.uri).toContain(`versions.${TEST_RELEASE_ID}`)
 
       expect(result).toEqual({result: documents})
     })
 
     test('forwards options to underlying method', async () => {
-      const releaseId = 'release123'
       const options = {
         tag: 'releases.documents',
         signal: new AbortController().signal,
@@ -794,7 +489,7 @@ describe('ReleasesClient', () => {
         },
       }))
 
-      await releasesClient.getDocuments({releaseId}, options)
+      await releasesClient.getDocuments({releaseId: TEST_RELEASE_ID}, options)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
@@ -805,68 +500,40 @@ describe('ReleasesClient', () => {
 
   describe('error handling', () => {
     test('propagates server errors when getting a release', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.error(new Error('Server error'))
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await expect(releasesClient.get({releaseId})).rejects.toThrow('Server error')
+      mockHttpError(httpRequest, 'Server error')
+      await expect(releasesClient.get({releaseId: TEST_RELEASE_ID})).rejects.toThrow('Server error')
     })
 
     test('propagates HTTP errors when creating a release', async () => {
-      const releaseId = 'release456'
       const metadata = {
         releaseType: 'scheduled' as ReleaseType,
         name: 'Custom Release',
       }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.error(new Error('Network error'))
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await expect(releasesClient.create({releaseId, metadata})).rejects.toThrow('Network error')
+      mockHttpError(httpRequest, 'Network error')
+      await expect(releasesClient.create({releaseId: TEST_RELEASE_ID, metadata})).rejects.toThrow(
+        'Network error',
+      )
     })
 
     test('propagates error responses with error details', async () => {
-      const releaseId = 'release123'
       const patch = {
         set: {
           'metadata.name': 'Updated Release Name',
         },
       }
-
       const errorResponse = {
         statusCode: 400,
         error: 'Bad Request',
         message: 'Invalid patch operation',
       }
-
-      const customError = new Error('Invalid patch operation') as any
-      customError.details = errorResponse
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.error(customError)
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      await expect(releasesClient.edit({releaseId, patch})).rejects.toMatchObject({
+      mockHttpError(httpRequest, 'Invalid patch operation', errorResponse)
+      await expect(releasesClient.edit({releaseId: TEST_RELEASE_ID, patch})).rejects.toMatchObject({
         message: expect.stringContaining('Invalid patch operation'),
         details: expect.objectContaining(errorResponse),
       })
     })
 
     test('propagates validation errors when publishing a release', async () => {
-      const releaseId = 'release123'
-
       const validationError = new Error('Release not found')
       validationError.name = 'ValidationError'
 
@@ -884,16 +551,16 @@ describe('ReleasesClient', () => {
           },
         }))
 
-      await expect(releasesClient.publish({releaseId})).rejects.toThrow('Release not found')
-      await expect(releasesClient.publish({releaseId})).rejects.toHaveProperty(
+      await expect(releasesClient.publish({releaseId: TEST_RELEASE_ID})).rejects.toThrow(
+        'Release not found',
+      )
+      await expect(releasesClient.publish({releaseId: TEST_RELEASE_ID})).rejects.toHaveProperty(
         'name',
         'ValidationError',
       )
     })
 
     test('handles timeout errors', async () => {
-      const releaseId = 'release123'
-
       const timeoutError = new Error('Request timed out')
       timeoutError.name = 'TimeoutError'
 
@@ -912,16 +579,16 @@ describe('ReleasesClient', () => {
           },
         }))
 
-      await expect(releasesClient.archive({releaseId})).rejects.toThrow('Request timed out')
-      await expect(releasesClient.archive({releaseId})).rejects.toHaveProperty(
+      await expect(releasesClient.archive({releaseId: TEST_RELEASE_ID})).rejects.toThrow(
+        'Request timed out',
+      )
+      await expect(releasesClient.archive({releaseId: TEST_RELEASE_ID})).rejects.toHaveProperty(
         'name',
         'TimeoutError',
       )
     })
 
     test('handles aborted requests', async () => {
-      const releaseId = 'release123'
-
       const abortError = new Error('Request aborted')
       abortError.name = 'AbortError'
 
@@ -933,7 +600,10 @@ describe('ReleasesClient', () => {
       }))
 
       const abortController = new AbortController()
-      const promise = releasesClient.unarchive({releaseId}, {signal: abortController.signal})
+      const promise = releasesClient.unarchive(
+        {releaseId: TEST_RELEASE_ID},
+        {signal: abortController.signal},
+      )
 
       await expect(promise).rejects.toThrow('Request aborted')
       await expect(promise).rejects.toHaveProperty('name', 'AbortError')
@@ -942,9 +612,6 @@ describe('ReleasesClient', () => {
 })
 
 describe('ObservableReleasesClient', () => {
-  const projectId = 'test123'
-  const dataset = 'test-dataset'
-
   let client: any
   let observableReleasesClient: ObservableReleasesClient
   let httpRequest: any
@@ -952,8 +619,8 @@ describe('ObservableReleasesClient', () => {
   beforeEach(() => {
     client = {
       config: () => ({
-        projectId,
-        dataset,
+        projectId: TEST_PROJECT_ID,
+        dataset: TEST_DATASET,
       }),
     }
 
@@ -972,11 +639,23 @@ describe('ObservableReleasesClient', () => {
     vi.resetAllMocks()
   })
 
+  const testObservableActionMethod = (
+    methodName: string,
+    executeMethod: () => Observable<SingleActionResult>,
+  ) => {
+    test(`returns an observable for ${methodName} action`, async () => {
+      mockHttpSuccess(httpRequest, TEST_TXN_ID)
+
+      const result = executeMethod()
+      expect(result).toBeDefined()
+      expect(await firstValueFrom(result)).toEqual({transactionId: TEST_TXN_ID})
+    })
+  }
+
   describe('get()', () => {
     test('returns an observable for a release document', async () => {
-      const releaseId = 'release123'
       const releaseDocument = {
-        _id: `_.releases.${releaseId}`,
+        _id: `_.releases.${TEST_RELEASE_ID}`,
         _type: 'release',
         metadata: {
           releaseType: 'scheduled' as ReleaseType,
@@ -992,7 +671,7 @@ describe('ObservableReleasesClient', () => {
         },
       }))
 
-      const result = observableReleasesClient.get({releaseId})
+      const result = observableReleasesClient.get({releaseId: TEST_RELEASE_ID})
 
       expect(result).toBeDefined()
       expect(await firstValueFrom(result)).toEqual(releaseDocument)
@@ -1001,7 +680,6 @@ describe('ObservableReleasesClient', () => {
 
   describe('create()', () => {
     test('returns an observable for create action with provided ID', async () => {
-      const releaseId = 'release456'
       const metadata = {
         releaseType: 'scheduled' as ReleaseType,
         name: 'Custom Release',
@@ -1011,25 +689,24 @@ describe('ObservableReleasesClient', () => {
         subscribe: (subscriber: any) => {
           subscriber.next({
             type: 'response',
-            body: {transactionId: 'txn123'},
+            body: {transactionId: TEST_TXN_ID},
           })
           subscriber.complete()
           return {unsubscribe: () => {}}
         },
       }))
 
-      const result = observableReleasesClient.create({releaseId, metadata})
+      const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
 
       expect(result).toBeDefined()
       expect(await firstValueFrom(result)).toEqual({
-        transactionId: 'txn123',
-        releaseId: 'release456',
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
         metadata,
       })
     })
 
     test('returns an observable for create action with undefined metadata', async () => {
-      const releaseId = 'release789'
       const expectedMetadata = {
         releaseType: 'undecided',
       }
@@ -1038,26 +715,25 @@ describe('ObservableReleasesClient', () => {
         subscribe: (subscriber: any) => {
           subscriber.next({
             type: 'response',
-            body: {transactionId: 'txn123'},
+            body: {transactionId: TEST_TXN_ID},
           })
           subscriber.complete()
           return {unsubscribe: () => {}}
         },
       }))
 
-      const result = observableReleasesClient.create({releaseId})
+      const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID})
 
       expect(result).toBeDefined()
       const response = await firstValueFrom(result)
       expect(response).toEqual({
-        transactionId: 'txn123',
-        releaseId: 'release789',
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
         metadata: expectedMetadata,
       })
     })
 
     test('returns an observable for create action with metadata missing releaseType', async () => {
-      const releaseId = 'release101'
       const metadata = {
         title: 'Release without type',
       }
@@ -1071,20 +747,52 @@ describe('ObservableReleasesClient', () => {
         subscribe: (subscriber: any) => {
           subscriber.next({
             type: 'response',
-            body: {transactionId: 'txn123'},
+            body: {transactionId: TEST_TXN_ID},
           })
           subscriber.complete()
           return {unsubscribe: () => {}}
         },
       }))
 
-      const result = observableReleasesClient.create({releaseId, metadata})
+      const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
 
       expect(result).toBeDefined()
       const response = await firstValueFrom(result)
       expect(response).toEqual({
-        transactionId: 'txn123',
-        releaseId: 'release101',
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
+        metadata: expectedMetadata,
+      })
+    })
+
+    test('returns an observable for create action with metadata missing releaseType', async () => {
+      const metadata = {
+        title: 'Release without type',
+      }
+
+      const expectedMetadata = {
+        ...metadata,
+        releaseType: 'undecided',
+      }
+
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: TEST_TXN_ID},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
+
+      const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
+
+      expect(result).toBeDefined()
+      const response = await firstValueFrom(result)
+      expect(response).toEqual({
+        transactionId: TEST_TXN_ID,
+        releaseId: TEST_RELEASE_ID,
         metadata: expectedMetadata,
       })
     })
@@ -1107,7 +815,7 @@ describe('ObservableReleasesClient', () => {
             subscriber.next({
               type: 'response',
               body: {
-                transactionId: 'txn123',
+                transactionId: TEST_TXN_ID,
                 releaseId: 'generatedReleaseId',
                 metadata,
               },
@@ -1123,7 +831,7 @@ describe('ObservableReleasesClient', () => {
       expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
 
       const response = await firstValueFrom(result)
-      expect(response.transactionId).toEqual('txn123')
+      expect(response.transactionId).toEqual(TEST_TXN_ID)
       expect(response.releaseId).toEqual('generatedReleaseId')
       expect(response.metadata).toEqual(metadata)
     })
@@ -1136,7 +844,7 @@ describe('ObservableReleasesClient', () => {
         subscribe: (subscriber: any) => {
           subscriber.next({
             type: 'response',
-            body: {transactionId: 'txn123'},
+            body: {transactionId: TEST_TXN_ID},
           })
           subscriber.complete()
           return {unsubscribe: () => {}}
@@ -1156,7 +864,7 @@ describe('ObservableReleasesClient', () => {
       expect(action.metadata.releaseType).toEqual('undecided')
 
       expect(response).toEqual({
-        transactionId: 'txn123',
+        transactionId: TEST_TXN_ID,
         releaseId: 'generatedReleaseId',
         metadata: {
           releaseType: 'undecided',
@@ -1187,21 +895,17 @@ describe('ObservableReleasesClient', () => {
       const result = observableReleasesClient.create(options)
       const response = await firstValueFrom(result)
 
-      // Verify ID generation was called
       expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
-      // Verify options were passed through correctly
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.tag).toEqual(options.tag)
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
-      // Verify the action with auto-generated values
       const action = requestArgs.body.actions[0]
       expect(action.releaseId).toEqual('generatedReleaseId')
       expect(action.metadata.releaseType).toEqual('undecided')
 
-      // Verify the response format
       expect(response).toEqual({
         transactionId: options.transactionId,
         releaseId: 'generatedReleaseId',
@@ -1213,136 +917,49 @@ describe('ObservableReleasesClient', () => {
   })
 
   describe('edit()', () => {
-    test('returns an observable for edit action', async () => {
-      const releaseId = 'release123'
-      const patch = {set: {name: 'Updated'}}
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.edit({releaseId, patch})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('edit', () =>
+      observableReleasesClient.edit({releaseId: TEST_RELEASE_ID, patch: TEST_PATCH}),
+    )
   })
 
   describe('publish()', () => {
-    test('returns an observable for publish action', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.publish({releaseId})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('publish', () =>
+      observableReleasesClient.publish({releaseId: TEST_RELEASE_ID}),
+    )
   })
 
   describe('archive()', () => {
-    test('returns an observable for archive action', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.archive({releaseId})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('archive', () =>
+      observableReleasesClient.archive({releaseId: TEST_RELEASE_ID}),
+    )
   })
 
   describe('unarchive()', () => {
-    test('returns an observable for unarchive action', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.unarchive({releaseId})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('unarchive', () =>
+      observableReleasesClient.unarchive({releaseId: TEST_RELEASE_ID}),
+    )
   })
 
   describe('schedule()', () => {
-    test('returns an observable for schedule action', async () => {
-      const releaseId = 'release123'
-      const publishAt = '2023-12-31T12:00:00.000Z'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.schedule({releaseId, publishAt})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('schedule', () =>
+      observableReleasesClient.schedule({releaseId: TEST_RELEASE_ID, publishAt: TEST_PUBLISH_AT}),
+    )
   })
 
   describe('unschedule()', () => {
-    test('returns an observable for unschedule action', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.unschedule({releaseId})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('unschedule', () =>
+      observableReleasesClient.unschedule({releaseId: TEST_RELEASE_ID}),
+    )
   })
 
   describe('delete()', () => {
-    test('returns an observable for delete action', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
-          subscriber.complete()
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.delete({releaseId})
-      expect(result).toBeDefined()
-      expect(await firstValueFrom(result)).toEqual({transactionId: 'txn123'})
-    })
+    testObservableActionMethod('delete', () =>
+      observableReleasesClient.delete({releaseId: TEST_RELEASE_ID}),
+    )
   })
 
   describe('getDocuments()', () => {
     test('returns an observable for getDocuments action', async () => {
-      const releaseId = 'release123'
       const documents = [
         {_id: 'doc1', _type: 'post', title: 'Document 1'},
         {_id: 'doc2', _type: 'post', title: 'Document 2'},
@@ -1356,7 +973,7 @@ describe('ObservableReleasesClient', () => {
         },
       }))
 
-      const result = observableReleasesClient.getDocuments({releaseId})
+      const result = observableReleasesClient.getDocuments({releaseId: TEST_RELEASE_ID})
       expect(result).toBeDefined()
       expect(await firstValueFrom(result)).toEqual({result: documents})
     })
@@ -1364,65 +981,34 @@ describe('ObservableReleasesClient', () => {
 
   describe('error handling', () => {
     test('emits errors when getting a release', async () => {
-      const releaseId = 'release123'
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.error(new Error('Server error'))
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.get({releaseId})
-
+      mockHttpError(httpRequest, 'Server error')
+      const result = observableReleasesClient.get({releaseId: TEST_RELEASE_ID})
       await expect(firstValueFrom(result)).rejects.toThrow('Server error')
     })
 
     test('emits errors when creating a release', async () => {
-      const releaseId = 'release456'
       const metadata = {
         releaseType: 'scheduled' as ReleaseType,
         name: 'Custom Release',
       }
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.error(new Error('Network error'))
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.create({releaseId, metadata})
-
+      mockHttpError(httpRequest, 'Network error')
+      const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
       await expect(firstValueFrom(result)).rejects.toThrow('Network error')
     })
 
     test('emits error responses with detailed error information', async () => {
-      const releaseId = 'release123'
       const patch = {
         set: {
           'metadata.name': 'Updated Release Name',
         },
       }
-
       const errorResponse = {
         statusCode: 400,
         error: 'Bad Request',
         message: 'Invalid patch operation',
       }
-
-      const customError = new Error('Invalid patch operation') as any
-      customError.details = errorResponse
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: any) => {
-          subscriber.error(customError)
-          return {unsubscribe: () => {}}
-        },
-      }))
-
-      const result = observableReleasesClient.edit({releaseId, patch})
-
+      mockHttpError(httpRequest, 'Invalid patch operation', errorResponse)
+      const result = observableReleasesClient.edit({releaseId: TEST_RELEASE_ID, patch})
       await expect(firstValueFrom(result)).rejects.toMatchObject({
         message: expect.stringContaining('Invalid patch operation'),
         details: expect.objectContaining(errorResponse),
@@ -1430,7 +1016,6 @@ describe('ObservableReleasesClient', () => {
     })
 
     test('properly cleans up subscriptions when errors occur', async () => {
-      const releaseId = 'release123'
       const unsubscribeSpy = vi.fn()
 
       httpRequest.mockImplementationOnce(() => ({
@@ -1440,12 +1025,9 @@ describe('ObservableReleasesClient', () => {
         },
       }))
 
-      const result = observableReleasesClient.get({releaseId})
-
+      const result = observableReleasesClient.get({releaseId: TEST_RELEASE_ID})
       await expect(firstValueFrom(result)).rejects.toThrow('Server error')
-
       await new Promise((resolve) => setTimeout(resolve, 0))
-
       expect(unsubscribeSpy).toHaveBeenCalled()
     })
   })
