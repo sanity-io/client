@@ -51,19 +51,28 @@ export class ObservableReleasesClient {
    * Must include a `releaseType` {@link ReleaseType}
    */
   create(
-    {releaseId, metadata}: {releaseId?: string; metadata: ReleaseDocument['metadata']},
+    {
+      releaseId,
+      metadata = {},
+    }: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
-  ): Observable<SingleActionResult & {releaseId: string}> {
+  ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
     const finalReleaseId = releaseId || generateReleaseId()
+    const finalMetadata: ReleaseDocument['metadata'] = {
+      ...metadata,
+      releaseType: metadata.releaseType || 'undecided',
+    }
+
     const createAction: CreateReleaseAction = {
       actionType: 'sanity.action.release.create',
       releaseId: finalReleaseId,
-      metadata,
+      metadata: finalMetadata,
     }
 
     return _action(this.#client, this.#httpRequest, createAction, options).pipe(
       map((actionResult) => ({
         ...actionResult,
+        metadata: finalMetadata,
         releaseId: finalReleaseId,
       })),
     )
@@ -247,21 +256,29 @@ export class ReleasesClient {
    * Must include a `releaseType` {@link ReleaseType}
    */
   async create(
-    {releaseId, metadata}: {releaseId?: string; metadata: ReleaseDocument['metadata']},
+    {
+      releaseId,
+      metadata = {},
+    }: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
-  ): Promise<SingleActionResult & {releaseId: string}> {
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
     const finalReleaseId = releaseId || generateReleaseId()
+    const finalMetadata: ReleaseDocument['metadata'] = {
+      ...metadata,
+      releaseType: metadata.releaseType || 'undecided',
+    }
+
     const createAction: CreateReleaseAction = {
       actionType: 'sanity.action.release.create',
       releaseId: finalReleaseId,
-      metadata,
+      metadata: finalMetadata,
     }
 
     const actionResult = await lastValueFrom(
       _action(this.#client, this.#httpRequest, createAction, options),
     )
 
-    return {...actionResult, releaseId: finalReleaseId}
+    return {...actionResult, releaseId: finalReleaseId, metadata: finalMetadata}
   }
 
   /**

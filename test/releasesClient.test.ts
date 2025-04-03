@@ -160,6 +160,78 @@ describe('ReleasesClient', () => {
       expect(result).toEqual({
         transactionId: 'txn123',
         releaseId: 'release456',
+        metadata,
+      })
+    })
+
+    test('creates a release with undefined metadata', async () => {
+      const releaseId = 'release789'
+      const expectedMetadata = {
+        releaseType: 'undecided',
+      }
+
+      const expectedAction = {
+        actionType: 'sanity.action.release.create',
+        releaseId,
+        metadata: expectedMetadata,
+      }
+
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
+
+      const result = await releasesClient.create({releaseId})
+
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+      const requestArgs = httpRequest.mock.calls[0][0]
+      expect(requestArgs.body.actions).toContainEqual(expectedAction)
+
+      expect(result).toEqual({
+        transactionId: 'txn123',
+        releaseId: 'release789',
+        metadata: expectedMetadata,
+      })
+    })
+
+    test('creates a release with metadata missing releaseType', async () => {
+      const releaseId = 'release101'
+      const metadata = {
+        title: 'Release without type',
+      }
+
+      const expectedMetadata = {
+        ...metadata,
+        releaseType: 'undecided',
+      }
+
+      const expectedAction = {
+        actionType: 'sanity.action.release.create',
+        releaseId,
+        metadata: expectedMetadata,
+      }
+
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({type: 'response', body: {transactionId: 'txn123'}})
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
+
+      const result = await releasesClient.create({releaseId, metadata})
+
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+      const requestArgs = httpRequest.mock.calls[0][0]
+      expect(requestArgs.body.actions).toContainEqual(expectedAction)
+
+      expect(result).toEqual({
+        transactionId: 'txn123',
+        releaseId: 'release101',
+        metadata: expectedMetadata,
       })
     })
 
@@ -194,6 +266,7 @@ describe('ReleasesClient', () => {
       expect(result).toEqual({
         transactionId: 'txn123',
         releaseId: 'generatedReleaseId',
+        metadata,
       })
     })
 
@@ -880,6 +953,68 @@ describe('ObservableReleasesClient', () => {
       expect(await firstValueFrom(result)).toEqual({
         transactionId: 'txn123',
         releaseId: 'release456',
+        metadata,
+      })
+    })
+
+    test('returns an observable for create action with undefined metadata', async () => {
+      const releaseId = 'release789'
+      const expectedMetadata = {
+        releaseType: 'undecided',
+      }
+
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: 'txn123'},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
+
+      const result = observableReleasesClient.create({releaseId})
+
+      expect(result).toBeDefined()
+      const response = await firstValueFrom(result)
+      expect(response).toEqual({
+        transactionId: 'txn123',
+        releaseId: 'release789',
+        metadata: expectedMetadata,
+      })
+    })
+
+    test('returns an observable for create action with metadata missing releaseType', async () => {
+      const releaseId = 'release101'
+      const metadata = {
+        title: 'Release without type',
+      }
+
+      const expectedMetadata = {
+        ...metadata,
+        releaseType: 'undecided',
+      }
+
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: 'txn123'},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
+
+      const result = observableReleasesClient.create({releaseId, metadata})
+
+      expect(result).toBeDefined()
+      const response = await firstValueFrom(result)
+      expect(response).toEqual({
+        transactionId: 'txn123',
+        releaseId: 'release101',
+        metadata: expectedMetadata,
       })
     })
 
@@ -903,6 +1038,7 @@ describe('ObservableReleasesClient', () => {
               body: {
                 transactionId: 'txn123',
                 releaseId: 'generatedReleaseId',
+                metadata,
               },
             })
             subscriber.complete()
@@ -918,6 +1054,7 @@ describe('ObservableReleasesClient', () => {
       const response = await firstValueFrom(result)
       expect(response.transactionId).toEqual('txn123')
       expect(response.releaseId).toEqual('generatedReleaseId')
+      expect(response.metadata).toEqual(metadata)
     })
   })
 
