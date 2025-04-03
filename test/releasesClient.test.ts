@@ -78,7 +78,7 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toBe(`/data/doc/${dataset}/_.releases.${releaseId}`)
+      expect(requestArgs.uri).toEqual(`/data/doc/${dataset}/_.releases.${releaseId}`)
     })
 
     test('returns undefined when release does not exist', async () => {
@@ -101,7 +101,7 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toBe(`/data/doc/${dataset}/_.releases.${releaseId}`)
+      expect(requestArgs.uri).toEqual(`/data/doc/${dataset}/_.releases.${releaseId}`)
     })
 
     test('forwards signal and tag options', async () => {
@@ -124,8 +124,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.signal).toBe(options.signal)
-      expect(requestArgs.tag).toBe(options.tag)
+      expect(requestArgs.signal).toEqual(options.signal)
+      expect(requestArgs.tag).toEqual(options.tag)
     })
   })
 
@@ -294,8 +294,87 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
+    })
+
+    test('auto-generates both releaseId and metadata.releaseType when neither is provided', async () => {
+      httpRequest.mockImplementationOnce((options: any) => {
+        return {
+          subscribe: (subscriber: any) => {
+            subscriber.next({
+              type: 'response',
+              body: {transactionId: 'txn123'},
+            })
+            subscriber.complete()
+            return {unsubscribe: () => {}}
+          },
+        }
+      })
+
+      const result = await releasesClient.create({})
+
+      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+
+      const requestArgs = httpRequest.mock.calls[0][0]
+      const action = requestArgs.body.actions[0]
+
+      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.metadata.releaseType).toEqual('undecided')
+
+      expect(result).toEqual({
+        transactionId: 'txn123',
+        releaseId: 'generatedReleaseId',
+        metadata: {
+          releaseType: 'undecided',
+        },
+      })
+    })
+
+    test('handles options as the first parameter and auto-generates release data', async () => {
+      const options = {
+        transactionId: 'options-txn',
+        tag: 'releases.create.options',
+      }
+
+      httpRequest.mockImplementationOnce((requestOptions: any) => {
+        return {
+          subscribe: (subscriber: any) => {
+            subscriber.next({
+              type: 'response',
+              body: {transactionId: options.transactionId},
+            })
+            subscriber.complete()
+            return {unsubscribe: () => {}}
+          },
+        }
+      })
+
+      const result = await releasesClient.create(options)
+
+      // Verify ID generation was called
+      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+
+      // Verify options were passed through correctly
+      const requestArgs = httpRequest.mock.calls[0][0]
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
+
+      // Verify the action with auto-generated values
+      const action = requestArgs.body.actions[0]
+      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.metadata.releaseType).toEqual('undecided')
+
+      // Verify the response format
+      expect(result).toEqual({
+        transactionId: options.transactionId,
+        releaseId: 'generatedReleaseId',
+        metadata: {
+          releaseType: 'undecided',
+        },
+      })
     })
   })
 
@@ -356,8 +435,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -409,8 +488,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -462,8 +541,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -515,8 +594,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -571,8 +650,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -624,8 +703,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -677,8 +756,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.body.transactionId).toBe(options.transactionId)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   })
 
@@ -727,8 +806,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toBe(options.tag)
-      expect(requestArgs.signal).toBe(options.signal)
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.signal).toEqual(options.signal)
     })
   })
 
@@ -1055,6 +1134,93 @@ describe('ObservableReleasesClient', () => {
       expect(response.transactionId).toEqual('txn123')
       expect(response.releaseId).toEqual('generatedReleaseId')
       expect(response.metadata).toEqual(metadata)
+    })
+
+    test('auto-generates both releaseId and metadata.releaseType when neither is provided', async () => {
+      vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
+      vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
+
+      httpRequest.mockImplementationOnce((options: any) => {
+        return {
+          subscribe: (subscriber: any) => {
+            subscriber.next({
+              type: 'response',
+              body: {transactionId: 'txn123'},
+            })
+            subscriber.complete()
+            return {unsubscribe: () => {}}
+          },
+        }
+      })
+
+      const result = observableReleasesClient.create({})
+      const response = await firstValueFrom(result)
+
+      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+
+      const requestArgs = httpRequest.mock.calls[0][0]
+      const action = requestArgs.body.actions[0]
+
+      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.metadata.releaseType).toEqual('undecided')
+
+      expect(response).toEqual({
+        transactionId: 'txn123',
+        releaseId: 'generatedReleaseId',
+        metadata: {
+          releaseType: 'undecided',
+        },
+      })
+    })
+
+    test('handles options as the first parameter and auto-generates release data', async () => {
+      vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
+      vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
+
+      const options = {
+        transactionId: 'options-txn',
+        tag: 'releases.create.options',
+      }
+
+      httpRequest.mockImplementationOnce((requestOptions: any) => {
+        return {
+          subscribe: (subscriber: any) => {
+            subscriber.next({
+              type: 'response',
+              body: {transactionId: options.transactionId},
+            })
+            subscriber.complete()
+            return {unsubscribe: () => {}}
+          },
+        }
+      })
+
+      const result = observableReleasesClient.create(options)
+      const response = await firstValueFrom(result)
+
+      // Verify ID generation was called
+      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
+      expect(httpRequest).toHaveBeenCalledTimes(1)
+
+      // Verify options were passed through correctly
+      const requestArgs = httpRequest.mock.calls[0][0]
+      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.body.transactionId).toEqual(options.transactionId)
+
+      // Verify the action with auto-generated values
+      const action = requestArgs.body.actions[0]
+      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.metadata.releaseType).toEqual('undecided')
+
+      // Verify the response format
+      expect(response).toEqual({
+        transactionId: options.transactionId,
+        releaseId: 'generatedReleaseId',
+        metadata: {
+          releaseType: 'undecided',
+        },
+      })
     })
   })
 
