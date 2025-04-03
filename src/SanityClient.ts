@@ -181,7 +181,7 @@ export class ObservableSanityClient {
     Q extends QueryWithoutParams | QueryParams = QueryParams,
     const G extends string = string,
   >(
-    query: G,
+    query: string,
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>>>
