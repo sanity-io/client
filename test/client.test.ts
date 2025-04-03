@@ -3245,6 +3245,137 @@ describe('client', async () => {
         .commit()
       expect(res.transactionId, 'applies given transaction').toEqual(transactionId)
     })
+
+    test('transaction createVersion() adds create operation with document and publishedId', () => {
+      const document = {_type: 'post', title: 'Draft version'}
+      const publishedId = 'pub123'
+      const expectedVersionId = `drafts.${publishedId}`
+
+      const transaction = getClient().transaction().createVersion({
+        document,
+        publishedId,
+      })
+
+      expect(transaction.serialize()).toEqual([
+        {
+          create: {
+            ...document,
+            _id: expectedVersionId,
+          },
+        },
+      ])
+    })
+
+    test('transaction createVersion() adds create operation with document, publishedId and releaseId', () => {
+      const document = {_type: 'post', title: 'Release version'}
+      const publishedId = 'pub123'
+      const releaseId = 'release456'
+      const expectedVersionId = `versions.${releaseId}.${publishedId}`
+
+      const transaction = getClient().transaction().createVersion({
+        document,
+        publishedId,
+        releaseId,
+      })
+
+      expect(transaction.serialize()).toEqual([
+        {
+          create: {
+            ...document,
+            _id: expectedVersionId,
+          },
+        },
+      ])
+    })
+
+    test('transaction createVersion() can be chained with other operations', () => {
+      const document = {_type: 'post', title: 'Draft version'}
+      const publishedId = 'pub123'
+      const expectedVersionId = `drafts.${publishedId}`
+
+      const transaction = getClient()
+        .transaction()
+        .createVersion({
+          document,
+          publishedId,
+        })
+        .create({_type: 'otherDoc', _id: 'other123'})
+        .delete('someId')
+
+      expect(transaction.serialize()).toEqual([
+        {
+          create: {
+            ...document,
+            _id: expectedVersionId,
+          },
+        },
+        {
+          create: {
+            _type: 'otherDoc',
+            _id: 'other123',
+          },
+        },
+        {
+          delete: {
+            id: 'someId',
+          },
+        },
+      ])
+    })
+
+    test('transaction createVersion() throws when document is missing _type property', () => {
+      const document = {title: 'Missing Type'} as any
+      const publishedId = 'pub123'
+
+      expect(() =>
+        getClient().transaction().createVersion({
+          document,
+          publishedId,
+        }),
+      ).toThrow('createVersion() requires that the document contains a type')
+    })
+
+    test('transaction createVersion() throws when document._id does not match expected version ID', () => {
+      const document = {_id: 'wrongId123', _type: 'post', title: 'ID Mismatch'}
+      const publishedId = 'pub123'
+
+      expect(() =>
+        getClient().transaction().createVersion({
+          document,
+          publishedId,
+        }),
+      ).toThrow(
+        'The provided document ID (wrongId123) does not match the generated version ID (drafts.pub123)',
+      )
+    })
+
+    test('transaction createVersion() throws when document._id with releaseId does not match expected version ID', () => {
+      const document = {_id: 'versions.wrongRelease.wrongId', _type: 'post', title: 'ID Mismatch'}
+      const publishedId = 'pub123'
+      const releaseId = 'release456'
+
+      expect(() =>
+        getClient().transaction().createVersion({
+          document,
+          publishedId,
+          releaseId,
+        }),
+      ).toThrow(
+        'The provided document ID (versions.wrongRelease.wrongId) does not match the generated version ID (versions.release456.pub123)',
+      )
+    })
+
+    test('transaction createVersion() throws when neither publishedId nor document._id are provided', () => {
+      const document = {_type: 'post', title: 'No ID Document'}
+
+      expect(() =>
+        getClient()
+          .transaction()
+          .createVersion({
+            document,
+          } as any),
+      ).toThrow('createVersion() requires either a publishedId or a document with an _id')
+    })
   })
 
   // nock doesn't support mocking `fetch` yet, which is used by event-source-polyfill, and thus we have to skip for now when `isNode` is false
