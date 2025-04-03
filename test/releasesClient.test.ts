@@ -299,18 +299,16 @@ describe('ReleasesClient', () => {
     })
 
     test('auto-generates both releaseId and metadata.releaseType when neither is provided', async () => {
-      httpRequest.mockImplementationOnce((options: any) => {
-        return {
-          subscribe: (subscriber: any) => {
-            subscriber.next({
-              type: 'response',
-              body: {transactionId: 'txn123'},
-            })
-            subscriber.complete()
-            return {unsubscribe: () => {}}
-          },
-        }
-      })
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: 'txn123'},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
 
       const result = await releasesClient.create({})
 
@@ -338,36 +336,30 @@ describe('ReleasesClient', () => {
         tag: 'releases.create.options',
       }
 
-      httpRequest.mockImplementationOnce((requestOptions: any) => {
-        return {
-          subscribe: (subscriber: any) => {
-            subscriber.next({
-              type: 'response',
-              body: {transactionId: options.transactionId},
-            })
-            subscriber.complete()
-            return {unsubscribe: () => {}}
-          },
-        }
-      })
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: options.transactionId},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
 
       const result = await releasesClient.create(options)
 
-      // Verify ID generation was called
       expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
-      // Verify options were passed through correctly
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.tag).toEqual(options.tag)
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
-      // Verify the action with auto-generated values
       const action = requestArgs.body.actions[0]
       expect(action.releaseId).toEqual('generatedReleaseId')
       expect(action.metadata.releaseType).toEqual('undecided')
 
-      // Verify the response format
       expect(result).toEqual({
         transactionId: options.transactionId,
         releaseId: 'generatedReleaseId',
@@ -1140,18 +1132,16 @@ describe('ObservableReleasesClient', () => {
       vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
       vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
 
-      httpRequest.mockImplementationOnce((options: any) => {
-        return {
-          subscribe: (subscriber: any) => {
-            subscriber.next({
-              type: 'response',
-              body: {transactionId: 'txn123'},
-            })
-            subscriber.complete()
-            return {unsubscribe: () => {}}
-          },
-        }
-      })
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: 'txn123'},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
 
       const result = observableReleasesClient.create({})
       const response = await firstValueFrom(result)
@@ -1183,18 +1173,16 @@ describe('ObservableReleasesClient', () => {
         tag: 'releases.create.options',
       }
 
-      httpRequest.mockImplementationOnce((requestOptions: any) => {
-        return {
-          subscribe: (subscriber: any) => {
-            subscriber.next({
-              type: 'response',
-              body: {transactionId: options.transactionId},
-            })
-            subscriber.complete()
-            return {unsubscribe: () => {}}
-          },
-        }
-      })
+      httpRequest.mockImplementationOnce(() => ({
+        subscribe: (subscriber: any) => {
+          subscriber.next({
+            type: 'response',
+            body: {transactionId: options.transactionId},
+          })
+          subscriber.complete()
+          return {unsubscribe: () => {}}
+        },
+      }))
 
       const result = observableReleasesClient.create(options)
       const response = await firstValueFrom(result)
