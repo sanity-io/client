@@ -2047,7 +2047,7 @@ describe('client', async () => {
         expect(error?.message).toMatch('createVersion() requires that the document contains a type')
       })
 
-      test('throws when document ID does not match generated version ID', async () => {
+      test('throws when draft document ID does not match generated version ID', async () => {
         const document = {_id: 'drafts.wrongId123', _type: 'post', title: 'Mismatch draft'}
         const publishedId = 'pub123'
         // This will generate drafts.pub123 which doesn't match document._id
@@ -2062,6 +2062,29 @@ describe('client', async () => {
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
           'The provided document ID (drafts.wrongId123) does not match the generated version ID (drafts.pub123)',
+        )
+      })
+
+      test('throws when version document ID does not match generated version ID', async () => {
+        const document = {
+          _id: 'versions.wrongRelease.wrongId123',
+          _type: 'post',
+          title: 'Mismatch draft',
+        }
+        const publishedId = 'pub123'
+        const releaseId = 'release456'
+        // This will generate versions.release456.pub123 which doesn't match document._id
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({document, publishedId, releaseId})
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          'The provided document ID (versions.wrongRelease.wrongId123) does not match the generated version ID (versions.release456.pub123)',
         )
       })
 
