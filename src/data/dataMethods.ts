@@ -293,6 +293,9 @@ export function _replaceVersion<R extends Record<string, Any>>(
   doc: IdentifiedSanityDocumentStub<R>,
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
+  validators.requireDocumentId('replaceVersion', doc)
+  validators.requireDocumentType('replaceVersion', doc)
+
   const replaceVersionAction: ReplaceVersionAction = {
     actionType: 'sanity.action.document.version.replace',
     document: doc,

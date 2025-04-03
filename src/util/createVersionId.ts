@@ -15,15 +15,18 @@ export const generateReleaseId = customAlphabet(
 export const getDocumentVersionId = (publishedId: string, releaseId?: string) =>
   releaseId ? getVersionId(releaseId, publishedId) : getDraftId(publishedId)
 
-export function deriveDocumentVersionId({
-  releaseId,
-  publishedId,
-  document,
-}: {
-  releaseId?: string
-  publishedId?: string
-  document: SanityDocumentStub | IdentifiedSanityDocumentStub
-}): string {
+export function deriveDocumentVersionId(
+  {
+    releaseId,
+    publishedId,
+    document,
+  }: {
+    releaseId?: string
+    publishedId?: string
+    document: SanityDocumentStub | IdentifiedSanityDocumentStub
+  },
+  op: string,
+): string {
   if (publishedId && document._id) {
     const documentVersionId = getDocumentVersionId(publishedId, releaseId)
     validateVersionIdMatch(documentVersionId, document)
@@ -38,5 +41,5 @@ export function deriveDocumentVersionId({
     return getDocumentVersionId(publishedId, releaseId)
   }
 
-  throw new Error('createVersionId() requires either a publishedId or a document with an _id')
+  throw new Error(`${op}() requires either a publishedId or a document with an _id`)
 }
