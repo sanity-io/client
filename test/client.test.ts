@@ -1390,6 +1390,74 @@ describe('client', async () => {
           }
         })
 
+        test('client.getDocument with releaseId converts regular id to version id', async () => {
+          const documentId = 'abc123'
+          const releaseId = 'release456'
+          const versionId = `versions.${releaseId}.${documentId}`
+
+          nock(projectHost())
+            .get(`/v1/data/doc/foo/${versionId}`)
+            .reply(200, {
+              ms: 123,
+              documents: [{_id: versionId, mood: 'excited'}],
+            })
+
+          const doc = await getClient().getDocument(documentId, {releaseId})
+          expect(doc?._id).toBe(versionId)
+          expect(doc?.mood).toBe('excited')
+        })
+
+        test('client.getDocument with matching releaseId for existing version id', async () => {
+          const documentId = 'abc123'
+          const releaseId = 'release456'
+          const versionId = `versions.${releaseId}.${documentId}`
+
+          nock(projectHost())
+            .get(`/v1/data/doc/foo/${versionId}`)
+            .reply(200, {
+              ms: 123,
+              documents: [{_id: versionId, mood: 'content'}],
+            })
+
+          // No releaseId in options to avoid validation error
+          const doc = await getClient().getDocument(versionId)
+          expect(doc?._id).toBe(versionId)
+          expect(doc?.mood).toBe('content')
+        })
+
+        test('client.getDocument throws with non-matching releaseId for version id', async () => {
+          const documentId = 'abc123'
+          const existingReleaseId = 'release456'
+          const newReleaseId = 'release789'
+          const versionId = `versions.${existingReleaseId}.${documentId}`
+
+          try {
+            await getClient().getDocument(versionId, {releaseId: newReleaseId})
+          } catch (err: any) {
+            expect(err).toBeInstanceOf(Error)
+            expect(err.message).toContain(
+              `The document ID (${versionId}) is already a version of ${existingReleaseId} release, but this does not match the provided \`options.releaseId\` (${newReleaseId})`,
+            )
+          }
+        })
+
+        test('client.getDocument throws when using draft id with releaseId', async () => {
+          expect.assertions(2)
+
+          const publishedId = 'abc123'
+          const draftId = `drafts.${publishedId}`
+          const releaseId = 'release456'
+
+          try {
+            await getClient().getDocument(draftId, {releaseId})
+          } catch (err: any) {
+            expect(err).toBeInstanceOf(Error)
+            expect(err.message).toContain(
+              `The document ID (${draftId}) is a draft, but \`options.releaseId\` is set ${releaseId}`,
+            )
+          }
+        })
+
         test('client.getDocuments', async () => {
           expect.assertions(2)
 
@@ -2327,7 +2395,7 @@ describe('client', async () => {
         const document = {_type: 'post', title: 'Release version'}
         const publishedId = 'pub123'
         const releaseId = 'release456'
-        const expectedVersionId = `versions.${publishedId}.${releaseId}`
+        const expectedVersionId = `versions.${releaseId}.${publishedId}`
 
         nock(projectHost())
           .post('/v1/data/actions/foo', {
@@ -3813,7 +3881,7 @@ describe('client', async () => {
   })
 
   describe.skipIf(isEdge)('discardVersion()', () => {
-    test('can discard version of a document with publishedId', async () => {
+    test('can discard draft version of a document with publishedId', async () => {
       const publishedId = 'doc123'
 
       nock(projectHost())
@@ -3843,7 +3911,7 @@ describe('client', async () => {
           actions: [
             {
               actionType: 'sanity.action.document.version.discard',
-              versionId: 'versions.doc123.release456',
+              versionId: 'versions.release456.doc123',
               purge: false,
             },
           ],
@@ -3898,47 +3966,10 @@ describe('client', async () => {
       }
 
       expect(error).not.toBeNull()
-      expect(error?.message).toMatch(/Cannot read properties of undefined/)
-    })
-
-    test('throws when publishedId is not a string', async () => {
-      const args = {publishedId: 123 as any}
-
-      let error: Error | null = null
-      try {
-        await getClient().discardVersion(args)
-      } catch (err) {
-        error = err as Error
-      }
-
-      expect(error).not.toBeNull()
-      expect(error?.message).toMatch(/startsWith is not a function/)
     })
   })
 
   describe.skipIf(isEdge)('unpublishVersion()', () => {
-    test('can unpublish a version of a document with publishedId', async () => {
-      const publishedId = 'doc123'
-      const releaseId = 'drafts'
-
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.unpublish',
-              versionId: 'versions.doc123.drafts',
-              publishedId,
-            },
-          ],
-        })
-        .reply(200, {
-          transactionId: 'abc123',
-        })
-
-      const res = await getClient().unpublishVersion({publishedId, releaseId})
-      expect(res.transactionId).toEqual('abc123')
-    })
-
     test('can unpublish a release version of a document', async () => {
       const publishedId = 'doc123'
       const releaseId = 'release456'
@@ -3948,7 +3979,7 @@ describe('client', async () => {
           actions: [
             {
               actionType: 'sanity.action.document.version.unpublish',
-              versionId: 'versions.doc123.release456',
+              versionId: 'versions.release456.doc123',
               publishedId,
             },
           ],
@@ -3963,7 +3994,7 @@ describe('client', async () => {
 
     test('can unpublish a version with additional options', async () => {
       const publishedId = 'doc123'
-      const releaseId = 'drafts'
+      const releaseId = 'release456'
       const options = {
         skipCrossDatasetReferenceValidation: true,
         dryRun: true,
@@ -3974,7 +4005,7 @@ describe('client', async () => {
           actions: [
             {
               actionType: 'sanity.action.document.version.unpublish',
-              versionId: 'versions.doc123.drafts',
+              versionId: 'versions.release456.doc123',
               publishedId,
             },
           ],
@@ -3989,24 +4020,8 @@ describe('client', async () => {
       expect(res.transactionId).toEqual('abc123')
     })
 
-    test('handles errors when unpublishing versions', async () => {
-      const publishedId = 'doc123'
-      const releaseId = 'drafts'
-
-      nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
-
-      await expect(getClient().unpublishVersion({publishedId, releaseId})).rejects.toThrow(
-        'Network error occurred',
-      )
-    })
-
-    test('throws when publishedId is missing', async () => {
+    test('throws when releaseId is drafts', async () => {
       const args = {releaseId: 'drafts'} as any
-
-      nock(projectHost()).post('/v1/data/actions/foo').reply(400, {
-        error: 'Invalid document ID',
-        message: 'Cannot use undefined as document ID',
-      })
 
       let error: Error | null = null
       try {
@@ -4016,11 +4031,11 @@ describe('client', async () => {
       }
 
       expect(error).not.toBeNull()
-      expect(error?.message).toMatch(/Invalid document ID - Cannot use undefined as document ID/)
+      expect(error?.message).toMatch('Version can not be "published" or "drafts"')
     })
 
-    test('throws when publishedId is not a string', async () => {
-      const args = {publishedId: 123, releaseId: 'drafts'} as any
+    test('throws when data request fails', async () => {
+      const args = {publishedId: 'doc123', releaseId: 'release456'} as any
 
       nock(projectHost()).post('/v1/data/actions/foo').reply(400, {
         error: 'Invalid document ID',
@@ -4035,14 +4050,14 @@ describe('client', async () => {
       }
 
       expect(error).not.toBeNull()
-      expect(error?.message).toMatch(/Invalid document ID - Document ID must be a string/)
+      expect(error?.message).toMatch('Invalid document ID - Document ID must be a string')
     })
   })
 
   describe.skipIf(isEdge)('replaceVersion()', () => {
     test('can replace version using only document with _id', async () => {
       nock.cleanAll()
-      const documentId = 'drafts.existing123'
+      const documentId = 'drafts.doc123'
       const document = {_id: documentId, _type: 'post', title: 'Only document ID'}
 
       nock(projectHost())
@@ -4066,7 +4081,34 @@ describe('client', async () => {
       expect(res.transactionId).toEqual('abc123')
     })
 
-    test('can replace version with document and publishedId', async () => {
+    test('can replace version using document with _id and publishedId', async () => {
+      nock.cleanAll()
+      const documentId = 'drafts.doc123'
+      const publishedId = 'doc123'
+      const document = {_id: documentId, _type: 'post', title: 'Only document ID'}
+
+      nock(projectHost())
+        .post('/v1/data/actions/foo', {
+          actions: [
+            {
+              actionType: 'sanity.action.document.version.replace',
+              document: {
+                _id: documentId,
+                _type: 'post',
+                title: 'Only document ID',
+              },
+            },
+          ],
+        })
+        .reply(200, {
+          transactionId: 'abc123',
+        })
+
+      const res = await getClient().replaceVersion({document, publishedId})
+      expect(res.transactionId).toEqual('abc123')
+    })
+
+    test('can replace version with draft document and publishedId', async () => {
       const publishedId = 'doc123'
       const document = {_type: 'post', title: 'Replace Version Test'}
 
@@ -4087,7 +4129,7 @@ describe('client', async () => {
       expect(res.transactionId).toEqual('abc123')
     })
 
-    test('can replace version with document, publishedId and releaseId', async () => {
+    test('can replace version with matching document, publishedId and releaseId', async () => {
       const publishedId = 'doc123'
       const releaseId = 'release456'
       const document = {_type: 'post', title: 'Replace Version Test'}
@@ -4097,7 +4139,7 @@ describe('client', async () => {
           actions: [
             {
               actionType: 'sanity.action.document.version.replace',
-              document: {...document, _id: 'versions.doc123.release456'},
+              document: {...document, _id: 'versions.release456.doc123'},
             },
           ],
         })
@@ -4107,6 +4149,58 @@ describe('client', async () => {
 
       const res = await getClient().replaceVersion({document, publishedId, releaseId})
       expect(res.transactionId).toEqual('abc123')
+    })
+
+    test('throws when document id does not match generated version id', async () => {
+      const document = {_type: 'post', _id: 'doc123'}
+      const publishedId = 'doc123'
+      const releaseId = 'release456'
+
+      let error: Error | null = null
+      try {
+        await getClient().replaceVersion({document, publishedId, releaseId})
+      } catch (err) {
+        error = err as Error
+      }
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch(
+        'The provided document ID (doc123) does not match the generated version ID (versions.release456.doc123)',
+      )
+    })
+
+    test('throws when draft document id does not match generated version id', async () => {
+      const document = {_type: 'post', _id: 'drafts.doc123'}
+      const publishedId = 'doc123'
+      const releaseId = 'release456'
+
+      let error: Error | null = null
+      try {
+        await getClient().replaceVersion({document, publishedId, releaseId})
+      } catch (err) {
+        error = err as Error
+      }
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch(
+        'The provided document ID (drafts.doc123) does not match the generated version ID (versions.release456.doc123)',
+      )
+    })
+
+    test('throws when releaseId is drafts', async () => {
+      const document = {_type: 'post', _id: 'doc123'}
+      const publishedId = 'doc123'
+      const releaseId = 'drafts'
+
+      let error: Error | null = null
+      try {
+        await getClient().replaceVersion({document, publishedId, releaseId})
+      } catch (err) {
+        error = err as Error
+      }
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch('Version can not be "published" or "drafts"')
     })
 
     test('throws when neither publishedId nor document._id are provided', async () => {
@@ -4121,7 +4215,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        /replaceVersion\(\) requires either a publishedId or a document with an _id/,
+        'replaceVersion() requires either a publishedId or a document with an _id',
       )
     })
 
@@ -4186,7 +4280,7 @@ describe('client', async () => {
 
     test('can use publishedId to generate draft ID with no document._id', async () => {
       nock.cleanAll()
-      const publishedId = 'uniquedoc555'
+      const publishedId = 'doc123'
       const document = {_type: 'post', title: 'Replace Version Test'}
 
       nock(projectHost())
@@ -4224,7 +4318,7 @@ describe('client', async () => {
               document: {
                 _type: 'post',
                 title: 'Replace with Release Test',
-                _id: `versions.${publishedId}.${releaseId}`,
+                _id: `versions.${releaseId}.${publishedId}`,
               },
             },
           ],

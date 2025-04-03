@@ -758,7 +758,7 @@ export class ObservableSanityClient {
     {releaseId, publishedId}: {releaseId: string; publishedId: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    const versionId = getVersionId(releaseId, publishedId)
+    const versionId = getVersionId(publishedId, releaseId)
 
     return dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options)
   }
@@ -1559,7 +1559,7 @@ export class SanityClient {
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
     const documentVersionId = releaseId
-      ? getVersionId(releaseId, publishedId)
+      ? getVersionId(publishedId, releaseId)
       : getDraftId(publishedId)
 
     return lastValueFrom(
@@ -1637,7 +1637,7 @@ export class SanityClient {
     {releaseId, publishedId}: {releaseId: string; publishedId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    const versionId = getVersionId(releaseId, publishedId)
+    const versionId = getVersionId(publishedId, releaseId)
 
     return lastValueFrom(
       dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options),
