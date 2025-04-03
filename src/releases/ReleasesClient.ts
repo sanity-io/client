@@ -51,12 +51,36 @@ export class ObservableReleasesClient {
    * Must include a `releaseType` {@link ReleaseType}
    */
   create(
-    {
-      releaseId,
-      metadata = {},
-    }: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
+    options: BaseActionOptions,
+  ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
+  create(
+    release: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
+  ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
+  create(
+    releaseOrOptions?:
+      | {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>}
+      | BaseActionOptions,
+    maybeOptions?: BaseActionOptions,
   ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
+    const getArgs = (): [
+      string | undefined,
+      Partial<ReleaseDocument['metadata']>,
+      BaseActionOptions | undefined,
+    ] => {
+      if (
+        typeof releaseOrOptions === 'object' &&
+        releaseOrOptions !== null &&
+        ('releaseId' in releaseOrOptions || 'metadata' in releaseOrOptions)
+      ) {
+        return [releaseOrOptions.releaseId, releaseOrOptions.metadata || {}, maybeOptions]
+      }
+
+      return [undefined, {}, releaseOrOptions as BaseActionOptions]
+    }
+
+    const [releaseId, metadata, options] = getArgs()
+
     const finalReleaseId = releaseId || generateReleaseId()
     const finalMetadata: ReleaseDocument['metadata'] = {
       ...metadata,
@@ -72,8 +96,8 @@ export class ObservableReleasesClient {
     return _action(this.#client, this.#httpRequest, createAction, options).pipe(
       map((actionResult) => ({
         ...actionResult,
-        metadata: finalMetadata,
         releaseId: finalReleaseId,
+        metadata: finalMetadata,
       })),
     )
   }
@@ -256,12 +280,36 @@ export class ReleasesClient {
    * Must include a `releaseType` {@link ReleaseType}
    */
   async create(
-    {
-      releaseId,
-      metadata = {},
-    }: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
+    options: BaseActionOptions,
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
+  async create(
+    release: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
+  async create(
+    releaseOrOptions?:
+      | {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>}
+      | BaseActionOptions,
+    maybeOptions?: BaseActionOptions,
   ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
+    const getArgs = (): [
+      string | undefined,
+      Partial<ReleaseDocument['metadata']>,
+      BaseActionOptions | undefined,
+    ] => {
+      if (
+        typeof releaseOrOptions === 'object' &&
+        releaseOrOptions !== null &&
+        ('releaseId' in releaseOrOptions || 'metadata' in releaseOrOptions)
+      ) {
+        return [releaseOrOptions.releaseId, releaseOrOptions.metadata || {}, maybeOptions]
+      }
+
+      return [undefined, {}, releaseOrOptions as BaseActionOptions]
+    }
+
+    const [releaseId, metadata, options] = getArgs()
+
     const finalReleaseId = releaseId || generateReleaseId()
     const finalMetadata: ReleaseDocument['metadata'] = {
       ...metadata,
