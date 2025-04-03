@@ -17,7 +17,7 @@ import type {
   TransactionFirstDocumentIdMutationOptions,
   TransactionFirstDocumentMutationOptions,
 } from '../types'
-import {getDocumentVersionId} from '../util/createVersionId'
+import {deriveDocumentVersionId} from '../util/createVersionId'
 import * as validators from '../validators'
 import {ObservablePatch, Patch} from './patch'
 
@@ -86,16 +86,16 @@ export class BaseTransaction {
     publishedId: string
     releaseId?: string
   }): this {
-    const op = 'create'
+    const op = 'createVersion'
 
-    const documentVersionId = getDocumentVersionId(publishedId, releaseId)
-
+    const documentVersionId = deriveDocumentVersionId({document, publishedId, releaseId}, op)
     validators.validateObject(op, document)
+    validators.requireDocumentType(op, document)
     validators.validateVersionIdMatch(documentVersionId, document)
 
     const documentVersion = {...document, _id: documentVersionId}
 
-    return this._add({[op]: documentVersion})
+    return this._add({create: documentVersion})
   }
 
   /**
