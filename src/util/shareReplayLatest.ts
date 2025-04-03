@@ -44,7 +44,7 @@ function _shareReplayLatest<T>(config: ShareReplayLatestConfig<T>): MonoTypeOper
     let latest: T | undefined
     let emitted = false
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line unused-imports/no-unused-vars
     const {predicate, ...shareConfig} = config
 
     const wrapped = source.pipe(
