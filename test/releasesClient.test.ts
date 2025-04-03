@@ -704,8 +704,6 @@ describe('ReleasesClient', () => {
         message: 'Invalid patch operation',
       }
 
-      // Instead of emitting a response with type 'error', we should throw an actual error
-      // that includes the error details
       const customError = new Error('Invalid patch operation') as any
       customError.details = errorResponse
 
@@ -725,11 +723,9 @@ describe('ReleasesClient', () => {
     test('propagates validation errors when publishing a release', async () => {
       const releaseId = 'release123'
 
-      // Assuming the client or server validates that a release exists before publishing
       const validationError = new Error('Release not found')
       validationError.name = 'ValidationError'
 
-      // Create a separate mock for each call to avoid the mock being exhausted
       httpRequest
         .mockImplementationOnce(() => ({
           subscribe: (subscriber: any) => {
@@ -1143,25 +1139,19 @@ describe('ObservableReleasesClient', () => {
     })
 
     test('properly cleans up subscriptions when errors occur', async () => {
-      expect.assertions(1)
       const releaseId = 'release123'
       const unsubscribeSpy = vi.fn()
 
       httpRequest.mockImplementationOnce(() => ({
         subscribe: (subscriber: any) => {
           subscriber.error(new Error('Server error'))
-
           return {unsubscribe: unsubscribeSpy}
         },
       }))
 
       const result = observableReleasesClient.get({releaseId})
 
-      try {
-        await firstValueFrom(result)
-      } catch (err) {
-        // Expected error
-      }
+      await expect(firstValueFrom(result)).rejects.toThrow('Server error')
 
       await new Promise((resolve) => setTimeout(resolve, 0))
 
