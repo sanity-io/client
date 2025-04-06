@@ -3355,6 +3355,23 @@ describe('client', async () => {
       expect(body.title).toEqual(response.title)
     })
 
+    test('providing both documentId & createDocument should not compile', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+
+      //@ts-expect-error not allowe
+      await getClient().instruct<{title?: string}>({
+        documentId: 'some-id',
+        createDocument: {_type: 'yolo'},
+        instruction: 'set title to override',
+        schemaId: 'some-schema-id',
+      })
+    })
+
     test('can cannot apply generics to async request since it returns _id only', async () => {
       const response = {
         _id: 'generated',
