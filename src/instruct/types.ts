@@ -48,6 +48,149 @@ export interface InstructGroqInstructionParam {
   params?: Record<string, string>
 }
 
+export type InstructTypeConfig =
+  | {include: string[]; exclude?: never}
+  | {exclude: string[]; include?: never}
+
+export type InstructPathSegment = string | number | {_key: string}
+export type InstructPath = InstructPathSegment[]
+export type InstructOperation = 'set' | 'append' | 'mixed'
+
+export interface InstructTargetInclude {
+  member: InstructPathSegment
+
+  /**
+   * Sets the operation for this member, and all its children.
+   * This overrides any operation set parents or the root target.
+   * @see #InstructTarget.operation
+   * @see #include
+   */
+  operation?: InstructOperation
+
+  /**
+   * By default, all children up to `target.maxPathDepth` are included.
+   *
+   * When `include` is specified, only segments explicitly listed will be included.
+   *
+   * Members not on the include list, are implicitly excluded.
+   */
+  include?: (InstructPathSegment | InstructTargetInclude)[]
+
+  /**
+   * By default, all children up to `target.maxPathDepth` are included.
+   * Members not on the exclude list, are implicitly included.
+   */
+  exclude?: InstructPathSegment[]
+
+  /**
+   * Types can be used to exclude array member types or all fields of a certain type.
+   * If you do exclude: ['string'] all string fields under the path segment will be excluded, for instance.
+   *
+   * Types config is propagated to members. Use `include` recursively to override.
+   *
+   * `types.include` and `types.exclude` are mutually exclusive.
+   */
+  types?: InstructTypeConfig
+}
+
+/**
+ * @beta
+ */
+export interface InstructTarget {
+  /**
+   * Root target path.
+   *
+   * Use this to have the instruction only affect a part of the document.
+   *
+   * To further control the behavior of individual paths under the root, use `include`, `exclude`, `types.include`
+   * and `types.exclude`.
+   *
+   * Example:
+   *
+   * `target: ['body', {_key: 'someKey'}, 'nestedObject']`
+   *
+   * Here, the instruction will only write to fields under the nestedObject.
+   *
+   * Default: [] = the document itself
+   *
+   * @see #InstructPathSegment
+   * */
+  path?: InstructPath
+
+  /**
+   * Sets the default operation for all paths in the target.
+   * Instruct runs in `'mixed'` operation mode by default:
+   * Changes are set in all non-array fields, and append to all array fields.
+   *
+   * ### Operation types
+   * - `'set'` – an *overwriting* operation, and replaces the full field value.
+   * - `'append'`:
+   *    – array fields: appends new items to the end of the array,
+   *    - string fields: '<existing content> <new content>'
+   *    - text fields: '<existing content>\n<new content>'
+   *    - number fields: existing + new
+   *    - other field types not mentioned will set instead (dates, url)
+   * - `'mixed'` – (default) sets non-array fields, and appends to array fields
+   *
+   * The default operation can be overridden on a per-path basis using `include`.
+   *
+   * Nested fields inherit the operation specified by their parent and falls back to the
+   * top level target operation if not otherwise specified.
+   *
+   * Use `include` to change the `operation` of individual members.
+   *
+   * #### Appending in the middle of arrays
+   * `target: {path: ['array'], operation: 'append'}` will append the output of the instruction to the end of the array.
+   *
+   * To insert in the middle of the array, use `target: {path: ['array', {_key: 'appendAfterKey'}], operation: 'append'}`.
+   * Here, the output of the instruction will be appended after the array item with key `'appendAfterKey'`.
+   *
+   * @see #InstructTargetInclude.operation
+   * @see #include
+   * @see #InstructTargetInclude.include
+   */
+  operation?: InstructOperation
+
+  /**
+   * maxPathDepth controls how deep into the schema from the target root the instruction will affect.
+   *
+   * Depth is based on path segments:
+   * - `title` has depth 1
+   * - `array[_key="no"].title` has depth 3
+   *
+   * Be careful not to set this too high in studios with recursive document schemas, as it could have
+   * negative impact on performance; both for runtime and quality of responses.
+   *
+   * Default: 4
+   */
+  maxPathDepth?: number
+
+  /**
+   * By default, all children up to `target.maxPathDepth` are included.
+   *
+   * When `include` is specified, only segments explicitly listed will be included.
+   *
+   * Members not on the include list, are implicitly excluded.
+   */
+  include?: (InstructPathSegment | InstructTargetInclude)[]
+
+  /**
+   * By default, all children up to `target.maxPathDepth` are included.
+   * Members not on the exclude list, are implicitly included.
+   */
+  exclude?: InstructPathSegment[]
+
+  /**
+   * Types can be used to exclude array member types or all fields of a certain type.
+   * If you do exclude: ['string'] all string fields under the target will be excluded, for instance.
+   *
+   * Types config is propagated to members. Use `include` recursively to override.
+   *
+   * `types.include` and `types.exclude` are mutually exclusive.
+   */
+  types?: InstructTypeConfig
+}
+
 /** @beta */
 export type InstructInstructionParam =
   | string
@@ -66,36 +209,19 @@ interface InstructRequestBase {
   instruction: string
   /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
   instructionParams?: InstructInstructionParams
-  /**
-   *  Optional document path output target for the instruction.
-   *  When provided, the instruction will apply to this path in the document and its children.
-   *
-   *  ## Examples
-   *  - `path: 'title'` will output to the title field in the document
-   * - `path: 'array[_key="xx"]'` will output to the item with `_key: 'xx'` in the array field
-   */
-  path?: string
 
   /**
-   * Controls sub-paths in the document that can be output to.
+   * Target defines which parts of the document will be affected by the instruction.
+   * It can be an array, so multiple parts of the document can be separately configured in detail.
    *
-   * The string-paths are relative to the `path` param
+   * Omitting target implies that the document itself is the root.
    *
-   * Note: these path strings are less strictly validated than the `path` param itself:
-   * if an relative-path does not exist or is invalid, it will be silently ignored.
-   *
-   * @see InstructRequestBase#conditionalPaths
-   * @see InstructRequestBase#outputTypes
+   * Notes:
+   * - instruction can only affect fields up to `maxPathDepth`
+   * - when multiple targets are provided, they will be coalesced into a single target sharing a common target root.
+   * It is therefor an error to provide conflicting include/exclude across targets (ie, include title in one, and exclude it in another)
    */
-  relativeOutputPaths?: {include: string[]} | {exclude: string[]}
-
-  /**
-   * Controls which types the instruction is allowed to output to.
-   *
-   * @see InstructRequestBase#relativeOutputPaths
-   * @see InstructRequestBase#conditionalPaths
-   */
-  outputTypes?: {include: string[]} | {exclude: string[]}
+  target?: InstructTarget | InstructTarget[]
 
   /**
    * When a type or field in the schema has a function set for `hidden` or `readOnly`, it is conditional.
@@ -157,18 +283,13 @@ interface InstructRequestBase {
   }
 
   /**
-   * The max depth for document paths instruction can write to.
+   * Controls how much variance the instructions will run with.
    *
-   * Depth is based on field path segments:
-   * - `title` has depth 1
-   * - `array[_key="no"].title` has depth 3
+   * Value must be in the range [0, 1] (inclusive).
    *
-   * Be careful not to set this too high in studios with recursive document schemas, as it could have
-   * negative impact on performance; both runtime and quality of responses.
-   *
-   * Default: 4
+   * Default: 0.3
    */
-  maxPathDepth?: number
+  temperature?: number
 }
 
 interface Sync {
