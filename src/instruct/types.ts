@@ -129,7 +129,7 @@ interface InstructRequestBase {
 
   /**
    * When localeSettings is provided on the request, instruct can write to date and datetime fields.
-   * Otherwise, such<> fields will be ignored.
+   * Otherwise, such fields will be ignored.
    */
   localeSettings?: {
     /**
@@ -213,6 +213,7 @@ interface Async {
  */
 interface ExistingDocumentRequest {
   documentId: string
+  createDocument?: never
 }
 
 /**
@@ -225,6 +226,7 @@ interface CreateDocumentRequest<T extends Record<string, Any> = Record<string, A
     _id?: string
     _type: string
   } & SanityDocumentStub<T>
+  documentId?: never
 }
 
 /** @beta */
