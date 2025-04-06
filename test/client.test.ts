@@ -3012,10 +3012,29 @@ describe('client', async () => {
             documentId: 'somewhere',
           },
         },
-        path: 'body',
+        temperature: 0.6,
+        async: false,
+        target: [
+          {path: ['title']},
+          {
+            operation: 'set',
+            include: [
+              'object',
+              {
+                member: 'array',
+                include: [{_key: '123'}],
+                operation: 'append',
+                types: {
+                  include: ['string'],
+                },
+              },
+            ],
+            types: {
+              exclude: ['number'],
+            },
+          },
+        ],
         skipWrite: true,
-        outputTypes: {include: ['string']},
-        relativeOutputPaths: {exclude: ['title']},
         conditionalPaths: {
           defaultHidden: true,
           defaultReadOnly: false,
