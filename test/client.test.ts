@@ -2995,7 +2995,7 @@ describe('client', async () => {
 
       const body = await getClient().instruct<{title?: string}>({
         documentId: 'some-id',
-        instruction: '$a $b $s',
+        instruction: '$a $b $d',
         instructionParams: {
           a: 'constant',
           b: {
@@ -3021,7 +3021,7 @@ describe('client', async () => {
             include: [
               'object',
               {
-                member: 'array',
+                path: 'array',
                 include: [{_key: '123'}],
                 operation: 'append',
                 types: {

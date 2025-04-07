@@ -52,15 +52,15 @@ export type InstructTypeConfig =
   | {include: string[]; exclude?: never}
   | {exclude: string[]; include?: never}
 
-export type InstructPathSegment = string | number | {_key: string}
+export type InstructPathSegment = string | {_key: string}
 export type InstructPath = InstructPathSegment[]
 export type InstructOperation = 'set' | 'append' | 'mixed'
 
 export interface InstructTargetInclude {
-  member: InstructPathSegment
+  path: InstructPathSegment | InstructPath
 
   /**
-   * Sets the operation for this member, and all its children.
+   * Sets the operation for this path, and all its children.
    * This overrides any operation set parents or the root target.
    * @see #InstructTarget.operation
    * @see #include
@@ -83,10 +83,8 @@ export interface InstructTargetInclude {
   exclude?: InstructPathSegment[]
 
   /**
-   * Types can be used to exclude array member types or all fields of a certain type.
-   * If you do exclude: ['string'] all string fields under the path segment will be excluded, for instance.
-   *
-   * Types config is propagated to members. Use `include` recursively to override.
+   * Types can be used to exclude array item types or all fields directly under the target path of a certain type.
+   * If you do exclude: ['string'] all string fields under the target will be excluded, for instance.
    *
    * `types.include` and `types.exclude` are mutually exclusive.
    */
@@ -114,8 +112,9 @@ export interface InstructTarget {
    * Default: [] = the document itself
    *
    * @see #InstructPathSegment
+   * @see #InstructPath
    * */
-  path?: InstructPath
+  path?: InstructPathSegment | InstructPath
 
   /**
    * Sets the default operation for all paths in the target.
@@ -137,7 +136,7 @@ export interface InstructTarget {
    * Nested fields inherit the operation specified by their parent and falls back to the
    * top level target operation if not otherwise specified.
    *
-   * Use `include` to change the `operation` of individual members.
+   * Use `include` to change the `operation` of individual fields or items.
    *
    * #### Appending in the middle of arrays
    * `target: {path: ['array'], operation: 'append'}` will append the output of the instruction to the end of the array.
@@ -181,10 +180,8 @@ export interface InstructTarget {
   exclude?: InstructPathSegment[]
 
   /**
-   * Types can be used to exclude array member types or all fields of a certain type.
+   * Types can be used to exclude array item types or all fields directly under the target path of a certain type.
    * If you do exclude: ['string'] all string fields under the target will be excluded, for instance.
-   *
-   * Types config is propagated to members. Use `include` recursively to override.
    *
    * `types.include` and `types.exclude` are mutually exclusive.
    */
