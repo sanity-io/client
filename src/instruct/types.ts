@@ -72,13 +72,13 @@ export interface InstructTargetInclude {
    *
    * When `include` is specified, only segments explicitly listed will be included.
    *
-   * Members not on the include list, are implicitly excluded.
+   * Fields or array items not on the include list, are implicitly excluded.
    */
   include?: (InstructPathSegment | InstructTargetInclude)[]
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
-   * Members not on the exclude list, are implicitly included.
+   * Fields or array items not on the exclude list, are implicitly included.
    */
   exclude?: InstructPathSegment[]
 
@@ -169,13 +169,13 @@ export interface InstructTarget {
    *
    * When `include` is specified, only segments explicitly listed will be included.
    *
-   * Members not on the include list, are implicitly excluded.
+   * Fields or array items not on the include list, are implicitly excluded.
    */
   include?: (InstructPathSegment | InstructTargetInclude)[]
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
-   * Members not on the exclude list, are implicitly included.
+   * Fields or array items not on the exclude list, are implicitly included.
    */
   exclude?: InstructPathSegment[]
 
