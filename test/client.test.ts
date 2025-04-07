@@ -3461,7 +3461,7 @@ describe('client', async () => {
         conditionalPaths: {
           defaultHidden: true,
           defaultReadOnly: false,
-          paths: [{path: 'title', readOnly: false, hidden: false}],
+          paths: [{path: ['title'], readOnly: false, hidden: false}],
         },
         schemaId: 'some-schema-id',
       })
