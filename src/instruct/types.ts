@@ -243,8 +243,8 @@ interface InstructRequestBase {
     defaultReadOnly?: boolean
     defaultHidden?: boolean
     paths?: {
-      /** path here is not a relative path: it must be the full document path, regardless of `path` param on the request itself */
-      path: string
+      /** path here is not a relative path: it must be the full document path, regardless of `path` param used in targets */
+      path: InstructPath
       readOnly: boolean
       hidden: boolean
     }[]
