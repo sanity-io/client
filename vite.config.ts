@@ -19,7 +19,7 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['html', 'json', 'json-summary'],
+      reporter: ['text', 'html', 'json', 'json-summary'],
       include: ['src/**'],
       reportOnFailure: true,
       clean: true,

@@ -15,7 +15,12 @@ permissions:
 
 jobs:
   build:
-    name: Build, lint and test coverage
+    permissions:
+      # Required to checkout the code
+      contents: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
+    name: Build, lint and benchmark
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +34,6 @@ jobs:
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
-      - run: npm run coverage -- --reporter=default --reporter=blob --outputFile.blob=.vitest-reports/blob-node.json
       - run: npm run benchmark
       - uses: actions/upload-artifact@v4
         name: Cache build output
@@ -39,17 +43,28 @@ jobs:
           path: |
             dist/
             umd/
-      - name: Upload blob report to GitHub Actions Artifacts
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+  
+  coverage:
+    permissions:
+      # Required to checkout the code
+      contents: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
+    name: Test and report coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          name: blob-report-${{ github.run_id }}-node
-          path: ".vitest-reports/*"
-          include-hidden-files: true
-          retention-days: 1
+          cache: npm
+          node-version: lts/*
+      - run: npm ci
+      - run: npm run coverage
+      - uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
 
   test:
-    needs: build
+    needs: [build, coverage]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -127,15 +142,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
-      - run: npm run test:browser -- --coverage --reporter=default --reporter=blob --outputFile.blob=.vitest-reports/blob-browser.json
-      - name: Upload blob report to GitHub Actions Artifacts
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: blob-report-${{ github.run_id }}-browser
-          path: ".vitest-reports/*"
-          include-hidden-files: true
-          retention-days: 1
+      - run: npm run test:browser
 
   deno-runtime:
     runs-on: ubuntu-latest
@@ -202,30 +209,3 @@ jobs:
           node-version: lts/*
       - run: npm install
       - run: npm run test:next
-
-  report-coverage:
-    permissions:
-      # Required to checkout the code
-      contents: read
-      # Required to put a comment into the pull-request
-      pull-requests: write
-    runs-on: ubuntu-latest
-    needs: [build, browser-runtime]
-    if: ${{ !cancelled() }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          cache: npm
-          node-version: lts/*
-      - run: npm install
-      - name: "Download coverage artifacts"
-        uses: actions/download-artifact@v4
-        with:
-          path: .vitest-reports
-          pattern: blob-report-${{ github.run_id }}-*
-          merge-multiple: true
-      - name: Merge report
-        run: npx vitest run --merge-reports --coverage
-      - name: Report coverage
-        uses: davelosert/vitest-coverage-report-action@v2
