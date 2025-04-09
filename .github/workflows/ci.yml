@@ -40,6 +40,7 @@ jobs:
             dist/
             umd/
       - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: blob-report-${{ github.run_id }}-node
@@ -128,6 +129,7 @@ jobs:
           name: build-output-${{ github.run_id }}
       - run: npm run test:browser -- --coverage --reporter=default --reporter=blob --outputFile.blob=.vitest-reports/blob-browser.json
       - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: blob-report-${{ github.run_id }}-browser
