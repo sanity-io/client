@@ -20,7 +20,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ secrets.ECOSPARK_APP_ID }}
