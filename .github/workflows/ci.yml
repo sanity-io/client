@@ -29,7 +29,7 @@ jobs:
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
-      - run: npm run coverage -- --reporter=default --reporter=blob
+      - run: npm run coverage -- --reporter=default --reporter=blob --outputFile.blob=.vitest-reports/blob-node.json
       - run: npm run benchmark
       - uses: actions/upload-artifact@v4
         name: Cache build output
@@ -126,7 +126,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
-      - run: npm run test:browser -- --coverage --reporter=default --reporter=blob
+      - run: npm run test:browser -- --coverage --reporter=default --reporter=blob --outputFile.blob=.vitest-reports/blob-browser.json
       - name: Upload blob report to GitHub Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
