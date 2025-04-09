@@ -17,5 +17,12 @@ export default defineConfig({
     typecheck: {
       enabled: true,
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json', 'json-summary'],
+      include: ['src/**'],
+      reportOnFailure: true,
+      clean: true,
+    },
   },
 })

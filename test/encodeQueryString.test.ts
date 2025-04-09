@@ -29,6 +29,36 @@ test('can encode queries with booleans', () => {
   )
 })
 
+test('can encode null values', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug]'
+  expect(encodeQueryString({query, params: {slug: null}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug%5D&%24slug=null',
+  )
+})
+
+test('can encode null nested values', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug.current]'
+  expect(encodeQueryString({query, params: {slug: {current: null}}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug.current%5D&%24slug=%7B%22current%22%3Anull%7D',
+  )
+})
+
+// eslint-disable-next-line no-warning-comments
+// @TODO handled in https://github.com/sanity-io/client/pull/1043
+test.skip('skips encoding undefined params', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug]'
+  expect(encodeQueryString({query, params: {slug: undefined}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug%5D',
+  )
+})
+
+test('skips encoding nested undefined params', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug.current]'
+  expect(encodeQueryString({query, params: {slug: {current: undefined}}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug.current%5D&%24slug=%7B%7D',
+  )
+})
+
 test('handles options', () => {
   const query = 'gamedb.game[maxPlayers == 64]'
   expect(encodeQueryString({query, options: {includeResult: true}})).toEqual(

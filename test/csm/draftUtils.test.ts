@@ -25,6 +25,12 @@ test.each([
   expect(getPublishedId(documentId)).toEqual(shouldEqual)
 })
 
+describe('getVersionId', () => {
+  test.each(['published', 'drafts'])('getVersionId(%s) throws', (version) => {
+    expect(() => getVersionId('versions.summer-drop.agot', version)).toThrowErrorMatchingSnapshot()
+  })
+})
+
 describe('getVersionFromId', () => {
   it('should return the bundle slug', () => {
     expect(getVersionFromId('versions.summer.my-document-id')).toBe('summer')
