@@ -3,7 +3,7 @@
 import type {Any, SanityDocumentStub} from '@sanity/client'
 
 /** @beta */
-export interface InstructConstantInstructionParam {
+export interface GenerateConstantInstructionParam {
   type: 'constant'
   value: string
 }
@@ -13,7 +13,7 @@ export interface InstructConstantInstructionParam {
  * Includes a LLM-friendly version of the field value in the instruction
  * @beta
  * */
-export interface InstructFieldInstructionParam {
+export interface GenerateFieldInstructionParam {
   type: 'field'
   /**
    * Examples: 'title', 'array[_key=="key"].field'
@@ -30,7 +30,7 @@ export interface InstructFieldInstructionParam {
  * Includes a LLM-friendly version of the document in the instruction
  * @beta
  * */
-export interface DocumentInstructionParam {
+export interface GenerateDocumentInstructionParam {
   type: 'document'
   /**
    * If omitted, implicitly uses the documentId of the instruction target
@@ -42,30 +42,30 @@ export interface DocumentInstructionParam {
  * Includes a LLM-friendly version of GROQ query result in the instruction
  * @beta
  * */
-export interface InstructGroqInstructionParam {
+export interface GenerateGroqInstructionParam {
   type: 'groq'
   query: string
   params?: Record<string, string>
 }
 
-export type InstructTypeConfig =
+export type GenerateTypeConfig =
   | {include: string[]; exclude?: never}
   | {exclude: string[]; include?: never}
 
-export type InstructPathSegment = string | {_key: string}
-export type InstructPath = InstructPathSegment[]
-export type InstructOperation = 'set' | 'append' | 'mixed'
+export type GeneratePathSegment = string | {_key: string}
+export type GeneratePath = GeneratePathSegment[]
+export type GenerateOperation = 'set' | 'append' | 'mixed'
 
-export interface InstructTargetInclude {
-  path: InstructPathSegment | InstructPath
+export interface GenerateTargetInclude {
+  path: GeneratePathSegment | GeneratePath
 
   /**
    * Sets the operation for this path, and all its children.
    * This overrides any operation set parents or the root target.
-   * @see #InstructTarget.operation
+   * @see #GenerateTarget.operation
    * @see #include
    */
-  operation?: InstructOperation
+  operation?: GenerateOperation
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
@@ -74,13 +74,13 @@ export interface InstructTargetInclude {
    *
    * Fields or array items not on the include list, are implicitly excluded.
    */
-  include?: (InstructPathSegment | InstructTargetInclude)[]
+  include?: (GeneratePathSegment | GenerateTargetInclude)[]
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
    * Fields or array items not on the exclude list, are implicitly included.
    */
-  exclude?: InstructPathSegment[]
+  exclude?: GeneratePathSegment[]
 
   /**
    * Types can be used to exclude array item types or all fields directly under the target path of a certain type.
@@ -88,13 +88,13 @@ export interface InstructTargetInclude {
    *
    * `types.include` and `types.exclude` are mutually exclusive.
    */
-  types?: InstructTypeConfig
+  types?: GenerateTypeConfig
 }
 
 /**
  * @beta
  */
-export interface InstructTarget {
+export interface GenerateTarget {
   /**
    * Root target path.
    *
@@ -105,20 +105,20 @@ export interface InstructTarget {
    *
    * Example:
    *
-   * `target: ['body', {_key: 'someKey'}, 'nestedObject']`
+   * `path: ['body', {_key: 'someKey'}, 'nestedObject']`
    *
    * Here, the instruction will only write to fields under the nestedObject.
    *
    * Default: [] = the document itself
    *
-   * @see #InstructPathSegment
-   * @see #InstructPath
+   * @see #GeneratePathSegment
+   * @see #GeneratePath
    * */
-  path?: InstructPathSegment | InstructPath
+  path?: GeneratePathSegment | GeneratePath
 
   /**
    * Sets the default operation for all paths in the target.
-   * Instruct runs in `'mixed'` operation mode by default:
+   * Generate runs in `'mixed'` operation mode by default:
    * Changes are set in all non-array fields, and append to all array fields.
    *
    * ### Operation types
@@ -144,11 +144,11 @@ export interface InstructTarget {
    * To insert in the middle of the array, use `target: {path: ['array', {_key: 'appendAfterKey'}], operation: 'append'}`.
    * Here, the output of the instruction will be appended after the array item with key `'appendAfterKey'`.
    *
-   * @see #InstructTargetInclude.operation
+   * @see #GenerateTargetInclude.operation
    * @see #include
-   * @see #InstructTargetInclude.include
+   * @see #GenerateTargetInclude.include
    */
-  operation?: InstructOperation
+  operation?: GenerateOperation
 
   /**
    * maxPathDepth controls how deep into the schema from the target root the instruction will affect.
@@ -171,13 +171,13 @@ export interface InstructTarget {
    *
    * Fields or array items not on the include list, are implicitly excluded.
    */
-  include?: (InstructPathSegment | InstructTargetInclude)[]
+  include?: (GeneratePathSegment | GenerateTargetInclude)[]
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
    * Fields or array items not on the exclude list, are implicitly included.
    */
-  exclude?: InstructPathSegment[]
+  exclude?: GeneratePathSegment[]
 
   /**
    * Types can be used to exclude array item types or all fields directly under the target path of a certain type.
@@ -185,27 +185,27 @@ export interface InstructTarget {
    *
    * `types.include` and `types.exclude` are mutually exclusive.
    */
-  types?: InstructTypeConfig
+  types?: GenerateTypeConfig
 }
 
 /** @beta */
-export type InstructInstructionParam =
+export type GenerateInstructionParam =
   | string
-  | InstructConstantInstructionParam
-  | InstructFieldInstructionParam
-  | DocumentInstructionParam
-  | InstructGroqInstructionParam
+  | GenerateConstantInstructionParam
+  | GenerateFieldInstructionParam
+  | GenerateDocumentInstructionParam
+  | GenerateGroqInstructionParam
 
 /** @beta */
-export type InstructInstructionParams = Record<string, InstructInstructionParam>
+export type GenerateInstructionParams = Record<string, GenerateInstructionParam>
 
-interface InstructRequestBase {
+interface GenerateRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
   /** string template using $variable – more on this below under "Dynamic instruction" */
   instruction: string
   /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
-  instructionParams?: InstructInstructionParams
+  instructionParams?: GenerateInstructionParams
 
   /**
    * Target defines which parts of the document will be affected by the instruction.
@@ -217,13 +217,15 @@ interface InstructRequestBase {
    * - instruction can only affect fields up to `maxPathDepth`
    * - when multiple targets are provided, they will be coalesced into a single target sharing a common target root.
    * It is therefor an error to provide conflicting include/exclude across targets (ie, include title in one, and exclude it in another)
+   *
+   * @see GenerateRequestBase#conditionalPaths
    */
-  target?: InstructTarget | InstructTarget[]
+  target?: GenerateTarget | GenerateTarget[]
 
   /**
    * When a type or field in the schema has a function set for `hidden` or `readOnly`, it is conditional.
    *
-   * By default, AI Instruct will not output to conditional `readOnly` and `hidden` fields,
+   * By default, Generate will not output to conditional `readOnly` and `hidden` fields,
    * ie, they are considered to resolve to `readOnly: true` / `hidden: true`.
    *
    * `conditionalPaths` param allows setting the default conditional value for
@@ -231,20 +233,22 @@ interface InstructRequestBase {
    * or individually set `hidden` and `readOnly` state for individual document paths.
    *
    *
-   * Note: fields and types with explicit readOnly: true or hidden: true in the schema, are not available to AI Instruct,
-   * and cannot be changed via conditionalPaths.
+   * Note: fields and types with explicit readOnly: true or hidden: true in the schema, are not available to Generate,
+   * and cannot be changed via conditionalPaths
    *
    * conditionalPaths state only apply to fields and types that have conditional `hidden` or `readOnly` in their schema definition.
    *
-   * @see InstructRequestBase#relativeOutputPaths
-   * @see InstructRequestBase#outputTypes
+   * Consider using `hidden: () => true` in schema config, if a field should be writeable only by Generate and never
+   * visible in the studio – then make the field visible to the Generate using `conditionalPaths`.
+   *
+   * @see GenerateRequestBase#target
    */
   conditionalPaths?: {
     defaultReadOnly?: boolean
     defaultHidden?: boolean
     paths?: {
       /** path here is not a relative path: it must be the full document path, regardless of `path` param used in targets */
-      path: InstructPath
+      path: GeneratePath
       readOnly: boolean
       hidden: boolean
     }[]
@@ -348,22 +352,22 @@ interface CreateDocumentRequest<T extends Record<string, Any> = Record<string, A
 }
 
 /** @beta */
-export type InstructSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
+export type GenerateSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | ExistingDocumentRequest
   | CreateDocumentRequest<T>
 ) &
-  InstructRequestBase &
+  GenerateRequestBase &
   Sync
 
 /** @beta */
-export type InstructAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
+export type GenerateAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | ExistingDocumentRequest
   | CreateDocumentRequest<T>
 ) &
-  InstructRequestBase &
+  GenerateRequestBase &
   Async
 
 /** @beta */
-export type InstructInstruction<T extends Record<string, Any> = Record<string, Any>> =
-  | InstructSyncInstruction<T>
-  | InstructAsyncInstruction<T>
+export type GenerateInstruction<T extends Record<string, Any> = Record<string, Any>> =
+  | GenerateSyncInstruction<T>
+  | GenerateAsyncInstruction<T>

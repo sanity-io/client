@@ -1,5 +1,6 @@
 import {lastValueFrom, Observable} from 'rxjs'
 
+import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
@@ -8,7 +9,6 @@ import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
-import {_instruct} from './instruct/instruct'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
 import type {
   Action,
@@ -25,9 +25,6 @@ import type {
   HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
-  InstructAsyncInstruction,
-  InstructInstruction,
-  InstructSyncInstruction,
   MultipleActionResult,
   MultipleMutationResult,
   Mutation,
@@ -69,6 +66,10 @@ export class ObservableSanityClient {
   live: LiveClient
   projects: ObservableProjectsClient
   users: ObservableUsersClient
+  agent: {
+    action: ObservableAgentsActionClient
+  }
+
   /**
    * Private properties
    */
@@ -90,6 +91,9 @@ export class ObservableSanityClient {
     this.live = new LiveClient(this)
     this.projects = new ObservableProjectsClient(this, this.#httpRequest)
     this.users = new ObservableUsersClient(this, this.#httpRequest)
+    this.agent = {
+      action: new ObservableAgentsActionClient(this, this.#httpRequest),
+    }
   }
 
   /**
@@ -727,27 +731,6 @@ export class ObservableSanityClient {
   getDataUrl(operation: string, path?: string): string {
     return dataMethods._getDataUrl(this, operation, path)
   }
-
-  instruct(request: InstructAsyncInstruction): Observable<{_id: string}>
-
-  instruct<DocumentShape extends Record<string, Any>>(
-    request: InstructSyncInstruction<DocumentShape>,
-  ): Observable<IdentifiedSanityDocumentStub & DocumentShape>
-
-  /**
-   * Run an ad-hoc instruction for a target document.
-   * @param request instruction request
-   */
-  instruct<
-    DocumentShape extends Record<string, Any>,
-    Req extends InstructInstruction<DocumentShape>,
-  >(
-    request: Req,
-  ): Observable<
-    Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape
-  > {
-    return _instruct(this, this.#httpRequest, request)
-  }
 }
 
 /** @public */
@@ -757,6 +740,9 @@ export class SanityClient {
   live: LiveClient
   projects: ProjectsClient
   users: UsersClient
+  agent: {
+    action: AgentActionsClient
+  }
 
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
@@ -784,6 +770,9 @@ export class SanityClient {
     this.live = new LiveClient(this)
     this.projects = new ProjectsClient(this, this.#httpRequest)
     this.users = new UsersClient(this, this.#httpRequest)
+    this.agent = {
+      action: new AgentActionsClient(this, this.#httpRequest),
+    }
 
     this.observable = new ObservableSanityClient(httpRequest, config)
   }
@@ -1451,26 +1440,5 @@ export class SanityClient {
    */
   getDataUrl(operation: string, path?: string): string {
     return dataMethods._getDataUrl(this, operation, path)
-  }
-
-  instruct(request: InstructAsyncInstruction): Promise<{_id: string}>
-
-  instruct<DocumentShape extends Record<string, Any>>(
-    request: InstructSyncInstruction<DocumentShape>,
-  ): Promise<IdentifiedSanityDocumentStub & DocumentShape>
-
-  /**
-   * Run an ad-hoc instruction for a target document.
-   * @param request instruction request
-   */
-  instruct<
-    DocumentShape extends Record<string, Any>,
-    Req extends InstructInstruction<DocumentShape>,
-  >(
-    request: Req,
-  ): Promise<
-    Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape
-  > {
-    return lastValueFrom(_instruct(this, this.#httpRequest, request))
   }
 }

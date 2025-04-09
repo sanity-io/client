@@ -1,13 +1,13 @@
 import {type Observable} from 'rxjs'
 
-import {_request} from '../data/dataMethods'
-import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {Any, HttpRequest, IdentifiedSanityDocumentStub, InstructInstruction} from '../types'
-import {hasDataset} from '../validators'
+import {_request} from '../../data/dataMethods'
+import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
+import type {Any, GenerateInstruction, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
+import {hasDataset} from '../../validators'
 
-export function _instruct<
+export function _generate<
   DocumentShape extends Record<string, Any>,
-  Req extends InstructInstruction<DocumentShape>,
+  Req extends GenerateInstruction<DocumentShape>,
 >(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
@@ -18,7 +18,7 @@ export function _instruct<
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/instruct/${dataset}`,
+    uri: `/agent/action/generate/${dataset}`,
     body: request,
   })
 }

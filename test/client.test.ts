@@ -3298,9 +3298,11 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
-      const body = await getClient().instruct({
+      const body = await getClient().agent.action.generate({
         createDocument: {_type: 'some-type'},
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3313,9 +3315,11 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
-      const body = await getClient().instruct({
+      const body = await getClient().agent.action.generate({
         createDocument: {_id: 'new', _type: 'some-type'},
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3328,9 +3332,11 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
-      const body = await getClient().instruct({
+      const body = await getClient().agent.action.generate({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3344,9 +3350,11 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
-      const body = await getClient().instruct<{title?: string}>({
+      const body = await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3361,10 +3369,12 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
       //@ts-expect-error not allowe
-      await getClient().instruct<{title?: string}>({
+      await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
         createDocument: {_type: 'yolo'},
         instruction: 'set title to override',
@@ -3378,9 +3388,11 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
-      const body = await getClient().instruct({
+      const body = await getClient().agent.action.generate({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3395,10 +3407,12 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
       //@ts-expect-error cannot assign true to false
-      const body = await getClient().instruct({
+      const body = await getClient().agent.action.generate({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
@@ -3414,9 +3428,11 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost()).post(`/v1/instruct/${clientConfig.dataset}`).reply(200, response)
+      nock(projectHost())
+        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
+        .reply(200, response)
 
-      const body = await getClient().instruct<{title?: string}>({
+      const body = await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
         instruction: '$a $b $d',
         instructionParams: {

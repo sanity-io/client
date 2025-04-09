@@ -1373,15 +1373,15 @@ export type ClientReturn<
 > = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
 
 export type {
-  InstructAsyncInstruction,
-  InstructConstantInstructionParam,
-  InstructFieldInstructionParam,
-  InstructGroqInstructionParam,
-  InstructInstruction,
-  InstructInstructionParam,
-  InstructInstructionParams,
-  InstructSyncInstruction,
-} from './instruct/types'
+  GenerateAsyncInstruction,
+  GenerateConstantInstructionParam,
+  GenerateFieldInstructionParam,
+  GenerateGroqInstructionParam,
+  GenerateInstruction,
+  GenerateInstructionParam,
+  GenerateInstructionParams,
+  GenerateSyncInstruction,
+} from './agent/actions/types'
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,
