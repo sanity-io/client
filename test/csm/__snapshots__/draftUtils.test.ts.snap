@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getVersionId > getVersionId(drafts) throws 1`] = `[Error: Version can not be "published" or "drafts"]`;
+
+exports[`getVersionId > getVersionId(published) throws 1`] = `[Error: Version can not be "published" or "drafts"]`;

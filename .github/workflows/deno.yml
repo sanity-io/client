@@ -24,7 +24,7 @@ jobs:
         with:
           deno-version: v1.x.x
       - run: npm run test:deno:update_import_map
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ secrets.ECOSPARK_APP_ID }}

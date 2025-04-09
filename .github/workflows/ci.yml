@@ -15,7 +15,12 @@ permissions:
 
 jobs:
   build:
-    name: Build, lint and test coverage
+    permissions:
+      # Required to checkout the code
+      contents: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
+    name: Build, lint and benchmark
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,18 +34,37 @@ jobs:
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
-      - run: npm run coverage
       - run: npm run benchmark
       - uses: actions/upload-artifact@v4
         name: Cache build output
         with:
-          name: build-output
+          retention-days: 1
+          name: build-output-${{ github.run_id }}
           path: |
             dist/
             umd/
+  
+  coverage:
+    permissions:
+      # Required to checkout the code
+      contents: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
+    name: Test and report coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: lts/*
+      - run: npm ci
+      - run: npm run coverage
+      - uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
 
   test:
-    needs: build
+    needs: [build, coverage]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -69,7 +93,7 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm install
       - run: npx ls-engines
-      - run: npm run coverage
+      - run: npm test
 
   prod-deps:
     name: Cache production dependencies
@@ -101,8 +125,8 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Restore build output
         with:
-          name: build-output
-      - run: npm run test:edge-runtime -- --coverage --retry=30
+          name: build-output-${{ github.run_id }}
+      - run: npm run test:edge-runtime -- --retry=30
 
   browser-runtime:
     runs-on: ubuntu-latest
@@ -117,8 +141,8 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Restore build output
         with:
-          name: build-output
-      - run: npm run test:browser -- --coverage
+          name: build-output-${{ github.run_id }}
+      - run: npm run test:browser
 
   deno-runtime:
     runs-on: ubuntu-latest
@@ -133,7 +157,7 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Restore build output
         with:
-          name: build-output
+          name: build-output-${{ github.run_id }}
       - uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x.x
@@ -152,7 +176,7 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Restore build output
         with:
-          name: build-output
+          name: build-output-${{ github.run_id }}
       - uses: antongolub/action-setup-bun@f0b9f339a7ce9ba1174a58484e4dc9bbd6f7b133 # v1
       - run: npm run test:bun
 
@@ -172,7 +196,7 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Restore build output
         with:
-          name: build-output
+          name: build-output-${{ github.run_id }}
       - run: npm run test:node-runtimes
 
   next-runtime:
