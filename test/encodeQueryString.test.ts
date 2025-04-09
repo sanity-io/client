@@ -36,10 +36,24 @@ test('can encode null values', () => {
   )
 })
 
+test('can encode null nested values', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug.current]'
+  expect(encodeQueryString({query, params: {slug: {current: null}}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug.current%5D&%24slug=%7B%22current%22%3Anull%7D',
+  )
+})
+
 test('skips encoding undefined params', () => {
   const query = '*[defined(slug.current) && slug.current == $slug]'
   expect(encodeQueryString({query, params: {slug: undefined}})).toEqual(
     '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug%5D',
+  )
+})
+
+test('skips encoding nested undefined params', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug.current]'
+  expect(encodeQueryString({query, params: {slug: {current: undefined}}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug.current%5D&%24slug=%7B%7D',
   )
 })
 
