@@ -29,6 +29,13 @@ test('can encode queries with booleans', () => {
   )
 })
 
+test('can encode null values', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug]'
+  expect(encodeQueryString({query, params: {slug: null}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug%5D&%24slug=null',
+  )
+})
+
 test('handles options', () => {
   const query = 'gamedb.game[maxPlayers == 64]'
   expect(encodeQueryString({query, options: {includeResult: true}})).toEqual(
