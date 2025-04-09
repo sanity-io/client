@@ -36,6 +36,13 @@ test('can encode null values', () => {
   )
 })
 
+test('skips encoding undefined params', () => {
+  const query = '*[defined(slug.current) && slug.current == $slug]'
+  expect(encodeQueryString({query, params: {slug: undefined}})).toEqual(
+    '?query=*%5Bdefined%28slug.current%29+%26%26+slug.current+%3D%3D+%24slug%5D',
+  )
+})
+
 test('handles options', () => {
   const query = 'gamedb.game[maxPlayers == 64]'
   expect(encodeQueryString({query, options: {includeResult: true}})).toEqual(
