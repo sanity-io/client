@@ -148,7 +148,7 @@
     "json-diff": "^1.0.6",
     "ls-engines": "^0.9.3",
     "msw": "^2.7.3",
-    "next": "^15.2.5",
+    "next": "^15.3.0",
     "nock": "^13.5.6",
     "prettier": "^3.5.3",
     "prettier-plugin-packagejson": "^2.5.10",
