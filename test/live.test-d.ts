@@ -31,6 +31,9 @@ describe('client.live.events', () => {
       if (event.type === 'message') {
         expectTypeOf(event).toMatchTypeOf<{type: 'message'; id: string; tags: SyncTag[]}>()
       }
+      if (event.type === 'goaway') {
+        expectTypeOf(event).toMatchTypeOf<{type: 'goaway'; id: string; reason: string}>()
+      }
     })
     expectTypeOf(subscription.unsubscribe).toMatchTypeOf<() => void>()
   })

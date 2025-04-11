@@ -1345,8 +1345,23 @@ export interface LiveEventMessage {
 export interface LiveEventWelcome {
   type: 'welcome'
 }
+/**
+ * The `id` field is the position at which the connection was rejected or closed.
+ * The `reason` field will specify why the connection rejected/closed.
+ * @public
+ */
+export interface LiveEventGoAway {
+  type: 'goaway'
+  id: string
+  reason: string
+}
 /** @public */
-export type LiveEvent = LiveEventRestart | LiveEventReconnect | LiveEventMessage | LiveEventWelcome
+export type LiveEvent =
+  | LiveEventRestart
+  | LiveEventReconnect
+  | LiveEventMessage
+  | LiveEventWelcome
+  | LiveEventGoAway
 
 /** @public */
 export interface SanityQueries {}

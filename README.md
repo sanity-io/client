@@ -1003,6 +1003,7 @@ The method will emit different types of events:
 - `message`: Regular event messages.
 - `restart`: Emitted when the event stream restarts.
 - `reconnect`: Emitted when the client reconnects to the event stream.
+- `goaway`: Emitted when when the connection is rejected or had to be closed, eg. if connection limits are reached and the client should switch data fetching strategy from live to polling.
 - `welcome`: Emitted when the client successfully connects to the event stream.
 
 To listen to updates in draft content, set `includeDrafts` to `true`

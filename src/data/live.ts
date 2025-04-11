@@ -5,6 +5,7 @@ import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   LiveEvent,
+  LiveEventGoAway,
   LiveEventMessage,
   LiveEventReconnect,
   LiveEventRestart,
@@ -103,6 +104,7 @@ export class LiveClient {
       'restart',
       'welcome',
       'reconnect',
+      'goaway',
     ]).pipe(
       reconnectOnConnectionFailure(),
       map((event) => {
@@ -111,7 +113,7 @@ export class LiveClient {
           // Splat data properties from the eventsource message onto the returned event
           return {...rest, tags: (data as {tags: SyncTag[]}).tags} as LiveEventMessage
         }
-        return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome
+        return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome | LiveEventGoAway
       }),
     )
 
