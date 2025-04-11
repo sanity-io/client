@@ -171,6 +171,20 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
+    test('supports goaway events', async () => {
+      expect.assertions(1)
+
+      const {server, client} = await testSse(({channel}) => {
+        channel!.send({event: 'welcome'})
+        channel!.send({event: 'goaway', id: '123', reason: 'connection limit reached'})
+        process.nextTick(() => channel!.close())
+      })
+
+      const msg = await lastValueFrom(client.live.events().pipe(take(2)))
+      expect(msg.type, 'emits goaway events to tell the client to switch to polling').toBe('goaway')
+      server.close()
+    })
+
     test('emits errors', async () => {
       expect.assertions(1)
 
