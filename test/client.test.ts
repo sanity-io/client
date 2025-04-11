@@ -5,6 +5,7 @@ import {
   type BaseActionOptions,
   type ClientConfig,
   ClientError,
+  type ClientPerspective,
   type ContentSourceMap,
   type CreateAction,
   createClient,
@@ -12,6 +13,7 @@ import {
   type DeleteAction,
   type DiscardAction,
   type EditAction,
+  type FilteredResponseQueryOptions,
   Patch,
   type PublishAction,
   type ReplaceDraftAction,
@@ -153,6 +155,19 @@ describe('client', async () => {
       )
     })
 
+    test('throws if resource type is dataset and id has no dots', () => {
+      expect(() =>
+        createClient({'~experimental_resource': {type: 'dataset', id: 'abc123'}}),
+      ).toThrow(/Dataset resource ID must be in the format "project.dataset"/)
+    })
+
+    test('throws on invalid resource type', () => {
+      expect(() =>
+        // @ts-expect-error - we want to test that it throws an error
+        createClient({'~experimental_resource': {type: 'bread-and-butter', id: 'abc123'}}),
+      ).toThrow(/Unsupported resource type: bread-and-butter/)
+    })
+
     test('throws if encodeSourceMap is provided', () => {
       // @ts-expect-error - we want to test that it throws an error
       expect(() => createClient({projectId: 'abc123', encodeSourceMap: true})).toThrow(
@@ -291,6 +306,366 @@ describe('client', async () => {
         })
       })
     })
+
+    describe.skipIf(isEdge)('resource client', async () => {
+      const resourceVariants = [
+        {
+          type: 'media-library',
+          id: 'theResourceId',
+          baseUrl: `/media-libraries/theResourceId`,
+        },
+        {
+          type: 'canvas',
+          id: 'theResourceId',
+          baseUrl: `/canvases/theResourceId`,
+        },
+        {
+          type: 'dashboard',
+          id: 'theResourceId',
+          baseUrl: `/dashboards/theResourceId`,
+        },
+        {
+          type: 'dataset',
+          id: 'myProjectId.myDatasetName',
+          baseUrl: `/projects/myProjectId/datasets/myDatasetName`,
+        },
+      ] as const
+      const apiVersionsVariants = [undefined, '1', '2025-03-25', 'X']
+      const perspectiveVariants: (undefined | ClientPerspective)[] = [
+        undefined,
+        'raw',
+        ['foo', 'bar'],
+      ]
+      const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
+
+      describe('resource variants', () => {
+        for (const resource of resourceVariants) {
+          describe(`Resource: ${resource.type}:${resource.id}`, () => {
+            for (const apiVersion of apiVersionsVariants) {
+              describe(`API Version: ${String(apiVersion)}`, () => {
+                for (const perspective of perspectiveVariants) {
+                  describe(`Perspective: ${String(perspective)}`, () => {
+                    test('fetch', async () => {
+                      const queryParams = new URLSearchParams()
+                      queryParams.set('query', '*')
+                      queryParams.set('returnQuery', 'false')
+                      if (perspective) {
+                        queryParams.set(
+                          'perspective',
+                          Array.isArray(perspective) ? perspective.join(',') : perspective,
+                        )
+                      }
+                      nock(`https://${apiHost}`)
+                        .get(
+                          `/v${apiVersion || '1'}${resource.baseUrl}/query?${queryParams.toString()}`,
+                        )
+                        .reply(200, {result: doc})
+                      const config: ClientConfig = {
+                        useProjectHostname: false,
+                        apiHost: `https://${apiHost}`,
+                        '~experimental_resource': resource,
+                      }
+                      if (apiVersion) {
+                        config.apiVersion = apiVersion
+                      }
+                      const client = createClient(config)
+                      const fetchOpts: FilteredResponseQueryOptions = {}
+                      if (perspective) {
+                        fetchOpts.perspective = perspective
+                      }
+                      const data = await client.fetch('*', {}, fetchOpts)
+                      expect(data._id, 'should have resource id').toBe('mooblah')
+                    })
+                  })
+                }
+
+                test('mutate: create', async () => {
+                  const base = `/v${apiVersion || '1'}${resource.baseUrl}/mutate?returnIds=true&returnDocuments=true&visibility=sync`
+
+                  nock(`https://${apiHost}`)
+                    .post(base, {
+                      mutations: [{create: doc}],
+                    })
+                    .reply(200, {
+                      transactionId: 'abc123',
+                      results: [
+                        {
+                          document: doc,
+                          operation: 'create',
+                        },
+                      ],
+                    })
+
+                  const config: ClientConfig = {
+                    apiHost: `https://${apiHost}`,
+                    '~experimental_resource': resource,
+                  }
+                  if (apiVersion) {
+                    config.apiVersion = apiVersion
+                  }
+                  const client = createClient(config)
+                  const result = await client.create(doc)
+                  expect(result._id, 'should have resource id').toBe('mooblah')
+                })
+                test('mutate: patch', async () => {
+                  const base = `/v${apiVersion || '1'}${resource.baseUrl}/mutate?returnIds=true&returnDocuments=true&visibility=sync`
+
+                  nock(`https://${apiHost}`)
+                    .post(base, {
+                      mutations: [
+                        {
+                          patch: {
+                            id: doc._id,
+                            set: {
+                              name: 'tada',
+                            },
+                          },
+                        },
+                      ],
+                    })
+                    .reply(200, {
+                      transactionId: 'abc123',
+                      results: [
+                        {
+                          document: doc,
+                          operation: 'update',
+                        },
+                      ],
+                    })
+
+                  const config: ClientConfig = {
+                    apiHost: `https://${apiHost}`,
+                    '~experimental_resource': resource,
+                  }
+                  if (apiVersion) {
+                    config.apiVersion = apiVersion
+                  }
+                  const client = createClient(config)
+                  const result = await client
+                    .patch(doc._id, {
+                      set: {
+                        name: 'tada',
+                      },
+                    })
+                    .commit()
+                  expect(result, 'should have result').toBeDefined()
+                })
+
+                test('mutate: transaction', async () => {
+                  const base = `/v${apiVersion || '1'}${resource.baseUrl}/mutate?returnIds=true&visibility=sync`
+
+                  nock(`https://${apiHost}`)
+                    .post(base, {
+                      mutations: [
+                        {patch: {id: 'foo', set: {bar: 123}}},
+                        {createIfNotExists: {_id: '123', _type: 'baz'}},
+                      ],
+                    })
+                    .reply(200, {
+                      transactionId: 'abc123',
+                      results: [
+                        {
+                          operation: 'update',
+                        },
+                      ],
+                    })
+
+                  const config: ClientConfig = {
+                    apiHost: `https://${apiHost}`,
+                    '~experimental_resource': resource,
+                  }
+                  if (apiVersion) {
+                    config.apiVersion = apiVersion
+                  }
+                  const client = createClient(config)
+                  const txn = client.transaction()
+                  txn.patch('foo', {set: {bar: 123}})
+                  txn.createIfNotExists({_id: '123', _type: 'baz'})
+                  const result = await txn.commit()
+                  expect(result, 'should have result').toBeDefined()
+                })
+
+                test.skipIf(!isNode)('uploads images using resource config', async () => {
+                  const fixturePath = fixture('horsehead-nebula.jpg')
+                  const isImage = (body: any) =>
+                    Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+
+                  if (resource.type === 'media-library') {
+                    nock(`https://${apiHost}`)
+                      .post(`/v${apiVersion || '1'}${resource.baseUrl}/upload`, isImage)
+                      .reply(201, {document: {url: 'https://some.asset.url'}})
+                  } else {
+                    nock(`https://${apiHost}`)
+                      .post(`/v${apiVersion || '1'}${resource.baseUrl}/assets/images`, isImage)
+                      .reply(201, {document: {url: 'https://some.asset.url'}})
+                  }
+
+                  const config: ClientConfig = {
+                    apiHost: `https://${apiHost}`,
+                    '~experimental_resource': resource,
+                  }
+                  if (apiVersion) {
+                    config.apiVersion = apiVersion
+                  }
+                  const assetsClient = getClient(config).assets
+                  if (resource.type === 'dataset') {
+                    expect(() =>
+                      assetsClient.upload('image', fs.createReadStream(fixturePath)),
+                    ).toThrow(/Assets are not supported for dataset/i)
+                  } else {
+                    const document = await assetsClient.upload(
+                      'image',
+                      fs.createReadStream(fixturePath),
+                    )
+                    expect(document.url).toEqual('https://some.asset.url')
+                  }
+                })
+
+                test('users: me', async () => {
+                  nock(`https://${apiHost}`)
+                    .get(`/v${apiVersion || '1'}/users/me`)
+                    .reply(200, {id: 123})
+
+                  const config: ClientConfig = {
+                    apiHost: `https://${apiHost}`,
+                    '~experimental_resource': resource,
+                  }
+                  if (apiVersion) {
+                    config.apiVersion = apiVersion
+                  }
+                  const client = createClient(config)
+                  const response = await client.users.getById('me')
+                  expect(response.id, 'should have resource id').toBe(123)
+                })
+
+                test('users: by id', async () => {
+                  nock(`https://${apiHost}`)
+                    .get(`/v${apiVersion || '1'}/users/12345`)
+                    .reply(200, {id: 123})
+
+                  const config: ClientConfig = {
+                    apiHost: `https://${apiHost}`,
+                    '~experimental_resource': resource,
+                  }
+                  if (apiVersion) {
+                    config.apiVersion = apiVersion
+                  }
+                  const client = createClient(config)
+                  const response = await client.users.getById('12345')
+                  expect(response.id, 'should have resource id').toBe(123)
+                })
+              })
+            }
+          })
+        }
+      })
+
+      test('fetch: dataset', async () => {
+        nock(`https://${apiHost}`)
+          .get('/v1/projects/myProjectid/datasets/myDatasetName/query?query=*&returnQuery=false')
+          .reply(200, {result: doc})
+
+        const client = createClient({
+          useProjectHostname: false,
+          apiHost: `https://${apiHost}`,
+          '~experimental_resource': {type: 'dataset', id: 'myProjectid.myDatasetName'},
+        })
+        const resource = await client.fetch('*')
+        expect(resource._id, 'should have resource id').toBe('mooblah')
+      })
+
+      test('fetch: perspective', async () => {
+        nock(`https://${apiHost}`)
+          .get('/v1/canvases/theResourceId/query?query=*&returnQuery=false&perspective=raw')
+          .reply(200, {result: doc})
+
+        const client = createClient({
+          useProjectHostname: false,
+          apiHost: `https://${apiHost}`,
+          '~experimental_resource': {type: 'canvas', id: 'theResourceId'},
+        })
+        const resource = await client.fetch('*', {}, {perspective: 'raw'})
+        expect(resource._id, 'should have resource id').toBe('mooblah')
+      })
+
+      test('mutate: create', async () => {
+        nock(`https://${apiHost}`)
+          .post(
+            '/v1/canvases/theResourceId/mutate?returnIds=true&returnDocuments=true&visibility=sync',
+            {
+              mutations: [{create: doc}],
+            },
+          )
+          .reply(200, {
+            transactionId: 'abc123',
+            results: [
+              {
+                document: doc,
+                operation: 'create',
+              },
+            ],
+          })
+
+        const client = createClient({
+          useProjectHostname: false,
+          apiHost: `https://${apiHost}`,
+          '~experimental_resource': {type: 'canvas', id: 'theResourceId'},
+        })
+        const resource = await client.create(doc)
+        expect(resource._id, 'should have resource id').toBe('mooblah')
+      })
+      test.skipIf(isEdge)(
+        'executes transaction using resource path when commit() is called',
+        async () => {
+          const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
+          nock(`https://${apiHost}`)
+            .post('/v1/canvases/res-id/mutate?returnIds=true&visibility=sync', {mutations})
+            .reply(200, {transactionId: 'blatti'})
+
+          const res = await getClient({'~experimental_resource': {type: 'canvas', id: 'res-id'}})
+            .transaction()
+            .create({_type: 'foo', bar: true})
+            .delete('barfoo')
+            .commit()
+          expect(res.transactionId, 'applies given transaction').toEqual('blatti')
+        },
+      )
+
+      test.skipIf(isEdge || !isNode)(
+        'listeners connect to listen resource configured endpoint, emits events',
+        async () => {
+          expect.assertions(1)
+
+          const response = [
+            ':',
+            '',
+            'event: welcome',
+            'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
+            '',
+            'event: mutation',
+            `data: ${JSON.stringify({result: doc})}`,
+            '',
+            'event: disconnect',
+            'data: {"reason":"forcefully closed"}',
+          ].join('\n')
+
+          nock(`https://${apiHost}`)
+            .get('/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
+            .reply(200, response, {
+              'cache-control': 'no-cache',
+              'content-type': 'text/event-stream; charset=utf-8',
+              'transfer-encoding': 'chunked',
+            })
+
+          const evt = await firstValueFrom(
+            getClient({'~experimental_resource': {type: 'media-library', id: 'res-id'}}).listen(
+              'foo.bar',
+            ),
+          )
+          expect(evt.result).toEqual(doc)
+        },
+      )
+    })
   })
 
   describe.skipIf(isEdge)('PROJECTS', () => {
@@ -407,6 +782,36 @@ describe('client', async () => {
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const project = await client.projects.getById('n1f7y')
       expect(project).toEqual(doc)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.create(
+          '*foo*',
+        ),
+      ).toThrow(/`dataset` does not support resource-based operations/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.delete(
+          '*foo*',
+        ),
+      ).toThrow(/`dataset` does not support resource-based operations/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.edit('*foo*'),
+      ).toThrow(/`dataset` does not support resource-based operations/i)
+    })
+
+    test('throws when trying to create dataset with resource configured client', () => {
+      expect(() =>
+        getClient({
+          '~experimental_resource': {type: 'media-library', id: 'res-id'},
+        }).datasets.list(),
+      ).toThrow(/`dataset` does not support resource-based operations/i)
     })
 
     test.each([429, 502, 503])('can be configured to not retry %d', async (code) => {
@@ -1026,6 +1431,24 @@ describe('client', async () => {
         })
 
       await expect(getClient().getDocument('abc123'), 'data should match').resolves.toMatchObject({
+        mood: 'lax',
+      })
+    })
+
+    test.skipIf(isEdge)('can query for single document using resource config', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/media-libraries/res-id/doc/abc123')
+        .reply(200, {
+          ms: 123,
+          documents: [{_id: 'abc123', mood: 'lax'}],
+        })
+
+      await expect(
+        getClient({'~experimental_resource': {type: 'media-library', id: 'res-id'}}).getDocument(
+          'abc123',
+        ),
+        'data should match',
+      ).resolves.toMatchObject({
         mood: 'lax',
       })
     })
@@ -3171,5 +3594,19 @@ describe('client', async () => {
         '/data/doc/bikeshop/bike-123',
       )
     })
+  })
+
+  test('can use getDataUrl() to get API paths for a resource', () => {
+    expect(
+      getClient({'~experimental_resource': {type: 'media-library', id: 'res-id'}}).getDataUrl(
+        'doc',
+      ),
+    ).toBe('/media-libraries/res-id/doc')
+    expect(
+      getClient({'~experimental_resource': {type: 'media-library', id: 'res-id'}}).getDataUrl(
+        'doc',
+        'bike-123',
+      ),
+    ).toBe('/media-libraries/res-id/doc/bike-123')
   })
 })

@@ -17,6 +17,7 @@ import type {
   HttpRequest,
   HttpRequestEvent,
   IdentifiedSanityDocumentStub,
+  InitializedClientConfig,
   InitializedStegaConfig,
   MultipleActionResult,
   MultipleMutationResult,
@@ -37,6 +38,8 @@ import {printCdnPreviewDraftsWarning, printPreviewDraftsDeprecationWarning} from
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
+
+type Client = SanityClient | ObservableSanityClient
 
 const excludeFalsey = (param: Any, defValue: Any) => {
   const value = typeof param === 'undefined' ? defValue : param
@@ -67,7 +70,7 @@ const getQuerySizeLimit = 11264
 
 /** @internal */
 export function _fetch<R, Q>(
-  client: ObservableSanityClient | SanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   _stega: InitializedStegaConfig,
   query: string,
@@ -126,7 +129,7 @@ export function _fetch<R, Q>(
 
 /** @internal */
 export function _getDocument<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string} = {},
@@ -145,7 +148,7 @@ export function _getDocument<R extends Record<string, Any>>(
 
 /** @internal */
 export function _getDocuments<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
@@ -167,7 +170,7 @@ export function _getDocuments<R extends Record<string, Any>>(
 
 /** @internal */
 export function _createIfNotExists<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
@@ -185,7 +188,7 @@ export function _createIfNotExists<R extends Record<string, Any>>(
 
 /** @internal */
 export function _createOrReplace<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
@@ -203,7 +206,7 @@ export function _createOrReplace<R extends Record<string, Any>>(
 
 /** @internal */
 export function _delete<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   selection: string | MutationSelection,
   options?:
@@ -226,7 +229,7 @@ export function _delete<R extends Record<string, Any>>(
 
 /** @internal */
 export function _mutate<R extends Record<string, Any>>(
-  client: SanityClient | ObservableSanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
   options?:
@@ -256,7 +259,7 @@ export function _mutate<R extends Record<string, Any>>(
  * @internal
  */
 export function _action(
-  client: SanityClient | ObservableSanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   actions: Action | Action[],
   options?: BaseActionOptions,
@@ -280,7 +283,7 @@ export function _action(
  * @internal
  */
 export function _dataRequest(
-  client: SanityClient | ObservableSanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   endpoint: string,
   body: Any,
@@ -354,7 +357,7 @@ export function _dataRequest(
  * @internal
  */
 export function _create<R extends Record<string, Any>>(
-  client: SanityClient | ObservableSanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   doc: Any,
   op: Any,
@@ -367,11 +370,38 @@ export function _create<R extends Record<string, Any>>(
   return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
+const hasDataConfig = (client: Client) =>
+  (client.config().dataset !== undefined && client.config().projectId !== undefined) ||
+  client.config()['~experimental_resource'] !== undefined
+
+const isQuery = (client: Client, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'query'))
+
+const isMutate = (client: Client, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'mutate'))
+
+const isDoc = (client: Client, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'doc', ''))
+
+const isListener = (client: Client, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'listen'))
+
+const isHistory = (client: Client, uri: string) =>
+  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'history', ''))
+
+const isData = (client: Client, uri: string) =>
+  uri.startsWith('/data/') ||
+  isQuery(client, uri) ||
+  isMutate(client, uri) ||
+  isDoc(client, uri) ||
+  isListener(client, uri) ||
+  isHistory(client, uri)
+
 /**
  * @internal
  */
 export function _requestObservable<R>(
-  client: SanityClient | ObservableSanityClient,
+  client: Client,
   httpRequest: HttpRequest,
   options: RequestObservableOptions,
 ): Observable<HttpRequestEvent<R>> {
@@ -382,7 +412,7 @@ export function _requestObservable<R>(
   // Only the /data endpoint is currently available through API-CDN.
   const canUseCdn =
     typeof options.canUseCdn === 'undefined'
-      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && uri.indexOf('/data/') === 0
+      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && isData(client, uri)
       : options.canUseCdn
 
   let useCdn = (options.useCdn ?? config.useCdn) && canUseCdn
@@ -397,10 +427,7 @@ export function _requestObservable<R>(
   }
 
   // GROQ query-only parameters
-  if (
-    ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
-    uri.indexOf('/data/query/') === 0
-  ) {
+  if (['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 && isQuery(client, uri)) {
     const resultSourceMap = options.resultSourceMap ?? config.resultSourceMap
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
       options.query = {resultSourceMap, ...options.query}
@@ -460,11 +487,7 @@ export function _requestObservable<R>(
 /**
  * @internal
  */
-export function _request<R>(
-  client: SanityClient | ObservableSanityClient,
-  httpRequest: HttpRequest,
-  options: Any,
-): Observable<R> {
+export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Observable<R> {
   const observable = _requestObservable<R>(client, httpRequest, options).pipe(
     filter((event: Any) => event.type === 'response'),
     map((event: Any) => event.body),
@@ -476,26 +499,24 @@ export function _request<R>(
 /**
  * @internal
  */
-export function _getDataUrl(
-  client: SanityClient | ObservableSanityClient,
-  operation: string,
-  path?: string,
-): string {
+export function _getDataUrl(client: Client, operation: string, path?: string): string {
   const config = client.config()
+  if (config['~experimental_resource']) {
+    validators.resourceConfig(config)
+    const resourceBase = resourceDataBase(config)
+    const uri = path !== undefined ? `${operation}/${path}` : operation
+    return `${resourceBase}/${uri}`.replace(/\/($|\?)/, '$1')
+  }
   const catalog = validators.hasDataset(config)
   const baseUri = `/${operation}/${catalog}`
-  const uri = path ? `${baseUri}/${path}` : baseUri
+  const uri = path !== undefined ? `${baseUri}/${path}` : baseUri
   return `/data${uri}`.replace(/\/($|\?)/, '$1')
 }
 
 /**
  * @internal
  */
-export function _getUrl(
-  client: SanityClient | ObservableSanityClient,
-  uri: string,
-  canUseCdn = false,
-): string {
+export function _getUrl(client: Client, uri: string, canUseCdn = false): string {
   const {url, cdnUrl} = client.config()
   const base = canUseCdn ? cdnUrl : url
   return `${base}/${uri.replace(/^\//, '')}`
@@ -546,4 +567,33 @@ function _createAbortError(signal?: AbortSignal) {
   error.name = 'AbortError'
 
   return error
+}
+
+const resourceDataBase = (config: InitializedClientConfig): string => {
+  if (!config['~experimental_resource']) {
+    throw new Error('`resource` must be provided to perform resource queries')
+  }
+  const {type, id} = config['~experimental_resource']
+
+  switch (type) {
+    case 'dataset': {
+      const segments = id.split('.')
+      if (segments.length !== 2) {
+        throw new Error('Dataset ID must be in the format "project.dataset"')
+      }
+      return `/projects/${segments[0]}/datasets/${segments[1]}`
+    }
+    case 'canvas': {
+      return `/canvases/${id}`
+    }
+    case 'media-library': {
+      return `/media-libraries/${id}`
+    }
+    case 'dashboard': {
+      return `/dashboards/${id}`
+    }
+    default:
+      // @ts-expect-error - handle all supported resource types
+      throw new Error(`Unsupported resource type: ${type.toString()}`)
+  }
 }
