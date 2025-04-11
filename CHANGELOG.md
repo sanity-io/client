@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.29.0](https://github.com/sanity-io/client/compare/v6.28.4...v6.29.0) (2025-04-11)
+
+
+### Features
+
+* add experimental support for resources ([#1040](https://github.com/sanity-io/client/issues/1040)) ([9f15a36](https://github.com/sanity-io/client/commit/9f15a365e8161e1db4c64ffe6ba3ac67215bbfee))
+* **live:** add goaway event ([#1055](https://github.com/sanity-io/client/issues/1055)) ([7c57d3d](https://github.com/sanity-io/client/commit/7c57d3da71e3cd783566f39f3089c42bc14e1d22))
+
 ## [6.28.4](https://github.com/sanity-io/client/compare/v6.28.3...v6.28.4) (2025-03-27)
 
 
