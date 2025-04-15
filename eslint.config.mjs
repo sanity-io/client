@@ -7,6 +7,7 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import prettier from 'eslint-plugin-prettier'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
+import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
 
 // eslint-disable-next-line no-redeclare
@@ -33,6 +34,7 @@ export default [
     plugins: {
       '@typescript-eslint': typescriptEslint,
       'simple-import-sort': simpleImportSort,
+      'unused-imports': unusedImports,
       prettier,
     },
 
@@ -63,6 +65,10 @@ export default [
           terms: ['todo', '@todo', 'fixme'],
         },
       ],
+
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': ['warn'],
 
       'prettier/prettier': 'warn',
     },
