@@ -453,12 +453,72 @@ export class ObservableSanityClient {
   }
 
   /**
-   * Creates a new version of a published document.
-   * Requires a `_type` property in the document.
-   * Overrides the `_id` property in the document.
+   * @public
    *
+   * Creates a new version of a published document.
+   *
+   * @remarks
+   * * Requires a document with a `_type` property.
+   * * Creating a version with no `releaseId` will create a new draft version of the published document.
+   * * If the `document._id` is defined, it should be a draft or release version ID that matches the version ID generated from `publishedId` and `releaseId`.
+   * * If the `document._id` is not defined, it will be generated from `publishedId` and `releaseId`.
+   * * To create a version of an unpublished document, use the `client.create` method.
+   *
+   * @category Versions
+   *
+   * @param param - version action parameters.
+   * @param param.document - The document to create as a new version (must include `_type`).
+   * @param param.publishedId - The ID of the published document being versioned.
+   * @param param.releaseId - The ID of the release to create the version for.
+   * @param options - Additional action options.
    * @returns an observable that resolves to the `transactionId`.
    *
+   * @example Creating a new version of a published document with a generated version ID
+   * ```ts
+   * client.observable.createVersion({
+   *   // The document does not need to include an `_id` property since it will be generated from `publishedId` and `releaseId`
+   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   publishedId: 'myDocument',
+   *   releaseId: 'myRelease',
+   * })
+   *
+   * // The following document will be created:
+   * // {
+   * //   _id: 'versions.myRelease.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
+   *
+   * @example Creating a new version of a published document with a specified version ID
+   * ```ts
+   * client.observable.createVersion({
+   *   document: {_type: 'myDocument', _id: 'versions.myRelease.myDocument', title: 'My Document'},
+   *   // `publishedId` and `releaseId` are not required since `document._id` has been specified
+   * })
+   *
+   * // The following document will be created:
+   * // {
+   * //   _id: 'versions.myRelease.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
+   *
+   * @example Creating a new draft version of a published document
+   * ```ts
+   * client.observable.createVersion({
+   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   publishedId: 'myDocument',
+   * })
+   *
+   * // The following document will be created:
+   * // {
+   * //   _id: 'drafts.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
    */
   createVersion<R extends Record<string, Any>>(
     args: {
@@ -625,13 +685,32 @@ export class ObservableSanityClient {
   }
 
   /**
-   * used to delete the draft or release version of a document.
-   * It is an error if it does not exist.
-   * If the `purge`flag is set, the document history is also deleted.
+   * @public
    *
+   * Deletes the draft or release version of a document.
+   *
+   * @remarks
+   * * Discarding a version with no `releaseId` will discard the draft version of the published document.
+   * * If the draft or release version does not exist, any error will throw.
+   *
+   * @param param - version action parameters.
+   * @param param.releaseId - The ID of the release to discard the document from.
+   * @param param.publishedId - The published ID of the document to discard.
+   * @param purge - if `true` the document history is also discarded.
+   * @param options - Additional action options.
    * @returns an observable that resolves to the `transactionId`.
    *
+   * @example Discarding a release version of a document
+   * ```ts
+   * client.observable.discardVersion({publishedId: 'myDocument', releaseId: 'myRelease'})
+   * // The document with the ID `versions.myRelease.myDocument` will be discarded.
+   * ```
    *
+   * @example Discarding a draft version of a document
+   * ```ts
+   * client.observable.discardVersion({publishedId: 'myDocument'})
+   * // The document with the ID `drafts.myDocument` will be discarded.
+   * ```
    */
   discardVersion(
     {releaseId, publishedId}: {releaseId?: string; publishedId: string},
@@ -644,14 +723,69 @@ export class ObservableSanityClient {
   }
 
   /**
+   * @public
+   *
    * Replaces an existing version document.
    *
-   * At least one of the **version** or **published** documents must exist.
-   * If the `releaseId` is provided, the version will be stored under the corresponding release.
-   * Otherwise, the **draft version** of the document will be replaced.
+   * @remarks
+   * * Requires a document with a `_type` property.
+   * * If the `document._id` is defined, it should be a draft or release version ID that matches the version ID generated from `publishedId` and `releaseId`.
+   * * If the `document._id` is not defined, it will be generated from `publishedId` and `releaseId`.
+   * * Replacing a version with no `releaseId` will replace the draft version of the published document.
+   * * At least one of the **version** or **published** documents must exist.
    *
+   * @param param - version action parameters.
+   * @param param.document - The new document to replace the version with.
+   * @param param.releaseId - The ID of the release where the document version is replaced.
+   * @param param.publishedId - The ID of the published document to replace.
+   * @param options - Additional action options.
    * @returns an observable that resolves to the `transactionId`.
    *
+   * @example Replacing a release version of a published document with a generated version ID
+   * ```ts
+   * client.observable.replaceVersion({
+   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   publishedId: 'myDocument',
+   *   releaseId: 'myRelease',
+   * })
+   *
+   * // The following document will be patched:
+   * // {
+   * //   _id: 'versions.myRelease.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
+   *
+   * @example Replacing a release version of a published document with a specified version ID
+   * ```ts
+   * client.observable.replaceVersion({
+   *   document: {_type: 'myDocument', _id: 'versions.myRelease.myDocument', title: 'My Document'},
+   *   // `publishedId` and `releaseId` are not required since `document._id` has been specified
+   * })
+   *
+   * // The following document will be patched:
+   * // {
+   * //   _id: 'versions.myRelease.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
+   *
+   * @example Replacing a draft version of a published document
+   * ```ts
+   * client.observable.replaceVersion({
+   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   publishedId: 'myDocument',
+   * })
+   *
+   * // The following document will be patched:
+   * // {
+   * //   _id: 'drafts.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
    */
   replaceVersion<R extends Record<string, Any>>(
     args: {
@@ -693,12 +827,25 @@ export class ObservableSanityClient {
   }
 
   /**
-   * Used to indicate when a document within a release should be unpublished when
-   * the release is published.
-   * Note that `publishedId` must currently exist.
+   * @public
    *
+   * Used to indicate when a document within a release should be unpublished when
+   * the release is run.
+   *
+   * @remarks
+   * * If the published document does not exist, an error will be thrown.
+   *
+   * @param param - version action parameters.
+   * @param param.releaseId - The ID of the release to unpublish the document from.
+   * @param param.publishedId - The published ID of the document to unpublish.
+   * @param options - Additional action options.
    * @returns an observable that resolves to the `transactionId`.
    *
+   * @example Unpublishing a release version of a published document
+   * ```ts
+   * client.observable.unpublishVersion({publishedId: 'myDocument', releaseId: 'myRelease'})
+   * // The document with the ID `versions.myRelease.myDocument` will be unpublished. when `myRelease` is run.
+   * ```
    */
   unpublishVersion(
     {releaseId, publishedId}: {releaseId: string; publishedId: string},
@@ -1281,12 +1428,54 @@ export class SanityClient {
   }
 
   /**
+   * @public
+   *
    * Creates a new version of a published document.
-   * Requires a `_type` property in the document.
-   * Overrides the `_id` property in the document.
    *
-   * @returns a promise that resolves to the `transactionId`.
+   * @remarks
+   * * Requires a document with a `_type` property.
+   * * To create a version of an unpublished document, use the `client.create` method.
    *
+   * @category Versions
+   *
+   * @param param - version action parameters.
+   * @param param.document - The document to create as a new version (must include `_type`).
+   * >- if defined `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
+   * @param param.publishedId - The ID of the published document being versioned.
+   * @param param.releaseId - The ID of the release to create the version for.
+   * @param options - Additional action options.
+   * @returns an observable that resolves to the `transactionId`.
+   *
+   * @example Creating a new version of a published document with a generated version ID
+   * ```ts
+   * const transactionId = await client.createVersion({
+   *   // The document does not need to include an `_id` property since it will be generated from `publishedId` and `releaseId`
+   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   publishedId: 'myDocument',
+   *   releaseId: 'myRelease',
+   * })
+   *
+   * // The following document will be created:
+   * // {
+   * //   _id: 'versions.myRelease.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
+   * ```
+   *
+   * @example Creating a new version of a published document with a specified version ID
+   * ```ts
+   * const transactionId = await client.createVersion({
+   *   document: {_type: 'myDocument', _id: 'versions.myRelease.myDocument', title: 'My Document'},
+   *   // `publishedId` and `releaseId` are not required since `document._id` has been specified
+   * })
+   *
+   * // The following document will be created:
+   * // {
+   * //   _id: 'versions.myRelease.myDocument',
+   * //   _type: 'myDocument',
+   * //   title: 'My Document',
+   * // }
    */
   createVersion<R extends Record<string, Any>>(
     args: {

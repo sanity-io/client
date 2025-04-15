@@ -30,6 +30,33 @@ export class ObservableReleasesClient {
     this.#httpRequest = httpRequest
   }
 
+  /**
+   * @public
+   *
+   * Retrieve a release by id.
+   *
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to retrieve.
+   * @param options - Additional query options including abort signal and query tag.
+   * @returns An observable that resolves to the release document {@link ReleaseDocument}.
+   *
+   * @example Retrieving a release by id
+   * ```ts
+   * client.observable.releases.get({releaseId: 'my-release'}).pipe(
+   *   tap((release) => console.log(release)),
+   *   // {
+   *   //   _id: '_.releases.my-release',
+   *   //   name: 'my-release'
+   *   //   _type: 'system.release',
+   *   //   metadata: {releaseType: 'asap'},
+   *   //   _createdAt: '2021-01-01T00:00:00.000Z',
+   *   //   ...
+   *   // }
+   * ).subscribe()
+   * ```
+   */
   get(
     {releaseId}: {releaseId: string},
     options?: {signal?: AbortSignal; tag?: string},
@@ -43,11 +70,59 @@ export class ObservableReleasesClient {
   }
 
   /**
+   * @public
+   *
    * Creates a new release under the given id, with metadata.
    *
-   * @param releaseId - The id of the release to create (with no prefix)
-   * @param metadata - The metadata to associate with the release {@link ReleaseDocument}
-   * Must include a `releaseType` {@link ReleaseType}
+   * @remarks
+   * * If no releaseId is provided, a release id will be generated.
+   * * If no metadata is provided, then an `undecided` releaseType will be used.
+   *
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to create.
+   * @param param.metadata - The metadata to associate with the release {@link ReleaseDocument}.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId` and the release id and metadata.
+   *
+   * @example Creating a release with a custom id and metadata
+   * ```ts
+   * const releaseId = 'my-release'
+   * const metadata: ReleaseDocument['metadata'] = {
+   *   releaseType: 'asap',
+   * }
+   *
+   * client.observable.releases.create({releaseId, metadata}).pipe(
+   *   tap(({transactionId, releaseId, metadata}) => console.log(transactionId, releaseId, metadata)),
+   *   // {
+   *   //   transactionId: 'transaction-id',
+   *   //   releaseId: 'my-release',
+   *   //   metadata: {releaseType: 'asap'},
+   *   // }
+   * ).subscribe()
+   * ```
+   *
+   * @example Creating a release with generated id and metadata
+   * ```ts
+   * client.observable.releases.create().pipe(
+   *   tap(({metadata}) => console.log(metadata)),
+   *   // {
+   *   //   metadata: {releaseType: 'undecided'},
+   *   // }
+   * ).subscribe()
+   * ```
+   *
+   * @example Creating a release using a custom transaction id
+   * ```ts
+   * client.observable.releases.create({transactionId: 'my-transaction-id'}).pipe(
+   *   tap(({transactionId, metadata}) => console.log(transactionId, metadata)),
+   *   // {
+   *   //   transactionId: 'my-transaction-id',
+   *   //   metadata: {releaseType: 'undecided'},
+   *   // }
+   * ).subscribe()
+   * ```
    */
   create(
     options: BaseActionOptions,
@@ -75,10 +150,17 @@ export class ObservableReleasesClient {
   }
 
   /**
+   * @public
+   *
    * Edits an existing release, updating the metadata.
    *
-   * @param releaseId - The id of the release to edit (with no prefix)
-   * @param patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to edit.
+   * @param param.patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   edit(
     {releaseId, patch}: {releaseId: string; patch: PatchOperations},
@@ -94,6 +176,8 @@ export class ObservableReleasesClient {
   }
 
   /**
+   * @public
+   *
    * Publishes all documents in a release at once. For larger releases the effect of the publish
    * will be visible immediately when querying but the removal of the `versions.<releasesId>.*`
    * documents and creation of the corresponding published documents with the new content may
@@ -102,7 +186,12 @@ export class ObservableReleasesClient {
    * During this period both the source and target documents are locked and cannot be
    * modified through any other means.
    *
-   * @param releaseId - The id of the release to publish (with no prefix)
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to publish.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   publish(
     {releaseId}: {releaseId: string},
@@ -117,12 +206,19 @@ export class ObservableReleasesClient {
   }
 
   /**
-   * An archive action is used to remove an active release. The documents that comprise the release
+   * @public
+   *
+   * An archive action removes an active release. The documents that comprise the release
    * are deleted and therefore no longer queryable.
    *
    * While the documents remain in retention the last version can still be accessed using document history endpoint.
    *
-   * @param releaseId - The id of the release to archive (with no prefix)
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to archive.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   archive(
     {releaseId}: {releaseId: string},
@@ -137,10 +233,17 @@ export class ObservableReleasesClient {
   }
 
   /**
-   * An unarchive action is used to restore an archived release and all documents
+   * @public
+   *
+   * An unarchive action restores an archived release and all documents
    * with the content they had just prior to archiving.
    *
-   * @param releaseId - The id of the release to unarchive (with no prefix)
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to unarchive.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   unarchive(
     {releaseId}: {releaseId: string},
@@ -155,12 +258,21 @@ export class ObservableReleasesClient {
   }
 
   /**
+   * @public
+   *
    * A schedule action queues a release for publishing at the given future time.
    * The release is locked such that no documents in the release can be modified and
    * no documents that it references can be deleted as this would make the publish fail.
    * At the given time, the same logic as for the publish action is triggered.
    *
-   * @param releaseId - The id of the release to schedule (with no prefix)
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to schedule.
+   * @param param.publishAt -
+   * The serialised date and time to publish the release. If the `publishAt` is in the past, the release will be published immediately.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   schedule(
     {releaseId, publishAt}: {releaseId: string; publishAt: string},
@@ -176,12 +288,19 @@ export class ObservableReleasesClient {
   }
 
   /**
-   * An unschedule action is used to stop a release from being published.
+   * @public
+   *
+   * An unschedule action stops a release from being published.
    * The documents in the release are considered unlocked and can be edited again.
    * This may fail if another release is scheduled to be published after this one and
    * has a reference to a document created by this one.
    *
-   * @param releaseId - The id of the release to unschedule (with no prefix)
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to unschedule.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   unschedule(
     {releaseId}: {releaseId: string},
@@ -196,10 +315,17 @@ export class ObservableReleasesClient {
   }
 
   /**
-   * A delete action is used to delete a published or archived release.
+   * @public
+   *
+   * A delete action removes a published or archived release.
    * The backing system document will be removed from the dataset.
    *
-   * @param releaseId - The id of the release to delete (with no prefix)
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to delete.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the `transactionId`.
    */
   delete(
     {releaseId}: {releaseId: string},
@@ -213,6 +339,18 @@ export class ObservableReleasesClient {
     return _action(this.#client, this.#httpRequest, deleteAction, options)
   }
 
+  /**
+   * @public
+   *
+   * Get the documents in a release by release id.
+   *
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to get documents for.
+   * @param options - Additional mutation options {@link BaseMutationOptions}.
+   * @returns An observable that resolves to the documents in the release.
+   */
   getDocuments(
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
@@ -356,6 +494,32 @@ export class ReleasesClient {
     this.#httpRequest = httpRequest
   }
 
+  /**
+   * @public
+   *
+   * Retrieve a release by id.
+   *
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to retrieve.
+   * @param options - Additional query options including abort signal and query tag.
+   * @returns A promise that resolves to the release document {@link ReleaseDocument}.
+   *
+   * @example Retrieving a release by id
+   * ```ts
+   * const release = await client.releases.get({releaseId: 'my-release'})
+   * console.log(release)
+   * // {
+   * //   _id: '_.releases.my-release',
+   * //   name: 'my-release'
+   * //   _type: 'system.release',
+   * //   metadata: {releaseType: 'asap'},
+   * //   _createdAt: '2021-01-01T00:00:00.000Z',
+   * //   ...
+   * // }
+   * ```
+   */
   get(
     {releaseId}: {releaseId: string},
     options?: {signal?: AbortSignal; tag?: string},
@@ -371,11 +535,51 @@ export class ReleasesClient {
   }
 
   /**
+   * @public
+   *
    * Creates a new release under the given id, with metadata.
    *
-   * @param releaseId - The id of the release to create
-   * @param metadata - The metadata to associate with the release {@link ReleaseDocument}.
-   * Must include a `releaseType` {@link ReleaseType}
+   * @remarks
+   * * If no releaseId is provided, a release id will be generated.
+   * * If no metadata is provided, then an `undecided` releaseType will be used.
+   *
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to create.
+   * @param param.metadata - The metadata to associate with the release {@link ReleaseDocument}.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId` and the release id and metadata.
+   *
+   * @example Creating a release with a custom id and metadata
+   * ```ts
+   * const releaseId = 'my-release'
+   * const releaseMetadata: ReleaseDocument['metadata'] = {
+   *   releaseType: 'asap',
+   * }
+   *
+   * const result =
+   *   await client.releases.create({releaseId, metadata: releaseMetadata})
+   * console.log(result)
+   * // {
+   * //   transactionId: 'transaction-id',
+   * //   releaseId: 'my-release',
+   * //   metadata: {releaseType: 'asap'},
+   * // }
+   * ```
+   *
+   * @example Creating a release with generated id and metadata
+   * ```ts
+   * const {metadata} = await client.releases.create()
+   * console.log(metadata.releaseType) // 'undecided'
+   * ```
+   *
+   * @example Creating a release with a custom transaction id
+   * ```ts
+   * const {transactionId, metadata} = await client.releases.create({transactionId: 'my-transaction-id'})
+   * console.log(metadata.releaseType) // 'undecided'
+   * console.log(transactionId) // 'my-transaction-id'
+   * ```
    */
   async create(
     options: BaseActionOptions,
@@ -401,10 +605,17 @@ export class ReleasesClient {
   }
 
   /**
+   * @public
+   *
    * Edits an existing release, updating the metadata.
    *
-   * @param releaseId - The id of the release to edit
-   * @param patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to edit.
+   * @param param.patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   edit(
     {releaseId, patch}: {releaseId: string; patch: PatchOperations},
@@ -420,6 +631,8 @@ export class ReleasesClient {
   }
 
   /**
+   * @public
+   *
    * Publishes all documents in a release at once. For larger releases the effect of the publish
    * will be visible immediately when querying but the removal of the `versions.<releasesId>.*`
    * documents and creation of the corresponding published documents with the new content may
@@ -428,7 +641,12 @@ export class ReleasesClient {
    * During this period both the source and target documents are locked and cannot be
    * modified through any other means.
    *
-   * @param releaseId - The id of the release to publish
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to publish.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   publish(
     {releaseId}: {releaseId: string},
@@ -443,12 +661,19 @@ export class ReleasesClient {
   }
 
   /**
-   * An archive action is used to remove an active release. The documents that comprise the release
+   * @public
+   *
+   * An archive action removes an active release. The documents that comprise the release
    * are deleted and therefore no longer queryable.
    *
    * While the documents remain in retention the last version can still be accessed using document history endpoint.
    *
-   * @param releaseId - The id of the release to archive
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to archive.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   archive(
     {releaseId}: {releaseId: string},
@@ -463,10 +688,17 @@ export class ReleasesClient {
   }
 
   /**
-   * An unarchive action is used to restore an archived release and all documents
+   * @public
+   *
+   * An unarchive action restores an archived release and all documents
    * with the content they had just prior to archiving.
    *
-   * @param releaseId - The id of the release to unarchive
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to unarchive.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   unarchive(
     {releaseId}: {releaseId: string},
@@ -481,12 +713,21 @@ export class ReleasesClient {
   }
 
   /**
+   * @public
+   *
    * A schedule action queues a release for publishing at the given future time.
    * The release is locked such that no documents in the release can be modified and
    * no documents that it references can be deleted as this would make the publish fail.
    * At the given time, the same logic as for the publish action is triggered.
    *
-   * @param releaseId - The id of the release to schedule
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to schedule.
+   * @param param.publishAt -
+   * The serialised date and time to publish the release. If the `publishAt` is in the past, the release will be published immediately.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   schedule(
     {releaseId, publishAt}: {releaseId: string; publishAt: string},
@@ -502,12 +743,19 @@ export class ReleasesClient {
   }
 
   /**
-   * An unschedule action is used to stop a release from being published.
+   * @public
+   *
+   * An unschedule action stops a release from being published.
    * The documents in the release are considered unlocked and can be edited again.
    * This may fail if another release is scheduled to be published after this one and
    * has a reference to a document created by this one.
    *
-   * @param releaseId - The id of the release to unschedule
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to unschedule.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   unschedule(
     {releaseId}: {releaseId: string},
@@ -522,11 +770,17 @@ export class ReleasesClient {
   }
 
   /**
-   * A delete action is used to delete a published or archived release.
+   * @public
+   *
+   * A delete action removes a published or archived release.
    * The backing system document will be removed from the dataset.
    *
-   * @param params - Object containing:
-   * - `releaseId` - The id of the release to delete
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to delete.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId`.
    */
   delete(
     {releaseId}: {releaseId: string},
@@ -540,6 +794,18 @@ export class ReleasesClient {
     return lastValueFrom(_action(this.#client, this.#httpRequest, deleteAction, options))
   }
 
+  /**
+   * @public
+   *
+   * Get the documents in a release by release id.
+   *
+   * @category Releases
+   *
+   * @param param - release action parameters.
+   * @param param.releaseId - The id of the release to get documents for.
+   * @param options - Additional mutation options {@link BaseMutationOptions}.
+   * @returns A promise that resolves to the documents in the release.
+   */
   getDocuments(
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
