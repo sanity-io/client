@@ -120,6 +120,7 @@
   "dependencies": {
     "@sanity/eventsource": "^5.0.2",
     "get-it": "^8.6.7",
+    "nanoid": "^5.1.5",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
@@ -142,6 +143,7 @@
     "eslint-formatter-compact": "^8.40.0",
     "eslint-plugin-prettier": "^5.2.6",
     "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.1.4",
     "faucet": "^0.0.4",
     "globals": "^16.0.0",
     "happy-dom": "^12.10.3",
@@ -161,6 +163,6 @@
   },
   "packageManager": "npm@11.3.0",
   "engines": {
-    "node": ">=14.18"
+    "node": ">= 18"
   }
 }

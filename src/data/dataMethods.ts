@@ -12,6 +12,8 @@ import type {
   Any,
   BaseActionOptions,
   BaseMutationOptions,
+  CreateVersionAction,
+  DiscardVersionAction,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
@@ -25,11 +27,13 @@ import type {
   MutationSelection,
   QueryOptions,
   RawQueryResponse,
+  ReplaceVersionAction,
   RequestObservableOptions,
   RequestOptions,
   SanityDocument,
   SingleActionResult,
   SingleMutationResult,
+  UnpublishVersionAction,
 } from '../types'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
@@ -169,6 +173,24 @@ export function _getDocuments<R extends Record<string, Any>>(
 }
 
 /** @internal */
+export function _getReleaseDocuments<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  releaseId: string,
+  opts: BaseMutationOptions = {},
+): Observable<RawQueryResponse<SanityDocument<R>[]>> {
+  return _dataRequest(
+    client,
+    httpRequest,
+    'query',
+    {
+      query: `*[sanity::partOfRelease("${releaseId}")]`,
+    },
+    opts,
+  )
+}
+
+/** @internal */
 export function _createIfNotExists<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
@@ -205,6 +227,26 @@ export function _createOrReplace<R extends Record<string, Any>>(
 }
 
 /** @internal */
+export function _createVersion<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  publishedId: string,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  validators.requireDocumentId('createVersion', doc)
+  validators.requireDocumentType('createVersion', doc)
+
+  const createVersionAction: CreateVersionAction = {
+    actionType: 'sanity.action.document.version.create',
+    publishedId,
+    document: doc,
+  }
+
+  return _action(client, httpRequest, createVersionAction, options)
+}
+
+/** @internal */
 export function _delete<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
@@ -225,6 +267,58 @@ export function _delete<R extends Record<string, Any>>(
     {mutations: [{delete: getSelection(selection)}]},
     options,
   )
+}
+
+/** @internal */
+export function _discardVersion(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  versionId: string,
+  purge: boolean = false,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  const discardVersionAction: DiscardVersionAction = {
+    actionType: 'sanity.action.document.version.discard',
+    versionId,
+    purge,
+  }
+
+  return _action(client, httpRequest, discardVersionAction, options)
+}
+
+/** @internal */
+export function _replaceVersion<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  validators.requireDocumentId('replaceVersion', doc)
+  validators.requireDocumentType('replaceVersion', doc)
+
+  const replaceVersionAction: ReplaceVersionAction = {
+    actionType: 'sanity.action.document.version.replace',
+    document: doc,
+  }
+
+  return _action(client, httpRequest, replaceVersionAction, options)
+}
+
+/** @internal */
+export function _unpublishVersion(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  versionId: string,
+  publishedId: string,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  const unpublishVersionAction: UnpublishVersionAction = {
+    actionType: 'sanity.action.document.version.unpublish',
+    versionId,
+    publishedId,
+  }
+
+  return _action(client, httpRequest, unpublishVersionAction, options)
 }
 
 /** @internal */
