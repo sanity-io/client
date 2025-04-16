@@ -64,24 +64,25 @@ export class ObservableReleasesClient {
     maybeOptions?: BaseActionOptions,
   ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
     const getArgs = (): [
-      string | undefined,
+      string,
       Partial<ReleaseDocument['metadata']>,
       BaseActionOptions | undefined,
     ] => {
-      if (
+      const isReleaseInput =
         typeof releaseOrOptions === 'object' &&
         releaseOrOptions !== null &&
         ('releaseId' in releaseOrOptions || 'metadata' in releaseOrOptions)
-      ) {
-        return [releaseOrOptions.releaseId, releaseOrOptions.metadata || {}, maybeOptions]
+
+      if (isReleaseInput) {
+        const {releaseId = generateReleaseId(), metadata = {}} = releaseOrOptions
+        return [releaseId, metadata, maybeOptions]
       }
 
-      return [undefined, {}, releaseOrOptions as BaseActionOptions]
+      return [generateReleaseId(), {}, releaseOrOptions as BaseActionOptions]
     }
 
     const [releaseId, metadata, options] = getArgs()
 
-    const finalReleaseId = releaseId || generateReleaseId()
     const finalMetadata: ReleaseDocument['metadata'] = {
       ...metadata,
       releaseType: metadata.releaseType || 'undecided',
@@ -89,14 +90,14 @@ export class ObservableReleasesClient {
 
     const createAction: CreateReleaseAction = {
       actionType: 'sanity.action.release.create',
-      releaseId: finalReleaseId,
+      releaseId,
       metadata: finalMetadata,
     }
 
     return _action(this.#client, this.#httpRequest, createAction, options).pipe(
       map((actionResult) => ({
         ...actionResult,
-        releaseId: finalReleaseId,
+        releaseId,
         metadata: finalMetadata,
       })),
     )
