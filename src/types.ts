@@ -1417,8 +1417,7 @@ export interface ReleaseDocument extends SanityDocument {
    */
   _id: string
   /**
-   * typically
-   * `<name>`
+   * where a release has _id `_.releases.foo`, the name is `foo`
    */
   name: string
   _type: 'system.release'

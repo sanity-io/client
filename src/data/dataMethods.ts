@@ -184,7 +184,7 @@ export function _getReleaseDocuments<R extends Record<string, Any>>(
     httpRequest,
     'query',
     {
-      query: `*[_id in path("versions.${releaseId}.*")]`,
+      query: `*[sanity::partOfRelease("${releaseId}")]`,
     },
     opts,
   )
