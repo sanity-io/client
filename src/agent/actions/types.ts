@@ -16,9 +16,9 @@ export interface GenerateConstantInstructionParam {
 export interface GenerateFieldInstructionParam {
   type: 'field'
   /**
-   * Examples: 'title', 'array[_key=="key"].field'
+   * Examples: ['title'], ['array', {_key: 'arrayItemKey'}, 'field']
    */
-  path: string
+  path: GeneratePath
   /**
    * If omitted, implicitly uses the documentId of the instruction target
    */
