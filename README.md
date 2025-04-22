@@ -107,10 +107,8 @@ export async function updateDocumentTitle(_id, title) {
     - [Action options](#action-options)
     - [Create Action](#create-action)
     - [Delete Action](#delete-action)
-    - [Discard Action](#discard-action)
     - [Edit Action](#edit-action)
     - [Publish Action](#publish-action)
-    - [ReplaceDraft Action](#replacedraft-action)
     - [Unpublish Action](#unpublish-action)
     - [Version actions](#version-actions)
       - [Create Version Action](#create-version)
@@ -1458,27 +1456,6 @@ client
   })
 ```
 
-#### Discard Action
-
-A draft document can be deleted by specifying a discard action type:
-
-```js
-client
-  .action(
-    {
-      actionType: 'sanity.action.document.discard',
-      draftId: 'draft.bike-123',
-    },
-    actionOptions,
-  )
-  .then(() => {
-    console.log('Bike draft deleted')
-  })
-  .catch((err) => {
-    console.error('Discard failed: ', err.message)
-  })
-```
-
 #### Edit Action
 
 A patch can be applied to an existing document draft or create a new one by specifying an edit action type:
@@ -1522,28 +1499,6 @@ client
   })
   .catch((err) => {
     console.error('Publish draft failed: ', err.message)
-  })
-```
-
-#### ReplaceDraft Action
-
-An existing document draft can be deleted and replaced by a new one by specifying a replaceDraft action type:
-
-```js
-client
-  .action(
-    {
-      actionType: 'sanity.action.document.replaceDraft',
-      publishedId: 'bike-123',
-      attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 1},
-    },
-    actionOptions,
-  )
-  .then(() => {
-    console.log('Bike draft replaced')
-  })
-  .catch((err) => {
-    console.error('Replace draft failed: ', err.message)
   })
 ```
 
