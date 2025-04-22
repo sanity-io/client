@@ -762,6 +762,7 @@ export type CreateAction = {
  * At least one of the draft or published versions of the document must exist.
  *
  * @public
+ * @deprecated Use {@link ReplaceVersionAction} instead
  */
 export type ReplaceDraftAction = {
   actionType: 'sanity.action.document.replaceDraft'
@@ -834,6 +835,7 @@ export type DeleteAction = {
  * It is an error if it does not exist. If the purge flag is set, the document history is also deleted.
  *
  * @public
+ * @deprecated Use {@link DiscardVersionAction} instead
  */
 export type DiscardAction = {
   actionType: 'sanity.action.document.discard'
