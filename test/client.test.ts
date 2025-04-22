@@ -3439,7 +3439,7 @@ describe('client', async () => {
           a: 'constant',
           b: {
             type: 'field',
-            path: 'title',
+            path: ['title'],
           },
           c: {
             type: 'groq',
