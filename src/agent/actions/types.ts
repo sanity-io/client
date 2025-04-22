@@ -295,16 +295,16 @@ interface GenerateRequestBase {
 
 interface Sync {
   /**
-   * By default, skipWrite: false.
+   * By default, noWrite: false.
    * Write enabled operations will mutate the target document, and emit AI presence in the studio.
    *
-   * When skipWrite: true, the api will not mutate any documents nor emit presence.
+   * When noWrite: true, the api will not mutate any documents nor emit presence.
    * Ie, when true, no changes will be made to content-lake
    *
-   * skipWrite: true is incompatible with async: true,
-   * as skipWrite implies that you will use the return value of the operation
+   * noWrite: true is incompatible with async: true,
+   * as noWrite implies that you will use the return value of the operation
    */
-  skipWrite?: boolean
+  noWrite?: boolean
 
   /**
    * When async: true, requests responds with status 201 and {_id} as response body as soon as the request is validated.
@@ -312,7 +312,7 @@ interface Sync {
    *
    * When async: false (default), requests respond with status 200 and the document value after instruction has been applied.
    *
-   * async: true is incompatible with skipWrite: true, as async: true does not return the resulting document
+   * async: true is incompatible with noWrite: true, as async: true does not return the resulting document
    */
   async?: false
 }
@@ -324,7 +324,7 @@ interface Async {
    *
    * When async: false (default), requests respond with status 200 and the document value after instruction has been applied.
    *
-   * async: true is incompatible with skipWrite, as async: true does not return the resulting document
+   * async: true is incompatible with noWrite, as async: true does not return the resulting document
    */
   async: true
 }

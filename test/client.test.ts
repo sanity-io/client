@@ -3401,7 +3401,7 @@ describe('client', async () => {
       expect(body._id).toEqual(response._id)
     })
 
-    test('async cannot skipWrite', async () => {
+    test('async cannot noWrite', async () => {
       const response = {
         _id: 'generated',
         title: 'override',
@@ -3417,7 +3417,7 @@ describe('client', async () => {
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
         async: true,
-        skipWrite: true, // not allowed
+        noWrite: true, // not allowed
       })
       expect(body._id).toEqual(response._id)
     })
@@ -3473,7 +3473,7 @@ describe('client', async () => {
             },
           },
         ],
-        skipWrite: true,
+        noWrite: true,
         conditionalPaths: {
           defaultHidden: true,
           defaultReadOnly: false,
