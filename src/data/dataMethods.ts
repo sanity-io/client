@@ -2,6 +2,9 @@ import {from, type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {combineLatestWith, filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
+import {getVersionId} from '../csm'
+import {isDraftId} from '../csm'
+import {getVersionFromId} from '../csm'
 import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
@@ -136,10 +139,36 @@ export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
-  opts: {signal?: AbortSignal; tag?: string} = {},
+  opts: {signal?: AbortSignal; tag?: string; releaseId?: string} = {},
 ): Observable<SanityDocument<R> | undefined> {
+  const getDocId = () => {
+    if (!opts.releaseId) {
+      return id
+    }
+
+    const documentIdReleaseId = getVersionFromId(id)
+    if (!documentIdReleaseId) {
+      if (isDraftId(id)) {
+        throw new Error(
+          `The document ID (${id}) is a draft, but \`options.releaseId\` is set ${opts.releaseId}`,
+        )
+      }
+
+      return getVersionId(id, opts.releaseId)
+    }
+
+    if (documentIdReleaseId !== opts.releaseId) {
+      throw new Error(
+        `The document ID (${id}) is already a version of ${documentIdReleaseId} release, but this does not match the provided \`options.releaseId\` (${opts.releaseId})`,
+      )
+    }
+
+    return id
+  }
+  const docId = getDocId()
+
   const options = {
-    uri: _getDataUrl(client, 'doc', id),
+    uri: _getDataUrl(client, 'doc', docId),
     json: true,
     tag: opts.tag,
     signal: opts.signal,
