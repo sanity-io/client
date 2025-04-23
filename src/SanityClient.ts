@@ -1,4 +1,4 @@
-import {getPublishedId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
+import {getPublishedId, getVersionId} from '@sanity/client/csm'
 import {firstValueFrom, lastValueFrom, Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
@@ -233,33 +233,7 @@ export class ObservableSanityClient {
     id: string,
     options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
   ): Observable<SanityDocument<R> | undefined> {
-    const getDocId = () => {
-      if (!options?.releaseId) {
-        return id
-      }
-      const documentIdReleaseId = getVersionFromId(id)
-      if (!documentIdReleaseId) {
-        if (isDraftId(id)) {
-          throw new Error(
-            `The document ID (${id}) is a draft, but \`options.releaseId\` is set ${options.releaseId}`,
-          )
-        }
-
-        return getVersionId(id, options.releaseId)
-      }
-
-      if (documentIdReleaseId !== options.releaseId) {
-        throw new Error(
-          `The document ID (${id}) is already a version of ${documentIdReleaseId} release, but this does not match the provided \`options.releaseId\` (${options.releaseId})`,
-        )
-      }
-
-      return id
-    }
-
-    const docId = getDocId()
-
-    return dataMethods._getDocument<R>(this, this.#httpRequest, docId, options)
+    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options)
   }
 
   /**
@@ -1111,33 +1085,7 @@ export class SanityClient {
     id: string,
     options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
   ): Promise<SanityDocument<R> | undefined> {
-    const getDocId = () => {
-      if (!options?.releaseId) {
-        return id
-      }
-      const documentIdReleaseId = getVersionFromId(id)
-      if (!documentIdReleaseId) {
-        if (isDraftId(id)) {
-          throw new Error(
-            `The document ID (${id}) is a draft, but \`options.releaseId\` is set ${options.releaseId}`,
-          )
-        }
-
-        return getVersionId(id, options.releaseId)
-      }
-
-      if (documentIdReleaseId !== options.releaseId) {
-        throw new Error(
-          `The document ID (${id}) is already a version of ${documentIdReleaseId} release, but this does not match the provided \`options.releaseId\` (${options.releaseId})`,
-        )
-      }
-
-      return id
-    }
-
-    const docId = getDocId()
-
-    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, docId, options))
+    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
   }
 
   /**
