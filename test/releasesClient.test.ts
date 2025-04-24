@@ -470,7 +470,7 @@ describe('ReleasesClient', () => {
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(decodeURIComponent(requestArgs.uri)).toEqual(
-        '/data/query/test-dataset?query=*[sanity::partOfRelease("release123")]',
+        '/data/query/test-dataset?query=*[sanity::partOfRelease($releaseId)]&$releaseId="release123"',
       )
 
       expect(result).toEqual({result: documents})
