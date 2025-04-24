@@ -28,6 +28,7 @@ const getArgs = (
   return [generateReleaseId(), {}, releaseOrOptions as BaseActionOptions]
 }
 
+/** @internal */
 export const createRelease = (
   releaseOrOptions?: ReleaseOrOptions,
   maybeOptions?: BaseActionOptions,
