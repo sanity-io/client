@@ -1,10 +1,8 @@
+import {getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
 import {from, type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {combineLatestWith, filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
-import {getVersionId} from '../csm'
-import {isDraftId} from '../csm'
-import {getVersionFromId} from '../csm'
 import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
