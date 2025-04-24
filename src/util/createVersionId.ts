@@ -5,6 +5,8 @@ import type {IdentifiedSanityDocumentStub, SanityDocumentStub} from '../types'
 import {validateVersionIdMatch} from '../validators'
 
 /**
+ * @internal
+ *
  * ~24 years (or 7.54e+8 seconds) needed, in order to have a 1% probability of at least one collision if 10 ID's are generated every hour.
  */
 export const generateReleaseId = customAlphabet(
@@ -12,9 +14,11 @@ export const generateReleaseId = customAlphabet(
   8,
 )
 
+/** @internal */
 export const getDocumentVersionId = (publishedId: string, releaseId?: string) =>
   releaseId ? getVersionId(publishedId, releaseId) : getDraftId(publishedId)
 
+/** @internal */
 export function deriveDocumentVersionId(
   op: string,
   {
