@@ -70,7 +70,11 @@ describe('dataMethods', async () => {
     })
   }
 
-  const testTagOption = (methodName: string, methodFn: Function, args: any[] = []) => {
+  const testTagOption = (
+    methodName: string,
+    methodFn: (client: any, httpRequest: any, ...args: any[]) => any,
+    args: any[] = [],
+  ) => {
     test('passes tag option to request', () => {
       const mockHttpRequest = vi.fn()
       mockHttpRequest.mockReturnValueOnce(
@@ -88,7 +92,11 @@ describe('dataMethods', async () => {
     })
   }
 
-  const testSignalOption = (methodName: string, methodFn: Function, args: any[] = []) => {
+  const testSignalOption = (
+    methodName: string,
+    methodFn: (client: any, httpRequest: any, ...args: any[]) => any,
+    args: any[] = [],
+  ) => {
     test('passes signal option to request', () => {
       const mockHttpRequest = vi.fn()
       mockHttpRequest.mockReturnValueOnce(
