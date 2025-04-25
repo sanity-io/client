@@ -36,6 +36,7 @@
         "import": "./dist/index.browser.js",
         "require": "./dist/index.browser.cjs"
       },
+      "sanity-function": "./dist/index.browser.js",
       "react-server": "./dist/index.browser.js",
       "bun": "./dist/index.browser.js",
       "deno": "./dist/index.browser.js",
