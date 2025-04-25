@@ -37,8 +37,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to retrieve.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to retrieve.
    * @param options - Additional query options including abort signal and query tag.
    * @returns An observable that resolves to the release document {@link ReleaseDocument}.
    *
@@ -80,9 +80,9 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to create.
-   * @param param.metadata - The metadata to associate with the release {@link ReleaseDocument}.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to create.
+   *   - `metadata` - The metadata to associate with the release {@link ReleaseDocument}.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId` and the release id and metadata.
    *
@@ -156,9 +156,9 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to edit.
-   * @param param.patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to edit.
+   *   - `patch` - The patch operation to apply on the release metadata {@link PatchMutationOperation}.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -188,8 +188,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to publish.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to publish.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -215,8 +215,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to archive.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to archive.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -240,8 +240,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to unarchive.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to unarchive.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -267,10 +267,9 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to schedule.
-   * @param param.publishAt -
-   * The serialised date and time to publish the release. If the `publishAt` is in the past, the release will be published immediately.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to schedule.
+   *   - `publishAt` - The serialised date and time to publish the release. If the `publishAt` is in the past, the release will be published immediately.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -297,8 +296,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to unschedule.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to unschedule.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -322,8 +321,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to delete.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to delete.
    * @param options - Additional action options.
    * @returns An observable that resolves to the `transactionId`.
    */
@@ -346,8 +345,8 @@ export class ObservableReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to get documents for.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to get documents for.
    * @param options - Additional mutation options {@link BaseMutationOptions}.
    * @returns An observable that resolves to the documents in the release.
    */
@@ -501,8 +500,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to retrieve.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to retrieve.
    * @param options - Additional query options including abort signal and query tag.
    * @returns A promise that resolves to the release document {@link ReleaseDocument}.
    *
@@ -545,9 +544,9 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to create.
-   * @param param.metadata - The metadata to associate with the release {@link ReleaseDocument}.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to create.
+   *   - `metadata` - The metadata to associate with the release {@link ReleaseDocument}.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId` and the release id and metadata.
    *
@@ -611,9 +610,9 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to edit.
-   * @param param.patch - The patch operation to apply on the release metadata {@link PatchMutationOperation}.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to edit.
+   *   - `patch` - The patch operation to apply on the release metadata {@link PatchMutationOperation}.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -643,8 +642,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to publish.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to publish.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -670,8 +669,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to archive.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to archive.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -695,8 +694,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to unarchive.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to unarchive.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -722,10 +721,9 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to schedule.
-   * @param param.publishAt -
-   * The serialised date and time to publish the release. If the `publishAt` is in the past, the release will be published immediately.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to schedule.
+   *   - `publishAt` - The serialised date and time to publish the release. If the `publishAt` is in the past, the release will be published immediately.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -752,8 +750,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to unschedule.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to unschedule.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -777,8 +775,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to delete.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to delete.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    */
@@ -801,8 +799,8 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param param - release action parameters.
-   * @param param.releaseId - The id of the release to get documents for.
+   * @param params - Release action parameters:
+   *   - `releaseId` - The id of the release to get documents for.
    * @param options - Additional mutation options {@link BaseMutationOptions}.
    * @returns A promise that resolves to the documents in the release.
    */
