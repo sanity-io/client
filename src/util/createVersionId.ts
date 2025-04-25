@@ -1,4 +1,10 @@
-import {getDraftId, getVersionId} from '@sanity/client/csm'
+import {
+  getDraftId,
+  getVersionFromId,
+  getVersionId,
+  isDraftId,
+  isVersionId,
+} from '@sanity/client/csm'
 import {customAlphabet} from 'nanoid'
 
 import type {IdentifiedSanityDocumentStub, SanityDocumentStub} from '../types'
@@ -32,12 +38,34 @@ export function deriveDocumentVersionId(
   },
 ): string {
   if (publishedId && document._id) {
-    const documentVersionId = getDocumentVersionId(publishedId, releaseId)
-    validateVersionIdMatch(documentVersionId, document)
-    return documentVersionId
+    const versionId = getDocumentVersionId(publishedId, releaseId)
+    validateVersionIdMatch(versionId, document)
+    return versionId
   }
 
   if (document._id) {
+    const isDraft = isDraftId(document._id)
+    const isVersion = isVersionId(document._id)
+
+    if (!isDraft && !isVersion) {
+      throw new Error(`${op}() requires a document with an _id that is a version or draft ID`)
+    }
+
+    if (releaseId) {
+      if (isDraft) {
+        throw new Error(
+          `${op}() was called with a document ID (${document._id}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+        )
+      }
+
+      const builtVersionId = getVersionFromId(document._id)
+      if (builtVersionId !== releaseId) {
+        throw new Error(
+          `${op}() was called with a document ID (${document._id}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${builtVersionId}).`,
+        )
+      }
+    }
+
     return document._id
   }
 

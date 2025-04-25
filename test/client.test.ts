@@ -2588,6 +2588,73 @@ describe('client', async () => {
         const res = await getClient().createVersion({document})
         expect(res.transactionId).toEqual('abc123')
       })
+
+      test('throws when document._id is provided but is not a version ID or draft ID', async () => {
+        const document = {
+          _id: 'regularId123',
+          _type: 'post',
+          title: 'Regular ID',
+        }
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({document})
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          'createVersion() requires a document with an _id that is a version or draft ID',
+        )
+      })
+
+      test('throws when document._id is a draft ID and releaseId is provided', async () => {
+        const publishedId = 'doc123'
+        const releaseId = 'release456'
+        const documentId = `drafts.${publishedId}`
+        const document = {
+          _id: documentId,
+          _type: 'post',
+          title: 'Draft ID',
+        }
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({document, releaseId})
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          `createVersion() was called with a document ID (${documentId}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+        )
+      })
+
+      test('throws when document._id is a version ID but version does not match provided releaseId', async () => {
+        const publishedId = 'doc123'
+        const wrongReleaseId = 'oldRelease789'
+        const releaseId = 'newRelease456'
+        const versionId = `versions.${wrongReleaseId}.${publishedId}`
+        const document = {
+          _id: versionId,
+          _type: 'post',
+          title: 'Version ID mismatch',
+        }
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({document, releaseId})
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          `createVersion() was called with a document ID (${versionId}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${wrongReleaseId}).`,
+        )
+      })
     })
   })
 
@@ -4800,6 +4867,73 @@ describe('client', async () => {
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
         'replaceVersion() requires that the document contains a type ("_type" property)',
+      )
+    })
+
+    test('throws when document._id is provided but is not a version ID or draft ID', async () => {
+      const document = {
+        _id: 'regularId123',
+        _type: 'post',
+        title: 'Regular ID',
+      }
+
+      let error: Error | null = null
+      try {
+        await getClient().replaceVersion({document})
+      } catch (err) {
+        error = err as Error
+      }
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch(
+        'replaceVersion() requires a document with an _id that is a version or draft ID',
+      )
+    })
+
+    test('throws when document._id is a draft ID and releaseId is provided', async () => {
+      const publishedId = 'doc123'
+      const releaseId = 'release456'
+      const documentId = `drafts.${publishedId}`
+      const document = {
+        _id: documentId,
+        _type: 'post',
+        title: 'Draft ID',
+      }
+
+      let error: Error | null = null
+      try {
+        await getClient().replaceVersion({document, releaseId})
+      } catch (err) {
+        error = err as Error
+      }
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch(
+        `replaceVersion() was called with a document ID (${documentId}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+      )
+    })
+
+    test('throws when document._id is a version ID but version does not match provided releaseId', async () => {
+      const publishedId = 'doc123'
+      const wrongReleaseId = 'oldRelease789'
+      const releaseId = 'newRelease456'
+      const versionId = `versions.${wrongReleaseId}.${publishedId}`
+      const document = {
+        _id: versionId,
+        _type: 'post',
+        title: 'Version ID mismatch',
+      }
+
+      let error: Error | null = null
+      try {
+        await getClient().replaceVersion({document, releaseId})
+      } catch (err) {
+        error = err as Error
+      }
+
+      expect(error).not.toBeNull()
+      expect(error?.message).toMatch(
+        `replaceVersion() was called with a document ID (${versionId}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${wrongReleaseId}).`,
       )
     })
 
