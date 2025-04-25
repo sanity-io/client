@@ -57,13 +57,13 @@ describe('createVersionId', () => {
   describe('deriveDocumentVersionId', () => {
     it('returns document ID when only document with _id is provided', () => {
       const document = {
-        _id: 'doc123',
+        _id: 'drafts.doc123',
         _type: 'post',
         title: 'Test document',
       }
 
       const result = deriveDocumentVersionId('test', {document})
-      expect(result).toBe('doc123')
+      expect(result).toBe('drafts.doc123')
     })
 
     it('returns draft ID when only publishedId is provided', () => {
@@ -80,6 +80,52 @@ describe('createVersionId', () => {
       const releaseId = 'release456'
       const result = deriveDocumentVersionId('test', {publishedId, releaseId, document})
       expect(result).toBe('versions.release456.pub123')
+    })
+
+    it('throws error when document._id is provided but is not a version ID or draft ID', () => {
+      const document = {
+        _id: 'regularId123',
+        _type: 'post',
+        title: 'Test with regular ID',
+      }
+
+      expect(() => {
+        deriveDocumentVersionId('test', {document})
+      }).toThrow('test() requires a document with an _id that is a version or draft ID')
+    })
+
+    it('throws error when document._id is a draft ID and releaseId is provided', () => {
+      const publishedId = 'pub123'
+      const releaseId = 'release456'
+      const document = {
+        _id: `drafts.${publishedId}`,
+        _type: 'post',
+        title: 'Test with draft ID',
+      }
+
+      expect(() => {
+        deriveDocumentVersionId('test', {document, releaseId})
+      }).toThrow(
+        `test() was called with a document ID (${document._id}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+      )
+    })
+
+    it('throws error when document._id is a version ID but version does not match provided releaseId', () => {
+      const publishedId = 'pub123'
+      const wrongReleaseId = 'oldRelease789'
+      const releaseId = 'newRelease456'
+      const versionId = `versions.${wrongReleaseId}.${publishedId}`
+      const document = {
+        _id: versionId,
+        _type: 'post',
+        title: 'Test with version ID',
+      }
+
+      expect(() => {
+        deriveDocumentVersionId('test', {document, releaseId})
+      }).toThrow(
+        `test() was called with a document ID (${versionId}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${wrongReleaseId}).`,
+      )
     })
 
     it('validates and returns version ID when both document._id and publishedId are provided', () => {
@@ -113,7 +159,6 @@ describe('createVersionId', () => {
     })
 
     it('throws error when document ID does not match generated version ID', () => {
-      expect.assertions(1)
       const publishedId = 'pub123'
       const document = {
         _id: 'drafts.different123',
@@ -121,13 +166,11 @@ describe('createVersionId', () => {
         _type: 'post',
       }
 
-      try {
+      expect(() => {
         deriveDocumentVersionId('test', {publishedId, document})
-      } catch (error: any) {
-        expect(error.message).toBe(
-          'The provided document ID (drafts.different123) does not match the generated version ID (drafts.pub123)',
-        )
-      }
+      }).toThrow(
+        'The provided document ID (drafts.different123) does not match the generated version ID (drafts.pub123)',
+      )
     })
 
     it('throws error when neither publishedId nor document._id is provided', () => {
@@ -139,7 +182,6 @@ describe('createVersionId', () => {
     })
 
     it('throws error when validating version ID with mismatched releaseId', () => {
-      expect.assertions(1)
       const publishedId = 'pub123'
       const releaseId = 'release456'
       const wrongReleaseId = 'wrong789'
@@ -149,13 +191,11 @@ describe('createVersionId', () => {
         _type: 'post',
       }
 
-      try {
+      expect(() => {
         deriveDocumentVersionId('test', {publishedId, releaseId, document})
-      } catch (error: any) {
-        expect(error.message).toBe(
-          `The provided document ID (versions.${wrongReleaseId}.${publishedId}) does not match the generated version ID (versions.${releaseId}.${publishedId})`,
-        )
-      }
+      }).toThrow(
+        `The provided document ID (versions.${wrongReleaseId}.${publishedId}) does not match the generated version ID (versions.${releaseId}.${publishedId})`,
+      )
     })
 
     it('handles correctly when document._id is a draft ID and publishedId matches', () => {
