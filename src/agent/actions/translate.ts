@@ -20,6 +20,7 @@ import type {
 import {hasDataset} from '../../validators'
 import type {TransformTargetDocument} from './transform'
 
+/**  @beta */
 export interface TranslateRequestBase extends AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
@@ -55,11 +56,13 @@ export interface TranslateRequestBase extends AgentActionRequestBase {
   protectedPhrases?: string[]
 }
 
+/**  @beta */
 export interface TranslateLanguage {
   languageCode: string
   languageTitle?: string
 }
 
+/**  @beta */
 export interface TranslateTargetInclude extends AgentActionTargetInclude {
   /** string template using $variable from instructionParams  */
   styleGuide?: string
@@ -74,6 +77,7 @@ export interface TranslateTargetInclude extends AgentActionTargetInclude {
   include?: (AgentActionPathSegment | TranslateTargetInclude)[]
 }
 
+/**  @beta */
 export interface TranslateTarget extends AgentActionTarget {
   /** string template using $variable from instructionParams  */
   styleGuide?: string

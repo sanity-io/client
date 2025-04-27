@@ -44,13 +44,18 @@ export interface GroqAgentActionParam {
   params?: Record<string, string>
 }
 
+/**  @beta */
 export type AgentActionTypeConfig =
   | {include: string[]; exclude?: never}
   | {exclude: string[]; include?: never}
 
+/**  @beta */
 export type AgentActionPathSegment = string | {_key: string}
+
+/**  @beta */
 export type AgentActionPath = AgentActionPathSegment[]
 
+/**  @beta */
 export interface AgentActionTargetInclude {
   path: AgentActionPathSegment | AgentActionPath
 

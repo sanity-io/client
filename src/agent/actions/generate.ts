@@ -19,8 +19,10 @@ import type {
 } from '../../types'
 import {hasDataset} from '../../validators'
 
+/**  @beta */
 export type GenerateOperation = 'set' | 'append' | 'mixed'
 
+/**  @beta */
 export interface GenerateRequestBase extends AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
@@ -45,6 +47,7 @@ export interface GenerateRequestBase extends AgentActionRequestBase {
   target?: GenerateTarget | GenerateTarget[]
 }
 
+/**  @beta */
 export interface GenerateTargetInclude extends AgentActionTargetInclude {
   /**
    * Sets the operation for this path, and all its children.
@@ -64,6 +67,7 @@ export interface GenerateTargetInclude extends AgentActionTargetInclude {
   include?: (AgentActionPathSegment | GenerateTargetInclude)[]
 }
 
+/**  @beta */
 export interface GenerateTarget extends AgentActionTarget {
   /**
    * Sets the default operation for all paths in the target.

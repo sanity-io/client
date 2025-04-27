@@ -13,6 +13,7 @@ import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {AgentActionParams, Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
 import {hasDataset} from '../../validators'
 
+/**  @beta */
 export interface TransformRequestBase extends AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
@@ -41,12 +42,14 @@ export interface TransformRequestBase extends AgentActionRequestBase {
   target?: TransformTarget | TransformTarget[]
 }
 
+/**  @beta */
 export type TransformTargetDocument =
   | {operation: 'get'; _id: string}
   | {operation: 'create'; _id?: string}
   | {operation: 'createIfNotExists'; _id: string}
   | {operation: 'createOrReplace'; _id: string}
 
+/**  @beta */
 export interface TransformTargetInclude extends AgentActionTargetInclude {
   /** string template using $variable from instructionParams  */
   transformation?: string
@@ -61,6 +64,7 @@ export interface TransformTargetInclude extends AgentActionTargetInclude {
   include?: (AgentActionPathSegment | TransformTargetInclude)[]
 }
 
+/**  @beta */
 export interface TransformTarget extends AgentActionTarget {
   /** string template using $variable from instructionParams  */
   transformation?: string
