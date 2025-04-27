@@ -3292,7 +3292,7 @@ describe('client', async () => {
     })
   })
 
-  describe.skipIf(isEdge)('INSTRUCT', () => {
+  describe.skipIf(isEdge)('AGENT ACTION: GENERATE', () => {
     test('can create new document', async () => {
       const response = {
         _id: 'generated',
@@ -3373,7 +3373,7 @@ describe('client', async () => {
         .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
         .reply(200, response)
 
-      //@ts-expect-error not allowe
+      //@ts-expect-error not allowed
       await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
         createDocument: {_type: 'yolo'},
@@ -3463,6 +3463,344 @@ describe('client', async () => {
                 path: 'array',
                 include: [{_key: '123'}],
                 operation: 'append',
+                types: {
+                  include: ['string'],
+                },
+              },
+            ],
+            types: {
+              exclude: ['number'],
+            },
+          },
+        ],
+        noWrite: true,
+        conditionalPaths: {
+          defaultHidden: true,
+          defaultReadOnly: false,
+          paths: [{path: ['title'], readOnly: false, hidden: false}],
+        },
+        schemaId: 'some-schema-id',
+      })
+      expect(body.title).toEqual(response.title)
+    })
+  })
+
+  describe.skipIf(isEdge)('AGENT ACTION: TRANSFORM', () => {
+    test('can create new document', async () => {
+      const response = {_id: 'created'}
+
+      nock(projectHost())
+        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.transform({
+        schemaId: 'some-schema-id',
+        documentId: 'source-id',
+        targetDocument: {operation: 'create'},
+        transformation: 'make everything CAPITALS ONLY',
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can transform existing document', async () => {
+      const response = {
+        _id: 'generated',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.transform({
+        schemaId: 'some-schema-id',
+        documentId: 'some-id',
+        transformation: 'fix spelling errors',
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can apply generics to type returned document value', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'OVERRIDE',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.transform<{title?: string}>({
+        schemaId: 'some-schema-id',
+        documentId: 'some-id',
+        transformation: 'ALL CAPS',
+      })
+      expect(body.title).toEqual(response.title)
+    })
+
+    test('can cannot apply generics to async request since it returns _id only', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'OVERRIDE',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.transform({
+        documentId: 'some-id',
+        transformation: 'ALL CAPS',
+        schemaId: 'some-schema-id',
+        async: true,
+      })
+      expect(body._id).toEqual(response._id)
+    })
+
+    test('async cannot noWrite', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'OVERRIDE',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      //@ts-expect-error cannot assign true to false
+      const body = await getClient().agent.action.transform({
+        documentId: 'some-id',
+        schemaId: 'some-schema-id',
+        async: true,
+        noWrite: true, // not allowed
+      })
+      expect(body._id).toEqual(response._id)
+    })
+
+    test('all the params', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.transform<{title?: string}>({
+        documentId: 'some-id',
+        transformation: '$a $b $d',
+        transformationParams: {
+          a: 'constant',
+          b: {
+            type: 'field',
+            path: ['title'],
+          },
+          c: {
+            type: 'groq',
+            query: '*[id=$id].title',
+            params: {id: 'abc'},
+          },
+          d: {
+            type: 'document',
+            documentId: 'somewhere',
+          },
+        },
+        temperature: 0.6,
+        async: false,
+        target: [
+          {path: ['title']},
+          {
+            transformation: 'based on $c – replace this field',
+            include: [
+              'object',
+              {
+                path: 'array',
+                include: [{_key: '123'}],
+                transformation: 'based on $b – replace this field',
+                types: {
+                  include: ['string'],
+                },
+              },
+            ],
+            types: {
+              exclude: ['number'],
+            },
+          },
+        ],
+        noWrite: true,
+        conditionalPaths: {
+          defaultHidden: true,
+          defaultReadOnly: false,
+          paths: [{path: ['title'], readOnly: false, hidden: false}],
+        },
+        schemaId: 'some-schema-id',
+      })
+      expect(body.title).toEqual(response.title)
+    })
+  })
+
+  describe.skipIf(isEdge)('AGENT ACTION: TRANSLATE', () => {
+    test('can create new document', async () => {
+      const response = {_id: 'created'}
+
+      nock(projectHost())
+        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.translate({
+        schemaId: 'some-schema-id',
+        documentId: 'source-id',
+        targetDocument: {operation: 'create'},
+        toLanguage: {
+          languageCode: 'no-NB',
+          languageTitle: 'Norsk Bokmål',
+        },
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can tanslate existing document', async () => {
+      const response = {
+        _id: 'generated',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.translate({
+        schemaId: 'some-schema-id',
+        documentId: 'some-id',
+        toLanguage: {
+          languageCode: 'no-NB',
+          languageTitle: 'Norsk Bokmål',
+        },
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can apply generics to type returned document value', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'oversatt',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.translate<{title?: string}>({
+        schemaId: 'some-schema-id',
+        documentId: 'some-id',
+        toLanguage: {
+          languageCode: 'no-NB',
+          languageTitle: 'Norsk Bokmål',
+        },
+      })
+      expect(body.title).toEqual(response.title)
+    })
+
+    test('can cannot apply generics to async request since it returns _id only', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'OVERRIDE',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.translate({
+        documentId: 'some-id',
+        schemaId: 'some-schema-id',
+        async: true,
+        toLanguage: {
+          languageCode: 'no-NB',
+          languageTitle: 'Norsk Bokmål',
+        },
+      })
+      expect(body._id).toEqual(response._id)
+    })
+
+    test('async cannot noWrite', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'OVERRIDE',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      //@ts-expect-error cannot assign true to false
+      const body = await getClient().agent.action.translate({
+        documentId: 'some-id',
+        toLanguage: {
+          languageCode: 'no-NB',
+          languageTitle: 'Norsk Bokmål',
+        },
+        schemaId: 'some-schema-id',
+        async: true,
+        noWrite: true, // not allowed
+      })
+      expect(body._id).toEqual(response._id)
+    })
+
+    test('all the params', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.translate<{title?: string}>({
+        documentId: 'some-id',
+        styleGuide: '$a $b $d',
+        targetDocument: {
+          operation: 'createIfNotExists',
+          _id: 'target',
+        },
+        languageFieldPath: ['lang'],
+        protectedPhrases: ['Sanity', 'headless'],
+        fromLanguage: {
+          languageCode: 'en-US',
+          languageTitle: 'American English',
+        },
+        toLanguage: {
+          languageCode: 'no-NB',
+          languageTitle: 'Norsk Bokmål',
+        },
+        styleGuideParams: {
+          a: 'constant',
+          b: {
+            type: 'field',
+            path: ['title'],
+          },
+          c: {
+            type: 'groq',
+            query: '*[id=$id].title',
+            params: {id: 'abc'},
+          },
+          d: {
+            type: 'document',
+            documentId: 'somewhere',
+          },
+        },
+        temperature: 0.6,
+        async: false,
+        target: [
+          {path: ['title']},
+          {
+            styleGuide: 'based on $c',
+            include: [
+              'object',
+              {
+                path: 'array',
+                include: [{_key: '123'}],
+                styleGuide: 'based on $b',
                 types: {
                   include: ['string'],
                 },

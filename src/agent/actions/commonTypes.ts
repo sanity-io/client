@@ -1,9 +1,5 @@
-//Request shape
-
-import type {Any, SanityDocumentStub} from '@sanity/client'
-
 /** @beta */
-export interface GenerateConstantInstructionParam {
+export interface ConstantAgentActionParam {
   type: 'constant'
   value: string
 }
@@ -13,12 +9,12 @@ export interface GenerateConstantInstructionParam {
  * Includes a LLM-friendly version of the field value in the instruction
  * @beta
  * */
-export interface GenerateFieldInstructionParam {
+export interface FieldAgentActionParam {
   type: 'field'
   /**
    * Examples: ['title'], ['array', {_key: 'arrayItemKey'}, 'field']
    */
-  path: GeneratePath
+  path: AgentActionPath
   /**
    * If omitted, implicitly uses the documentId of the instruction target
    */
@@ -30,7 +26,7 @@ export interface GenerateFieldInstructionParam {
  * Includes a LLM-friendly version of the document in the instruction
  * @beta
  * */
-export interface GenerateDocumentInstructionParam {
+export interface DocumentAgentActionParam {
   type: 'document'
   /**
    * If omitted, implicitly uses the documentId of the instruction target
@@ -42,45 +38,27 @@ export interface GenerateDocumentInstructionParam {
  * Includes a LLM-friendly version of GROQ query result in the instruction
  * @beta
  * */
-export interface GenerateGroqInstructionParam {
+export interface GroqAgentActionParam {
   type: 'groq'
   query: string
   params?: Record<string, string>
 }
 
-export type GenerateTypeConfig =
+export type AgentActionTypeConfig =
   | {include: string[]; exclude?: never}
   | {exclude: string[]; include?: never}
 
-export type GeneratePathSegment = string | {_key: string}
-export type GeneratePath = GeneratePathSegment[]
-export type GenerateOperation = 'set' | 'append' | 'mixed'
+export type AgentActionPathSegment = string | {_key: string}
+export type AgentActionPath = AgentActionPathSegment[]
 
-export interface GenerateTargetInclude {
-  path: GeneratePathSegment | GeneratePath
-
-  /**
-   * Sets the operation for this path, and all its children.
-   * This overrides any operation set parents or the root target.
-   * @see #GenerateTarget.operation
-   * @see #include
-   */
-  operation?: GenerateOperation
-
-  /**
-   * By default, all children up to `target.maxPathDepth` are included.
-   *
-   * When `include` is specified, only segments explicitly listed will be included.
-   *
-   * Fields or array items not on the include list, are implicitly excluded.
-   */
-  include?: (GeneratePathSegment | GenerateTargetInclude)[]
+export interface AgentActionTargetInclude {
+  path: AgentActionPathSegment | AgentActionPath
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
    * Fields or array items not on the exclude list, are implicitly included.
    */
-  exclude?: GeneratePathSegment[]
+  exclude?: AgentActionPathSegment[]
 
   /**
    * Types can be used to exclude array item types or all fields directly under the target path of a certain type.
@@ -88,13 +66,13 @@ export interface GenerateTargetInclude {
    *
    * `types.include` and `types.exclude` are mutually exclusive.
    */
-  types?: GenerateTypeConfig
+  types?: AgentActionTypeConfig
 }
 
 /**
  * @beta
  */
-export interface GenerateTarget {
+export interface AgentActionTarget {
   /**
    * Root target path.
    *
@@ -111,44 +89,10 @@ export interface GenerateTarget {
    *
    * Default: [] = the document itself
    *
-   * @see #GeneratePathSegment
-   * @see #GeneratePath
+   * @see #AgentActionPathSegment
+   * @see #AgentActionPath
    * */
-  path?: GeneratePathSegment | GeneratePath
-
-  /**
-   * Sets the default operation for all paths in the target.
-   * Generate runs in `'mixed'` operation mode by default:
-   * Changes are set in all non-array fields, and append to all array fields.
-   *
-   * ### Operation types
-   * - `'set'` – an *overwriting* operation, and replaces the full field value.
-   * - `'append'`:
-   *    – array fields: appends new items to the end of the array,
-   *    - string fields: '<existing content> <new content>'
-   *    - text fields: '<existing content>\n<new content>'
-   *    - number fields: existing + new
-   *    - other field types not mentioned will set instead (dates, url)
-   * - `'mixed'` – (default) sets non-array fields, and appends to array fields
-   *
-   * The default operation can be overridden on a per-path basis using `include`.
-   *
-   * Nested fields inherit the operation specified by their parent and falls back to the
-   * top level target operation if not otherwise specified.
-   *
-   * Use `include` to change the `operation` of individual fields or items.
-   *
-   * #### Appending in the middle of arrays
-   * `target: {path: ['array'], operation: 'append'}` will append the output of the instruction to the end of the array.
-   *
-   * To insert in the middle of the array, use `target: {path: ['array', {_key: 'appendAfterKey'}], operation: 'append'}`.
-   * Here, the output of the instruction will be appended after the array item with key `'appendAfterKey'`.
-   *
-   * @see #GenerateTargetInclude.operation
-   * @see #include
-   * @see #GenerateTargetInclude.include
-   */
-  operation?: GenerateOperation
+  path?: AgentActionPathSegment | AgentActionPath
 
   /**
    * maxPathDepth controls how deep into the schema from the target root the instruction will affect.
@@ -166,18 +110,9 @@ export interface GenerateTarget {
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
-   *
-   * When `include` is specified, only segments explicitly listed will be included.
-   *
-   * Fields or array items not on the include list, are implicitly excluded.
-   */
-  include?: (GeneratePathSegment | GenerateTargetInclude)[]
-
-  /**
-   * By default, all children up to `target.maxPathDepth` are included.
    * Fields or array items not on the exclude list, are implicitly included.
    */
-  exclude?: GeneratePathSegment[]
+  exclude?: AgentActionPathSegment[]
 
   /**
    * Types can be used to exclude array item types or all fields directly under the target path of a certain type.
@@ -185,42 +120,23 @@ export interface GenerateTarget {
    *
    * `types.include` and `types.exclude` are mutually exclusive.
    */
-  types?: GenerateTypeConfig
+  types?: AgentActionTypeConfig
 }
 
 /** @beta */
-export type GenerateInstructionParam =
+export type AgentActionParam =
   | string
-  | GenerateConstantInstructionParam
-  | GenerateFieldInstructionParam
-  | GenerateDocumentInstructionParam
-  | GenerateGroqInstructionParam
+  | ConstantAgentActionParam
+  | FieldAgentActionParam
+  | DocumentAgentActionParam
+  | GroqAgentActionParam
 
 /** @beta */
-export type GenerateInstructionParams = Record<string, GenerateInstructionParam>
+export type AgentActionParams = Record<string, AgentActionParam>
 
-interface GenerateRequestBase {
+export interface AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
-  /** string template using $variable – more on this below under "Dynamic instruction" */
-  instruction: string
-  /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
-  instructionParams?: GenerateInstructionParams
-
-  /**
-   * Target defines which parts of the document will be affected by the instruction.
-   * It can be an array, so multiple parts of the document can be separately configured in detail.
-   *
-   * Omitting target implies that the document itself is the root.
-   *
-   * Notes:
-   * - instruction can only affect fields up to `maxPathDepth`
-   * - when multiple targets are provided, they will be coalesced into a single target sharing a common target root.
-   * It is therefor an error to provide conflicting include/exclude across targets (ie, include title in one, and exclude it in another)
-   *
-   * @see GenerateRequestBase#conditionalPaths
-   */
-  target?: GenerateTarget | GenerateTarget[]
 
   /**
    * When a type or field in the schema has a function set for `hidden` or `readOnly`, it is conditional.
@@ -231,7 +147,6 @@ interface GenerateRequestBase {
    * `conditionalPaths` param allows setting the default conditional value for
    * `hidden` and `readOnly` to false,
    * or individually set `hidden` and `readOnly` state for individual document paths.
-   *
    *
    * Note: fields and types with explicit readOnly: true or hidden: true in the schema, are not available to Generate,
    * and cannot be changed via conditionalPaths
@@ -248,7 +163,7 @@ interface GenerateRequestBase {
     defaultHidden?: boolean
     paths?: {
       /** path here is not a relative path: it must be the full document path, regardless of `path` param used in targets */
-      path: GeneratePath
+      path: AgentActionPath
       readOnly: boolean
       hidden: boolean
     }[]
@@ -288,12 +203,15 @@ interface GenerateRequestBase {
    *
    * Value must be in the range [0, 1] (inclusive).
    *
-   * Default: 0.3
+   * Defaults:
+   * - generate: 0.3
+   * - translate: 0
+   * - transform: 0
    */
   temperature?: number
 }
 
-interface Sync {
+export interface AgentActionSync {
   /**
    * By default, noWrite: false.
    * Write enabled operations will mutate the target document, and emit AI presence in the studio.
@@ -317,7 +235,7 @@ interface Sync {
   async?: false
 }
 
-interface Async {
+export interface AgentActionAsync {
   /**
    * When async: true, requests responds with status 201 and {_id} as response body as soon as the request is validated.
    * The instruction operation will carry on in the background.
@@ -328,46 +246,3 @@ interface Async {
    */
   async: true
 }
-
-/**
- * Instruction for an existing document.
- * @beta
- */
-interface ExistingDocumentRequest {
-  documentId: string
-  createDocument?: never
-}
-
-/**
- * Instruction to create a new document
- * @beta
- */
-interface CreateDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
-  createDocument: {
-    /** if no _id is provided, one will be generated. _id is always returned when the requests succeed */
-    _id?: string
-    _type: string
-  } & SanityDocumentStub<T>
-  documentId?: never
-}
-
-/** @beta */
-export type GenerateSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
-  | ExistingDocumentRequest
-  | CreateDocumentRequest<T>
-) &
-  GenerateRequestBase &
-  Sync
-
-/** @beta */
-export type GenerateAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
-  | ExistingDocumentRequest
-  | CreateDocumentRequest<T>
-) &
-  GenerateRequestBase &
-  Async
-
-/** @beta */
-export type GenerateInstruction<T extends Record<string, Any> = Record<string, Any>> =
-  | GenerateSyncInstruction<T>
-  | GenerateAsyncInstruction<T>
