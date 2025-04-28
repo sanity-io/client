@@ -174,7 +174,7 @@ describe('createVersionId', () => {
     })
 
     it('throws error when neither publishedId nor document._id is provided', () => {
-      const document = {title: 'Test without ID'} as unknown as SanityDocumentStub
+      const document = {title: 'Test without ID', _type: 'post'} as SanityDocumentStub
 
       expect(() => {
         deriveDocumentVersionId('test', {document})
