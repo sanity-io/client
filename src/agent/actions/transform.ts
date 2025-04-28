@@ -1,3 +1,9 @@
+import {type Observable} from 'rxjs'
+
+import {_request} from '../../data/dataMethods'
+import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
+import type {AgentActionParams, Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
+import {hasDataset} from '../../validators'
 import type {
   AgentActionAsync,
   AgentActionPathSegment,
@@ -5,13 +11,7 @@ import type {
   AgentActionSync,
   AgentActionTarget,
   AgentActionTargetInclude,
-} from '@sanity/client/agent/actions/commonTypes'
-import {type Observable} from 'rxjs'
-
-import {_request} from '../../data/dataMethods'
-import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
-import type {AgentActionParams, Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
-import {hasDataset} from '../../validators'
+} from './commonTypes'
 
 /**  @beta */
 export interface TransformRequestBase extends AgentActionRequestBase {

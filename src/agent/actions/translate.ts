@@ -1,10 +1,3 @@
-import type {
-  AgentActionAsync,
-  AgentActionPath,
-  AgentActionRequestBase,
-  AgentActionSync,
-  AgentActionTargetInclude,
-} from '@sanity/client/agent/actions/commonTypes'
 import {type Observable} from 'rxjs'
 
 import {_request} from '../../data/dataMethods'
@@ -18,6 +11,13 @@ import type {
   IdentifiedSanityDocumentStub,
 } from '../../types'
 import {hasDataset} from '../../validators'
+import type {
+  AgentActionAsync,
+  AgentActionPath,
+  AgentActionRequestBase,
+  AgentActionSync,
+  AgentActionTargetInclude,
+} from './commonTypes'
 import type {TransformTargetDocument} from './transform'
 
 /**  @beta */

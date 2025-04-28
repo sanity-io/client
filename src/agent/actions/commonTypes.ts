@@ -139,6 +139,7 @@ export type AgentActionParam =
 /** @beta */
 export type AgentActionParams = Record<string, AgentActionParam>
 
+/** @beta */
 export interface AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
@@ -216,6 +217,7 @@ export interface AgentActionRequestBase {
   temperature?: number
 }
 
+/** @beta */
 export interface AgentActionSync {
   /**
    * By default, noWrite: false.
@@ -240,6 +242,7 @@ export interface AgentActionSync {
   async?: false
 }
 
+/** @beta */
 export interface AgentActionAsync {
   /**
    * When async: true, requests responds with status 201 and {_id} as response body as soon as the request is validated.
