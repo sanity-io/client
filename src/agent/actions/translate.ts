@@ -25,16 +25,54 @@ export interface TranslateRequestBase extends AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
 
+  /**
+   * The source document the transformation will use as input.
+   */
   documentId: string
+
+  /**
+   * The target document will first get content copied over from the source,
+   * then it is translated according to the instruction.
+   *
+   * When omitted, the source document (documentId) is also the target document.
+   */
   targetDocument?: TransformTargetDocument
 
+  /**
+   * While optional, it is recommended
+   */
   fromLanguage?: TranslateLanguage
   toLanguage: TranslateLanguage
 
-  /** string template using $variable  */
+  /**
+   * `styleGuide` can be used to tailor how the translation should be preformed.
+   *
+   * String template using $variable from styleGuideParams.
+   *
+   * Capped to 2000 characters, after variables has been injected.
+   *
+   * @see #protectedPhrases
+   */
   styleGuide?: string
   /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
   styleGuideParams?: AgentActionParams
+
+  /**
+   * When the input string contains any phrase from `protectedPhrases`, the LLM will be instructed not
+   * to translate them.
+   *
+   * It is recommended to use `protectedPhrases` instead of `styleGuide` for deny-list words and phrases,
+   * since it keeps token cost low, resulting in faster responses, and limits how much information the LLM
+   * has to process, since only phrases that are actually in the input string will be included in the final prompt.
+   */
+  protectedPhrases?: string[]
+
+  /**
+   * When specified, the `toLanguage.id` will be stored in the specified path in the target document.
+   *
+   * The file _can_ be hidden: true (unlike other fields in the target, which will be ignored)
+   */
+  languageFieldPath?: AgentActionPathSegment | AgentActionPath
 
   /**
    * Target defines which parts of the document will be affected by the instruction.
@@ -50,15 +88,18 @@ export interface TranslateRequestBase extends AgentActionRequestBase {
    * @see AgentActionRequestBase#conditionalPaths
    */
   target?: TranslateTarget | TranslateTarget[]
-
-  languageFieldPath?: AgentActionPathSegment | AgentActionPath
-
-  protectedPhrases?: string[]
 }
 
 /**  @beta */
 export interface TranslateLanguage {
+  /**
+   * Language code
+   */
   id: string
+
+  /**
+   * While optional, it is recommended to provide a language title
+   */
   title?: string
 }
 

@@ -26,7 +26,13 @@ export type GenerateOperation = 'set' | 'append' | 'mixed'
 export interface GenerateRequestBase extends AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
-  /** string template using $variable  */
+  /**
+   * Instruct the LLM how it should generate content. Be as specific and detailed as needed.
+   *
+   * The LLM only has access to information in the instruction, plus the target schema.
+   *
+   * string template using $variable
+   * */
   instruction: string
   /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
   instructionParams?: AgentActionParams

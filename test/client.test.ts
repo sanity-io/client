@@ -3497,7 +3497,7 @@ describe('client', async () => {
         schemaId: 'some-schema-id',
         documentId: 'source-id',
         targetDocument: {operation: 'create'},
-        transformation: 'make everything CAPITALS ONLY',
+        instruction: 'make everything CAPITALS ONLY',
       })
       expect(body).toEqual(response)
     })
@@ -3514,7 +3514,7 @@ describe('client', async () => {
       const body = await getClient().agent.action.transform({
         schemaId: 'some-schema-id',
         documentId: 'some-id',
-        transformation: 'fix spelling errors',
+        instruction: 'fix spelling errors',
       })
       expect(body).toEqual(response)
     })
@@ -3532,7 +3532,7 @@ describe('client', async () => {
       const body = await getClient().agent.action.transform<{title?: string}>({
         schemaId: 'some-schema-id',
         documentId: 'some-id',
-        transformation: 'ALL CAPS',
+        instruction: 'ALL CAPS',
       })
       expect(body.title).toEqual(response.title)
     })
@@ -3549,7 +3549,7 @@ describe('client', async () => {
 
       const body = await getClient().agent.action.transform({
         documentId: 'some-id',
-        transformation: 'ALL CAPS',
+        instruction: 'ALL CAPS',
         schemaId: 'some-schema-id',
         async: true,
       })
@@ -3588,8 +3588,8 @@ describe('client', async () => {
 
       const body = await getClient().agent.action.transform<{title?: string}>({
         documentId: 'some-id',
-        transformation: '$a $b $d',
-        transformationParams: {
+        instruction: '$a $b $d',
+        instructionParams: {
           a: 'constant',
           b: {
             type: 'field',
@@ -3610,13 +3610,13 @@ describe('client', async () => {
         target: [
           {path: ['title']},
           {
-            transformation: 'based on $c – replace this field',
+            instruction: 'based on $c – replace this field',
             include: [
               'object',
               {
                 path: 'array',
                 include: [{_key: '123'}],
-                transformation: 'based on $b – replace this field',
+                instruction: 'based on $b – replace this field',
                 types: {
                   include: ['string'],
                 },

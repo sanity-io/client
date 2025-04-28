@@ -13,18 +13,34 @@ import type {
   AgentActionTargetInclude,
 } from './commonTypes'
 
-/**  @beta */
+/** @beta */
 export interface TransformRequestBase extends AgentActionRequestBase {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
 
+  /**
+   * The source document the transformation will use as input.
+   */
   documentId: string
+
+  /**
+   * The target document will first get content copied over from the source,
+   * then it is transformed according to the instruction.
+   *
+   * When omitted, the source document (documentId) is also the target document.
+   */
   targetDocument?: TransformTargetDocument
 
-  /** string template using $variable  */
-  transformation: string
+  /**
+   * Instruct the LLM how to transform the input to th output.
+   *
+   * String template using $variable from instructionParams.
+   *
+   * Capped to 2000 characters, after variables has been injected.
+   * */
+  instruction: string
   /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
-  transformationParams?: AgentActionParams
+  instructionParams?: AgentActionParams
 
   /**
    * Target defines which parts of the document will be affected by the instruction.
@@ -37,6 +53,7 @@ export interface TransformRequestBase extends AgentActionRequestBase {
    * - when multiple targets are provided, they will be coalesced into a single target sharing a common target root.
    * It is therefor an error to provide conflicting include/exclude across targets (ie, include title in one, and exclude it in another)
    *
+   * Default max depth for transform: 12
    * @see AgentActionRequestBase#conditionalPaths
    */
   target?: TransformTarget | TransformTarget[]
@@ -51,8 +68,11 @@ export type TransformTargetDocument =
 
 /**  @beta */
 export interface TransformTargetInclude extends AgentActionTargetInclude {
-  /** string template using $variable from instructionParams  */
-  transformation?: string
+  /**
+   * Specifies a tailored instruction of this target.
+   *
+   * string template using $variable from instructionParams  */
+  instruction?: string
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
@@ -66,8 +86,12 @@ export interface TransformTargetInclude extends AgentActionTargetInclude {
 
 /**  @beta */
 export interface TransformTarget extends AgentActionTarget {
-  /** string template using $variable from instructionParams  */
-  transformation?: string
+  /**
+   * Specifies a tailored instruction of this target.
+   *
+   * string template using $variable from instructionParams.
+   * */
+  instruction?: string
 
   /**
    * By default, all children up to `target.maxPathDepth` are included.
