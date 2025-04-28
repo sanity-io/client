@@ -1433,9 +1433,9 @@ describe('client', async () => {
 
           try {
             await getClient().getDocument(versionId, {releaseId: newReleaseId})
-          } catch (err: any) {
+          } catch (err: unknown) {
             expect(err).toBeInstanceOf(Error)
-            expect(err.message).toContain(
+            expect((err as Error).message).toContain(
               `The document ID (${versionId}) is already a version of ${existingReleaseId} release, but this does not match the provided \`options.releaseId\` (${newReleaseId})`,
             )
           }
@@ -1450,9 +1450,9 @@ describe('client', async () => {
 
           try {
             await getClient().getDocument(draftId, {releaseId})
-          } catch (err: any) {
+          } catch (err: unknown) {
             expect(err).toBeInstanceOf(Error)
-            expect(err.message).toContain(
+            expect((err as Error).message).toContain(
               `The document ID (${draftId}) is a draft, but \`options.releaseId\` is set ${releaseId}`,
             )
           }
