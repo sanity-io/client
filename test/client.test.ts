@@ -3411,13 +3411,13 @@ describe('client', async () => {
         .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
         .reply(200, response)
 
-      //@ts-expect-error cannot assign true to false
       const body = await getClient().agent.action.generate({
         documentId: 'some-id',
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
         async: true,
-        noWrite: true, // not allowed
+        //@ts-expect-error not allowed
+        noWrite: true,
       })
       expect(body._id).toEqual(response._id)
     })
@@ -3566,12 +3566,12 @@ describe('client', async () => {
         .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
         .reply(200, response)
 
-      //@ts-expect-error cannot assign true to false
       const body = await getClient().agent.action.transform({
         documentId: 'some-id',
         schemaId: 'some-schema-id',
         async: true,
-        noWrite: true, // not allowed
+        //@ts-expect-error not allowed
+        noWrite: true,
       })
       expect(body._id).toEqual(response._id)
     })
@@ -3732,7 +3732,6 @@ describe('client', async () => {
         .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
         .reply(200, response)
 
-      //@ts-expect-error cannot assign true to false
       const body = await getClient().agent.action.translate({
         documentId: 'some-id',
         toLanguage: {
@@ -3741,7 +3740,8 @@ describe('client', async () => {
         },
         schemaId: 'some-schema-id',
         async: true,
-        noWrite: true, // not allowed
+        //@ts-expect-error not allowed
+        noWrite: true,
       })
       expect(body._id).toEqual(response._id)
     })

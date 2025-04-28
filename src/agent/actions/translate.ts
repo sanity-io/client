@@ -93,23 +93,27 @@ export interface TranslateTarget extends AgentActionTarget {
 }
 
 /** @beta */
-export type TranslateDocumentSync = TranslateRequestBase & AgentActionSync
+// need the generics to hold optional call-site response generics
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type TranslateDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
+  TranslateRequestBase & AgentActionSync
 
 /** @beta */
 export type TranslateDocumentAsync = TranslateRequestBase & AgentActionAsync
 
 /** @beta */
-export type TranslateDocument = TranslateDocumentSync | TranslateDocumentAsync
+export type TranslateDocument<T extends Record<string, Any> = Record<string, Any>> =
+  | TranslateDocumentSync<T>
+  | TranslateDocumentAsync
 
-export function _translate<
-  DocumentShape extends Record<string, Any>,
-  Req extends TranslateDocument,
->(
+export function _translate<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  request: Req,
+  request: TranslateDocument<DocumentShape>,
 ): Observable<
-  Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape
+  (typeof request)['async'] extends true
+    ? {_id: string}
+    : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {

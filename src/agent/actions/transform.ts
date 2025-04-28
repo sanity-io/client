@@ -80,23 +80,27 @@ export interface TransformTarget extends AgentActionTarget {
 }
 
 /** @beta */
-export type TransformDocumentSync = TransformRequestBase & AgentActionSync
+// need the generics to hold optional call-site response generics
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type TransformDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
+  TransformRequestBase & AgentActionSync
 
 /** @beta */
 export type TransformDocumentAsync = TransformRequestBase & AgentActionAsync
 
 /** @beta */
-export type TransformDocument = TransformDocumentSync | TransformDocumentAsync
+export type TransformDocument<T extends Record<string, Any> = Record<string, Any>> =
+  | TransformDocumentSync<T>
+  | TransformDocumentAsync
 
-export function _transform<
-  DocumentShape extends Record<string, Any>,
-  Req extends TransformDocument,
->(
+export function _transform<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  request: Req,
+  request: TransformDocument<DocumentShape>,
 ): Observable<
-  Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape
+  (typeof request)['async'] extends true
+    ? {_id: string}
+    : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {

@@ -156,15 +156,14 @@ export type GenerateInstruction<T extends Record<string, Any> = Record<string, A
   | GenerateSyncInstruction<T>
   | GenerateAsyncInstruction<T>
 
-export function _generate<
-  DocumentShape extends Record<string, Any>,
-  Req extends GenerateInstruction<DocumentShape>,
->(
+export function _generate<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
-  request: Req,
+  request: GenerateInstruction<DocumentShape>,
 ): Observable<
-  Req['async'] extends true ? {_id: string} : IdentifiedSanityDocumentStub & DocumentShape
+  (typeof request)['async'] extends true
+    ? {_id: string}
+    : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
