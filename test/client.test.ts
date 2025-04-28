@@ -3652,8 +3652,8 @@ describe('client', async () => {
         documentId: 'source-id',
         targetDocument: {operation: 'create'},
         toLanguage: {
-          languageCode: 'no-NB',
-          languageTitle: 'Norsk Bokmål',
+          id: 'no-NB',
+          title: 'Norsk Bokmål',
         },
       })
       expect(body).toEqual(response)
@@ -3672,8 +3672,8 @@ describe('client', async () => {
         schemaId: 'some-schema-id',
         documentId: 'some-id',
         toLanguage: {
-          languageCode: 'no-NB',
-          languageTitle: 'Norsk Bokmål',
+          id: 'no-NB',
+          title: 'Norsk Bokmål',
         },
       })
       expect(body).toEqual(response)
@@ -3693,8 +3693,8 @@ describe('client', async () => {
         schemaId: 'some-schema-id',
         documentId: 'some-id',
         toLanguage: {
-          languageCode: 'no-NB',
-          languageTitle: 'Norsk Bokmål',
+          id: 'no-NB',
+          title: 'Norsk Bokmål',
         },
       })
       expect(body.title).toEqual(response.title)
@@ -3715,8 +3715,8 @@ describe('client', async () => {
         schemaId: 'some-schema-id',
         async: true,
         toLanguage: {
-          languageCode: 'no-NB',
-          languageTitle: 'Norsk Bokmål',
+          id: 'no-NB',
+          title: 'Norsk Bokmål',
         },
       })
       expect(body._id).toEqual(response._id)
@@ -3736,8 +3736,8 @@ describe('client', async () => {
       const body = await getClient().agent.action.translate({
         documentId: 'some-id',
         toLanguage: {
-          languageCode: 'no-NB',
-          languageTitle: 'Norsk Bokmål',
+          id: 'no-NB',
+          title: 'Norsk Bokmål',
         },
         schemaId: 'some-schema-id',
         async: true,
@@ -3766,12 +3766,12 @@ describe('client', async () => {
         languageFieldPath: ['lang'],
         protectedPhrases: ['Sanity', 'headless'],
         fromLanguage: {
-          languageCode: 'en-US',
-          languageTitle: 'American English',
+          id: 'en-US',
+          title: 'American English',
         },
         toLanguage: {
-          languageCode: 'no-NB',
-          languageTitle: 'Norsk Bokmål',
+          id: 'no-NB',
+          title: 'Norsk Bokmål',
         },
         styleGuideParams: {
           a: 'constant',

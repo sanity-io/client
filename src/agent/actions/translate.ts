@@ -58,8 +58,8 @@ export interface TranslateRequestBase extends AgentActionRequestBase {
 
 /**  @beta */
 export interface TranslateLanguage {
-  languageCode: string
-  languageTitle?: string
+  id: string
+  title?: string
 }
 
 /**  @beta */
