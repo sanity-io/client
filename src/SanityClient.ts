@@ -1455,9 +1455,9 @@ export class SanityClient {
    * @category Versions
    *
    * @param params - Version action parameters:
-   *   - document - The document to create as a new version (must include `_type`).
-   *   - publishedId - The ID of the published document being versioned.
-   *   - releaseId - The ID of the release to create the version for.
+   *   - `document` - The document to create as a new version (must include `_type`).
+   *   - `publishedId` - The ID of the published document being versioned.
+   *   - `releaseId` - The ID of the release to create the version for.
    * @param options - Additional action options.
    * @returns an observable that resolves to the `transactionId`.
    *
@@ -1684,8 +1684,8 @@ export class SanityClient {
    * * If the draft or release version does not exist, any error will throw.
    *
    * @param params - Version action parameters:
-   *   - releaseId - The ID of the release to discard the document from.
-   *   - publishedId - The published ID of the document to discard.
+   *   - `releaseId` - The ID of the release to discard the document from.
+   *   - `publishedId` - The published ID of the document to discard.
    * @param purge - if `true` the document history is also discarded.
    * @param options - Additional action options.
    * @returns a promise that resolves to the `transactionId`.
@@ -1727,9 +1727,9 @@ export class SanityClient {
    * * At least one of the **version** or **published** documents must exist.
    *
    * @param params - Version action parameters:
-   *   - document - The new document to replace the version with.
-   *   - releaseId - The ID of the release where the document version is replaced.
-   *   - publishedId - The ID of the published document to replace.
+   *   - `document` - The new document to replace the version with.
+   *   - `releaseId` - The ID of the release where the document version is replaced.
+   *   - `publishedId` - The ID of the published document to replace.
    * @param options - Additional action options.
    * @returns a promise that resolves to the `transactionId`.
    *
