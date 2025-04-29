@@ -135,7 +135,7 @@ export interface TranslateTarget extends AgentActionTarget {
 
 /** @beta */
 // need the generics to hold optional call-site response generics
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line unused-imports/no-unused-vars
 export type TranslateDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
   TranslateRequestBase & AgentActionSync
 

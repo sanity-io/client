@@ -105,7 +105,7 @@ export interface TransformTarget extends AgentActionTarget {
 
 /** @beta */
 // need the generics to hold optional call-site response generics
-
+// eslint-disable-next-line unused-imports/no-unused-vars
 export type TransformDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
   TransformRequestBase & AgentActionSync
 
