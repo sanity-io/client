@@ -60,7 +60,7 @@ export function getVersionId(id: string, version: string): string {
  */
 export function getVersionFromId(id: string): string | undefined {
   if (!isVersionId(id)) return undefined
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line unused-imports/no-unused-vars
   const [_versionPrefix, versionId, ..._publishedId] = id.split(PATH_SEPARATOR)
 
   return versionId
