@@ -12,9 +12,9 @@ export interface ConstantAgentActionParam {
 export interface FieldAgentActionParam {
   type: 'field'
   /**
-   * Examples: ['title'], ['array', {_key: 'arrayItemKey'}, 'field']
+   * Examples: 'title', ['array', {_key: 'arrayItemKey'}, 'field']
    */
-  path: AgentActionPath
+  path: AgentActionPathSegment | AgentActionPath
   /**
    * If omitted, implicitly uses the documentId of the instruction target
    */
