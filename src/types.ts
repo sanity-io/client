@@ -1387,6 +1387,7 @@ export type {
   GenerateInstruction,
   GenerateOperation,
   GenerateTarget,
+  GenerateTargetDocument,
   GenerateTargetInclude,
 } from './agent/actions/generate'
 export type {

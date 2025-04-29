@@ -2,13 +2,7 @@ import {type Observable} from 'rxjs'
 
 import {_request} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
-import type {
-  AgentActionParams,
-  Any,
-  HttpRequest,
-  IdentifiedSanityDocumentStub,
-  SanityDocumentStub,
-} from '../../types'
+import type {AgentActionParams, Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
 import {hasDataset} from '../../validators'
 import type {
   AgentActionAsync,
@@ -119,6 +113,31 @@ export interface GenerateTarget extends AgentActionTarget {
   include?: (AgentActionPathSegment | GenerateTargetInclude)[]
 }
 
+/**  @beta */
+export type GenerateTargetDocument<T extends Record<string, Any> = Record<string, Any>> =
+  | {
+      operation: 'get'
+      _id: string
+    }
+  | {
+      operation: 'create'
+      _id?: string
+      _type: string
+      initialValues?: T
+    }
+  | {
+      operation: 'createIfNotExists'
+      _id: string
+      _type: string
+      initialValues?: T
+    }
+  | {
+      operation: 'createOrReplace'
+      _id: string
+      _type: string
+      initialValues?: T
+    }
+
 /**
  * Instruction for an existing document.
  * @beta
@@ -132,19 +151,15 @@ interface GenerateExistingDocumentRequest {
  * Instruction to create a new document
  * @beta
  */
-interface GenerateCreateDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
-  createDocument: {
-    /** if no _id is provided, one will be generated. _id is always returned when the requests succeed */
-    _id?: string
-    _type: string
-  } & SanityDocumentStub<T>
+interface GenerateTargetDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
+  targetDocument: GenerateTargetDocument<T>
   documentId?: never
 }
 
 /** @beta */
 export type GenerateSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | GenerateExistingDocumentRequest
-  | GenerateCreateDocumentRequest<T>
+  | GenerateTargetDocumentRequest<T>
 ) &
   GenerateRequestBase &
   AgentActionSync
@@ -152,7 +167,7 @@ export type GenerateSyncInstruction<T extends Record<string, Any> = Record<strin
 /** @beta */
 export type GenerateAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
   | GenerateExistingDocumentRequest
-  | GenerateCreateDocumentRequest<T>
+  | GenerateTargetDocumentRequest<T>
 ) &
   GenerateRequestBase &
   AgentActionAsync

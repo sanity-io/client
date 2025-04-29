@@ -3303,7 +3303,10 @@ describe('client', async () => {
         .reply(200, response)
 
       const body = await getClient().agent.action.generate({
-        createDocument: {_type: 'some-type'},
+        targetDocument: {
+          operation: 'create',
+          _type: 'some-type',
+        },
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
       })
@@ -3320,7 +3323,7 @@ describe('client', async () => {
         .reply(200, response)
 
       const body = await getClient().agent.action.generate({
-        createDocument: {_id: 'new', _type: 'some-type'},
+        targetDocument: {operation: 'createIfNotExists', _id: 'new', _type: 'some-type'},
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
       })
@@ -3373,10 +3376,10 @@ describe('client', async () => {
         .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
         .reply(200, response)
 
-      //@ts-expect-error not allowed
       await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
-        createDocument: {_type: 'yolo'},
+        //@ts-expect-error not allowed
+        targetDocument: {operation: 'create', _type: 'yolo'},
         instruction: 'set title to override',
         schemaId: 'some-schema-id',
       })
@@ -3433,7 +3436,7 @@ describe('client', async () => {
         .reply(200, response)
 
       const body = await getClient().agent.action.generate<{title?: string}>({
-        documentId: 'some-id',
+        targetDocument: {_id: 'some-id', operation: 'get'},
         instruction: '$a $b $d',
         instructionParams: {
           a: 'constant',
