@@ -594,7 +594,6 @@ export type VersionAction =
 /** @public */
 export type Action =
   | CreateAction
-  | CreateVersionAction
   | ReplaceDraftAction
   | EditAction
   | DeleteAction

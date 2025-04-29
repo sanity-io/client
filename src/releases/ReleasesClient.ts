@@ -1,7 +1,7 @@
-import { lastValueFrom, map, Observable } from 'rxjs'
+import {lastValueFrom, map, Observable} from 'rxjs'
 
-import { _action, _getDocument, _getReleaseDocuments } from '../data/dataMethods'
-import type { ObservableSanityClient, SanityClient } from '../SanityClient'
+import {_action, _getDocument, _getReleaseDocuments} from '../data/dataMethods'
+import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   ArchiveReleaseAction,
   BaseActionOptions,
@@ -19,7 +19,7 @@ import type {
   UnarchiveReleaseAction,
   UnscheduleReleaseAction,
 } from '../types'
-import { createRelease } from './createRelease'
+import {createRelease} from './createRelease'
 
 /** @public */
 export class ObservableReleasesClient {
@@ -58,8 +58,8 @@ export class ObservableReleasesClient {
    * ```
    */
   get(
-    { releaseId }: { releaseId: string },
-    options?: { signal?: AbortSignal; tag?: string },
+    {releaseId}: {releaseId: string},
+    options?: {signal?: AbortSignal; tag?: string},
   ): Observable<ReleaseDocument | undefined> {
     return _getDocument<ReleaseDocument>(
       this.#client,
@@ -126,19 +126,19 @@ export class ObservableReleasesClient {
    */
   create(
     options: BaseActionOptions,
-  ): Observable<SingleActionResult & { releaseId: string; metadata: ReleaseDocument['metadata'] }>
+  ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   create(
-    release: { releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']> },
+    release: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
-  ): Observable<SingleActionResult & { releaseId: string; metadata: ReleaseDocument['metadata'] }>
+  ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   create(
     releaseOrOptions?:
-      | { releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']> }
+      | {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>}
       | BaseActionOptions,
     maybeOptions?: BaseActionOptions,
-  ): Observable<SingleActionResult & { releaseId: string; metadata: ReleaseDocument['metadata'] }> {
-    const { action, options } = createRelease(releaseOrOptions, maybeOptions)
-    const { releaseId, metadata } = action
+  ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
+    const {action, options} = createRelease(releaseOrOptions, maybeOptions)
+    const {releaseId, metadata} = action
 
     return _action(this.#client, this.#httpRequest, action, options).pipe(
       map((actionResult) => ({
@@ -163,7 +163,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   edit(
-    { releaseId, patch }: { releaseId: string; patch: PatchOperations },
+    {releaseId, patch}: {releaseId: string; patch: PatchOperations},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const editAction: EditReleaseAction = {
@@ -194,7 +194,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   publish(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const publishAction: PublishReleaseAction = {
@@ -221,7 +221,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   archive(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const archiveAction: ArchiveReleaseAction = {
@@ -246,7 +246,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   unarchive(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const unarchiveAction: UnarchiveReleaseAction = {
@@ -274,7 +274,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   schedule(
-    { releaseId, publishAt }: { releaseId: string; publishAt: string },
+    {releaseId, publishAt}: {releaseId: string; publishAt: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const scheduleAction: ScheduleReleaseAction = {
@@ -302,7 +302,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   unschedule(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const unscheduleAction: UnscheduleReleaseAction = {
@@ -327,7 +327,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the `transactionId`.
    */
   delete(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Observable<SingleActionResult> {
     const deleteAction: DeleteReleaseAction = {
@@ -351,7 +351,7 @@ export class ObservableReleasesClient {
    * @returns An observable that resolves to the documents in the release.
    */
   getDocuments(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Observable<RawQueryResponse<SanityDocument[]>> {
     return _getReleaseDocuments(this.#client, this.#httpRequest, releaseId, options)
@@ -394,8 +394,8 @@ export class ReleasesClient {
    * ```
    */
   get(
-    { releaseId }: { releaseId: string },
-    options?: { signal?: AbortSignal; tag?: string },
+    {releaseId}: {releaseId: string},
+    options?: {signal?: AbortSignal; tag?: string},
   ): Promise<ReleaseDocument | undefined> {
     return lastValueFrom(
       _getDocument<ReleaseDocument>(
@@ -456,25 +456,25 @@ export class ReleasesClient {
    */
   async create(
     options: BaseActionOptions,
-  ): Promise<SingleActionResult & { releaseId: string; metadata: ReleaseDocument['metadata'] }>
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   async create(
-    release: { releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']> },
+    release: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
-  ): Promise<SingleActionResult & { releaseId: string; metadata: ReleaseDocument['metadata'] }>
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   async create(
     releaseOrOptions?:
-      | { releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']> }
+      | {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>}
       | BaseActionOptions,
     maybeOptions?: BaseActionOptions,
-  ): Promise<SingleActionResult & { releaseId: string; metadata: ReleaseDocument['metadata'] }> {
-    const { action, options } = createRelease(releaseOrOptions, maybeOptions)
-    const { releaseId, metadata } = action
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
+    const {action, options} = createRelease(releaseOrOptions, maybeOptions)
+    const {releaseId, metadata} = action
 
     const actionResult = await lastValueFrom(
       _action(this.#client, this.#httpRequest, action, options),
     )
 
-    return { ...actionResult, releaseId, metadata }
+    return {...actionResult, releaseId, metadata}
   }
 
   /**
@@ -491,7 +491,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   edit(
-    { releaseId, patch }: { releaseId: string; patch: PatchOperations },
+    {releaseId, patch}: {releaseId: string; patch: PatchOperations},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const editAction: EditReleaseAction = {
@@ -522,7 +522,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   publish(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const publishAction: PublishReleaseAction = {
@@ -549,7 +549,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   archive(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const archiveAction: ArchiveReleaseAction = {
@@ -574,7 +574,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   unarchive(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const unarchiveAction: UnarchiveReleaseAction = {
@@ -602,7 +602,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   schedule(
-    { releaseId, publishAt }: { releaseId: string; publishAt: string },
+    {releaseId, publishAt}: {releaseId: string; publishAt: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const scheduleAction: ScheduleReleaseAction = {
@@ -630,7 +630,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   unschedule(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const unscheduleAction: UnscheduleReleaseAction = {
@@ -655,7 +655,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the `transactionId`.
    */
   delete(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseActionOptions,
   ): Promise<SingleActionResult> {
     const deleteAction: DeleteReleaseAction = {
@@ -679,7 +679,7 @@ export class ReleasesClient {
    * @returns A promise that resolves to the documents in the release.
    */
   getDocuments(
-    { releaseId }: { releaseId: string },
+    {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Promise<RawQueryResponse<SanityDocument[]>> {
     return lastValueFrom(_getReleaseDocuments(this.#client, this.#httpRequest, releaseId, options))
