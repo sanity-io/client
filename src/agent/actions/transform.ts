@@ -61,7 +61,7 @@ export interface TransformRequestBase extends AgentActionRequestBase {
 
 /**  @beta */
 export type TransformTargetDocument =
-  | {operation: 'get'; _id: string}
+  | {operation: 'edit'; _id: string}
   | {operation: 'create'; _id?: string}
   | {operation: 'createIfNotExists'; _id: string}
   | {operation: 'createOrReplace'; _id: string}
@@ -105,7 +105,7 @@ export interface TransformTarget extends AgentActionTarget {
 
 /** @beta */
 // need the generics to hold optional call-site response generics
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 export type TransformDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
   TransformRequestBase & AgentActionSync
 

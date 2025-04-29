@@ -116,7 +116,7 @@ export interface GenerateTarget extends AgentActionTarget {
 /**  @beta */
 export type GenerateTargetDocument<T extends Record<string, Any> = Record<string, Any>> =
   | {
-      operation: 'get'
+      operation: 'edit'
       _id: string
     }
   | {

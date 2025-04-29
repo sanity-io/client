@@ -3436,7 +3436,7 @@ describe('client', async () => {
         .reply(200, response)
 
       const body = await getClient().agent.action.generate<{title?: string}>({
-        targetDocument: {_id: 'some-id', operation: 'get'},
+        targetDocument: {_id: 'some-id', operation: 'edit'},
         instruction: '$a $b $d',
         instructionParams: {
           a: 'constant',
