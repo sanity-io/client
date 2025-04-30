@@ -24,7 +24,7 @@ export interface TransformRequestBase extends AgentActionRequestBase {
   documentId: string
 
   /**
-   * The target document will first get content copied over from the source,
+   * The source document's content is first copied to the target,
    * then it is transformed according to the instruction.
    *
    * When omitted, the source document (documentId) is also the target document.
