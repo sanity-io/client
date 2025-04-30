@@ -5,6 +5,17 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.0.0](https://github.com/sanity-io/client/compare/v6.29.1...v7.0.0) (2025-04-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* Dropping support for Node.js < v20 as Node.js v18 is EOL as of 2025-04-30
+
+### Bug Fixes
+
+* drop support for node &lt; v20 ([#1060](https://github.com/sanity-io/client/issues/1060)) ([23e4082](https://github.com/sanity-io/client/commit/23e40823bba98a90ec90567d3f042234b6731fc2))
+
 ## [6.29.1](https://github.com/sanity-io/client/compare/v6.29.0...v6.29.1) (2025-04-25)
 
 
