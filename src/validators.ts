@@ -45,13 +45,13 @@ export const requireDocumentId = (op: string, doc: Record<string, Any>) => {
 
 export const validateDocumentType = (op: string, type: string) => {
   if (typeof type !== 'string') {
-    throw new Error(`${op}(): "${type}" is not a valid document type`)
+    throw new Error(`\`${op}()\`: \`${type}\` is not a valid document type`)
   }
 }
 
 export const requireDocumentType = (op: string, doc: Record<string, Any>) => {
   if (!doc._type) {
-    throw new Error(`${op}() requires that the document contains a type ("_type" property)`)
+    throw new Error(`\`${op}()\` requires that the document contains a type (\`_type\` property)`)
   }
 
   validateDocumentType(op, doc._type)
@@ -60,7 +60,7 @@ export const requireDocumentType = (op: string, doc: Record<string, Any>) => {
 export const validateVersionIdMatch = (builtVersionId: string, document: SanityDocumentStub) => {
   if (document._id && document._id !== builtVersionId) {
     throw new Error(
-      `The provided document ID (${document._id}) does not match the generated version ID (${builtVersionId})`,
+      `The provided document ID (\`${document._id}\`) does not match the generated version ID (\`${builtVersionId}\`)`,
     )
   }
 }
