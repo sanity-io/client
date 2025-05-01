@@ -253,7 +253,7 @@ export class Transaction extends BaseTransaction {
       return this._add({patch: patch.serialize()})
     }
 
-    /**
+    /*
      * transaction.patch(
      *   {query: "*[_type == 'person' && points >= $threshold]", params: { threshold: 100 }},
      *   {dec: { points: 100 }, inc: { bonuses: 1 }}

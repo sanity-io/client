@@ -963,7 +963,7 @@ export interface ListenOptions {
    */
   includePreviousRevision?: boolean
 
-  /**
+  /*
    * Whether to include events for drafts and versions. As of API Version >= v2025-02-19, only events
    * for published documents will be included by default (see {@link https://www.sanity.io/changelog/676aaa9d-2da6-44fb-abe5-580f28047c10|Changelog})
    * If you need events from drafts and versions, set this to `true`.

@@ -7,6 +7,7 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import prettier from 'eslint-plugin-prettier'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
+import tsdocPlugin from 'eslint-plugin-tsdoc'
 import unusedImports from 'eslint-plugin-unused-imports'
 import globals from 'globals'
 
@@ -35,6 +36,7 @@ export default [
       '@typescript-eslint': typescriptEslint,
       'simple-import-sort': simpleImportSort,
       'unused-imports': unusedImports,
+      tsdoc: tsdocPlugin,
       prettier,
     },
 
@@ -55,6 +57,7 @@ export default [
       '@typescript-eslint/no-empty-interface': 'off',
       'simple-import-sort/imports': 'warn',
       'simple-import-sort/exports': 'warn',
+      'tsdoc/syntax': 'error',
       'no-console': 'error',
       'no-shadow': 'error',
 
