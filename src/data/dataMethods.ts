@@ -148,7 +148,7 @@ export function _getDocument<R extends Record<string, Any>>(
     if (!versionId) {
       if (isDraftId(id)) {
         throw new Error(
-          `The document ID (${id}) is a draft, but \`options.releaseId\` is set ${opts.releaseId}`,
+          `The document ID (\`${id}\`) is a draft, but \`options.releaseId\` is set as \`${opts.releaseId}\``,
         )
       }
 
@@ -157,7 +157,7 @@ export function _getDocument<R extends Record<string, Any>>(
 
     if (versionId !== opts.releaseId) {
       throw new Error(
-        `The document ID (${id}) is already a version of ${versionId} release, but this does not match the provided \`options.releaseId\` (${opts.releaseId})`,
+        `The document ID (\`${id}\`) is already a version of \`${versionId}\` release, but this does not match the provided \`options.releaseId\` (\`${opts.releaseId}\`)`,
       )
     }
 

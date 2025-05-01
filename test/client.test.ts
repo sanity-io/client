@@ -1436,7 +1436,7 @@ describe('client', async () => {
           } catch (err: unknown) {
             expect(err).toBeInstanceOf(Error)
             expect((err as Error).message).toContain(
-              `The document ID (${versionId}) is already a version of ${existingReleaseId} release, but this does not match the provided \`options.releaseId\` (${newReleaseId})`,
+              `The document ID (\`${versionId}\`) is already a version of \`${existingReleaseId}\` release, but this does not match the provided \`options.releaseId\` (\`${newReleaseId}\`)`,
             )
           }
         })
@@ -1453,7 +1453,7 @@ describe('client', async () => {
           } catch (err: unknown) {
             expect(err).toBeInstanceOf(Error)
             expect((err as Error).message).toContain(
-              `The document ID (${draftId}) is a draft, but \`options.releaseId\` is set ${releaseId}`,
+              `The document ID (\`${draftId}\`) is a draft, but \`options.releaseId\` is set as \`${releaseId}\``,
             )
           }
         })
@@ -2465,7 +2465,9 @@ describe('client', async () => {
         }
 
         expect(error).not.toBeNull()
-        expect(error?.message).toMatch('createVersion() requires that the document contains a type')
+        expect(error?.message).toMatch(
+          '`createVersion()` requires that the document contains a type',
+        )
       })
 
       test('throws when draft document ID does not match generated version ID', async () => {
@@ -2482,7 +2484,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          'The provided document ID (drafts.wrongId123) does not match the generated version ID (drafts.pub123)',
+          'The provided document ID (`drafts.wrongId123`) does not match the generated version ID (`drafts.pub123`)',
         )
       })
 
@@ -2505,7 +2507,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          'The provided document ID (versions.wrongRelease.wrongId123) does not match the generated version ID (versions.release456.pub123)',
+          'The provided document ID (`versions.wrongRelease.wrongId123`) does not match the generated version ID (`versions.release456.pub123`)',
         )
       })
 
@@ -2522,7 +2524,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          'createVersion() requires either a publishedId or a document with an _id',
+          '`createVersion()` requires either a publishedId or a document with an `_id`',
         )
       })
 
@@ -2540,7 +2542,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          'createVersion() requires either a publishedId or a document with an _id',
+          '`createVersion()` requires either a publishedId or a document with an `_id`',
         )
       })
 
@@ -2605,7 +2607,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          'createVersion() requires a document with an _id that is a version or draft ID',
+          '`createVersion()` requires a document with an `_id` that is a version or draft ID',
         )
       })
 
@@ -2628,7 +2630,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          `createVersion() was called with a document ID (${documentId}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+          `\`createVersion()\` was called with a document ID (\`${documentId}\`) that is a draft ID, but a release ID (\`${releaseId}\`) was also provided.`,
         )
       })
 
@@ -2652,7 +2654,7 @@ describe('client', async () => {
 
         expect(error).not.toBeNull()
         expect(error?.message).toMatch(
-          `createVersion() was called with a document ID (${versionId}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${wrongReleaseId}).`,
+          `\`createVersion()\` was called with a document ID (\`${versionId}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${wrongReleaseId}\`).`,
         )
       })
     })
@@ -4251,7 +4253,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        'The provided document ID (doc123) does not match the generated version ID (versions.release456.doc123)',
+        'The provided document ID (`doc123`) does not match the generated version ID (`versions.release456.doc123`)',
       )
     })
 
@@ -4269,7 +4271,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        'The provided document ID (drafts.doc123) does not match the generated version ID (versions.release456.doc123)',
+        'The provided document ID (`drafts.doc123`) does not match the generated version ID (`versions.release456.doc123`)',
       )
     })
 
@@ -4301,7 +4303,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        'replaceVersion() requires either a publishedId or a document with an _id',
+        '`replaceVersion()` requires either a publishedId or a document with an `_id`',
       )
     })
 
@@ -4332,7 +4334,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        'replaceVersion() requires that the document contains a type ("_type" property)',
+        '`replaceVersion()` requires that the document contains a type (`_type` property)',
       )
     })
 
@@ -4352,7 +4354,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        'replaceVersion() requires a document with an _id that is a version or draft ID',
+        '`replaceVersion()` requires a document with an `_id` that is a version or draft ID',
       )
     })
 
@@ -4375,7 +4377,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        `replaceVersion() was called with a document ID (${documentId}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+        `\`replaceVersion()\` was called with a document ID (\`${documentId}\`) that is a draft ID, but a release ID (\`${releaseId}\`) was also provided.`,
       )
     })
 
@@ -4399,7 +4401,7 @@ describe('client', async () => {
 
       expect(error).not.toBeNull()
       expect(error?.message).toMatch(
-        `replaceVersion() was called with a document ID (${versionId}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${wrongReleaseId}).`,
+        `\`replaceVersion()\` was called with a document ID (\`${versionId}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${wrongReleaseId}\`).`,
       )
     })
 

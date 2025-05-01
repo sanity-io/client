@@ -48,20 +48,22 @@ export function deriveDocumentVersionId(
     const isVersion = isVersionId(document._id)
 
     if (!isDraft && !isVersion) {
-      throw new Error(`${op}() requires a document with an _id that is a version or draft ID`)
+      throw new Error(
+        `\`${op}()\` requires a document with an \`_id\` that is a version or draft ID`,
+      )
     }
 
     if (releaseId) {
       if (isDraft) {
         throw new Error(
-          `${op}() was called with a document ID (${document._id}) that is a draft ID, but a release ID (${releaseId}) was also provided.`,
+          `\`${op}()\` was called with a document ID (\`${document._id}\`) that is a draft ID, but a release ID (\`${releaseId}\`) was also provided.`,
         )
       }
 
       const builtVersionId = getVersionFromId(document._id)
       if (builtVersionId !== releaseId) {
         throw new Error(
-          `${op}() was called with a document ID (${document._id}) that is a version ID, but the release ID (${releaseId}) does not match the document's version ID (${builtVersionId}).`,
+          `\`${op}()\` was called with a document ID (\`${document._id}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${builtVersionId}\`).`,
         )
       }
     }
@@ -73,5 +75,5 @@ export function deriveDocumentVersionId(
     return getDocumentVersionId(publishedId, releaseId)
   }
 
-  throw new Error(`${op}() requires either a publishedId or a document with an _id`)
+  throw new Error(`\`${op}()\` requires either a publishedId or a document with an \`_id\``)
 }

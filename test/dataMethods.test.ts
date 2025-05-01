@@ -222,7 +222,9 @@ describe('dataMethods', async () => {
 
       expect(() => {
         dataMethods._getDocument(client, mockHttpRequest, draftId, {releaseId})
-      }).toThrow(/The document ID \(drafts.someDocId\) is a draft, but `options.releaseId` is set/)
+      }).toThrow(
+        'The document ID (`drafts.someDocId`) is a draft, but `options.releaseId` is set as `someReleaseId`',
+      )
     })
 
     test('keeps existing version ID if it matches releaseId', () => {
