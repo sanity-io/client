@@ -66,15 +66,9 @@ export class ObservableSanityClient implements ObservableSanityClientType {
   projects: ObservableProjectsClient
   users: ObservableUsersClient
 
-  /**
-   * Private properties
-   */
   #clientConfig: InitializedClientConfig
   #httpRequest: HttpRequest
 
-  /**
-   * Instance properties
-   */
   listen = _listen
 
   constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
@@ -739,15 +733,9 @@ export class SanityClient implements SanityClientType {
    */
   observable: ObservableSanityClient
 
-  /**
-   * Private properties
-   */
   #clientConfig: InitializedClientConfig
   #httpRequest: HttpRequest
 
-  /**
-   * Instance properties
-   */
   listen = _listen
 
   constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
