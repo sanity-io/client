@@ -1427,15 +1427,6 @@ interface SanityClientBase {
   listen: typeof _listen
 
   /**
-   * Returns the current client configuration
-   */
-  config(): InitializedClientConfig
-  /**
-   * Reconfigure the client. Note that this _mutates_ the current client.
-   */
-  config(newConfig?: Partial<ClientConfig>): this
-
-  /**
    * Get a Sanity API URL for the URI provided
    *
    * @param uri - URI/path to build URL for
@@ -1468,14 +1459,23 @@ export interface ObservableSanityClientType extends SanityClientBase {
   /**
    * Clone the client - returns a new instance
    */
-  clone(): ObservableSanityClient
+  clone(): ObservableSanityClientType
+
+  /**
+   * Returns the current client configuration
+   */
+  config(): InitializedClientConfig
+  /**
+   * Reconfigure the client. Note that this _mutates_ the current client.
+   */
+  config(newConfig?: Partial<ClientConfig>): ObservableSanityClientType
 
   /**
    * Clone the client with a new (partial) configuration.
    *
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
-  withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClient
+  withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClientType
 
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -1973,19 +1973,28 @@ export interface SanityClientType extends SanityClientBase {
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
    */
-  observable: ObservableSanityClient
+  observable: ObservableSanityClientType
 
   /**
    * Clone the client - returns a new instance
    */
-  clone(): SanityClient
+  clone(): SanityClientType
+
+  /**
+   * Returns the current client configuration
+   */
+  config(): InitializedClientConfig
+  /**
+   * Reconfigure the client. Note that this _mutates_ the current client.
+   */
+  config(newConfig?: Partial<ClientConfig>): SanityClientType
 
   /**
    * Clone the client with a new (partial) configuration.
    *
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
-  withConfig(newConfig?: Partial<ClientConfig>): SanityClient
+  withConfig(newConfig?: Partial<ClientConfig>): SanityClientType
 
   /**
    * Perform a GROQ-query against the configured dataset.
