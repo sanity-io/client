@@ -176,7 +176,7 @@ export class ObservableSanityClient {
     Q extends QueryWithoutParams | QueryParams = QueryParams,
     const G extends string = string,
   >(
-    query: string,
+    query: G,
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>>>
@@ -1355,8 +1355,8 @@ export class SanityClient {
    * @param operations - Optional object of patch operations to initialize the patch instance with
    * @returns Patch instance - call `.commit()` to perform the operations defined
    */
-  patch(documentId: PatchSelection, operations?: PatchOperations): Patch {
-    return new Patch(documentId, operations, this)
+  patch(selection: PatchSelection, operations?: PatchOperations): Patch {
+    return new Patch(selection, operations, this)
   }
 
   /**
