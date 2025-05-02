@@ -549,7 +549,7 @@ const isDomExceptionSupported = Boolean(globalThis.DOMException)
 
 /**
  * @internal
- * @param signal
+ * @param signal - The abort signal to use.
  * Original source copied from https://github.com/sindresorhus/ky/blob/740732c78aad97e9aec199e9871bdbf0ae29b805/source/errors/DOMException.ts
  * TODO: When targeting Node.js 18, use `signal.throwIfAborted()` (https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/throwIfAborted)
  */

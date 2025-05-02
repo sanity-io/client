@@ -18,7 +18,7 @@ export class ObservableProjectsClient {
    * Fetch a list of projects the authenticated user has access to.
    *
    * @param options - Options for the list request
-   * @param options.includeMembers - Whether to include members in the response (default: true)
+   *   - `includeMembers` - Whether to include members in the response (default: true)
    */
   list(options?: {includeMembers?: true}): Observable<SanityProject[]>
   list(options?: {includeMembers?: false}): Observable<Omit<SanityProject, 'members'>[]>
@@ -54,7 +54,7 @@ export class ProjectsClient {
    * Fetch a list of projects the authenticated user has access to.
    *
    * @param options - Options for the list request
-   * @param options.includeMembers - Whether to include members in the response (default: true)
+   *   - `includeMembers` - Whether to include members in the response (default: true)
    */
   list(options?: {includeMembers?: true}): Promise<SanityProject[]>
   list(options?: {includeMembers?: false}): Promise<Omit<SanityProject, 'members'>[]>
