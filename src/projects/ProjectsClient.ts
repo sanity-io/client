@@ -6,7 +6,49 @@ import type {HttpRequest, SanityProject} from '../types'
 import * as validate from '../validators'
 
 /** @internal */
-export class ObservableProjectsClient {
+export interface ObservableProjectsClientType {
+  /**
+   * Fetch a list of projects the authenticated user has access to.
+   *
+   * @param options - Options for the list request
+   * @param options.includeMembers - Whether to include members in the response (default: true)
+   */
+  list(options?: {includeMembers?: true}): Observable<SanityProject[]>
+  list(options?: {includeMembers?: false}): Observable<Omit<SanityProject, 'members'>[]>
+  list(options?: {
+    includeMembers?: boolean
+  }): Observable<SanityProject[] | Omit<SanityProject, 'members'>[]>
+
+  /**
+   * Fetch a project by project ID
+   *
+   * @param projectId - ID of the project to fetch
+   */
+  getById(projectId: string): Observable<SanityProject>
+}
+
+/** @internal */
+export interface ProjectsClientType {
+  /**
+   * Fetch a list of projects the authenticated user has access to.
+   *
+   * @param options - Options for the list request
+   * @param options.includeMembers - Whether to include members in the response (default: true)
+   */
+  list(options?: {includeMembers?: true}): Promise<SanityProject[]>
+  list(options?: {includeMembers?: false}): Promise<Omit<SanityProject, 'members'>[]>
+  list(options?: {includeMembers?: boolean}): Promise<SanityProject[]>
+
+  /**
+   * Fetch a project by project ID
+   *
+   * @param projectId - ID of the project to fetch
+   */
+  getById(projectId: string): Promise<SanityProject>
+}
+
+/** @internal */
+export class ObservableProjectsClient implements ObservableProjectsClientType {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
@@ -42,7 +84,7 @@ export class ObservableProjectsClient {
 }
 
 /** @internal */
-export class ProjectsClient {
+export class ProjectsClient implements ProjectsClientType {
   #client: SanityClient
   #httpRequest: HttpRequest
   constructor(client: SanityClient, httpRequest: HttpRequest) {

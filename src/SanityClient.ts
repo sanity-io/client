@@ -14,15 +14,15 @@ import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {
   DatasetsClient,
-  DatasetsClient as DatasetsClientType,
+  type DatasetsClientType,
   ObservableDatasetsClient,
-  ObservableDatasetsClient as ObservableDatasetsClientType,
+  type ObservableDatasetsClientType,
 } from './datasets/DatasetsClient'
 import {
   ObservableProjectsClient,
-  ObservableProjectsClient as ObservableProjectsClientType,
+  type ObservableProjectsClientType,
   ProjectsClient,
-  ProjectsClient as ProjectsClientType,
+  type ProjectsClientType,
 } from './projects/ProjectsClient'
 import type {
   Action,
@@ -60,9 +60,9 @@ import type {
 } from './types'
 import {
   ObservableUsersClient,
-  ObservableUsersClient as ObservableUsersClientType,
+  type ObservableUsersClientType,
   UsersClient,
-  UsersClient as UsersClientType,
+  type UsersClientType,
 } from './users/UsersClient'
 
 export type {
