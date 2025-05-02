@@ -4,8 +4,30 @@ import {_request} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {CurrentSanityUser, HttpRequest, SanityUser} from '../types'
 
+/** @internal */
+export interface ObservableUsersClientType {
+  /**
+   * Fetch a user by user ID
+   *
+   * @param id - User ID of the user to fetch. If `me` is provided, a minimal response including the users role is returned.
+   */
+  getById<T extends 'me' | string>(
+    id: T,
+  ): Observable<T extends 'me' ? CurrentSanityUser : SanityUser>
+}
+
+/** @internal */
+export interface UsersClientType {
+  /**
+   * Fetch a user by user ID
+   *
+   * @param id - User ID of the user to fetch. If `me` is provided, a minimal response including the users role is returned.
+   */
+  getById<T extends 'me' | string>(id: T): Promise<T extends 'me' ? CurrentSanityUser : SanityUser>
+}
+
 /** @public */
-export class ObservableUsersClient {
+export class ObservableUsersClient implements ObservableUsersClientType {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
@@ -30,7 +52,7 @@ export class ObservableUsersClient {
 }
 
 /** @public */
-export class UsersClient {
+export class UsersClient implements UsersClientType {
   #client: SanityClient
   #httpRequest: HttpRequest
   constructor(client: SanityClient, httpRequest: HttpRequest) {

@@ -1,14 +1,29 @@
 import {lastValueFrom, Observable} from 'rxjs'
 
-import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
+import {
+  AssetsClient,
+  type AssetsClientType,
+  ObservableAssetsClient,
+  type ObservableAssetsClientType,
+} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
 import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
-import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
-import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
+import {
+  DatasetsClient,
+  type DatasetsClientType,
+  ObservableDatasetsClient,
+  type ObservableDatasetsClientType,
+} from './datasets/DatasetsClient'
+import {
+  ObservableProjectsClient,
+  type ObservableProjectsClientType,
+  ProjectsClient,
+  type ProjectsClientType,
+} from './projects/ProjectsClient'
 import type {
   Action,
   AllDocumentIdsMutationOptions,
@@ -43,7 +58,12 @@ import type {
   UnfilteredResponseQueryOptions,
   UnfilteredResponseWithoutQuery,
 } from './types'
-import {ObservableUsersClient, UsersClient} from './users/UsersClient'
+import {
+  ObservableUsersClient,
+  type ObservableUsersClientType,
+  UsersClient,
+  type UsersClientType,
+} from './users/UsersClient'
 
 export type {
   _listen,
@@ -59,22 +79,16 @@ export type {
 }
 
 /** @public */
-export class ObservableSanityClient {
+export class ObservableSanityClient implements ObservableSanityClientType {
   assets: ObservableAssetsClient
   datasets: ObservableDatasetsClient
   live: LiveClient
   projects: ObservableProjectsClient
   users: ObservableUsersClient
 
-  /**
-   * Private properties
-   */
   #clientConfig: InitializedClientConfig
   #httpRequest: HttpRequest
 
-  /**
-   * Instance properties
-   */
   listen = _listen
 
   constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
@@ -176,7 +190,7 @@ export class ObservableSanityClient {
     Q extends QueryWithoutParams | QueryParams = QueryParams,
     const G extends string = string,
   >(
-    query: string,
+    query: G,
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>>>
@@ -727,7 +741,7 @@ export class ObservableSanityClient {
 }
 
 /** @public */
-export class SanityClient {
+export class SanityClient implements SanityClientType {
   assets: AssetsClient
   datasets: DatasetsClient
   live: LiveClient
@@ -739,15 +753,9 @@ export class SanityClient {
    */
   observable: ObservableSanityClient
 
-  /**
-   * Private properties
-   */
   #clientConfig: InitializedClientConfig
   #httpRequest: HttpRequest
 
-  /**
-   * Instance properties
-   */
   listen = _listen
 
   constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
@@ -1355,8 +1363,8 @@ export class SanityClient {
    * @param operations - Optional object of patch operations to initialize the patch instance with
    * @returns Patch instance - call `.commit()` to perform the operations defined
    */
-  patch(documentId: PatchSelection, operations?: PatchOperations): Patch {
-    return new Patch(documentId, operations, this)
+  patch(selection: PatchSelection, operations?: PatchOperations): Patch {
+    return new Patch(selection, operations, this)
   }
 
   /**
@@ -1428,4 +1436,1077 @@ export class SanityClient {
   getDataUrl(operation: string, path?: string): string {
     return dataMethods._getDataUrl(this, operation, path)
   }
+}
+
+/**
+ * Shared base type for the `SanityClient` and `ObservableSanityClient` classes.
+ * TODO: refactor the Promise and Observable differences to use generics so we no longer suffer from all this duplication in TS docs
+ */
+interface SanityClientBase {
+  live: LiveClient
+  listen: typeof _listen
+
+  /**
+   * Get a Sanity API URL for the URI provided
+   *
+   * @param uri - URI/path to build URL for
+   * @param canUseCdn - Whether or not to allow using the API CDN for this route
+   */
+  getUrl(uri: string, canUseCdn?: boolean): string
+
+  /**
+   * Get a Sanity API URL for the data operation and path provided
+   *
+   * @param operation - Data operation (eg `query`, `mutate`, `listen` or similar)
+   * @param path - Path to append after the operation
+   */
+  getDataUrl(operation: string, path?: string): string
+}
+
+/**
+ * The interface implemented by the `ObservableSanityClient` class.
+ * When writing code that wants to take an instance of `ObservableSanityClient` as input it's better to use this type,
+ * as the `ObservableSanityClient` class has private properties and thus TypeScrict will consider the type incompatible
+ * in cases where you might have multiple `@sanity/client` instances in your node_modules.
+ * @public
+ */
+export interface ObservableSanityClientType extends SanityClientBase {
+  assets: ObservableAssetsClientType
+  datasets: ObservableDatasetsClientType
+  projects: ObservableProjectsClientType
+  users: ObservableUsersClientType
+
+  /**
+   * Clone the client - returns a new instance
+   */
+  clone(): ObservableSanityClientType
+
+  /**
+   * Returns the current client configuration
+   */
+  config(): InitializedClientConfig
+  /**
+   * Reconfigure the client. Note that this _mutates_ the current client.
+   */
+  config(newConfig?: Partial<ClientConfig>): this
+
+  /**
+   * Clone the client with a new (partial) configuration.
+   *
+   * @param newConfig - New client configuration properties, shallowly merged with existing configuration
+   */
+  withConfig(newConfig?: Partial<ClientConfig>): this
+
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams = QueryWithoutParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params?: Q | QueryWithoutParams,
+  ): Observable<ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Optional request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: FilteredResponseQueryOptions,
+  ): Observable<ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseQueryOptions,
+  ): Observable<RawQueryResponse<ClientReturn<G, R>>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseWithoutQuery,
+  ): Observable<RawQuerylessQueryResponse<ClientReturn<G, R>>>
+
+  /**
+   * Fetch a single document with the given ID.
+   *
+   * @param id - Document ID to fetch
+   * @param options - Request options
+   */
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {tag?: string},
+  ): Observable<SanityDocument<R> | undefined>
+
+  /**
+   * Fetch multiple documents in one request.
+   * Should be used sparingly - performing a query is usually a better option.
+   * The order/position of documents is preserved based on the original array of IDs.
+   * If any of the documents are missing, they will be replaced by a `null` entry in the returned array
+   *
+   * @param ids - Document IDs to fetch
+   * @param options - Request options
+   */
+  getDocuments<R extends Record<string, Any> = Record<string, Any>>(
+    ids: string[],
+    options?: {tag?: string},
+  ): Observable<(SanityDocument<R> | null)[]>
+
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns an observable that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: FirstDocumentMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns an observable that resolves to an array containing the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: AllDocumentsMutationOptions,
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns an observable that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: FirstDocumentIdMutationOptions,
+  ): Observable<SingleMutationResult>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns an observable that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: AllDocumentIdsMutationOptions,
+  ): Observable<MultipleMutationResult>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns an observable that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options?: BaseMutationOptions,
+  ): Observable<SanityDocument<R>>
+
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns an observable that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns an observable that resolves to an array containing the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentsMutationOptions,
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns an observable that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentIdMutationOptions,
+  ): Observable<SingleMutationResult>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns an observable that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentIdsMutationOptions,
+  ): Observable<MultipleMutationResult>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns an observable that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options?: BaseMutationOptions,
+  ): Observable<SanityDocument<R>>
+
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns an observable that resolves to the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns an observable that resolves to an array containing the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentsMutationOptions,
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns an observable that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentIdMutationOptions,
+  ): Observable<SingleMutationResult>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns an observable that resolves to a mutation result object containing the created document ID.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentIdsMutationOptions,
+  ): Observable<MultipleMutationResult>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns an observable that resolves to the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options?: BaseMutationOptions,
+  ): Observable<SanityDocument<R>>
+
+  /**
+   * Deletes a document with the given document ID.
+   * Returns an observable that resolves to the deleted document.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options: FirstDocumentMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns an observable that resolves to an array containing the deleted document.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options: AllDocumentsMutationOptions,
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns an observable that resolves to a mutation result object containing the deleted document ID.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete(id: string, options: FirstDocumentIdMutationOptions): Observable<SingleMutationResult>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns an observable that resolves to a mutation result object containing the deleted document ID.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete(id: string, options: AllDocumentIdsMutationOptions): Observable<MultipleMutationResult>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns an observable that resolves to the deleted document.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: BaseMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns an observable that resolves to first deleted document.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    selection: MutationSelection,
+    options: FirstDocumentMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns an observable that resolves to an array containing the deleted documents.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    selection: MutationSelection,
+    options: AllDocumentsMutationOptions,
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns an observable that resolves to a mutation result object containing the ID of the first deleted document.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete(
+    selection: MutationSelection,
+    options: FirstDocumentIdMutationOptions,
+  ): Observable<SingleMutationResult>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns an observable that resolves to a mutation result object containing the document IDs that were deleted.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete(
+    selection: MutationSelection,
+    options: AllDocumentIdsMutationOptions,
+  ): Observable<MultipleMutationResult>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns an observable that resolves to first deleted document.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    selection: MutationSelection,
+    options?: BaseMutationOptions,
+  ): Observable<SanityDocument<R>>
+
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns an observable that resolves to the first mutated document.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
+    options: FirstDocumentMutationOptions,
+  ): Observable<SanityDocument<R>>
+  /**
+   * Perform mutation operations against the configured dataset.
+   * Returns an observable that resolves to an array of the mutated documents.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
+    options: AllDocumentsMutationOptions,
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns an observable that resolves to a mutation result object containing the document ID of the first mutated document.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
+    options: FirstDocumentIdMutationOptions,
+  ): Observable<SingleMutationResult>
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns an observable that resolves to a mutation result object containing the mutated document IDs.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
+    options: AllDocumentIdsMutationOptions,
+  ): Observable<MultipleMutationResult>
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns an observable that resolves to the first mutated document.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
+    options?: BaseMutationOptions,
+  ): Observable<SanityDocument<R>>
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param documentId - Document ID to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentId: string, operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param documentIds - Array of document IDs to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentIds: string[], operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - An object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: MutationSelection, operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - Document ID, an array of document IDs, or an object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: PatchSelection, operations?: PatchOperations): ObservablePatch
+
+  /**
+   * Create a new transaction of mutations
+   *
+   * @param operations - Optional array of mutation operations to initialize the transaction instance with
+   */
+  transaction<R extends Record<string, Any> = Record<string, Any>>(
+    operations?: Mutation<R>[],
+  ): ObservableTransaction
+
+  /**
+   * Perform action operations against the configured dataset
+   *
+   * @param operations - Action operation(s) to execute
+   * @param options - Action options
+   */
+  action(
+    operations: Action | Action[],
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult>
+
+  /**
+   * Perform an HTTP request against the Sanity API
+   *
+   * @param options - Request options
+   */
+  request<R = Any>(options: RawRequestOptions): Observable<R>
+}
+
+/**
+ * The interface implemented by the `SanityClient` class.
+ * When writing code that wants to take an instance of `SanityClient` as input it's better to use this type,
+ * as the `SanityClient` class has private properties and thus TypeScrict will consider the type incompatible
+ * in cases where you might have multiple `@sanity/client` instances in your node_modules.
+ * @public
+ */
+export interface SanityClientType extends SanityClientBase {
+  assets: AssetsClientType
+  datasets: DatasetsClientType
+  projects: ProjectsClientType
+  users: UsersClientType
+
+  /**
+   * Observable version of the Sanity client, with the same configuration as the promise-based one
+   */
+  observable: ObservableSanityClientType
+
+  /**
+   * Clone the client - returns a new instance
+   */
+  clone(): SanityClientType
+
+  /**
+   * Returns the current client configuration
+   */
+  config(): InitializedClientConfig
+  /**
+   * Reconfigure the client. Note that this _mutates_ the current client.
+   */
+  config(newConfig?: Partial<ClientConfig>): this
+
+  /**
+   * Clone the client with a new (partial) configuration.
+   *
+   * @param newConfig - New client configuration properties, shallowly merged with existing configuration
+   */
+  withConfig(newConfig?: Partial<ClientConfig>): this
+
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams = QueryWithoutParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params?: Q | QueryWithoutParams,
+  ): Promise<ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Optional request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: FilteredResponseQueryOptions,
+  ): Promise<ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseQueryOptions,
+  ): Promise<RawQueryResponse<ClientReturn<G, R>>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseWithoutQuery,
+  ): Promise<RawQuerylessQueryResponse<ClientReturn<G, R>>>
+
+  /**
+   * Fetch a single document with the given ID.
+   *
+   * @param id - Document ID to fetch
+   * @param options - Request options
+   */
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Promise<SanityDocument<R> | undefined>
+
+  /**
+   * Fetch multiple documents in one request.
+   * Should be used sparingly - performing a query is usually a better option.
+   * The order/position of documents is preserved based on the original array of IDs.
+   * If any of the documents are missing, they will be replaced by a `null` entry in the returned array
+   *
+   * @param ids - Document IDs to fetch
+   * @param options - Request options
+   */
+  getDocuments<R extends Record<string, Any> = Record<string, Any>>(
+    ids: string[],
+    options?: {signal?: AbortSignal; tag?: string},
+  ): Promise<(SanityDocument<R> | null)[]>
+
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns a promise that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: FirstDocumentMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns a promise that resolves to an array containing the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: AllDocumentsMutationOptions,
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns a promise that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: FirstDocumentIdMutationOptions,
+  ): Promise<SingleMutationResult>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns a promise that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options: AllDocumentIdsMutationOptions,
+  ): Promise<MultipleMutationResult>
+  /**
+   * Create a document. Requires a `_type` property. If no `_id` is provided, it will be generated by the database.
+   * Returns a promise that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  create<R extends Record<string, Any> = Record<string, Any>>(
+    document: SanityDocumentStub<R>,
+    options?: BaseMutationOptions,
+  ): Promise<SanityDocument<R>>
+
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns a promise that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns a promise that resolves to an array containing the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentsMutationOptions,
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns a promise that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentIdMutationOptions,
+  ): Promise<SingleMutationResult>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns a promise that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentIdsMutationOptions,
+  ): Promise<MultipleMutationResult>
+  /**
+   * Create a document if no document with the same ID already exists.
+   * Returns a promise that resolves to the created document.
+   *
+   * @param document - Document to create
+   * @param options - Mutation options
+   */
+  createIfNotExists<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options?: BaseMutationOptions,
+  ): Promise<SanityDocument<R>>
+
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns a promise that resolves to the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns a promise that resolves to an array containing the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentsMutationOptions,
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns a promise that resolves to a mutation result object containing the ID of the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: FirstDocumentIdMutationOptions,
+  ): Promise<SingleMutationResult>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns a promise that resolves to a mutation result object containing the created document ID.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options: AllDocumentIdsMutationOptions,
+  ): Promise<MultipleMutationResult>
+  /**
+   * Create a document if it does not exist, or replace a document with the same document ID
+   * Returns a promise that resolves to the created document.
+   *
+   * @param document - Document to either create or replace
+   * @param options - Mutation options
+   */
+  createOrReplace<R extends Record<string, Any> = Record<string, Any>>(
+    document: IdentifiedSanityDocumentStub<R>,
+    options?: BaseMutationOptions,
+  ): Promise<SanityDocument<R>>
+
+  /**
+   * Deletes a document with the given document ID.
+   * Returns a promise that resolves to the deleted document.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options: FirstDocumentMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns a promise that resolves to an array containing the deleted document.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options: AllDocumentsMutationOptions,
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns a promise that resolves to a mutation result object containing the deleted document ID.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete(id: string, options: FirstDocumentIdMutationOptions): Promise<SingleMutationResult>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns a promise that resolves to a mutation result object containing the deleted document ID.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete(id: string, options: AllDocumentIdsMutationOptions): Promise<MultipleMutationResult>
+  /**
+   * Deletes a document with the given document ID.
+   * Returns a promise that resolves to the deleted document.
+   *
+   * @param id - Document ID to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: BaseMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns a promise that resolves to first deleted document.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    selection: MutationSelection,
+    options: FirstDocumentMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns a promise that resolves to an array containing the deleted documents.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    selection: MutationSelection,
+    options: AllDocumentsMutationOptions,
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns a promise that resolves to a mutation result object containing the ID of the first deleted document.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete(
+    selection: MutationSelection,
+    options: FirstDocumentIdMutationOptions,
+  ): Promise<SingleMutationResult>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns a promise that resolves to a mutation result object containing the document IDs that were deleted.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete(
+    selection: MutationSelection,
+    options: AllDocumentIdsMutationOptions,
+  ): Promise<MultipleMutationResult>
+  /**
+   * Deletes one or more documents matching the given query or document ID.
+   * Returns a promise that resolves to first deleted document.
+   *
+   * @param selection - An object with either an `id` or `query` key defining what to delete
+   * @param options - Options for the mutation
+   */
+  delete<R extends Record<string, Any> = Record<string, Any>>(
+    selection: MutationSelection,
+    options?: BaseMutationOptions,
+  ): Promise<SanityDocument<R>>
+
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns a promise that resolves to the first mutated document.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | Patch | Transaction,
+    options: FirstDocumentMutationOptions,
+  ): Promise<SanityDocument<R>>
+  /**
+   * Perform mutation operations against the configured dataset.
+   * Returns a promise that resolves to an array of the mutated documents.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | Patch | Transaction,
+    options: AllDocumentsMutationOptions,
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns a promise that resolves to a mutation result object containing the document ID of the first mutated document.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | Patch | Transaction,
+    options: FirstDocumentIdMutationOptions,
+  ): Promise<SingleMutationResult>
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns a promise that resolves to a mutation result object containing the mutated document IDs.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any>>(
+    operations: Mutation<R>[] | Patch | Transaction,
+    options: AllDocumentIdsMutationOptions,
+  ): Promise<MultipleMutationResult>
+  /**
+   * Perform mutation operations against the configured dataset
+   * Returns a promise that resolves to the first mutated document.
+   *
+   * @param operations - Mutation operations to execute
+   * @param options - Mutation options
+   */
+  mutate<R extends Record<string, Any> = Record<string, Any>>(
+    operations: Mutation<R>[] | Patch | Transaction,
+    options?: BaseMutationOptions,
+  ): Promise<SanityDocument<R>>
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param documentId - Document ID to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentId: string, operations?: PatchOperations): Patch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param documentIds - Array of document IDs to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(documentIds: string[], operations?: PatchOperations): Patch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - An object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: MutationSelection, operations?: PatchOperations): Patch
+
+  /**
+   * Create a new buildable patch of operations to perform
+   *
+   * @param selection - Document ID, an array of document IDs, or an object with `query` and optional `params`, defining which document(s) to patch
+   * @param operations - Optional object of patch operations to initialize the patch instance with
+   * @returns Patch instance - call `.commit()` to perform the operations defined
+   */
+  patch(selection: PatchSelection, operations?: PatchOperations): Patch
+
+  /**
+   * Create a new transaction of mutations
+   *
+   * @param operations - Optional array of mutation operations to initialize the transaction instance with
+   */
+  transaction<R extends Record<string, Any> = Record<string, Any>>(
+    operations?: Mutation<R>[],
+  ): Transaction
+
+  /**
+   * Perform action operations against the configured dataset
+   * Returns a promise that resolves to the transaction result
+   *
+   * @param operations - Action operation(s) to execute
+   * @param options - Action options
+   */
+  action(
+    operations: Action | Action[],
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult>
+
+  /**
+   * Perform a request against the Sanity API
+   * NOTE: Only use this for Sanity API endpoints, not for your own APIs!
+   *
+   * @param options - Request options
+   * @returns Promise resolving to the response body
+   */
+  request<R = Any>(options: RawRequestOptions): Promise<R>
+
+  /**
+   * Perform an HTTP request a `/data` sub-endpoint
+   * NOTE: Considered internal, thus marked as deprecated. Use `request` instead.
+   *
+   * @deprecated - Use `request()` or your own HTTP library instead
+   * @param endpoint - Endpoint to hit (mutate, query etc)
+   * @param body - Request body
+   * @param options - Request options
+   * @internal
+   */
+  dataRequest(endpoint: string, body: unknown, options?: BaseMutationOptions): Promise<Any>
 }

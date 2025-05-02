@@ -6,7 +6,69 @@ import type {DatasetAclMode, DatasetResponse, DatasetsResponse, HttpRequest} fro
 import * as validate from '../validators'
 
 /** @internal */
-export class ObservableDatasetsClient {
+export interface ObservableDatasetsClientType {
+  /**
+   * Create a new dataset with the given name
+   *
+   * @param name - Name of the dataset to create
+   * @param options - Options for the dataset
+   */
+  create(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse>
+
+  /**
+   * Edit a dataset with the given name
+   *
+   * @param name - Name of the dataset to edit
+   * @param options - New options for the dataset
+   */
+  edit(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse>
+
+  /**
+   * Delete a dataset with the given name
+   *
+   * @param name - Name of the dataset to delete
+   */
+  delete(name: string): Observable<{deleted: true}>
+
+  /**
+   * Fetch a list of datasets for the configured project
+   */
+  list(): Observable<DatasetsResponse>
+}
+
+/** @internal */
+export interface DatasetsClientType {
+  /**
+   * Create a new dataset with the given name
+   *
+   * @param name - Name of the dataset to create
+   * @param options - Options for the dataset
+   */
+  create(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse>
+
+  /**
+   * Edit a dataset with the given name
+   *
+   * @param name - Name of the dataset to edit
+   * @param options - New options for the dataset
+   */
+  edit(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse>
+
+  /**
+   * Delete a dataset with the given name
+   *
+   * @param name - Name of the dataset to delete
+   */
+  delete(name: string): Promise<{deleted: true}>
+
+  /**
+   * Fetch a list of datasets for the configured project
+   */
+  list(): Promise<DatasetsResponse>
+}
+
+/** @internal */
+export class ObservableDatasetsClient implements ObservableDatasetsClientType {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
@@ -55,7 +117,7 @@ export class ObservableDatasetsClient {
 }
 
 /** @internal */
-export class DatasetsClient {
+export class DatasetsClient implements DatasetsClientType {
   #client: SanityClient
   #httpRequest: HttpRequest
   constructor(client: SanityClient, httpRequest: HttpRequest) {
