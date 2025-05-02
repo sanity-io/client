@@ -5,6 +5,19 @@ import {
   type QueryParams,
   type QueryWithoutParams,
   type RawQueryResponse,
+  type ClientConfig,
+  type InitializedClientConfig,
+  type SanityDocument,
+  type SingleMutationResult,
+  type MultipleMutationResult,
+  type MutationSelection,
+  type Mutation,
+  type Action,
+  type Patch,
+  type Transaction,
+  type ObservablePatch,
+  type ObservableTransaction,
+  type BaseActionOptions,
 } from '@sanity/client'
 import {lastValueFrom} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
@@ -392,5 +405,513 @@ describe('client.fetch', () => {
         {next: {revalidate: false, tags: ['post']}},
       ),
     ).toMatchTypeOf<any>()
+  })
+})
+
+// Tests for client configuration methods
+describe('client.config and client.withConfig', () => {
+  test('client.config', () => {
+    const client = createClient({})
+
+    // Test config getter
+    expectTypeOf(client.config()).toMatchTypeOf<InitializedClientConfig>()
+    expectTypeOf(client.observable.config()).toMatchTypeOf<InitializedClientConfig>()
+
+    // Test config setter
+    const newConfig: Partial<ClientConfig> = {apiVersion: '2023-05-03'}
+    expectTypeOf(client.config(newConfig)).toEqualTypeOf(client)
+    expectTypeOf(client.observable.config(newConfig)).toEqualTypeOf(client.observable)
+
+    // Test withConfig
+    expectTypeOf(client.withConfig(newConfig)).toMatchTypeOf(client)
+    expectTypeOf(client.observable.withConfig(newConfig)).toMatchTypeOf(client.observable)
+  })
+})
+
+// Tests for URL helper methods
+describe('client URL methods', () => {
+  test('client.getUrl', () => {
+    const client = createClient({})
+
+    // Test getUrl with default canUseCdn
+    expectTypeOf(client.getUrl('/path/to/resource')).toMatchTypeOf<string>()
+    expectTypeOf(client.observable.getUrl('/path/to/resource')).toMatchTypeOf<string>()
+
+    // Test getUrl with explicit canUseCdn
+    expectTypeOf(client.getUrl('/path/to/resource', true)).toMatchTypeOf<string>()
+    expectTypeOf(client.observable.getUrl('/path/to/resource', true)).toMatchTypeOf<string>()
+
+    expectTypeOf(client.getUrl('/path/to/resource', false)).toMatchTypeOf<string>()
+    expectTypeOf(client.observable.getUrl('/path/to/resource', false)).toMatchTypeOf<string>()
+  })
+
+  test('client.getDataUrl', () => {
+    const client = createClient({})
+
+    // Test getDataUrl with only operation
+    expectTypeOf(client.getDataUrl('query')).toMatchTypeOf<string>()
+    expectTypeOf(client.observable.getDataUrl('query')).toMatchTypeOf<string>()
+
+    // Test getDataUrl with operation and path
+    expectTypeOf(client.getDataUrl('query', 'production')).toMatchTypeOf<string>()
+    expectTypeOf(client.observable.getDataUrl('query', 'production')).toMatchTypeOf<string>()
+  })
+})
+
+// Tests for document methods
+describe('client document methods', () => {
+  const client = createClient({})
+
+  test('client.getDocument', async () => {
+    // Basic usage
+    expectTypeOf(await client.getDocument('doc123')).toMatchTypeOf<
+      SanityDocument<any> | undefined
+    >()
+    expectTypeOf(await lastValueFrom(client.observable.getDocument('doc123'))).toMatchTypeOf<
+      SanityDocument<any> | undefined
+    >()
+
+    // With generic type
+    expectTypeOf(await client.getDocument<{title: string}>('doc123')).toMatchTypeOf<
+      SanityDocument<{title: string}> | undefined
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.getDocument<{title: string}>('doc123')),
+    ).toMatchTypeOf<SanityDocument<{title: string}> | undefined>()
+
+    // With options
+    expectTypeOf(await client.getDocument('doc123', {tag: 'tag1'})).toMatchTypeOf<
+      SanityDocument<any> | undefined
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.getDocument('doc123', {tag: 'tag1'})),
+    ).toMatchTypeOf<SanityDocument<any> | undefined>()
+  })
+
+  test('client.getDocuments', async () => {
+    // Basic usage
+    expectTypeOf(await client.getDocuments(['doc123', 'doc456'])).toMatchTypeOf<
+      (SanityDocument<any> | null)[]
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.getDocuments(['doc123', 'doc456'])),
+    ).toMatchTypeOf<(SanityDocument<any> | null)[]>()
+
+    // With generic type
+    expectTypeOf(await client.getDocuments<{title: string}>(['doc123', 'doc456'])).toMatchTypeOf<
+      (SanityDocument<{title: string}> | null)[]
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.getDocuments<{title: string}>(['doc123', 'doc456'])),
+    ).toMatchTypeOf<(SanityDocument<{title: string}> | null)[]>()
+
+    // With options
+    expectTypeOf(await client.getDocuments(['doc123', 'doc456'], {tag: 'tag1'})).toMatchTypeOf<
+      (SanityDocument<any> | null)[]
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.getDocuments(['doc123', 'doc456'], {tag: 'tag1'})),
+    ).toMatchTypeOf<(SanityDocument<any> | null)[]>()
+  })
+
+  test('client.create', async () => {
+    const doc = {_type: 'post', title: 'Hello World'}
+
+    // Basic usage
+    expectTypeOf(await client.create(doc)).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(await lastValueFrom(client.observable.create(doc))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+
+    // With generic type
+    expectTypeOf(await client.create<{title: string}>(doc)).toMatchTypeOf<
+      SanityDocument<{title: string}>
+    >()
+    expectTypeOf(await lastValueFrom(client.observable.create<{title: string}>(doc))).toMatchTypeOf<
+      SanityDocument<{title: string}>
+    >()
+
+    // Return first document with options
+    expectTypeOf(await client.create(doc, {returnFirst: true})).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.create(doc, {returnFirst: true})),
+    ).toMatchTypeOf<SanityDocument<any>>()
+
+    // Return documents array with options
+    const docsResult = await client.create(doc, {returnFirst: false, returnDocuments: true})
+    expectTypeOf(docsResult).toBeArray()
+
+    const obsDocsResult = await lastValueFrom(
+      client.observable.create(doc, {returnFirst: false, returnDocuments: true}),
+    )
+    expectTypeOf(obsDocsResult).toBeArray()
+
+    // Return mutation result
+    expectTypeOf(
+      await client.create(doc, {returnDocuments: false}),
+    ).toMatchTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.create(doc, {returnDocuments: false})),
+    ).toMatchTypeOf<SingleMutationResult>()
+  })
+
+  test('client.createIfNotExists', async () => {
+    const docWithId = {_id: 'unique123', _type: 'post', title: 'Hello World'}
+
+    // Basic usage
+    expectTypeOf(await client.createIfNotExists(docWithId)).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(await lastValueFrom(client.observable.createIfNotExists(docWithId))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+
+    // With generic type
+    expectTypeOf(await client.createIfNotExists<{title: string}>(docWithId)).toMatchTypeOf<
+      SanityDocument<{title: string}>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.createIfNotExists<{title: string}>(docWithId)),
+    ).toMatchTypeOf<SanityDocument<{title: string}>>()
+
+    // Return first document with options
+    expectTypeOf(await client.createIfNotExists(docWithId, {returnFirst: true})).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.createIfNotExists(docWithId, {returnFirst: true})),
+    ).toMatchTypeOf<SanityDocument<any>>()
+
+    // Return documents array with options
+    const docsResult = await client.createIfNotExists(docWithId, {
+      returnFirst: false,
+      returnDocuments: true,
+    })
+    expectTypeOf(docsResult).toBeArray()
+
+    const obsDocsResult = await lastValueFrom(
+      client.observable.createIfNotExists(docWithId, {returnFirst: false, returnDocuments: true}),
+    )
+    expectTypeOf(obsDocsResult).toBeArray()
+
+    // Return mutation result
+    expectTypeOf(
+      await client.createIfNotExists(docWithId, {returnDocuments: false}),
+    ).toMatchTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.createIfNotExists(docWithId, {returnDocuments: false})),
+    ).toMatchTypeOf<SingleMutationResult>()
+  })
+
+  test('client.createOrReplace', async () => {
+    const docWithId = {_id: 'unique123', _type: 'post', title: 'Hello World'}
+
+    // Basic usage
+    expectTypeOf(await client.createOrReplace(docWithId)).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(await lastValueFrom(client.observable.createOrReplace(docWithId))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+
+    // With generic type
+    expectTypeOf(await client.createOrReplace<{title: string}>(docWithId)).toMatchTypeOf<
+      SanityDocument<{title: string}>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.createOrReplace<{title: string}>(docWithId)),
+    ).toMatchTypeOf<SanityDocument<{title: string}>>()
+
+    // Return first document with options
+    expectTypeOf(await client.createOrReplace(docWithId, {returnFirst: true})).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.createOrReplace(docWithId, {returnFirst: true})),
+    ).toMatchTypeOf<SanityDocument<any>>()
+
+    // Return documents array with options
+    const docsResult = await client.createOrReplace(docWithId, {
+      returnFirst: false,
+      returnDocuments: true,
+    })
+    expectTypeOf(docsResult).toBeArray()
+
+    const obsDocsResult = await lastValueFrom(
+      client.observable.createOrReplace(docWithId, {returnFirst: false, returnDocuments: true}),
+    )
+    expectTypeOf(obsDocsResult).toBeArray()
+
+    // Return mutation result
+    expectTypeOf(
+      await client.createOrReplace(docWithId, {returnDocuments: false}),
+    ).toMatchTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.createOrReplace(docWithId, {returnDocuments: false})),
+    ).toMatchTypeOf<SingleMutationResult>()
+  })
+
+  test('client.delete', async () => {
+    // With document ID
+    expectTypeOf(await client.delete('doc123')).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(await lastValueFrom(client.observable.delete('doc123'))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+
+    // With generic type
+    expectTypeOf(await client.delete<{title: string}>('doc123')).toMatchTypeOf<
+      SanityDocument<{title: string}>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.delete<{title: string}>('doc123')),
+    ).toMatchTypeOf<SanityDocument<{title: string}>>()
+
+    // With selection object
+    const selection: MutationSelection = {query: '*[_type == "post"]'}
+    expectTypeOf(await client.delete(selection)).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(await lastValueFrom(client.observable.delete(selection))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+
+    // Return first document with options
+    expectTypeOf(await client.delete('doc123', {returnFirst: true})).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.delete('doc123', {returnFirst: true})),
+    ).toMatchTypeOf<SanityDocument<any>>()
+
+    // Return documents array with options
+    const docsResult = await client.delete('doc123', {returnFirst: false, returnDocuments: true})
+    expectTypeOf(docsResult).toBeArray()
+
+    const obsDocsResult = await lastValueFrom(
+      client.observable.delete('doc123', {returnFirst: false, returnDocuments: true}),
+    )
+    expectTypeOf(obsDocsResult).toBeArray()
+
+    // Return mutation result
+    expectTypeOf(
+      await client.delete('doc123', {returnDocuments: false}),
+    ).toMatchTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.delete('doc123', {returnDocuments: false})),
+    ).toMatchTypeOf<SingleMutationResult>()
+  })
+
+  test('client.mutate', async () => {
+    const mutations: Mutation<any>[] = [{create: {_type: 'post', title: 'Hello World'}}]
+
+    // Basic usage
+    expectTypeOf(await client.mutate(mutations)).toMatchTypeOf<SanityDocument<any>>()
+    expectTypeOf(await lastValueFrom(client.observable.mutate(mutations))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+
+    // Return first document with options
+    expectTypeOf(await client.mutate(mutations, {returnFirst: true})).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.mutate(mutations, {returnFirst: true})),
+    ).toMatchTypeOf<SanityDocument<any>>()
+
+    // Return documents array with options
+    const docsResult = await client.mutate(mutations, {returnFirst: false, returnDocuments: true})
+    expectTypeOf(docsResult).toBeArray()
+
+    const obsDocsResult = await lastValueFrom(
+      client.observable.mutate(mutations, {returnFirst: false, returnDocuments: true}),
+    )
+    expectTypeOf(obsDocsResult).toBeArray()
+
+    // Return mutation result
+    expectTypeOf(
+      await client.mutate(mutations, {returnDocuments: false}),
+    ).toMatchTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.mutate(mutations, {returnDocuments: false})),
+    ).toMatchTypeOf<SingleMutationResult>()
+
+    // With transaction
+    const transaction = client.transaction().create({_type: 'post', title: 'Hello World'})
+    expectTypeOf(await client.mutate(transaction)).toMatchTypeOf<SanityDocument<any>>()
+
+    // With observable transaction
+    const obsTransaction = client.observable
+      .transaction()
+      .create({_type: 'post', title: 'Hello World'})
+    expectTypeOf(await lastValueFrom(client.observable.mutate(obsTransaction))).toMatchTypeOf<
+      SanityDocument<any>
+    >()
+  })
+
+  test('client.patch', async () => {
+    // Create patch with ID
+    const patch = client.patch('doc123')
+    expectTypeOf(patch).toMatchTypeOf<Patch>()
+
+    // Create observable patch with ID
+    const obsPatch = client.observable.patch('doc123')
+    expectTypeOf(obsPatch).toMatchTypeOf<ObservablePatch>()
+
+    // Create patch with array of IDs
+    const patchWithIds = client.patch(['doc123', 'doc456'])
+    expectTypeOf(patchWithIds).toMatchTypeOf<Patch>()
+
+    // Create patch with query selection
+    const patchWithQuery = client.patch({query: '*[_type == "post"]'})
+    expectTypeOf(patchWithQuery).toMatchTypeOf<Patch>()
+
+    // Create patch with operations
+    const patchWithOps = client.patch('doc123', {set: {title: 'Updated Title'}})
+    expectTypeOf(patchWithOps).toMatchTypeOf<Patch>()
+
+    // Patch operations
+    const patchWithChain = client
+      .patch('doc123')
+      .set({title: 'Updated Title'})
+      .inc({count: 1})
+      .dec({visits: 1})
+      .unset(['oldField'])
+
+    expectTypeOf(patchWithChain).toMatchTypeOf<Patch>()
+
+    // Commit operations
+    const commitResult = await patchWithChain.commit()
+    expectTypeOf(commitResult).toMatchTypeOf<SanityDocument<any>>()
+
+    const obsCommitResult = await lastValueFrom(obsPatch.set({title: 'Updated Title'}).commit())
+    expectTypeOf(obsCommitResult).toMatchTypeOf<SanityDocument<any>>()
+
+    // Commit with options
+    const commitOptions = await patchWithChain.commit({returnDocuments: false})
+    expectTypeOf(commitOptions).toMatchTypeOf<SingleMutationResult>()
+
+    const obsCommitOptions = await lastValueFrom(obsPatch.commit({returnDocuments: false}))
+    expectTypeOf(obsCommitOptions).toMatchTypeOf<SingleMutationResult>()
+  })
+
+  test('client.transaction', async () => {
+    // Create empty transaction
+    const transaction = client.transaction()
+    expectTypeOf(transaction).toMatchTypeOf<Transaction>()
+
+    // Create observable transaction
+    const obsTransaction = client.observable.transaction()
+    expectTypeOf(obsTransaction).toMatchTypeOf<ObservableTransaction>()
+
+    // Create transaction with operations
+    const transactionWithOps = client.transaction([{create: {_type: 'post', title: 'Hello World'}}])
+    expectTypeOf(transactionWithOps).toMatchTypeOf<Transaction>()
+
+    // Transaction operations
+    const transactionChain = client
+      .transaction()
+      .create({_type: 'post', title: 'Hello World'})
+      .createIfNotExists({_id: 'unique123', _type: 'post', title: 'Hello Again'})
+      .delete('doc123')
+
+    expectTypeOf(transactionChain).toMatchTypeOf<Transaction>()
+
+    // Commit operations
+    const commitResult = await transactionChain.commit()
+    expectTypeOf(commitResult).toMatchTypeOf<MultipleMutationResult>()
+
+    const obsCommitResult = await lastValueFrom(
+      obsTransaction.create({_type: 'post', title: 'Hello'}).commit(),
+    )
+    expectTypeOf(obsCommitResult).toMatchTypeOf<MultipleMutationResult>()
+
+    // Commit with options
+    const commitOptions = await transactionChain.commit({returnFirst: true})
+    expectTypeOf(commitOptions).toMatchTypeOf<SingleMutationResult>()
+
+    const obsCommitOptions = await lastValueFrom(
+      obsTransaction.commit({returnFirst: true, returnDocuments: false}),
+    )
+    expectTypeOf(obsCommitOptions).toMatchTypeOf<SingleMutationResult>()
+  })
+
+  test('client.action', async () => {
+    // Single action
+    const action = {
+      actionType: 'sanity.action.document.publish',
+      draftId: 'draft.bike-123',
+      publishedId: 'bike-123',
+    } satisfies Action
+
+    const actionResult = await client.action(action)
+    expectTypeOf(actionResult).toBeObject()
+
+    const obsActionResult = await lastValueFrom(client.observable.action(action))
+    expectTypeOf(obsActionResult).toBeObject()
+
+    // Action array
+    const actions = [
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'draft.bike-123',
+        publishedId: 'bike-123',
+      },
+      {
+        actionType: 'sanity.action.document.unpublish',
+        publishedId: 'bike-456',
+        draftId: 'draft.bike-456',
+      },
+    ] satisfies Action[]
+
+    const actionsResult = await client.action(actions)
+    expectTypeOf(actionsResult).toBeObject()
+
+    const obsActionsResult = await lastValueFrom(client.observable.action(actions))
+    expectTypeOf(obsActionsResult).toBeObject()
+
+    // With options
+    const actionOptions = {
+      dryRun: true,
+      transactionId: 'my-transaction-id',
+    } satisfies BaseActionOptions
+
+    const actionWithOptions = await client.action(action, actionOptions)
+    expectTypeOf(actionWithOptions).toBeObject()
+
+    const obsActionWithOptions = await lastValueFrom(
+      client.observable.action(action, actionOptions),
+    )
+    expectTypeOf(obsActionWithOptions).toBeObject()
+  })
+
+  test('client.request', async () => {
+    // Basic request
+    const requestResult = await client.request({
+      method: 'GET',
+      uri: '/path/to/endpoint',
+    })
+    expectTypeOf(requestResult).toBeAny()
+
+    const obsRequestResult = await lastValueFrom(
+      client.observable.request({
+        method: 'GET',
+        uri: '/path/to/endpoint',
+      }),
+    )
+    expectTypeOf(obsRequestResult).toBeAny()
+
+    // With generic type
+    interface CustomResponse {
+      result: string
+      timestamp: number
+    }
+
+    const typedRequest = await client.request<CustomResponse>({
+      method: 'GET',
+      uri: '/path/to/endpoint',
+    })
+    expectTypeOf(typedRequest).toMatchTypeOf<CustomResponse>()
+
+    const obsTypedRequest = await lastValueFrom(
+      client.observable.request<CustomResponse>({
+        method: 'GET',
+        uri: '/path/to/endpoint',
+      }),
+    )
+    expectTypeOf(obsTypedRequest).toMatchTypeOf<CustomResponse>()
   })
 })
