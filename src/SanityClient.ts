@@ -1,14 +1,29 @@
 import {lastValueFrom, Observable} from 'rxjs'
 
-import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
+import {
+  AssetsClient,
+  type AssetsClientType,
+  ObservableAssetsClient,
+  type ObservableAssetsClientType,
+} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
 import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
-import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
-import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
+import {
+  DatasetsClient,
+  DatasetsClient as DatasetsClientType,
+  ObservableDatasetsClient,
+  ObservableDatasetsClient as ObservableDatasetsClientType,
+} from './datasets/DatasetsClient'
+import {
+  ObservableProjectsClient,
+  ObservableProjectsClient as ObservableProjectsClientType,
+  ProjectsClient,
+  ProjectsClient as ProjectsClientType,
+} from './projects/ProjectsClient'
 import type {
   Action,
   AllDocumentIdsMutationOptions,
@@ -43,7 +58,12 @@ import type {
   UnfilteredResponseQueryOptions,
   UnfilteredResponseWithoutQuery,
 } from './types'
-import {ObservableUsersClient, UsersClient} from './users/UsersClient'
+import {
+  ObservableUsersClient,
+  ObservableUsersClient as ObservableUsersClientType,
+  UsersClient,
+  UsersClient as UsersClientType,
+} from './users/UsersClient'
 
 export type {
   _listen,
@@ -1451,10 +1471,10 @@ interface SanityClientBase {
  * @public
  */
 export interface ObservableSanityClientType extends SanityClientBase {
-  assets: ObservableAssetsClient
-  datasets: ObservableDatasetsClient
-  projects: ObservableProjectsClient
-  users: ObservableUsersClient
+  assets: ObservableAssetsClientType
+  datasets: ObservableDatasetsClientType
+  projects: ObservableProjectsClientType
+  users: ObservableUsersClientType
 
   /**
    * Clone the client - returns a new instance
@@ -1965,10 +1985,10 @@ export interface ObservableSanityClientType extends SanityClientBase {
  * @public
  */
 export interface SanityClientType extends SanityClientBase {
-  assets: AssetsClient
-  datasets: DatasetsClient
-  projects: ProjectsClient
-  users: UsersClient
+  assets: AssetsClientType
+  datasets: DatasetsClientType
+  projects: ProjectsClientType
+  users: UsersClientType
 
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one

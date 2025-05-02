@@ -17,7 +17,90 @@ import type {
 import * as validators from '../validators'
 
 /** @internal */
-export class ObservableAssetsClient {
+export interface ObservableAssetsClientType {
+  /**
+   * Uploads a file asset to the configured dataset
+   *
+   * @param assetType - Asset type (file)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'file',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
+
+  /**
+   * Uploads an image asset to the configured dataset
+   *
+   * @param assetType - Asset type (image)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
+
+  /**
+   * Uploads a file or an image asset to the configured dataset
+   *
+   * @param assetType - Asset type (file/image)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'file' | 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
+}
+
+/** @internal */
+export interface AssetsClientType {
+  /**
+   * Uploads a file asset to the configured dataset
+   *
+   * @param assetType - Asset type (file)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'file',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Promise<SanityAssetDocument>
+
+  /**
+   * Uploads an image asset to the configured dataset
+   *
+   * @param assetType - Asset type (image)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Promise<SanityImageAssetDocument>
+
+  /**
+   * Uploads a file or an image asset to the configured dataset
+   *
+   * @param assetType - Asset type (file/image)
+   * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
+   * @param options - Options to use for the upload
+   */
+  upload(
+    assetType: 'file' | 'image',
+    body: UploadBody,
+    options?: UploadClientConfig,
+  ): Promise<SanityAssetDocument | SanityImageAssetDocument>
+}
+
+export class ObservableAssetsClient implements ObservableAssetsClientType {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
@@ -72,7 +155,7 @@ export class ObservableAssetsClient {
 }
 
 /** @internal */
-export class AssetsClient {
+export class AssetsClient implements AssetsClientType {
   #client: SanityClient
   #httpRequest: HttpRequest
   constructor(client: SanityClient, httpRequest: HttpRequest) {
