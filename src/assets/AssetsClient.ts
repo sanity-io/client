@@ -100,6 +100,7 @@ export interface AssetsClientType {
   ): Promise<SanityAssetDocument | SanityImageAssetDocument>
 }
 
+/** @internal */
 export class ObservableAssetsClient implements ObservableAssetsClientType {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
