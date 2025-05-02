@@ -59,7 +59,7 @@ export type {
 }
 
 /** @public */
-export class ObservableSanityClient {
+export class ObservableSanityClient implements ObservableSanityClientType {
   assets: ObservableAssetsClient
   datasets: ObservableDatasetsClient
   live: LiveClient
@@ -727,7 +727,7 @@ export class ObservableSanityClient {
 }
 
 /** @public */
-export class SanityClient {
+export class SanityClient implements SanityClientType {
   assets: AssetsClient
   datasets: DatasetsClient
   live: LiveClient
@@ -1429,3 +1429,27 @@ export class SanityClient {
     return dataMethods._getDataUrl(this, operation, path)
   }
 }
+
+/**
+ * Shared base type for the `SanityClient` and `ObservableSanityClient` classes.
+ * TODO: refactor the Promise and Observable differences to use generics so we no longer suffer from all this duplication in TS docs
+ */
+interface SanityClientBase {}
+
+/**
+ * The interface implemented by the `SanityClient` class.
+ * When writing code that wants to take an instance of `SanityClient` as input it's better to use this type,
+ * as the `SanityClient` class has private properties and thus TypeScrict will consider the type incompatible
+ * in cases where you might have multiple `@sanity/client` instances in your node_modules.
+ * @public
+ */
+export interface SanityClientType extends SanityClientBase {}
+
+/**
+ * The interface implemented by the `ObservableSanityClient` class.
+ * When writing code that wants to take an instance of `ObservableSanityClient` as input it's better to use this type,
+ * as the `ObservableSanityClient` class has private properties and thus TypeScrict will consider the type incompatible
+ * in cases where you might have multiple `@sanity/client` instances in your node_modules.
+ * @public
+ */
+export interface ObservableSanityClientType extends SanityClientBase {}
