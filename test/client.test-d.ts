@@ -22,6 +22,7 @@ import {
 } from '@sanity/client'
 import {lastValueFrom} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
+import {createClient as createLatestClient} from '@sanity/client-latest'
 
 describe('client.fetch', () => {
   const client = createClient({})
@@ -963,7 +964,7 @@ describe('client interfaces for library users', () => {
         ),
       ).toMatchTypeOf<RawQueryResponse<any>>()
     }
-    const client = createClient({
+    const client = createLatestClient({
       projectId: 'my-project-id',
       dataset: 'my-dataset',
       apiVersion: '2021-03-25',
