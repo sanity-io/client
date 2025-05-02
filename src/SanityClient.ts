@@ -1488,14 +1488,14 @@ export interface ObservableSanityClientType extends SanityClientBase {
   /**
    * Reconfigure the client. Note that this _mutates_ the current client.
    */
-  config(newConfig?: Partial<ClientConfig>): ObservableSanityClientType
+  config(newConfig?: Partial<ClientConfig>): this
 
   /**
    * Clone the client with a new (partial) configuration.
    *
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
-  withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClientType
+  withConfig(newConfig?: Partial<ClientConfig>): this
 
   /**
    * Perform a GROQ-query against the configured dataset.
@@ -2007,14 +2007,14 @@ export interface SanityClientType extends SanityClientBase {
   /**
    * Reconfigure the client. Note that this _mutates_ the current client.
    */
-  config(newConfig?: Partial<ClientConfig>): SanityClientType
+  config(newConfig?: Partial<ClientConfig>): this
 
   /**
    * Clone the client with a new (partial) configuration.
    *
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
-  withConfig(newConfig?: Partial<ClientConfig>): SanityClientType
+  withConfig(newConfig?: Partial<ClientConfig>): this
 
   /**
    * Perform a GROQ-query against the configured dataset.
