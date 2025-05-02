@@ -18,6 +18,7 @@ import {
   type ObservablePatch,
   type ObservableTransaction,
   type BaseActionOptions,
+  type SanityClientType,
 } from '@sanity/client'
 import {lastValueFrom} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
@@ -913,5 +914,60 @@ describe('client document methods', () => {
       }),
     )
     expectTypeOf(obsTypedRequest).toMatchTypeOf<CustomResponse>()
+  })
+})
+
+describe('client interfaces for library users', () => {
+  test('SanityClientType', () => {
+    async function defineLive(client: SanityClientType) {
+      expectTypeOf(await client.fetch('*')).toMatchTypeOf<any>()
+      expectTypeOf(await lastValueFrom(client.observable.fetch('*'))).toMatchTypeOf<any>()
+      expectTypeOf(await client.fetch('*', undefined)).toMatchTypeOf<any>()
+      expectTypeOf(
+        await lastValueFrom(client.observable.fetch('*', undefined)),
+      ).toMatchTypeOf<any>()
+      expectTypeOf(await client.fetch('*', {})).toMatchTypeOf<any>()
+      expectTypeOf(await lastValueFrom(client.observable.fetch('*', {}))).toMatchTypeOf<any>()
+      expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toMatchTypeOf<any>()
+      expectTypeOf(
+        await lastValueFrom(client.observable.fetch('*[_type == $type]', {type: 'post'})),
+      ).toMatchTypeOf<any>()
+      expectTypeOf(await client.fetch('*', undefined, {filterResponse: false})).toMatchTypeOf<
+        RawQueryResponse<any>
+      >()
+      expectTypeOf(
+        await lastValueFrom(client.observable.fetch('*', undefined, {filterResponse: false})),
+      ).toMatchTypeOf<RawQueryResponse<any>>()
+      expectTypeOf(
+        await client.fetch<any, {filterResponse?: undefined}>('*', {} satisfies QueryParams, {
+          filterResponse: false,
+        }),
+      ).toMatchTypeOf<RawQueryResponse<any>>()
+      expectTypeOf(
+        await lastValueFrom(
+          client.observable.fetch<any, {filterResponse?: undefined}>(
+            '*',
+            {} satisfies QueryParams,
+            {
+              filterResponse: false,
+            },
+          ),
+        ),
+      ).toMatchTypeOf<RawQueryResponse<any>>()
+      expectTypeOf(
+        await client.fetch('*[_type == $type]', {type: 'post'}, {filterResponse: false}),
+      ).toMatchTypeOf<RawQueryResponse<any>>()
+      expectTypeOf(
+        await lastValueFrom(
+          client.observable.fetch('*[_type == $type]', {type: 'post'}, {filterResponse: false}),
+        ),
+      ).toMatchTypeOf<RawQueryResponse<any>>()
+    }
+    const client = createClient({
+      projectId: 'my-project-id',
+      dataset: 'my-dataset',
+      apiVersion: '2021-03-25',
+    })
+    defineLive(client)
   })
 })
