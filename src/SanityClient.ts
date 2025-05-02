@@ -466,11 +466,6 @@ export class ObservableSanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   * @param params - Object containing:
-   * - `document`: The document to create as a new version (must include `_type`).
-   * >- if defined `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
-   * - `publishedId`: The ID of the published document being versioned.
-   * @param options - Additional action options.
    */
   createVersion<R extends Record<string, Any>>(
     args: {
@@ -643,12 +638,6 @@ export class ObservableSanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   * @param params - Object containing:
-   * - `releaseId`: The ID of the release to discard the document from.
-   * >- if omitted then the `draft.` version of the document will be discarded.
-   * - `publishedId`: The published ID of the document to discard.
-   * @param purge - if `true` the document history is also deleted.
-   * @param options - Additional action options.
    *
    */
   discardVersion(
@@ -670,14 +659,6 @@ export class ObservableSanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   * @param params - Object containing the parameters for placement action.
-   * @param params.document - The document to replace the version with.
-   * - `_type` is required.
-   * - `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
-   * @param params.releaseId - *(Optional)* The ID of the release where the document version is replaced.
-   * If omitted, the **draft version** will be replaced.
-   * @param params.publishedId - The ID of the published document to replace.
-   * @param options - *(Optional)* Additional action options.
    */
   replaceVersion<R extends Record<string, Any>>(
     args: {
@@ -725,11 +706,6 @@ export class ObservableSanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   *
-   * @param params - Object containing:
-   * @param params.releaseId - The ID of the release to unpublish the document from.
-   * @param params.publishedId - The published ID of the document to unpublish.
-   * @param options - Additional action options.
    */
   unpublishVersion(
     {releaseId, publishedId}: {releaseId: string; publishedId: string},
@@ -1324,11 +1300,6 @@ export class SanityClient {
    *
    * @returns a promise that resolves to the `transactionId`.
    *
-   * @param params - Object containing:
-   *  - `document`: The document to create as a new version (must include `_type`).
-   *  >- if defined `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
-   *  - `publishedId`: The ID of the published document being versioned.
-   * @param options - Additional action options.
    */
   createVersion<R extends Record<string, Any>>(
     args: {
@@ -1503,12 +1474,6 @@ export class SanityClient {
    *
    * @returns a promise that resolves to the `transactionId`.
    *
-   * @param params - Object containing:
-   * - `releaseId`: The ID of the release to discard the document from.
-   * >- if omitted then the `draft.` version of the document will be discarded.
-   * - `publishedId`: The published ID of the document to discard.
-   * @param purge - if `true` the document history is also deleted.
-   * @param options - Additional action options.
    *
    */
   discardVersion(
@@ -1532,14 +1497,6 @@ export class SanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   * @param params - Object containing the parameters for placement action.
-   * @param params.document - The document to replace the version with.
-   * - `_type` is required.
-   * - `_id` will be overridden by the version ID generated from `publishedId` and `releaseId`.
-   * @param params.releaseId - *(Optional)* The ID of the release where the document version is replaced.
-   * If omitted, the **draft version** will be replaced.
-   * @param params.publishedId - The ID of the published document to replace.
-   * @param options - *(Optional)* Additional action options.
    */
   replaceVersion<R extends Record<string, Any>>(
     args: {
@@ -1589,11 +1546,6 @@ export class SanityClient {
    *
    * @returns an observable that resolves to the `transactionId`.
    *
-   *
-   * @param params - Object containing:
-   * @param params.releaseId - The ID of the release to unpublish the document from.
-   * @param params.publishedId - The published ID of the document to unpublish.
-   * @param options - Additional action options.
    */
   unpublishVersion(
     {releaseId, publishedId}: {releaseId: string; publishedId: string},
