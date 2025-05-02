@@ -6,6 +6,7 @@ import {
   type QueryWithoutParams,
   type RawQueryResponse,
 } from '@sanity/client'
+import {lastValueFrom} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
 describe('client.fetch', () => {
@@ -25,25 +26,54 @@ describe('client.fetch', () => {
   })
   test('simple query', async () => {
     expectTypeOf(await client.fetch('*')).toMatchTypeOf<any>()
+    expectTypeOf(await lastValueFrom(client.observable.fetch('*'))).toMatchTypeOf<any>()
     expectTypeOf(await client.fetch('*', undefined)).toMatchTypeOf<any>()
+    expectTypeOf(await lastValueFrom(client.observable.fetch('*', undefined))).toMatchTypeOf<any>()
     expectTypeOf(await client.fetch('*', {})).toMatchTypeOf<any>()
+    expectTypeOf(await lastValueFrom(client.observable.fetch('*', {}))).toMatchTypeOf<any>()
     expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toMatchTypeOf<any>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.fetch('*[_type == $type]', {type: 'post'})),
+    ).toMatchTypeOf<any>()
     expectTypeOf(await client.fetch('*', undefined, {filterResponse: false})).toMatchTypeOf<
       RawQueryResponse<any>
     >()
+    expectTypeOf(
+      await lastValueFrom(client.observable.fetch('*', undefined, {filterResponse: false})),
+    ).toMatchTypeOf<RawQueryResponse<any>>()
     expectTypeOf(
       await client.fetch<any, {filterResponse?: undefined}>('*', {} satisfies QueryParams, {
         filterResponse: false,
       }),
     ).toMatchTypeOf<RawQueryResponse<any>>()
     expectTypeOf(
+      await lastValueFrom(
+        client.observable.fetch<any, {filterResponse?: undefined}>('*', {} satisfies QueryParams, {
+          filterResponse: false,
+        }),
+      ),
+    ).toMatchTypeOf<RawQueryResponse<any>>()
+    expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {filterResponse: false}),
+    ).toMatchTypeOf<RawQueryResponse<any>>()
+    expectTypeOf(
+      await lastValueFrom(
+        client.observable.fetch('*[_type == $type]', {type: 'post'}, {filterResponse: false}),
+      ),
     ).toMatchTypeOf<RawQueryResponse<any>>()
   })
   test('generics', async () => {
     expectTypeOf(await client.fetch<number>('count(*)')).toMatchTypeOf<number>()
     expectTypeOf(
+      await lastValueFrom(client.observable.fetch<number>('count(*)')),
+    ).toMatchTypeOf<number>()
+    expectTypeOf(
       await client.fetch<number, {type: string}>('count(*[_type == $type])', {type: 'post'}),
+    ).toMatchTypeOf<number>()
+    expectTypeOf(
+      await lastValueFrom(
+        client.observable.fetch<number, {type: string}>('count(*[_type == $type])', {type: 'post'}),
+      ),
     ).toMatchTypeOf<number>()
     expectTypeOf(
       await client.fetch<number, {type: string}>('count(*[_type == $type])', {
@@ -185,7 +215,18 @@ describe('client.fetch', () => {
       await client.fetch<number>('count(*)', {}, {filterResponse: true}),
     ).toMatchTypeOf<number>()
     expectTypeOf(
+      await lastValueFrom(client.observable.fetch<number>('count(*)', {}, {filterResponse: true})),
+    ).toMatchTypeOf<number>()
+    expectTypeOf(
       await client.fetch<number>('count(*)', {}, {filterResponse: false}),
+    ).toMatchTypeOf<{
+      result: number
+      ms: number
+      query: string
+      resultSourceMap?: ContentSourceMap
+    }>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.fetch<number>('count(*)', {}, {filterResponse: false})),
     ).toMatchTypeOf<{
       result: number
       ms: number
@@ -214,6 +255,9 @@ describe('client.fetch', () => {
   })
   test('stega: false', async () => {
     expectTypeOf(await client.fetch('*', {}, {stega: false})).toMatchTypeOf<any>()
+    expectTypeOf(
+      await lastValueFrom(client.observable.fetch('*', {}, {stega: false})),
+    ).toMatchTypeOf<any>()
   })
   test('params can use properties that conflict with Next.js-defined properties', async () => {
     // `client.fetch` has type checking to prevent the common mistake of passing `cache` and `next` options as params (2nd parameter) in Next.js projects, where they should be passed as options (the 3rd parameter)
