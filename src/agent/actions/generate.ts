@@ -28,7 +28,86 @@ export interface GenerateRequestBase extends AgentActionRequestBase {
    * string template using $variable
    * */
   instruction: string
-  /** param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable" */
+  /**
+   * param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable"
+   *
+   * ### Examples
+   *
+   * #### Constant
+   *
+   * ##### Shorthand
+   * ```ts
+   * client.agent.action.generate({
+   *   schemaId,
+   *   documentId,
+   *   instruction: 'Give the following topic:\n $topic \n ---\nGenerate the full article.',
+   *   instructionParams: {
+   *     topic: 'Grapefruit'
+   *   },
+   * })
+   * ```
+   * ##### Object-form
+   *
+   * ```ts
+   * client.agent.action.generate({
+   *   schemaId,
+   *   documentId,
+   *   instruction: 'Give the following topic:\n $topic \n ---\nGenerate the full article.',
+   *   instructionParams: {
+   *     topic: {
+   *       type: 'constant',
+   *       value: 'Grapefruit'
+   *     },
+   *   },
+   * })
+   * ```
+   * #### Field
+   * ```ts
+   * client.agent.action.generate({
+   *   schemaId,
+   *   documentId,
+   *   instruction: 'Give the following field value:\n $pte \n ---\nGenerate keywords.',
+   *   instructionParams: {
+   *     pte: {
+   *       type: 'field',
+   *       path: ['pteField'],
+   *     },
+   *   },
+   *   target: {path: 'keywords' }
+   * })
+   * ```
+   * #### Document
+   * ```ts
+   * client.agent.action.generate({
+   *   schemaId,
+   *   documentId,
+   *   instruction: 'Give the following document value:\n $document \n ---\nGenerate keywords.',
+   *   instructionParams: {
+   *     document: {
+   *       type: 'document',
+   *     },
+   *   },
+   *   target: {path: 'keywords' }
+   * })
+   * ```
+   *
+   * #### GROQ
+   * ```ts
+   * client.agent.action.generate({
+   *   schemaId,
+   *   documentId,
+   *   instruction: 'Give the following list of titles:\n $list \n ---\nGenerate a similar title.',
+   *   instructionParams: {
+   *     list: {
+   *       type: 'groq',
+   *       query: '* [_type==$type].title',
+   *       params: {type: 'article'}
+   *     },
+   *   },
+   *   target: {path: 'title' }
+   * })
+   * ```
+   * */
   instructionParams?: AgentActionParams
 
   /**

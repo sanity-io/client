@@ -1,4 +1,35 @@
-/** @beta */
+/**
+ * Include a string in the instruction: do not have to escape $ signs in the string.
+ *
+ * ```ts
+ * client.agent.action.generate({
+ *   schemaId,
+ *   documentId,
+ *   instruction: 'Give the following topic:\n $topic \n ---\nGenerate the full article.',
+ *   instructionParams: {
+ *     topic: {
+ *       type: 'constant',
+ *       value: 'Grapefruit'
+ *     },
+ *   },
+ * })
+ * ```
+ *
+ * `type: 'constant'` can also be provided directly as a string, as a shorthand:
+ *
+ * ```ts
+ * client.agent.action.generate({
+ *   schemaId,
+ *   documentId,
+ *   instruction: 'Give the following topic:\n $topic \n ---\nGenerate the full article.',
+ *   instructionParams: {
+ *     topic: 'Grapefruit'
+ *   },
+ * })
+ * ```
+ *
+ * @beta
+ * */
 export interface ConstantAgentActionParam {
   type: 'constant'
   value: string
@@ -6,7 +37,25 @@ export interface ConstantAgentActionParam {
 
 /**
  *
+ *
  * Includes a LLM-friendly version of the field value in the instruction
+ *
+ * ```ts
+ * client.agent.action.generate({
+ *   schemaId,
+ *   documentId,
+ *   instruction: 'Give the following field value:\n $pte \n ---\nGenerate keywords.',
+ *   instructionParams: {
+ *     pte: {
+ *       type: 'field',
+ *       path: ['pteField'],
+ *     },
+ *   },
+ *   target: {path: 'keywords' }
+ * })
+ *
+ * ```
+ *
  * @beta
  * */
 export interface FieldAgentActionParam {
@@ -24,6 +73,21 @@ export interface FieldAgentActionParam {
 /**
  *
  * Includes a LLM-friendly version of the document in the instruction
+ *
+ * ```ts
+ * client.agent.action.generate({
+ *   schemaId,
+ *   documentId,
+ *   instruction: 'Give the following document value:\n $document \n ---\nGenerate keywords.',
+ *   instructionParams: {
+ *     document: {
+ *       type: 'document',
+ *     },
+ *   },
+ *   target: {path: 'keywords' }
+ * })
+ * ```
+ *
  * @beta
  * */
 export interface DocumentAgentActionParam {
@@ -36,6 +100,22 @@ export interface DocumentAgentActionParam {
 
 /**
  * Includes a LLM-friendly version of GROQ query result in the instruction
+ *
+ * ```ts
+ * client.agent.action.generate({
+ *   schemaId,
+ *   documentId,
+ *   instruction: 'Give the following list of titles:\n $list \n ---\nGenerate a similar title.',
+ *   instructionParams: {
+ *     list: {
+ *       type: 'groq',
+ *       query: '* [_type==$type].title',
+ *       params: {type: 'article'}
+ *     },
+ *   },
+ *   target: {path: 'title' }
+ * })
+ * ```
  * @beta
  * */
 export interface GroqAgentActionParam {
