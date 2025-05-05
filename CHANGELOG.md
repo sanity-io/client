@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.1.0](https://github.com/sanity-io/client/compare/v7.0.0...v7.1.0) (2025-05-05)
+
+
+### Features
+
+* agent actions API integration (vX only) ([#1041](https://github.com/sanity-io/client/issues/1041)) ([d8df8aa](https://github.com/sanity-io/client/commit/d8df8aaf6d943e494ae04ebbfccf758ce19cf9c4))
+
 ## [7.0.0](https://github.com/sanity-io/client/compare/v6.29.1...v7.0.0) (2025-04-30)
 
 
