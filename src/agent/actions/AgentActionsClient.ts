@@ -17,7 +17,7 @@ export class ObservableAgentsActionClient {
 
   /**
    * Run an instruction to generate content in a target document.
-   * @param request instruction request
+   * @param request - instruction request
    */
   generate<DocumentShape extends Record<string, Any>>(
     request: GenerateInstruction<DocumentShape>,
@@ -31,7 +31,7 @@ export class ObservableAgentsActionClient {
 
   /**
    * Transform a target document based on a source.
-   * @param request translation request
+   * @param request - translation request
    */
   transform<DocumentShape extends Record<string, Any>>(
     request: TransformDocument<DocumentShape>,
@@ -45,7 +45,7 @@ export class ObservableAgentsActionClient {
 
   /**
    * Translate a target document based on a source.
-   * @param request translation request
+   * @param request - translation request
    */
   translate<DocumentShape extends Record<string, Any>>(
     request: TranslateDocument<DocumentShape>,
@@ -69,7 +69,7 @@ export class AgentActionsClient {
 
   /**
    * Run an instruction to generate content in a target document.
-   * @param request instruction request
+   * @param request - instruction request
    */
   generate<DocumentShape extends Record<string, Any>>(
     request: GenerateInstruction<DocumentShape>,
@@ -83,7 +83,7 @@ export class AgentActionsClient {
 
   /**
    * Transform a target document based on a source.
-   * @param request translation request
+   * @param request - translation request
    */
   transform<DocumentShape extends Record<string, Any>>(
     request: TransformDocument<DocumentShape>,
@@ -97,7 +97,7 @@ export class AgentActionsClient {
 
   /**
    * Translate a target document based on a source.
-   * @param request translation request
+   * @param request - translation request
    */
   translate<DocumentShape extends Record<string, Any>>(
     request: TranslateDocument<DocumentShape>,

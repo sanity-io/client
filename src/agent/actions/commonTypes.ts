@@ -12,7 +12,7 @@ export interface ConstantAgentActionParam {
 export interface FieldAgentActionParam {
   type: 'field'
   /**
-   * Examples: 'title', ['array', {_key: 'arrayItemKey'}, 'field']
+   * Examples: 'title', ['array', \{_key: 'arrayItemKey'\}, 'field']
    */
   path: AgentActionPathSegment | AgentActionPath
   /**
@@ -232,7 +232,7 @@ export interface AgentActionSync {
   noWrite?: boolean
 
   /**
-   * When async: true, requests responds with status 201 and {_id} as response body as soon as the request is validated.
+   * When async: true, requests responds with status 201 and \{_id\} as response body as soon as the request is validated.
    * The instruction operation will carry on in the background.
    *
    * When async: false (default), requests respond with status 200 and the document value after instruction has been applied.
@@ -245,7 +245,7 @@ export interface AgentActionSync {
 /** @beta */
 export interface AgentActionAsync {
   /**
-   * When async: true, requests responds with status 201 and {_id} as response body as soon as the request is validated.
+   * When async: true, requests responds with status 201 and \{_id\} as response body as soon as the request is validated.
    * The instruction operation will carry on in the background.
    *
    * When async: false (default), requests respond with status 200 and the document value after instruction has been applied.

@@ -78,8 +78,8 @@ export interface GenerateTarget extends AgentActionTarget {
    * - `'set'` – an *overwriting* operation, and replaces the full field value.
    * - `'append'`:
    *    – array fields: appends new items to the end of the array,
-   *    - string fields: '<existing content> <new content>'
-   *    - text fields: '<existing content>\n<new content>'
+   *    - string fields: '"existing content" "new content"'
+   *    - text fields: '"existing content"\\n"new content"'
    *    - number fields: existing + new
    *    - other field types not mentioned will set instead (dates, url)
    * - `'mixed'` – (default) sets non-array fields, and appends to array fields
