@@ -213,7 +213,7 @@ export class ObservableReleasesClient {
     return _action(this.#client, this.#httpRequest, deleteAction, options)
   }
 
-  getDocuments(
+  fetchDocuments(
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Observable<RawQueryResponse<SanityDocument[]>> {
@@ -414,7 +414,7 @@ export class ReleasesClient {
     return lastValueFrom(_action(this.#client, this.#httpRequest, deleteAction, options))
   }
 
-  getDocuments(
+  fetchDocuments(
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Promise<RawQueryResponse<SanityDocument[]>> {
