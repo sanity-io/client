@@ -21,7 +21,7 @@ import type {
 } from '../types'
 import {createRelease} from './createRelease'
 
-/** @internal */
+/** @public */
 export class ObservableReleasesClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -221,7 +221,7 @@ export class ObservableReleasesClient {
   }
 }
 
-/** @internal */
+/** @public */
 export class ReleasesClient {
   #client: SanityClient
   #httpRequest: HttpRequest
