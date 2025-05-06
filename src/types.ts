@@ -1373,11 +1373,26 @@ export interface ApiError {
 
 /** @internal */
 export interface MutationError {
-  error: {
-    type: 'mutationError'
-    description: string
-    items?: MutationErrorItem[]
-  }
+  type: 'mutationError'
+  description: string
+  items?: MutationErrorItem[]
+}
+
+/**
+ * Returned from the Content Lake API when a query is malformed, usually with a start
+ * and end column to indicate where the error occurred, but not always. Can we used to
+ * provide a more structured error message to the user.
+ *
+ * This will be located under the response `error` property.
+ *
+ * @public
+ */
+export interface QueryParseError {
+  type: 'queryParseError'
+  description: string
+  start?: number
+  end?: number
+  query?: string
 }
 
 /** @internal */
@@ -1391,11 +1406,9 @@ export interface MutationErrorItem {
 
 /** @internal */
 export interface ActionError {
-  error: {
-    type: 'actionError'
-    description: string
-    items?: ActionErrorItem[]
-  }
+  type: 'actionError'
+  description: string
+  items?: ActionErrorItem[]
 }
 
 /** @internal */

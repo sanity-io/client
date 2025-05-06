@@ -1,5 +1,5 @@
+import {isRecord} from '../util/isRecord'
 import {isArray} from './isArray'
-import {isRecord} from './isRecord'
 import type {ContentSourceMapParsedPath, WalkMapFn} from './types'
 
 /**

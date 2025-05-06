@@ -984,6 +984,53 @@ describe('client', async () => {
       expect(res.result[0].rating, 'data should match').toBe(5)
     })
 
+    test.skipIf(isEdge)('gets helpful error messages on query errors (no tag)', async () => {
+      const query = '*[_type == "event]'
+      nock(projectHost())
+        .get(`/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false`)
+        .reply(400, {
+          error: {
+            description: 'unexpected token "\\"event]", expected expression',
+            end: 18,
+            query: '*[_type == "event]',
+            start: 11,
+            type: 'queryParseError',
+          },
+        })
+
+      await expect(getClient().fetch(query)).rejects.toThrowErrorMatchingInlineSnapshot(`
+        [Error: GROQ query parse error:
+        > 1 | *[_type == "event]
+            |           ^^^^^^^ unexpected token "\\"event]", expected expression]
+      `)
+    })
+
+    test.skipIf(isEdge)('gets helpful error messages on query errors (with tag)', async () => {
+      const query = '*[_type == "event]'
+      nock(projectHost())
+        .get(
+          `/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false&tag=get-events`,
+        )
+        .reply(400, {
+          error: {
+            description: 'unexpected token "\\"event]", expected expression',
+            end: 18,
+            query: '*[_type == "event]',
+            start: 11,
+            type: 'queryParseError',
+          },
+        })
+
+      await expect(getClient().fetch(query, {}, {tag: 'get-events'})).rejects
+        .toThrowErrorMatchingInlineSnapshot(`
+        [Error: GROQ query parse error:
+        > 1 | *[_type == "event]
+            |           ^^^^^^^ unexpected token "\\"event]", expected expression
+
+        Tag: get-events]
+      `)
+    })
+
     test.skipIf(isEdge)('can query for documents with request tag', async () => {
       nock(projectHost())
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob&returnQuery=false`)
@@ -1607,6 +1654,88 @@ describe('client', async () => {
         }
       },
     )
+
+    test.skipIf(isEdge)(
+      'includes body if expected JSON object not returned on errors',
+      async () => {
+        expect.assertions(2)
+
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123')
+          .reply(400, 'Some string short enough to inline fully')
+
+        try {
+          await getClient().getDocument('abc123')
+        } catch (err: any) {
+          expect(err, 'should be error').toBeInstanceOf(Error)
+          expect(err.message).toContain('HTTP 400 (Some string short enough to inline fully)')
+        }
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'includes part of body if expected JSON object not returned on errors',
+      async () => {
+        expect.assertions(2)
+
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123')
+          .reply(
+            400,
+            'Some long string that should be capped at 100 characters because it seems odd to have the entire string if it is like HTML or something',
+          )
+
+        try {
+          await getClient().getDocument('abc123')
+        } catch (err: any) {
+          expect(err, 'should be error').toBeInstanceOf(Error)
+          expect(err.message).toContain(
+            'HTTP 400 (Some long string that should be capped at 100 characters because it seems odd to have the entire str…)',
+          )
+        }
+      },
+    )
+
+    test.skipIf(isEdge)('uses `error` property as error if present and is string', async () => {
+      expect.assertions(2)
+
+      nock(projectHost()).get('/v1/data/doc/foo/abc123').reply(400, {error: 'Some error'})
+
+      try {
+        await getClient().getDocument('abc123')
+      } catch (err: any) {
+        expect(err, 'should be error').toBeInstanceOf(Error)
+        expect(err.message).toBe('Some error')
+      }
+    })
+
+    test.skipIf(isEdge)('uses `message` property as error if present and is string', async () => {
+      expect.assertions(2)
+
+      nock(projectHost()).get('/v1/data/doc/foo/abc123').reply(400, {message: 'Some other error'})
+
+      try {
+        await getClient().getDocument('abc123')
+      } catch (err: any) {
+        expect(err, 'should be error').toBeInstanceOf(Error)
+        expect(err.message).toBe('Some other error')
+      }
+    })
+
+    test.skipIf(isEdge)('falls back to HTTP error code if error shape is unknown', async () => {
+      expect.assertions(2)
+
+      nock(projectHost())
+        .get('/v1/data/doc/foo/abc123')
+        .reply(400, {error: {hmm: 'what is this'}})
+
+      try {
+        await getClient().getDocument('abc123')
+      } catch (err: any) {
+        expect(err, 'should be error').toBeInstanceOf(Error)
+        expect(err.message).toContain('resulted in HTTP 400')
+      }
+    })
 
     test.skipIf(isEdge)('populates response body on errors', async () => {
       expect.assertions(3)
@@ -4379,6 +4508,19 @@ describe('client', async () => {
       expect(error.message).toMatchInlineSnapshot(`
         "Mutation(s) failed with 1 error(s):
         - Malformed document ID: "#some_invalid-id!""
+      `)
+    })
+
+    test('mutation errors handles items not being present', () => {
+      const body = {
+        error: {
+          type: 'mutationError',
+          description: 'Mutation(s) failed with 1 error(s)',
+        },
+      }
+      const error = new ClientError({statusCode: 400, headers: {}, body})
+      expect(error.message).toMatchInlineSnapshot(`
+        "Mutation(s) failed with 1 error(s)"
       `)
     })
 

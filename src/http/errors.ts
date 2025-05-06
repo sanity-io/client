@@ -1,4 +1,8 @@
-import type {ActionError, Any, ErrorProps, MutationError} from '../types'
+import type {HttpContext} from 'get-it'
+
+import type {ActionError, Any, ErrorProps, MutationError, QueryParseError} from '../types'
+import {codeFrame} from '../util/codeFrame'
+import {isRecord} from '../util/isRecord'
 
 const MAX_ITEMS_IN_ERROR_MESSAGE = 5
 
@@ -9,8 +13,8 @@ export class ClientError extends Error {
   responseBody: ErrorProps['responseBody']
   details: ErrorProps['details']
 
-  constructor(res: Any) {
-    const props = extractErrorProps(res)
+  constructor(res: Any, context?: HttpContext) {
+    const props = extractErrorProps(res, context)
     super(props.message)
     Object.assign(this, props)
   }
@@ -30,7 +34,7 @@ export class ServerError extends Error {
   }
 }
 
-function extractErrorProps(res: Any): ErrorProps {
+function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
   const body = res.body
   const props = {
     response: res,
@@ -40,15 +44,35 @@ function extractErrorProps(res: Any): ErrorProps {
     details: undefined as Any,
   }
 
+  // Fall back early if we didn't get a JSON object returned as expected
+  if (!isRecord(body)) {
+    props.message = httpErrorMessage(res, body)
+    return props
+  }
+
+  const error = body.error
+
   // API/Boom style errors ({statusCode, error, message})
-  if (body.error && body.message) {
-    props.message = `${body.error} - ${body.message}`
+  if (typeof error === 'string' && typeof body.message === 'string') {
+    props.message = `${error} - ${body.message}`
+    return props
+  }
+
+  // Content Lake errors with a `error` prop being an object
+  if (typeof error !== 'object' || error === null) {
+    if (typeof error === 'string') {
+      props.message = error
+    } else if (typeof body.message === 'string') {
+      props.message = body.message
+    } else {
+      props.message = httpErrorMessage(res, body)
+    }
     return props
   }
 
   // Mutation errors (specifically)
-  if (isMutationError(body) || isActionError(body)) {
-    const allItems = body.error.items || []
+  if (isMutationError(error) || isActionError(error)) {
+    const allItems = error.items || []
     const items = allItems
       .slice(0, MAX_ITEMS_IN_ERROR_MESSAGE)
       .map((item) => item.error?.description)
@@ -57,54 +81,95 @@ function extractErrorProps(res: Any): ErrorProps {
     if (allItems.length > MAX_ITEMS_IN_ERROR_MESSAGE) {
       itemsStr += `\n...and ${allItems.length - MAX_ITEMS_IN_ERROR_MESSAGE} more`
     }
-    props.message = `${body.error.description}${itemsStr}`
+    props.message = `${error.description}${itemsStr}`
     props.details = body.error
     return props
   }
 
-  // Query/database errors ({error: {description, other, arb, props}})
-  if (body.error && body.error.description) {
-    props.message = body.error.description
+  // Query parse errors
+  if (isQueryParseError(error)) {
+    const tag = context?.options?.query?.tag
+    props.message = formatQueryParseError(error, tag)
     props.details = body.error
+    return props
+  }
+
+  if ('description' in error && typeof error.description === 'string') {
+    // Query/database errors ({error: {description, other, arb, props}})
+    props.message = error.description
+    props.details = error
     return props
   }
 
   // Other, more arbitrary errors
-  props.message = body.error || body.message || httpErrorMessage(res)
+  props.message = httpErrorMessage(res, body)
   return props
 }
 
-function isMutationError(body: Any): body is MutationError {
+function isMutationError(error: object): error is MutationError {
   return (
-    isPlainObject(body) &&
-    isPlainObject(body.error) &&
-    body.error.type === 'mutationError' &&
-    typeof body.error.description === 'string'
+    'type' in error &&
+    error.type === 'mutationError' &&
+    'description' in error &&
+    typeof error.description === 'string'
   )
 }
 
-function isActionError(body: Any): body is ActionError {
+function isActionError(error: object): error is ActionError {
   return (
-    isPlainObject(body) &&
-    isPlainObject(body.error) &&
-    body.error.type === 'actionError' &&
-    typeof body.error.description === 'string'
+    'type' in error &&
+    error.type === 'actionError' &&
+    'description' in error &&
+    typeof error.description === 'string'
   )
 }
 
-function isPlainObject(obj: Any): obj is Record<string, unknown> {
-  return typeof obj === 'object' && obj !== null && !Array.isArray(obj)
+/** @internal */
+export function isQueryParseError(error: object): error is QueryParseError {
+  return (
+    isRecord(error) &&
+    error.type === 'queryParseError' &&
+    typeof error.query === 'string' &&
+    typeof error.start === 'number' &&
+    typeof error.end === 'number'
+  )
 }
 
-function httpErrorMessage(res: Any) {
+/**
+ * Formats a GROQ query parse error into a human-readable string.
+ *
+ * @param error - The error object containing details about the parse error.
+ * @param tag - An optional tag to include in the error message.
+ * @returns A formatted error message string.
+ * @public
+ */
+export function formatQueryParseError(error: QueryParseError, tag?: string | null) {
+  const {query, start, end, description} = error
+
+  if (!query || typeof start === 'undefined') {
+    return `GROQ query parse error: ${description}`
+  }
+
+  const withTag = tag ? `\n\nTag: ${tag}` : ''
+  const framed = codeFrame(query, {start, end}, description)
+
+  return `GROQ query parse error:\n${framed}${withTag}`
+}
+
+function httpErrorMessage(res: Any, body: unknown) {
+  const details = typeof body === 'string' ? ` (${sliceWithEllipsis(body, 100)})` : ''
   const statusMessage = res.statusMessage ? ` ${res.statusMessage}` : ''
-  return `${res.method}-request to ${res.url} resulted in HTTP ${res.statusCode}${statusMessage}`
+  return `${res.method}-request to ${res.url} resulted in HTTP ${res.statusCode}${statusMessage}${details}`
 }
 
 function stringifyBody(body: Any, res: Any) {
   const contentType = (res.headers['content-type'] || '').toLowerCase()
   const isJson = contentType.indexOf('application/json') !== -1
   return isJson ? JSON.stringify(body, null, 2) : body
+}
+
+function sliceWithEllipsis(str: string, max: number) {
+  return str.length > max ? `${str.slice(0, max)}…` : str
 }
 
 /** @public */

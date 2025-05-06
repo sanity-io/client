@@ -1,5 +1,6 @@
 import {defer, isObservable, mergeMap, Observable, of} from 'rxjs'
 
+import {formatQueryParseError, isQueryParseError} from '../http/errors'
 import {type Any} from '../types'
 
 /**
@@ -169,8 +170,10 @@ function connectWithESInstance<EventTypeName extends string>(
       }
       if (message.type === 'channelError') {
         // An error occurred. This is different from a network-level error (which will be emitted as 'error').
-        // Possible causes are things such as malformed filters, non-existant datasets or similar.
-        observer.error(new ChannelError(extractErrorMessage(event?.data), event.data))
+        // Possible causes are things such as malformed filters, non-existant datasets
+        // or similar.
+        const tag = new URL(es.url).searchParams.get('tag')
+        observer.error(new ChannelError(extractErrorMessage(event?.data, tag), event.data))
         return
       }
       if (message.type === 'disconnect') {
@@ -235,16 +238,22 @@ function parseEvent(
   }
 }
 
-function extractErrorMessage(err: Any) {
-  if (!err.error) {
+function extractErrorMessage(err: Any, tag?: string | null) {
+  const error = err.error
+
+  if (!error) {
     return err.message || 'Unknown listener error'
   }
 
-  if (err.error.description) {
-    return err.error.description
+  if (isQueryParseError(error)) {
+    return formatQueryParseError(error, tag)
   }
 
-  return typeof err.error === 'string' ? err.error : JSON.stringify(err.error, null, 2)
+  if (error.description) {
+    return error.description
+  }
+
+  return typeof error === 'string' ? error : JSON.stringify(error, null, 2)
 }
 
 function isEmptyObject(data: object) {
