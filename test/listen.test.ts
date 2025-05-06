@@ -189,6 +189,79 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
+    test('emits channel errors with groq parse errors (no tag)', async () => {
+      expect.assertions(1)
+
+      const {server, client} = await testSse(({channel}) => {
+        channel!.send({
+          event: 'channelError',
+          data: {
+            error: {
+              description: 'unexpected token "\\"event]", expected expression',
+              end: 18,
+              query: '*[_type == "event]',
+              start: 11,
+              type: 'queryParseError',
+            },
+          },
+        })
+      })
+
+      const error = await firstValueFrom(
+        client.listen('*[_type == "event]').pipe(catchError((err) => of(err))),
+      )
+
+      expect(error.message, 'should have passed error message').toMatchInlineSnapshot(`
+        "GROQ query parse error: unexpected token "\\"event]", expected expression.
+
+        *[_type == "event
+        -----------^^^^^^^
+
+        Line: 1
+        Column: 11"
+      `)
+
+      server.close()
+    })
+
+    test('emits channel errors with groq parse errors (with tag)', async () => {
+      expect.assertions(1)
+
+      const {server, client} = await testSse(({channel}) => {
+        channel!.send({
+          event: 'channelError',
+          data: {
+            error: {
+              description: 'unexpected token "\\"event]", expected expression',
+              end: 18,
+              query: '*[_type == "event]',
+              start: 11,
+              type: 'queryParseError',
+            },
+          },
+        })
+      })
+
+      const error = await firstValueFrom(
+        client
+          .listen('*[_type == "event]', {}, {tag: 'some-tag'})
+          .pipe(catchError((err) => of(err))),
+      )
+
+      expect(error.message, 'should have passed error message').toMatchInlineSnapshot(`
+        "GROQ query parse error: unexpected token "\\"event]", expected expression.
+
+        *[_type == "event
+        -----------^^^^^^^
+
+        Line: 1
+        Column: 11
+        Tag: some-tag"
+      `)
+
+      server.close()
+    })
+
     test('emits error if request URL is too large', async () => {
       expect.assertions(1)
 

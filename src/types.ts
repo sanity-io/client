@@ -1217,6 +1217,17 @@ export interface MutationError {
 }
 
 /** @internal */
+export interface QueryParseError {
+  error: {
+    type: 'queryParseError'
+    description: string
+    start: number
+    end: number
+    query: string
+  }
+}
+
+/** @internal */
 export interface MutationErrorItem {
   error: {
     type: string

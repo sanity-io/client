@@ -984,6 +984,60 @@ describe('client', async () => {
       expect(res.result[0].rating, 'data should match').toBe(5)
     })
 
+    test.skipIf(isEdge)('gets helpful error messages on query errors (no tag)', async () => {
+      const query = '*[_type == "event]'
+      nock(projectHost())
+        .get(`/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false`)
+        .reply(400, {
+          error: {
+            description: 'unexpected token "\\"event]", expected expression',
+            end: 18,
+            query: '*[_type == "event]',
+            start: 11,
+            type: 'queryParseError',
+          },
+        })
+
+      await expect(getClient().fetch(query)).rejects.toThrowErrorMatchingInlineSnapshot(`
+        [Error: GROQ query parse error: unexpected token "\\"event]", expected expression.
+
+        *[_type == "event
+        -----------^^^^^^^
+
+        Line: 1
+        Column: 11]
+      `)
+    })
+
+    test.skipIf(isEdge)('gets helpful error messages on query errors (with tag)', async () => {
+      const query = '*[_type == "event]'
+      nock(projectHost())
+        .get(
+          `/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false&tag=get-events`,
+        )
+        .reply(400, {
+          error: {
+            description: 'unexpected token "\\"event]", expected expression',
+            end: 18,
+            query: '*[_type == "event]',
+            start: 11,
+            type: 'queryParseError',
+          },
+        })
+
+      await expect(getClient().fetch(query, {}, {tag: 'get-events'})).rejects
+        .toThrowErrorMatchingInlineSnapshot(`
+        [Error: GROQ query parse error: unexpected token "\\"event]", expected expression.
+
+        *[_type == "event
+        -----------^^^^^^^
+
+        Line: 1
+        Column: 11
+        Tag: get-events]
+      `)
+    })
+
     test.skipIf(isEdge)('can query for documents with request tag', async () => {
       nock(projectHost())
         .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob&returnQuery=false`)
