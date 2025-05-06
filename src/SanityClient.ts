@@ -1482,7 +1482,7 @@ export class SanityClient {
    * If the `releaseId` is provided, the version will be stored under the corresponding release.
    * Otherwise, the **draft version** of the document will be replaced.
    *
-   * @returns an observable that resolves to the `transactionId`.
+   * @returns an promise that resolves to the `transactionId`.
    *
    */
   replaceVersion<R extends Record<string, Any>>(
@@ -1531,7 +1531,7 @@ export class SanityClient {
    * the release is published.
    * Note that `publishedId` must currently exist.
    *
-   * @returns an observable that resolves to the `transactionId`.
+   * @returns an promise that resolves to the `transactionId`.
    *
    */
   unpublishVersion(
@@ -1547,7 +1547,7 @@ export class SanityClient {
 
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an observable that resolves to the first mutated document.
+   * Returns an promise that resolves to the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1558,7 +1558,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R>>
   /**
    * Perform mutation operations against the configured dataset.
-   * Returns an observable that resolves to an array of the mutated documents.
+   * Returns an promise that resolves to an array of the mutated documents.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1569,7 +1569,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R>[]>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an observable that resolves to a mutation result object containing the document ID of the first mutated document.
+   * Returns an promise that resolves to a mutation result object containing the document ID of the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1580,7 +1580,7 @@ export class SanityClient {
   ): Promise<SingleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an observable that resolves to a mutation result object containing the mutated document IDs.
+   * Returns an promise that resolves to a mutation result object containing the mutated document IDs.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1591,7 +1591,7 @@ export class SanityClient {
   ): Promise<MultipleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an observable that resolves to the first mutated document.
+   * Returns an promise that resolves to the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1665,6 +1665,7 @@ export class SanityClient {
 
   /**
    * Perform action operations against the configured dataset
+   * Returns a promise that resolves to the transaction result
    *
    * @param operations - Action operation(s) to execute
    * @param options - Action options
