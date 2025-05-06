@@ -341,7 +341,7 @@ export class ObservableReleasesClient {
   /**
    * @public
    *
-   * Get the documents in a release by release id.
+   * Fetch the documents in a release by release id.
    *
    * @category Releases
    *
@@ -350,7 +350,7 @@ export class ObservableReleasesClient {
    * @param options - Additional mutation options {@link BaseMutationOptions}.
    * @returns An observable that resolves to the documents in the release.
    */
-  getDocuments(
+  fetchDocuments(
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Observable<RawQueryResponse<SanityDocument[]>> {
@@ -669,7 +669,7 @@ export class ReleasesClient {
   /**
    * @public
    *
-   * Get the documents in a release by release id.
+   * Fetch the documents in a release by release id.
    *
    * @category Releases
    *
@@ -678,7 +678,7 @@ export class ReleasesClient {
    * @param options - Additional mutation options {@link BaseMutationOptions}.
    * @returns A promise that resolves to the documents in the release.
    */
-  getDocuments(
+  fetchDocuments(
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Promise<RawQueryResponse<SanityDocument[]>> {
