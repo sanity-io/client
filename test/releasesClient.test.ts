@@ -489,7 +489,7 @@ describe('ReleasesClient', () => {
     )
   })
 
-  describe('getDocuments()', () => {
+  describe('fetchDocuments()', () => {
     test('retrieves documents for a release by ID', async () => {
       const documents = [
         {_id: 'doc1', _type: 'post', title: 'Document 1'},
@@ -504,7 +504,7 @@ describe('ReleasesClient', () => {
         },
       }))
 
-      const result = await releasesClient.getDocuments({releaseId: TEST_RELEASE_ID})
+      const result = await releasesClient.fetchDocuments({releaseId: TEST_RELEASE_ID})
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
@@ -529,7 +529,7 @@ describe('ReleasesClient', () => {
         },
       }))
 
-      await releasesClient.getDocuments({releaseId: TEST_RELEASE_ID}, options)
+      await releasesClient.fetchDocuments({releaseId: TEST_RELEASE_ID}, options)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
@@ -973,8 +973,8 @@ describe('ObservableReleasesClient', () => {
     )
   })
 
-  describe('getDocuments()', () => {
-    test('returns an observable for getDocuments action', async () => {
+  describe('fetchDocuments()', () => {
+    test('returns an observable for fetchDocuments action', async () => {
       const documents = [
         {_id: 'doc1', _type: 'post', title: 'Document 1'},
         {_id: 'doc2', _type: 'post', title: 'Document 2'},
@@ -988,7 +988,7 @@ describe('ObservableReleasesClient', () => {
         },
       }))
 
-      const result = observableReleasesClient.getDocuments({releaseId: TEST_RELEASE_ID})
+      const result = observableReleasesClient.fetchDocuments({releaseId: TEST_RELEASE_ID})
       expect(result).toBeDefined()
       expect(await firstValueFrom(result)).toEqual({result: documents})
     })
