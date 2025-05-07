@@ -1459,7 +1459,7 @@ export class SanityClient {
    *   - `publishedId` - The ID of the published document being versioned.
    *   - `releaseId` - The ID of the release to create the version for.
    * @param options - Additional action options.
-   * @returns an observable that resolves to the `transactionId`.
+   * @returns A promise that resolves to the `transactionId`.
    *
    * @example Creating a new version of a published document with a generated version ID
    * ```ts
@@ -1855,7 +1855,7 @@ export class SanityClient {
 
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an promise that resolves to the first mutated document.
+   * Returns a promise that resolves to the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1866,7 +1866,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R>>
   /**
    * Perform mutation operations against the configured dataset.
-   * Returns an promise that resolves to an array of the mutated documents.
+   * Returns a promise that resolves to an array of the mutated documents.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1877,7 +1877,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R>[]>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an promise that resolves to a mutation result object containing the document ID of the first mutated document.
+   * Returns a promise that resolves to a mutation result object containing the document ID of the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1888,7 +1888,7 @@ export class SanityClient {
   ): Promise<SingleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an promise that resolves to a mutation result object containing the mutated document IDs.
+   * Returns a promise that resolves to a mutation result object containing the mutated document IDs.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1899,7 +1899,7 @@ export class SanityClient {
   ): Promise<MultipleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an promise that resolves to the first mutated document.
+   * Returns a promise that resolves to the first mutated document.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options

@@ -346,7 +346,7 @@ export class ObservableReleasesClient {
    * @category Releases
    *
    * @param params - Release action parameters:
-   *   - `releaseId` - The id of the release to get documents for.
+   *   - `releaseId` - The id of the release to fetch documents for.
    * @param options - Additional mutation options {@link BaseMutationOptions}.
    * @returns An observable that resolves to the documents in the release.
    */
@@ -674,7 +674,7 @@ export class ReleasesClient {
    * @category Releases
    *
    * @param params - Release action parameters:
-   *   - `releaseId` - The id of the release to get documents for.
+   *   - `releaseId` - The id of the release to fetch documents for.
    * @param options - Additional mutation options {@link BaseMutationOptions}.
    * @returns A promise that resolves to the documents in the release.
    */
