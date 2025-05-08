@@ -115,6 +115,7 @@ export async function updateDocumentTitle(_id, title) {
       - [Overview](#overview)
       - [Generating Content](#generating-content)
         - [Example: Using GROQ in instructionParams](#example-using-groq-in-instructionparams)
+        - [Example: Using the async flag](#example-using-the-async-flag)
       - [Transforming Documents](#transforming-documents)
         - [Example: Field-based transformation](#example-field-based-transformation)
       - [Translating Documents](#translating-documents)
@@ -1701,7 +1702,24 @@ await client.agent.action.generate({
 })
 ```
 
----
+#### Example: Using the async flag
+The `async` parameter allows you to fire and forget and will not wait for a response from the LLMj, this works also in the Transform and Translate APIs.
+
+```ts
+const result = await client.agent.action.generate({
+  schemaId: 'article',
+  documentId: 'article-123',
+  instruction: 'Write a comprehensive article about $topic',
+  instructionParams: {
+    topic: 'Climate Change'
+  },
+  target: { path: ['body'] },
+  async: true // Enable async mode for long-running tasks
+})
+
+// result will contain the task ID
+console.log('Generation task started:', result._id)
+```
 
 #### Transforming Documents
 
