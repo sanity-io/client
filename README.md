@@ -50,85 +50,101 @@ export async function updateDocumentTitle(_id, title) {
 
 # Table of contents
 
-- [QuickStart](#quickstart)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [API](#api)
-  - [Creating a client instance](#creating-a-client-instance)
-    - [ESM](#esm)
-    - [CommonJS](#commonjs)
-    - [TypeScript](#typescript)
-    - [Next.js App Router](#nextjs-app-router)
-    - [Bun](#bun)
-    - [Deno](#deno)
-    - [Edge Runtime](#edge-runtime)
-    - [Browser ESM CDN](#browser-esm-cdn)
-    - [UMD](#umd)
-  - [Specifying API version](#specifying-api-version)
-  - [Request tags](#request-tags)
-  - [Performing queries](#performing-queries)
-  - [Using perspectives](#using-perspectives)
-    - [`published`](#published)
-    - [`drafts`](#drafts)
-    - [`raw`](#raw)
-  - [Fetching Content Source Maps](#fetching-content-source-maps)
-    - [Using Visual editing with steganography](#using-visual-editing-with-steganography)
-    - [Creating Studio edit intent links](#creating-studio-edit-intent-links)
-  - [Listening to queries](#listening-to-queries)
-  - [Fetch a single document](#fetch-a-single-document)
-  - [Fetch multiple documents in one go](#fetch-multiple-documents-in-one-go)
-  - [Creating documents](#creating-documents)
-  - [Creating/replacing documents](#creatingreplacing-documents)
-  - [Creating if not already present](#creating-if-not-already-present)
-  - [Patch/update a document](#patchupdate-a-document)
-  - [Setting a field only if not already present](#setting-a-field-only-if-not-already-present)
-  - [Removing/unsetting fields](#removingunsetting-fields)
-  - [Incrementing/decrementing numbers](#incrementingdecrementing-numbers)
-  - [Patch a document only if revision matches](#patch-a-document-only-if-revision-matches)
-  - [Adding elements to an array](#adding-elements-to-an-array)
-  - [Appending/prepending elements to an array](#appendingprepending-elements-to-an-array)
-  - [Deleting an element from an array](#deleting-an-element-from-an-array)
-  - [Delete documents](#delete-documents)
-  - [Multiple mutations in a transaction](#multiple-mutations-in-a-transaction)
-  - [Clientless patches \& transactions](#clientless-patches--transactions)
-  - [Uploading assets](#uploading-assets)
-    - [Examples: Uploading assets from Node.js](#examples-uploading-assets-from-nodejs)
-    - [Examples: Uploading assets from the Browser](#examples-uploading-assets-from-the-browser)
-    - [Examples: Specify image metadata to extract](#examples-specify-image-metadata-to-extract)
-  - [Deleting an asset](#deleting-an-asset)
-  - [Mutation options](#mutation-options)
-  - [Aborting a request](#aborting-a-request)
-    - [1. Abort a request by passing an AbortSignal with the request options](#1-abort-a-request-by-passing-an-abortsignal-with-the-request-options)
-    - [2. Cancel a request by unsubscribing from the Observable](#2-cancel-a-request-by-unsubscribing-from-the-observable)
-  - [Get client configuration](#get-client-configuration)
-  - [Set client configuration](#set-client-configuration)
-  - [Actions](#actions)
-    - [Action options](#action-options)
-    - [Create Action](#create-action)
-    - [Delete Action](#delete-action)
-    - [Discard Action](#discard-action)
-    - [Edit Action](#edit-action)
-    - [Publish Action](#publish-action)
-    - [ReplaceDraft Action](#replacedraft-action)
-    - [Unpublish Action](#unpublish-action)
-- [License](#license)
-- [From `v5`](#from-v5)
-  - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
-- [From `v4`](#from-v4)
-  - [No longer shipping `ES5`](#no-longer-shipping-es5)
-  - [Node.js `v12` no longer supported](#nodejs-v12-no-longer-supported)
-  - [The `default` export is replaced with the named export `createClient`](#the-default-export-is-replaced-with-the-named-export-createclient)
-  - [`client.assets.delete` is removed](#clientassetsdelete-is-removed)
-  - [`client.assets.getImageUrl` is removed, replace with `@sanity/image-url`](#clientassetsgetimageurl-is-removed-replace-with-sanityimage-url)
-  - [`SanityClient` static properties moved to named exports](#sanityclient-static-properties-moved-to-named-exports)
-  - [`client.clientConfig` is removed, replace with `client.config()`](#clientclientconfig-is-removed-replace-with-clientconfig)
-  - [`client.isPromiseAPI()` is removed, replace with an `instanceof` check](#clientispromiseapi-is-removed-replace-with-an-instanceof-check)
-  - [`client.observable.isObservableAPI()` is removed, replace with an `instanceof` check](#clientobservableisobservableapi-is-removed-replace-with-an-instanceof-check)
-  - [`client._requestObservable` is removed, replace with `client.observable.request`](#client_requestobservable-is-removed-replace-with-clientobservablerequest)
-  - [`client._dataRequest` is removed, replace with `client.dataRequest`](#client_datarequest-is-removed-replace-with-clientdatarequest)
-  - [`client._create_` is removed, replace with one of `client.create`, `client.createIfNotExists` or `client.createOrReplace`](#client_create_-is-removed-replace-with-one-of-clientcreate-clientcreateifnotexists-or-clientcreateorreplace)
-  - [`client.patch.replace` is removed, replace with `client.createOrReplace`](#clientpatchreplace-is-removed-replace-with-clientcreateorreplace)
-  - [`client.auth` is removed, replace with `client.request`](#clientauth-is-removed-replace-with-clientrequest)
+- [@sanity/client](#sanityclient)
+  - [QuickStart](#quickstart)
+- [Table of contents](#table-of-contents)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+  - [API](#api)
+    - [Creating a client instance](#creating-a-client-instance)
+      - [ESM](#esm)
+      - [CommonJS](#commonjs)
+      - [TypeScript](#typescript)
+      - [Next.js App Router](#nextjs-app-router)
+      - [Bun](#bun)
+      - [Deno](#deno)
+      - [Edge Runtime](#edge-runtime)
+      - [Browser ESM CDN](#browser-esm-cdn)
+      - [UMD](#umd)
+    - [Specifying API version](#specifying-api-version)
+    - [Request tags](#request-tags)
+    - [Performing queries](#performing-queries)
+    - [Using perspectives](#using-perspectives)
+      - [`published`](#published)
+      - [`drafts`](#drafts)
+      - [`raw`](#raw)
+    - [Fetching Content Source Maps](#fetching-content-source-maps)
+      - [Using Visual editing with steganography](#using-visual-editing-with-steganography)
+      - [Creating Studio edit intent links](#creating-studio-edit-intent-links)
+    - [Listening to queries](#listening-to-queries)
+    - [Fetch a single document](#fetch-a-single-document)
+    - [Fetch multiple documents in one go](#fetch-multiple-documents-in-one-go)
+    - [Listening to live content updates](#listening-to-live-content-updates)
+    - [Creating documents](#creating-documents)
+    - [Creating/replacing documents](#creatingreplacing-documents)
+    - [Creating if not already present](#creating-if-not-already-present)
+    - [Patch/update a document](#patchupdate-a-document)
+    - [Setting a field only if not already present](#setting-a-field-only-if-not-already-present)
+    - [Removing/unsetting fields](#removingunsetting-fields)
+    - [Incrementing/decrementing numbers](#incrementingdecrementing-numbers)
+    - [Patch a document only if revision matches](#patch-a-document-only-if-revision-matches)
+    - [Adding elements to an array](#adding-elements-to-an-array)
+    - [Appending/prepending elements to an array](#appendingprepending-elements-to-an-array)
+    - [Deleting an element from an array](#deleting-an-element-from-an-array)
+    - [Delete documents](#delete-documents)
+    - [Multiple mutations in a transaction](#multiple-mutations-in-a-transaction)
+    - [Clientless patches \& transactions](#clientless-patches--transactions)
+    - [Actions](#actions)
+      - [Action options](#action-options)
+      - [Create Action](#create-action)
+      - [Delete Action](#delete-action)
+      - [Discard Action](#discard-action)
+      - [Edit Action](#edit-action)
+      - [Publish Action](#publish-action)
+      - [ReplaceDraft Action](#replacedraft-action)
+      - [Unpublish Action](#unpublish-action)
+    - [Uploading assets](#uploading-assets)
+      - [Examples: Uploading assets from Node.js](#examples-uploading-assets-from-nodejs)
+      - [Examples: Uploading assets from the Browser](#examples-uploading-assets-from-the-browser)
+      - [Examples: Specify image metadata to extract](#examples-specify-image-metadata-to-extract)
+    - [Deleting an asset](#deleting-an-asset)
+    - [Mutation options](#mutation-options)
+    - [Aborting a request](#aborting-a-request)
+      - [1. Abort a request by passing an AbortSignal with the request options](#1-abort-a-request-by-passing-an-abortsignal-with-the-request-options)
+      - [2. Cancel a request by unsubscribing from the Observable](#2-cancel-a-request-by-unsubscribing-from-the-observable)
+    - [Get client configuration](#get-client-configuration)
+    - [Set client configuration](#set-client-configuration)
+    - [Agent Actions API](#agent-actions-api)
+      - [Overview](#overview)
+      - [Generating Content](#generating-content)
+        - [Example: Using GROQ in instructionParams](#example-using-groq-in-instructionparams)
+      - [Transforming Documents](#transforming-documents)
+        - [Example: Field-based transformation](#example-field-based-transformation)
+      - [Translating Documents](#translating-documents)
+        - [Example: Storing language in a field](#example-storing-language-in-a-field)
+      - [API Reference](#api-reference)
+        - [`client.agent.action.generate(request)`](#clientagentactiongeneraterequest)
+        - [`client.agent.action.transform(request)`](#clientagentactiontransformrequest)
+        - [`client.agent.action.translate(request)`](#clientagentactiontranslaterequest)
+  - [License](#license)
+- [Migrate](#migrate)
+  - [From `v5`](#from-v5)
+    - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
+  - [From `v4`](#from-v4)
+    - [No longer shipping `ES5`](#no-longer-shipping-es5)
+    - [Node.js `v12` no longer supported](#nodejs-v12-no-longer-supported)
+    - [The `default` export is replaced with the named export `createClient`](#the-default-export-is-replaced-with-the-named-export-createclient)
+    - [`client.assets.delete` is removed](#clientassetsdelete-is-removed)
+    - [`client.assets.getImageUrl` is removed, replace with `@sanity/image-url`](#clientassetsgetimageurl-is-removed-replace-with-sanityimage-url)
+    - [`SanityClient` static properties moved to named exports](#sanityclient-static-properties-moved-to-named-exports)
+    - [`client.clientConfig` is removed, replace with `client.config()`](#clientclientconfig-is-removed-replace-with-clientconfig)
+    - [`client.isPromiseAPI()` is removed, replace with an `instanceof` check](#clientispromiseapi-is-removed-replace-with-an-instanceof-check)
+    - [`client.observable.isObservableAPI()` is removed, replace with an `instanceof` check](#clientobservableisobservableapi-is-removed-replace-with-an-instanceof-check)
+    - [`client._requestObservable` is removed, replace with `client.observable.request`](#client_requestobservable-is-removed-replace-with-clientobservablerequest)
+    - [`client._dataRequest` is removed, replace with `client.dataRequest`](#client_datarequest-is-removed-replace-with-clientdatarequest)
+    - [`client._create_` is removed, replace with one of `client.create`, `client.createIfNotExists` or `client.createOrReplace`](#client_create_-is-removed-replace-with-one-of-clientcreate-clientcreateifnotexists-or-clientcreateorreplace)
+    - [`client.patch.replace` is removed, replace with `client.createOrReplace`](#clientpatchreplace-is-removed-replace-with-clientcreateorreplace)
+    - [`client.auth` is removed, replace with `client.request`](#clientauth-is-removed-replace-with-clientrequest)
 
 ## Requirements
 
@@ -463,7 +479,7 @@ Request tags are values assigned to API and CDN requests that can be used to fil
 Sanity Client has out-of-the-box support for tagging every API and CDN request on two levels:
 
 - Globally: Using the `requestTagPrefix` client configuration parameter
-- Per Request: Pass the tag option to the SDK’s Request method.
+- Per Request: Pass the tag option to the SDK's Request method.
 
 The following example will result in a query with `tag=website.landing-page`:
 
@@ -1631,6 +1647,155 @@ client.config({dataset: 'newDataset'})
 `client.config(options)`
 
 Set client configuration. Required options are `projectId` and `dataset`.
+
+### Agent Actions API
+
+The Agent Actions API provides programmatic access to AI-powered content generation, transformation, and translation for your Sanity documents. These APIs are available on the `client.agent.action` namespace.
+
+> **Note:** These APIs are currently in beta and may change in future releases.
+
+#### Overview
+
+Agent Actions allow you to:
+- **Generate** new content for a document or specific fields using LLM instructions.
+- **Transform** a document based on instructions, optionally copying from a source document.
+- **Translate** a document or fields from one language to another, with support for style guides and protected phrases.
+
+All methods are available in both Promise and Observable forms:
+- `client.agent.action.generate`, `client.agent.action.transform`, `client.agent.action.translate` (Promise-based)
+- `client.observable.agent.action.generate`, etc. (Observable-based, for streaming or RxJS use)
+
+---
+
+#### Generating Content
+
+```ts
+const result = await client.agent.action.generate({
+  schemaId: 'your-schema-id',
+  documentId: 'your-document-id',
+  instruction: 'Write a summary for the following topic: $topic',
+  instructionParams: {
+    topic: 'Grapefruit'
+  },
+  target: { path: ['body'] }
+})
+```
+
+- **schemaId**: The schema identifier for the document type.
+- **documentId**: The ID of the document to generate content for.
+- **instruction**: A string template describing what to generate. Use `$variable` for dynamic values.
+- **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
+- **target**: (Optional) Specifies which fields or paths to generate content for.
+
+##### Example: Using GROQ in instructionParams
+
+```ts
+await client.agent.action.generate({
+  schemaId,
+  documentId,
+  instruction: 'Generate a title based on these: $list',
+  instructionParams: {
+    list: {
+      type: 'groq',
+      query: '*[_type==$type].title',
+      params: {type: 'article'}
+    }
+  },
+  target: { path: ['body'] }
+})
+```
+
+---
+
+#### Transforming Documents
+
+```ts
+const result = await client.agent.action.transform({
+  schemaId: 'your-schema-id',
+  documentId: 'source-document-id',
+  instruction: 'Transform the content to a more formal tone.',
+  targetDocument: {operation: 'edit', _id: 'target-document-id'},
+  target: { path: ['body'] }
+})
+```
+
+- **schemaId**: The schema identifier for the document type.
+- **documentId**: The source document ID.
+- **instruction**: A string template describing the transformation.
+- **targetDocument**: (Optional) Specify a different document to write the result to, or create a new one.
+- **target**: (Optional) Specifies which fields or paths to transform.
+
+##### Example: Field-based transformation
+
+```ts
+await client.agent.action.transform({
+  schemaId,
+  documentId,
+  instruction: 'Summarize the following field: $content',
+  instructionParams: {
+    content: {type: 'field', path: ['body']}
+  },
+  target: { path: ['body'] }
+})
+```
+
+---
+
+#### Translating Documents
+
+```ts
+const result = await client.agent.action.translate({
+  schemaId: 'your-schema-id',
+  documentId: 'source-document-id',
+  fromLanguage: {id: 'en', title: 'English'},
+  toLanguage: {id: 'es', title: 'Spanish'},
+  styleGuide: 'Use a friendly tone.',
+  protectedPhrases: ['Sanity', 'Grapefruit'],
+  target: { path: ['body'] }
+})
+```
+
+- **schemaId**: The schema identifier for the document type.
+- **documentId**: The source document ID.
+- **fromLanguage**: (Optional) The source language code and title.
+- **toLanguage**: The target language code and title.
+- **styleGuide**: (Optional) Instructions for translation style.
+- **protectedPhrases**: (Optional) Array of phrases to leave untranslated.
+- **target**: (Optional) Specifies which fields or paths to translate.
+
+##### Example: Storing language in a field
+
+```ts
+await client.agent.action.translate({
+  schemaId,
+  documentId,
+  toLanguage: {id: 'fr', title: 'French'},
+  languageFieldPath: ['language'],
+  target: { path: ['body'] }
+})
+```
+
+---
+
+#### API Reference
+
+##### `client.agent.action.generate(request)`
+
+- **Description:** Generate content for a document or fields using an LLM instruction.
+- **Returns:** A Promise resolving to the updated document, or an object with `_id` if `async: true` is set.
+
+##### `client.agent.action.transform(request)`
+
+- **Description:** Transform a document or fields based on an LLM instruction, optionally copying from a source document.
+- **Returns:** A Promise resolving to the updated document, or an object with `_id` if `async: true` is set.
+
+##### `client.agent.action.translate(request)`
+
+- **Description:** Translate a document or fields from one language to another, with support for style guides and protected phrases.
+- **Returns:** A Promise resolving to the updated document, or an object with `_id` if `async: true` is set.
+
+---
+
 
 ## License
 
