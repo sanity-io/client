@@ -1313,7 +1313,7 @@ const client = createClient({
 
 1. Create a new release
 ```js
-const {releaseId} = client.release.create({
+const {releaseId} = await client.release.create({
   metadata: {
     title: 'New bike drop'
     releaseType: 'scheduled'
@@ -1343,7 +1343,7 @@ client.unpublishVersion({
 
 4. List the release and all the documents within the release
 ```js
-const newBikesRelease = client.releases.get({releaseId})
+const newBikesRelease = await client.releases.get({releaseId})
 /**
  * {
  *   _type: 'system.release',
@@ -1357,7 +1357,7 @@ const newBikesRelease = client.releases.get({releaseId})
  * }
  */
 
-const releaseDocuments = client.releases.getDocuments({
+const releaseDocuments = await client.releases.getDocuments({
   releaseId
 })
 
