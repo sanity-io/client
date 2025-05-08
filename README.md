@@ -1714,10 +1714,10 @@ const result = await client.agent.action.generate({
     topic: 'Climate Change'
   },
   target: { path: ['body'] },
-  async: true // Enable async mode for long-running tasks
+  async: true // Enable async mode for long-running tasks or where you don't want to wait for the result
 })
 
-// result will contain the task ID
+// result will return back the document id
 console.log('Generation task started:', result._id)
 ```
 
