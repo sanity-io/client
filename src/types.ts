@@ -70,6 +70,10 @@ type ClientConfigResource =
       type: 'dashboard'
       id: string
     }
+  | {
+      type: 'views'
+      id: string
+    }
 
 /** @public */
 export interface ClientConfig {
@@ -90,6 +94,7 @@ export interface ClientConfig {
    */
   perspective?: ClientPerspective
   apiHost?: string
+  apiCdnHost?: string
 
   /**
    @remarks

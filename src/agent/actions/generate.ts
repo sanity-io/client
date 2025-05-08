@@ -300,7 +300,7 @@ export function _generate<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequest, {
+  return _request(client.config(), httpRequest, {
     method: 'POST',
     uri: `/agent/action/generate/${dataset}`,
     body: request,

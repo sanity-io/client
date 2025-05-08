@@ -214,7 +214,7 @@ export class ObservableSanityClient {
     options?: QueryOptions,
   ): Observable<RawQueryResponse<R> | R> {
     return dataMethods._fetch<R, Q>(
-      this,
+      this.#clientConfig,
       this.#httpRequest,
       this.#clientConfig.stega,
       query,
@@ -233,7 +233,7 @@ export class ObservableSanityClient {
     id: string,
     options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
   ): Observable<SanityDocument<R> | undefined> {
-    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options)
+    return dataMethods._getDocument<R>(this.#clientConfig, this.#httpRequest, id, options)
   }
 
   /**
@@ -249,7 +249,7 @@ export class ObservableSanityClient {
     ids: string[],
     options?: {tag?: string},
   ): Observable<(SanityDocument<R> | null)[]> {
-    return dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options)
+    return dataMethods._getDocuments<R>(this.#clientConfig, this.#httpRequest, ids, options)
   }
 
   /**
@@ -318,7 +318,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._create<R>(this, this.#httpRequest, document, 'create', options)
+    return dataMethods._create<R>(this.#clientConfig, this.#httpRequest, document, 'create', options)
   }
 
   /**
@@ -387,7 +387,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createIfNotExists<R>(this, this.#httpRequest, document, options)
+    return dataMethods._createIfNotExists<R>(this.#clientConfig, this.#httpRequest, document, options)
   }
 
   /**
@@ -456,7 +456,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createOrReplace<R>(this, this.#httpRequest, document, options)
+    return dataMethods._createOrReplace<R>(this.#clientConfig, this.#httpRequest, document, options)
   }
 
   /**
@@ -688,7 +688,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._delete<R>(this, this.#httpRequest, selection, options)
+    return dataMethods._delete<R>(this.#clientConfig, this.#httpRequest, selection, options)
   }
 
   /**
@@ -929,7 +929,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._mutate<R>(this, this.#httpRequest, operations, options)
+    return dataMethods._mutate<R>(this.#clientConfig, this.#httpRequest, operations, options)
   }
 
   /**
@@ -991,7 +991,7 @@ export class ObservableSanityClient {
     operations: Action | Action[],
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    return dataMethods._action(this, this.#httpRequest, operations, options)
+    return dataMethods._action(this.#clientConfig, this.#httpRequest, operations, options)
   }
 
   /**
@@ -1000,7 +1000,7 @@ export class ObservableSanityClient {
    * @param options - Request options
    */
   request<R = Any>(options: RawRequestOptions): Observable<R> {
-    return dataMethods._request(this, this.#httpRequest, options)
+    return dataMethods._request(this.#clientConfig, this.#httpRequest, options)
   }
 
   /**
@@ -1010,7 +1010,7 @@ export class ObservableSanityClient {
    * @param canUseCdn - Whether or not to allow using the API CDN for this route
    */
   getUrl(uri: string, canUseCdn?: boolean): string {
-    return dataMethods._getUrl(this, uri, canUseCdn)
+    return dataMethods._getUrl(this.#clientConfig, uri, canUseCdn)
   }
 
   /**
@@ -1020,7 +1020,7 @@ export class ObservableSanityClient {
    * @param path - Path to append after the operation
    */
   getDataUrl(operation: string, path?: string): string {
-    return dataMethods._getDataUrl(this, operation, path)
+    return dataMethods._getDataUrl(this.#clientConfig, operation, path)
   }
 }
 
@@ -1188,7 +1188,7 @@ export class SanityClient {
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
     return lastValueFrom(
       dataMethods._fetch<ClientReturn<G, R>, Q>(
-        this,
+        this.#clientConfig,
         this.#httpRequest,
         this.#clientConfig.stega,
         query,
@@ -1208,7 +1208,7 @@ export class SanityClient {
     id: string,
     options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
   ): Promise<SanityDocument<R> | undefined> {
-    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
+    return lastValueFrom(dataMethods._getDocument<R>(this.#clientConfig, this.#httpRequest, id, options))
   }
 
   /**
@@ -1224,7 +1224,7 @@ export class SanityClient {
     ids: string[],
     options?: {signal?: AbortSignal; tag?: string},
   ): Promise<(SanityDocument<R> | null)[]> {
-    return lastValueFrom(dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options))
+    return lastValueFrom(dataMethods._getDocuments<R>(this.#clientConfig, this.#httpRequest, ids, options))
   }
 
   /**
@@ -1294,7 +1294,7 @@ export class SanityClient {
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     return lastValueFrom(
-      dataMethods._create<R>(this, this.#httpRequest, document, 'create', options),
+      dataMethods._create<R>(this.#clientConfig, this.#httpRequest, document, 'create', options),
     )
   }
 
@@ -1365,7 +1365,7 @@ export class SanityClient {
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     return lastValueFrom(
-      dataMethods._createIfNotExists<R>(this, this.#httpRequest, document, options),
+      dataMethods._createIfNotExists<R>(this.#clientConfig, this.#httpRequest, document, options),
     )
   }
 
@@ -1436,7 +1436,7 @@ export class SanityClient {
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
     return lastValueFrom(
-      dataMethods._createOrReplace<R>(this, this.#httpRequest, document, options),
+      dataMethods._createOrReplace<R>(this.#clientConfig, this.#httpRequest, document, options),
     )
   }
 
@@ -1671,7 +1671,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return lastValueFrom(dataMethods._delete<R>(this, this.#httpRequest, selection, options))
+    return lastValueFrom(dataMethods._delete<R>(this.#clientConfig, this.#httpRequest, selection, options))
   }
 
   /**
@@ -1919,7 +1919,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return lastValueFrom(dataMethods._mutate<R>(this, this.#httpRequest, operations, options))
+    return lastValueFrom(dataMethods._mutate<R>(this.#clientConfig, this.#httpRequest, operations, options))
   }
 
   /**
@@ -1982,7 +1982,7 @@ export class SanityClient {
     operations: Action | Action[],
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    return lastValueFrom(dataMethods._action(this, this.#httpRequest, operations, options))
+    return lastValueFrom(dataMethods._action(this.#clientConfig, this.#httpRequest, operations, options))
   }
 
   /**
@@ -1993,7 +1993,7 @@ export class SanityClient {
    * @returns Promise resolving to the response body
    */
   request<R = Any>(options: RawRequestOptions): Promise<R> {
-    return lastValueFrom(dataMethods._request<R>(this, this.#httpRequest, options))
+    return lastValueFrom(dataMethods._request<R>(this.#clientConfig, this.#httpRequest, options))
   }
 
   /**
@@ -2007,7 +2007,7 @@ export class SanityClient {
    * @internal
    */
   dataRequest(endpoint: string, body: unknown, options?: BaseMutationOptions): Promise<Any> {
-    return lastValueFrom(dataMethods._dataRequest(this, this.#httpRequest, endpoint, body, options))
+    return lastValueFrom(dataMethods._dataRequest(this.#clientConfig, this.#httpRequest, endpoint, body, options))
   }
 
   /**
@@ -2017,7 +2017,7 @@ export class SanityClient {
    * @param canUseCdn - Whether or not to allow using the API CDN for this route
    */
   getUrl(uri: string, canUseCdn?: boolean): string {
-    return dataMethods._getUrl(this, uri, canUseCdn)
+    return dataMethods._getUrl(this.#clientConfig, uri, canUseCdn)
   }
 
   /**
@@ -2027,6 +2027,6 @@ export class SanityClient {
    * @param path - Path to append after the operation
    */
   getDataUrl(operation: string, path?: string): string {
-    return dataMethods._getDataUrl(this, operation, path)
+    return dataMethods._getDataUrl(this.#clientConfig, operation, path)
   }
 }

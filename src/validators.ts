@@ -115,7 +115,8 @@ export const resourceConfig = (config: InitializedClientConfig): void => {
     }
     case 'dashboard':
     case 'media-library':
-    case 'canvas': {
+    case 'canvas':
+    case 'views': {
       return
     }
     default:

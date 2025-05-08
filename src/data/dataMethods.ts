@@ -4,7 +4,6 @@ import {combineLatestWith, filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
 import {requestOptions} from '../http/requestOptions'
-import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
 import type {
   Action,
@@ -44,8 +43,6 @@ import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
 
-type Client = SanityClient | ObservableSanityClient
-
 const excludeFalsey = (param: Any, defValue: Any) => {
   const value = typeof param === 'undefined' ? defValue : param
   return param === false ? undefined : value
@@ -75,7 +72,7 @@ const getQuerySizeLimit = 11264
 
 /** @internal */
 export function _fetch<R, Q>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   _stega: InitializedStegaConfig,
   query: string,
@@ -109,7 +106,7 @@ export function _fetch<R, Q>(
       ? {...opts, fetch: {cache, next}}
       : opts
 
-  const $request = _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts)
+  const $request = _dataRequest(config, httpRequest, 'query', {query, params}, reqOpts)
   return stega.enabled
     ? $request.pipe(
         combineLatestWith(
@@ -134,7 +131,7 @@ export function _fetch<R, Q>(
 
 /** @internal */
 export function _getDocument<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string} = {},
@@ -166,12 +163,12 @@ export function _getDocument<R extends Record<string, Any>>(
   const docId = getDocId()
 
   const options = {
-    uri: _getDataUrl(client, 'doc', docId),
+    uri: _getDataUrl(config, 'doc', docId),
     json: true,
     tag: opts.tag,
     signal: opts.signal,
   }
-  return _requestObservable<SanityDocument<R> | undefined>(client, httpRequest, options).pipe(
+  return _requestObservable<SanityDocument<R> | undefined>(config, httpRequest, options).pipe(
     filter(isResponse),
     map((event) => event.body.documents && event.body.documents[0]),
   )
@@ -179,18 +176,18 @@ export function _getDocument<R extends Record<string, Any>>(
 
 /** @internal */
 export function _getDocuments<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<(SanityDocument<R> | null)[]> {
   const options = {
-    uri: _getDataUrl(client, 'doc', ids.join(',')),
+    uri: _getDataUrl(config, 'doc', ids.join(',')),
     json: true,
     tag: opts.tag,
     signal: opts.signal,
   }
-  return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
+  return _requestObservable<(SanityDocument<R> | null)[]>(config, httpRequest, options).pipe(
     filter(isResponse),
     map((event: Any) => {
       const indexed = indexBy(event.body.documents || [], (doc: Any) => doc._id)
@@ -201,13 +198,13 @@ export function _getDocuments<R extends Record<string, Any>>(
 
 /** @internal */
 export function _getReleaseDocuments<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   releaseId: string,
   opts: BaseMutationOptions = {},
 ): Observable<RawQueryResponse<SanityDocument<R>[]>> {
   return _dataRequest(
-    client,
+    config,
     httpRequest,
     'query',
     {
@@ -222,7 +219,7 @@ export function _getReleaseDocuments<R extends Record<string, Any>>(
 
 /** @internal */
 export function _createIfNotExists<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
@@ -235,12 +232,12 @@ export function _createIfNotExists<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   validators.requireDocumentId('createIfNotExists', doc)
-  return _create<R>(client, httpRequest, doc, 'createIfNotExists', options)
+  return _create<R>(config, httpRequest, doc, 'createIfNotExists', options)
 }
 
 /** @internal */
 export function _createOrReplace<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
@@ -253,12 +250,12 @@ export function _createOrReplace<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   validators.requireDocumentId('createOrReplace', doc)
-  return _create<R>(client, httpRequest, doc, 'createOrReplace', options)
+  return _create<R>(config, httpRequest, doc, 'createOrReplace', options)
 }
 
 /** @internal */
 export function _createVersion<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   publishedId: string,
@@ -273,12 +270,12 @@ export function _createVersion<R extends Record<string, Any>>(
     document: doc,
   }
 
-  return _action(client, httpRequest, createVersionAction, options)
+  return _action(config, httpRequest, createVersionAction, options)
 }
 
 /** @internal */
 export function _delete<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   selection: string | MutationSelection,
   options?:
@@ -291,7 +288,7 @@ export function _delete<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   return _dataRequest(
-    client,
+    config,
     httpRequest,
     'mutate',
     {mutations: [{delete: getSelection(selection)}]},
@@ -301,7 +298,7 @@ export function _delete<R extends Record<string, Any>>(
 
 /** @internal */
 export function _discardVersion(
-  client: ObservableSanityClient | SanityClient,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   versionId: string,
   purge: boolean = false,
@@ -313,12 +310,12 @@ export function _discardVersion(
     purge,
   }
 
-  return _action(client, httpRequest, discardVersionAction, options)
+  return _action(config, httpRequest, discardVersionAction, options)
 }
 
 /** @internal */
 export function _replaceVersion<R extends Record<string, Any>>(
-  client: ObservableSanityClient | SanityClient,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?: BaseActionOptions,
@@ -331,12 +328,12 @@ export function _replaceVersion<R extends Record<string, Any>>(
     document: doc,
   }
 
-  return _action(client, httpRequest, replaceVersionAction, options)
+  return _action(config, httpRequest, replaceVersionAction, options)
 }
 
 /** @internal */
 export function _unpublishVersion(
-  client: ObservableSanityClient | SanityClient,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   versionId: string,
   publishedId: string,
@@ -348,12 +345,12 @@ export function _unpublishVersion(
     publishedId,
   }
 
-  return _action(client, httpRequest, unpublishVersionAction, options)
+  return _action(config, httpRequest, unpublishVersionAction, options)
 }
 
 /** @internal */
 export function _mutate<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
   options?:
@@ -376,14 +373,14 @@ export function _mutate<R extends Record<string, Any>>(
 
   const muts = Array.isArray(mut) ? mut : [mut]
   const transactionId = (options && options.transactionId) || undefined
-  return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
+  return _dataRequest(config, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
 }
 
 /**
  * @internal
  */
 export function _action(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   actions: Action | Action[],
   options?: BaseActionOptions,
@@ -395,7 +392,7 @@ export function _action(
   const dryRun = (options && options.dryRun) || undefined
 
   return _dataRequest(
-    client,
+    config,
     httpRequest,
     'actions',
     {actions: acts, transactionId, skipCrossDatasetReferenceValidation, dryRun},
@@ -407,7 +404,7 @@ export function _action(
  * @internal
  */
 export function _dataRequest(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   endpoint: string,
   body: Any,
@@ -425,7 +422,7 @@ export function _dataRequest(
   const returnFirst = options.returnFirst
   const {timeout, token, tag, headers, returnQuery, lastLiveEventId, cacheMode} = options
 
-  const uri = _getDataUrl(client, endpoint, stringQuery)
+  const uri = _getDataUrl(config, endpoint, stringQuery)
 
   const reqOptions = {
     method: useGet ? 'GET' : 'POST',
@@ -449,7 +446,7 @@ export function _dataRequest(
     useCdn: options.useCdn,
   }
 
-  return _requestObservable(client, httpRequest, reqOptions).pipe(
+  return _requestObservable(config, httpRequest, reqOptions).pipe(
     filter(isResponse),
     map(getBody),
     map((res) => {
@@ -481,7 +478,7 @@ export function _dataRequest(
  * @internal
  */
 export function _create<R extends Record<string, Any>>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   doc: Any,
   op: Any,
@@ -491,56 +488,54 @@ export function _create<R extends Record<string, Any>>(
 > {
   const mutation = {[op]: doc}
   const opts = Object.assign({returnFirst: true, returnDocuments: true}, options)
-  return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
+  return _dataRequest(config, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
-const hasDataConfig = (client: Client) =>
-  (client.config().dataset !== undefined && client.config().projectId !== undefined) ||
-  client.config()['~experimental_resource'] !== undefined
+const hasDataConfig = (config: InitializedClientConfig) =>
+  (config.dataset !== undefined && config.projectId !== undefined) ||
+  config['~experimental_resource'] !== undefined
 
-const isQuery = (client: Client, uri: string) =>
-  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'query'))
+const isQuery = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'query'))
 
-const isMutate = (client: Client, uri: string) =>
-  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'mutate'))
+const isMutate = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'mutate'))
 
-const isDoc = (client: Client, uri: string) =>
-  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'doc', ''))
+const isDoc = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'doc', ''))
 
-const isListener = (client: Client, uri: string) =>
-  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'listen'))
+const isListener = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'listen'))
 
-const isHistory = (client: Client, uri: string) =>
-  hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'history', ''))
+const isHistory = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'history', ''))
 
-const isData = (client: Client, uri: string) =>
+const isData = (config: InitializedClientConfig, uri: string) =>
   uri.startsWith('/data/') ||
-  isQuery(client, uri) ||
-  isMutate(client, uri) ||
-  isDoc(client, uri) ||
-  isListener(client, uri) ||
-  isHistory(client, uri)
+  isQuery(config, uri) ||
+  isMutate(config, uri) ||
+  isDoc(config, uri) ||
+  isListener(config, uri) ||
+  isHistory(config, uri)
 
 /**
  * @internal
  */
 export function _requestObservable<R>(
-  client: Client,
+  config: InitializedClientConfig,
   httpRequest: HttpRequest,
   options: RequestObservableOptions,
 ): Observable<HttpRequestEvent<R>> {
   const uri = options.url || (options.uri as string)
-  const config = client.config()
 
   // If the `canUseCdn`-option is not set we detect it automatically based on the method + URL.
   // Only the /data endpoint is currently available through API-CDN.
   const canUseCdn =
     typeof options.canUseCdn === 'undefined'
-      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && isData(client, uri)
+      ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && isData(config, uri)
       : options.canUseCdn
 
   let useCdn = (options.useCdn ?? config.useCdn) && canUseCdn
-
   const tag =
     options.tag && config.requestTagPrefix
       ? [config.requestTagPrefix, options.tag].join('.')
@@ -551,7 +546,7 @@ export function _requestObservable<R>(
   }
 
   // GROQ query-only parameters
-  if (['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 && isQuery(client, uri)) {
+  if (['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 && isQuery(config, uri)) {
     const resultSourceMap = options.resultSourceMap ?? config.resultSourceMap
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
       options.query = {resultSourceMap, ...options.query}
@@ -597,7 +592,7 @@ export function _requestObservable<R>(
   const reqOptions = requestOptions(
     config,
     Object.assign({}, options, {
-      url: _getUrl(client, uri, useCdn),
+      url: _getUrl(config, uri, useCdn),
     }),
   ) as RequestOptions
 
@@ -611,8 +606,8 @@ export function _requestObservable<R>(
 /**
  * @internal
  */
-export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Observable<R> {
-  const observable = _requestObservable<R>(client, httpRequest, options).pipe(
+export function _request<R>(config: InitializedClientConfig, httpRequest: HttpRequest, options: Any): Observable<R> {
+  const observable = _requestObservable<R>(config, httpRequest, options).pipe(
     filter((event: Any) => event.type === 'response'),
     map((event: Any) => event.body),
   )
@@ -623,8 +618,7 @@ export function _request<R>(client: Client, httpRequest: HttpRequest, options: A
 /**
  * @internal
  */
-export function _getDataUrl(client: Client, operation: string, path?: string): string {
-  const config = client.config()
+export function _getDataUrl(config: InitializedClientConfig, operation: string, path?: string): string {
   if (config['~experimental_resource']) {
     validators.resourceConfig(config)
     const resourceBase = resourceDataBase(config)
@@ -640,8 +634,8 @@ export function _getDataUrl(client: Client, operation: string, path?: string): s
 /**
  * @internal
  */
-export function _getUrl(client: Client, uri: string, canUseCdn = false): string {
-  const {url, cdnUrl} = client.config()
+export function _getUrl(config: InitializedClientConfig, uri: string, canUseCdn = false, options: {forceApiUrl?: boolean} = {}): string {
+  const {url, cdnUrl} = config
   const base = canUseCdn ? cdnUrl : url
   return `${base}/${uri.replace(/^\//, '')}`
 }
@@ -715,6 +709,9 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
     }
     case 'dashboard': {
       return `/dashboards/${id}`
+    }
+    case 'views': {
+      return `/views/${id}`
     }
     default:
       // @ts-expect-error - handle all supported resource types
