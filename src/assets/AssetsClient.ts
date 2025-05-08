@@ -167,7 +167,7 @@ function _upload(
     query.sourceUrl = source.url
   }
 
-  return _requestObservable(client, httpRequest, {
+  return _requestObservable(config, httpRequest, {
     tag,
     method: 'POST',
     timeout: options.timeout || 0,
@@ -197,6 +197,9 @@ function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image'
       }
       case 'dashboard': {
         return `/dashboards/${id}/assets/${assetTypeEndpoint}`
+      }
+      case 'views': {
+        throw new Error('Assets are not supported for views.')
       }
       default:
         // @ts-expect-error - handle all supported resource types

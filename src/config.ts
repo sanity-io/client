@@ -153,14 +153,18 @@ export const initConfig = (
   const hostParts = newConfig.apiHost.split('://', 2)
   const protocol = hostParts[0]
   const host = hostParts[1]
-  const cdnHost = newConfig.isDefaultApi ? defaultCdnHost : host
+
+  const cdnURL = newConfig.isDefaultApi ? `https://${defaultCdnHost}` : newConfig.apiCdnHost || newConfig.apiHost
+  const cdnURLParts = cdnURL.split('://', 2)
+  const cdnProtocol = cdnURLParts[0]
+  const cdnHost = cdnURLParts[1]
 
   if (projectBased) {
     newConfig.url = `${protocol}://${newConfig.projectId}.${host}/v${newConfig.apiVersion}`
-    newConfig.cdnUrl = `${protocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
+    newConfig.cdnUrl = `${cdnProtocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
   } else {
     newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}`
-    newConfig.cdnUrl = newConfig.url
+    newConfig.cdnUrl = `${cdnProtocol}://${cdnHost}/v${newConfig.apiVersion}`
   }
 
   return newConfig

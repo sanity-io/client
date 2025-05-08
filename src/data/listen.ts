@@ -76,7 +76,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   const listenOpts = pick(options, possibleOptions)
   const qs = encodeQueryString({query, params, options: {tag, ...listenOpts}})
 
-  const uri = `${url}${_getDataUrl(this, 'listen', qs)}`
+  const uri = `${url}${_getDataUrl(this.config(), 'listen', qs)}`
   if (uri.length > MAX_URL_LENGTH) {
     return throwError(() => new Error('Query too large for listener'))
   }

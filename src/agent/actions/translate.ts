@@ -157,7 +157,7 @@ export function _translate<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequest, {
+  return _request(client.config(), httpRequest, {
     method: 'POST',
     uri: `/agent/action/translate/${dataset}`,
     body: request,

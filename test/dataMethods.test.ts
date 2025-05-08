@@ -23,11 +23,11 @@ describe('dataMethods', async () => {
 
   describe('getUrl', () => {
     test('can use getUrl() to get API-relative paths', () => {
-      expect(dataMethods._getUrl(getClient(), '/bar/baz')).toEqual(`${projectHost()}/v1/bar/baz`)
+      expect(dataMethods._getUrl(getClient().config(), '/bar/baz')).toEqual(`${projectHost()}/v1/bar/baz`)
     })
 
     test('can use getUrl() to get API-relative paths (custom api version)', () => {
-      expect(dataMethods._getUrl(getClient({apiVersion: '2019-01-29'}), '/bar/baz')).toEqual(
+      expect(dataMethods._getUrl(getClient({apiVersion: '2019-01-29'}).config(), '/bar/baz')).toEqual(
         `${projectHost()}/v2019-01-29/bar/baz`,
       )
     })

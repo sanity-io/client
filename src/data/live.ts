@@ -66,7 +66,7 @@ export class LiveClient {
         `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
       )
     }
-    const path = _getDataUrl(this.#client, 'live/events')
+    const path = _getDataUrl(this.#client.config(), 'live/events')
     const url = new URL(this.#client.getUrl(path, false))
     const tag = _tag && requestTagPrefix ? [requestTagPrefix, _tag].join('.') : _tag
     if (tag) {

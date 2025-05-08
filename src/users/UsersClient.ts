@@ -22,7 +22,7 @@ export class ObservableUsersClient {
     id: T,
   ): Observable<T extends 'me' ? CurrentSanityUser : SanityUser> {
     return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
-      this.#client,
+      this.#client.config(),
       this.#httpRequest,
       {uri: `/users/${id}`},
     )
@@ -47,7 +47,7 @@ export class UsersClient {
     id: T,
   ): Promise<T extends 'me' ? CurrentSanityUser : SanityUser> {
     return lastValueFrom(
-      _request<T extends 'me' ? CurrentSanityUser : SanityUser>(this.#client, this.#httpRequest, {
+      _request<T extends 'me' ? CurrentSanityUser : SanityUser>(this.#client.config(), this.#httpRequest, {
         uri: `/users/${id}`,
       }),
     )

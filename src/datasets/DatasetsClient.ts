@@ -47,7 +47,7 @@ export class ObservableDatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Observable<DatasetsResponse> {
-    return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
+    return _request<DatasetsResponse>(this.#client.config(), this.#httpRequest, {
       uri: '/datasets',
       tag: null,
     })
@@ -105,7 +105,7 @@ export class DatasetsClient {
   list(): Promise<DatasetsResponse> {
     validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
-      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets', tag: null}),
+      _request<DatasetsResponse>(this.#client.config(), this.#httpRequest, {uri: '/datasets', tag: null}),
     )
   }
 }
@@ -119,7 +119,7 @@ function _modify<R = unknown>(
 ) {
   validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
-  return _request<R>(client, httpRequest, {
+  return _request<R>(client.config(), httpRequest, {
     method,
     uri: `/datasets/${name}`,
     body: options,
