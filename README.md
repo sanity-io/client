@@ -1302,6 +1302,7 @@ An important note on this approach is that you cannot call `commit()` on transac
 Release and version actions can be taken directly using the client's [actions API](#version-actions). Additionally, helper methods are provided which abstract some esoteric nomenclature with the release and version processing.
 
 0. Setup the client
+
 ```js
 import {createClient} from '@sanity/client'
 
@@ -1312,6 +1313,7 @@ const client = createClient({
 ```
 
 1. Create a new release
+
 ```js
 const {releaseId} = await client.release.create({
   metadata: {
@@ -1322,26 +1324,29 @@ const {releaseId} = await client.release.create({
 ```
 
 2. Create a new document into the release
+
 ```js
 client.createVersion({
   document: {
     _type: 'bike',
-    name: 'Upgraded black bike'
+    name: 'Upgraded black bike',
   },
   releaseId,
-  publishedId: 'bike-123'
+  publishedId: 'bike-123',
 })
 ```
 
 3. Mark a document to be unpublished when the release is run
+
 ```js
 client.unpublishVersion({
   publishedId: 'old-red-bike',
-  releaseId
+  releaseId,
 })
 ```
 
 4. List the release and all the documents within the release
+
 ```js
 const newBikesRelease = await client.releases.get({releaseId})
 /**
@@ -1358,12 +1363,12 @@ const newBikesRelease = await client.releases.get({releaseId})
  */
 
 const releaseDocuments = await client.releases.getDocuments({
-  releaseId
+  releaseId,
 })
 
 /**
  * Returns a list of documents eg.
- * 
+ *
  * [{
  *   _type: 'bike',
  *   _id: 'versions.releaseId.bike-123',
@@ -1381,14 +1386,16 @@ const releaseDocuments = await client.releases.getDocuments({
 ```
 
 5. Schedule the release (to run in 1 hours time)
+
 ```js
 client.release.schedule({
   releaseId,
-  publishAt: new Date(Date.now() + 3600000).toISOString()
+  publishAt: new Date(Date.now() + 3600000).toISOString(),
 })
 ```
 
 6. After the release has run, check and delete the release
+
 ```js
 const runRelease = await client.releases.get({releaseId})
 
@@ -1525,8 +1532,11 @@ client
 ```
 
 ## Version actions
+
 ### Create version
+
 Create a draft or release version of a published document.
+
 ```js
 client.action(
   {
@@ -1543,190 +1553,225 @@ client.action(
   console.error('Create version failed: ', err.message)
 })
 ```
+
 > [!NOTE]
 > Replacing `versions.<releaseId>` with `drafts` will create a new draft version from the published document.
 
 ### Discard version
+
 Discard a draft or release version.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.document.version.discard',
-    versionId: 'versions.new-bike-release.bike-123'
-  }
-).then(() => {
-  console.log('Discarded the version of `bike-123` within the `new-bike-release` release')
-}).catch((err) => {
-  console.error('Discard version failed: ', err.message)
-})
+    versionId: 'versions.new-bike-release.bike-123',
+  })
+  .then(() => {
+    console.log('Discarded the version of `bike-123` within the `new-bike-release` release')
+  })
+  .catch((err) => {
+    console.error('Discard version failed: ', err.message)
+  })
 ```
 
 ### Replace version
+
 Replaces the contents of an existing draft or release version document.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.document.version.replace',
     document: {
       _id: 'versions.new-bike-release.bike-123',
       color: 'red',
-      _type: 'bike'
-    }
-  }
-).then(() => {
-  console.log('Replaced the existing `bike-123` document within the `new-bike-release` release')
-}).catch((err) => {
-  console.error('Replace version failed: ', err.message)
-})
+      _type: 'bike',
+    },
+  })
+  .then(() => {
+    console.log('Replaced the existing `bike-123` document within the `new-bike-release` release')
+  })
+  .catch((err) => {
+    console.error('Replace version failed: ', err.message)
+  })
 ```
 
 ### Unpublish version
+
 Marks a document to be unpublished when the release it is part of is run.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.document.version.unpublish',
     publishedId: 'bike-123',
-    versionId: 'versions.new-bike-release.bike-123'
-  }
-).then(() => {
-  console.log('`bike-123` will be unpublished when `new-bike-release` release is run')
-}).catch((err) => {
-  console.error('Unpublish version failed: ', err.message)
-})
+    versionId: 'versions.new-bike-release.bike-123',
+  })
+  .then(() => {
+    console.log('`bike-123` will be unpublished when `new-bike-release` release is run')
+  })
+  .catch((err) => {
+    console.error('Unpublish version failed: ', err.message)
+  })
 ```
 
 ## Release Actions
+
 ### Create release
+
 Create a new release.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.create',
     releaseId: 'new-bikes-release',
     metadata: {
       title: 'New bikes',
-      releaseType: 'undecided'
-    }
-  }
-).then(() => {
-  console.log('`new-bikes-release` created')
-}).catch((err) => {
-  console.error('Create release failed: ', err.message)
-})
+      releaseType: 'undecided',
+    },
+  })
+  .then(() => {
+    console.log('`new-bikes-release` created')
+  })
+  .catch((err) => {
+    console.error('Create release failed: ', err.message)
+  })
 ```
 
 ### Edit release
+
 Edit the metadata on an existing release.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.edit',
     releaseId: 'new-bikes-release',
     patch: {
       set: {
         metadata: {
-          releaseType: 'asap'
-        }
-      }
-    }
-  }
-).then(() => {
-  console.log('`new-bikes-release` changed to `asap` release type')
-}).catch((err) => {
-  console.error('Edit release failed: ', err.message)
-})
+          releaseType: 'asap',
+        },
+      },
+    },
+  })
+  .then(() => {
+    console.log('`new-bikes-release` changed to `asap` release type')
+  })
+  .catch((err) => {
+    console.error('Edit release failed: ', err.message)
+  })
 ```
 
 ### Publish release
+
 Publish all document versions within a release.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.publish',
     releaseId: 'new-bikes-release',
-  }
-).then(() => {
-  console.log('`new-bikes-release` published')
-}).catch((err) => {
-  console.error('Publish release failed: ', err.message)
-})
+  })
+  .then(() => {
+    console.log('`new-bikes-release` published')
+  })
+  .catch((err) => {
+    console.error('Publish release failed: ', err.message)
+  })
 ```
 
 ### Schedule release
+
 Schedule a release to be run now or in the future
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.schedule',
     releaseId: 'new-bikes-release',
-    publishAt: '2025-01-01T00:00:00.000Z'
-  }
-).then(() => {
-  console.log('`new-bikes-release` scheduled')
-}).catch((err) => {
-  console.error('Schedule release failed: ', err.message)
-})
+    publishAt: '2025-01-01T00:00:00.000Z',
+  })
+  .then(() => {
+    console.log('`new-bikes-release` scheduled')
+  })
+  .catch((err) => {
+    console.error('Schedule release failed: ', err.message)
+  })
 ```
 
 ### Unschedule release
+
 Unschedule a currently scheduled release, to stop the release being run.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.unschedule',
     releaseId: 'new-bikes-release',
-  }
-).then(() => {
-  console.log('`new-bikes-release` unscheduled')
-}).catch((err) => {
-  console.error('Unschedule release failed: ', err.message)
-})
+  })
+  .then(() => {
+    console.log('`new-bikes-release` unscheduled')
+  })
+  .catch((err) => {
+    console.error('Unschedule release failed: ', err.message)
+  })
 ```
 
 ### Archive release
+
 Mark an active (not published) release as archived.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.archive',
     releaseId: 'new-bikes-release',
-  }
-).then(() => {
-  console.log('`new-bikes-release` archived')
-}).catch((err) => {
-  console.error('Archive release failed: ', err.message)
-})
+  })
+  .then(() => {
+    console.log('`new-bikes-release` archived')
+  })
+  .catch((err) => {
+    console.error('Archive release failed: ', err.message)
+  })
 ```
 
 ### Unarchive release
+
 Once a release has been archived, the archive process may be undone by unarchiving the release.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.unarchive',
     releaseId: 'new-bikes-release',
-  }
-).then(() => {
-  console.log('`new-bikes-release` unarchived')
-}).catch((err) => {
-  console.error('Unarchive release failed: ', err.message)
-})
+  })
+  .then(() => {
+    console.log('`new-bikes-release` unarchived')
+  })
+  .catch((err) => {
+    console.error('Unarchive release failed: ', err.message)
+  })
 ```
 
 ### Delete release
+
 An archived release can be deleted, which will remove the system release document permanently from the dataset.
+
 ```js
-client.action(
-  {
+client
+  .action({
     actionType: 'sanity.action.release.delete',
     releaseId: 'new-bikes-release',
-  }
-).then(() => {
-  console.log('`new-bikes-release` deleted')
-}).catch((err) => {
-  console.error('Delete release failed: ', err.message)
-})
+  })
+  .then(() => {
+    console.log('`new-bikes-release` deleted')
+  })
+  .catch((err) => {
+    console.error('Delete release failed: ', err.message)
+  })
 ```
 
 ### Uploading assets
