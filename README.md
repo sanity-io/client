@@ -475,7 +475,7 @@ Request tags are values assigned to API and CDN requests that can be used to fil
 Sanity Client has out-of-the-box support for tagging every API and CDN request on two levels:
 
 - Globally: Using the `requestTagPrefix` client configuration parameter
-- Per Request: Pass the tag option to the SDK's Request method.
+- Per Request: Pass the tag option to the SDK’s Request method.
 
 The following example will result in a query with `tag=website.landing-page`:
 
