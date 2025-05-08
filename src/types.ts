@@ -574,6 +574,24 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {patch: PatchMutationOperation}
 
 /** @public */
+export type ReleaseAction =
+  | CreateReleaseAction
+  | EditReleaseAction
+  | PublishReleaseAction
+  | ArchiveReleaseAction
+  | UnarchiveReleaseAction
+  | ScheduleReleaseAction
+  | UnscheduleReleaseAction
+  | DeleteReleaseAction
+
+/** @public */
+export type VersionAction =
+  | CreateVersionAction
+  | DiscardVersionAction
+  | ReplaceVersionAction
+  | UnpublishVersionAction
+
+/** @public */
 export type Action =
   | CreateAction
   | ReplaceDraftAction
@@ -582,6 +600,136 @@ export type Action =
   | DiscardAction
   | PublishAction
   | UnpublishAction
+  | VersionAction
+  | ReleaseAction
+
+/**
+ * Creates a new release under the given id, with metadata.
+ *
+ * @public
+ */
+export interface CreateReleaseAction {
+  actionType: 'sanity.action.release.create'
+  releaseId: string
+  metadata?: Partial<ReleaseDocument['metadata']>
+}
+
+/**
+ * Edits an existing release, updating the metadata.
+ *
+ * @public
+ */
+export interface EditReleaseAction {
+  actionType: 'sanity.action.release.edit'
+  releaseId: string
+  patch: PatchOperations
+}
+
+/**
+ * Publishes all documents in a release at once.
+ *
+ * @public
+ */
+export interface PublishReleaseAction {
+  actionType: 'sanity.action.release.publish'
+  releaseId: string
+}
+
+/**
+ * Archives an `active` release, and deletes all the release documents.
+ *
+ * @public
+ */
+export interface ArchiveReleaseAction {
+  actionType: 'sanity.action.release.archive'
+  releaseId: string
+}
+
+/**
+ * Unarchived an `archived` release, and restores all the release documents.
+ *
+ * @public
+ */
+export interface UnarchiveReleaseAction {
+  actionType: 'sanity.action.release.unarchive'
+  releaseId: string
+}
+
+/**
+ * Queues release for publishing at the given future time.
+ *
+ * @public
+ */
+export interface ScheduleReleaseAction {
+  actionType: 'sanity.action.release.schedule'
+  releaseId: string
+  publishAt: string
+}
+
+/**
+ * Unschedules a `scheduled` release, stopping it from being published.
+ *
+ * @public
+ */
+export interface UnscheduleReleaseAction {
+  actionType: 'sanity.action.release.unschedule'
+  releaseId: string
+}
+
+/**
+ * Deletes a `archived` or `published` release, and all the release documents versions.
+ *
+ * @public
+ */
+export interface DeleteReleaseAction {
+  actionType: 'sanity.action.release.delete'
+  releaseId: string
+}
+
+/**
+ * Creates a new version of an existing document, attached to the release as given
+ * by `document._id`
+ *
+ * @public
+ */
+export interface CreateVersionAction {
+  actionType: 'sanity.action.document.version.create'
+  publishedId: string
+  document: IdentifiedSanityDocumentStub
+}
+
+/**
+ * Delete a version of a document.
+ *
+ * @public
+ */
+export interface DiscardVersionAction {
+  actionType: 'sanity.action.document.version.discard'
+  versionId: string
+  purge?: boolean
+}
+
+/**
+ * Replace an existing version of a document.
+ *
+ * @public
+ */
+export interface ReplaceVersionAction {
+  actionType: 'sanity.action.document.version.replace'
+  document: IdentifiedSanityDocumentStub
+}
+
+/**
+ * Identify that a version of a document should be unpublished when
+ * the release that version is contained within is published.
+ *
+ * @public
+ */
+export interface UnpublishVersionAction {
+  actionType: 'sanity.action.document.version.unpublish'
+  versionId: string
+  publishedId: string
+}
 
 /**
  * Creates a new draft document. The published version of the document must not already exist.
@@ -614,6 +762,7 @@ export type CreateAction = {
  * At least one of the draft or published versions of the document must exist.
  *
  * @public
+ * @deprecated Use {@link ReplaceVersionAction} instead
  */
 export type ReplaceDraftAction = {
   actionType: 'sanity.action.document.replaceDraft'
@@ -686,6 +835,7 @@ export type DeleteAction = {
  * It is an error if it does not exist. If the purge flag is set, the document history is also deleted.
  *
  * @public
+ * @deprecated Use {@link DiscardVersionAction} instead
  */
 export type DiscardAction = {
   actionType: 'sanity.action.document.discard'
@@ -1242,6 +1392,71 @@ export interface ActionErrorItem {
     value?: unknown
   }
   index: number
+}
+
+/** @internal */
+export type PartialExcept<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>
+
+/** @beta */
+export type ReleaseState =
+  | 'active'
+  | 'archiving'
+  | 'unarchiving'
+  | 'archived'
+  | 'published'
+  | 'publishing'
+  | 'scheduled'
+  | 'scheduling'
+
+/** @internal */
+export type ReleaseType = 'asap' | 'scheduled' | 'undecided'
+
+/** @internal */
+export interface ReleaseDocument extends SanityDocument {
+  /**
+   * typically
+   * `_.releases.<name>`
+   */
+  _id: string
+  /**
+   * where a release has _id `_.releases.foo`, the name is `foo`
+   */
+  name: string
+  _type: 'system.release'
+  _createdAt: string
+  _updatedAt: string
+  _rev: string
+  state: ReleaseState
+  error?: {
+    message: string
+  }
+  finalDocumentStates?: {
+    /** Document ID */
+    id: string
+  }[]
+  /**
+   * If defined, it takes precedence over the intendedPublishAt, the state should be 'scheduled'
+   */
+  publishAt?: string
+  /**
+   * If defined, it provides the time the release was actually published
+   */
+  publishedAt?: string
+  metadata: {
+    title?: string
+    description?: string
+    intendedPublishAt?: string
+    releaseType: ReleaseType
+  }
+}
+
+/** @internal */
+export type EditableReleaseDocument = Omit<
+  PartialExcept<ReleaseDocument, '_id'>,
+  'metadata' | '_type'
+> & {
+  _id: string
+  metadata: Partial<ReleaseDocument['metadata']>
 }
 
 /**
