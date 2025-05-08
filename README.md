@@ -119,10 +119,6 @@ export async function updateDocumentTitle(_id, title) {
         - [Example: Field-based transformation](#example-field-based-transformation)
       - [Translating Documents](#translating-documents)
         - [Example: Storing language in a field](#example-storing-language-in-a-field)
-      - [API Reference](#api-reference)
-        - [`client.agent.action.generate(request)`](#clientagentactiongeneraterequest)
-        - [`client.agent.action.transform(request)`](#clientagentactiontransformrequest)
-        - [`client.agent.action.translate(request)`](#clientagentactiontranslaterequest)
     - [Version actions](#version-actions)
       - [Create Version Action](#create-version)
       - [Discard Version Action](#discard-version)
@@ -2063,28 +2059,6 @@ await client.agent.action.translate({
   target: { path: ['body'] }
 })
 ```
-
----
-
-#### API Reference
-
-##### `client.agent.action.generate(request)`
-
-- **Description:** Generate content for a document or fields using an LLM instruction.
-- **Returns:** A Promise resolving to the updated document, or an object with `_id` if `async: true` is set.
-
-##### `client.agent.action.transform(request)`
-
-- **Description:** Transform a document or fields based on an LLM instruction, optionally copying from a source document.
-- **Returns:** A Promise resolving to the updated document, or an object with `_id` if `async: true` is set.
-
-##### `client.agent.action.translate(request)`
-
-- **Description:** Translate a document or fields from one language to another, with support for style guides and protected phrases.
-- **Returns:** A Promise resolving to the updated document, or an object with `_id` if `async: true` is set.
-
----
-
 
 ## License
 
