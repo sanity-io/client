@@ -43,7 +43,7 @@ jobs:
           path: |
             dist/
             umd/
-  
+
   coverage:
     permissions:
       # Required to checkout the code
@@ -94,6 +94,22 @@ jobs:
       - run: npm install
       - run: npx ls-engines
       - run: npm test
+
+  esm-compatibility:
+    name: Check ESM compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [lts/*, '21', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - name: Test dependencies for ESM compatibility
+        run: npm run check-esm-compatibility
 
   prod-deps:
     name: Cache production dependencies
