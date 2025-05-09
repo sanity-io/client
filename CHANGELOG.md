@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.2.1](https://github.com/sanity-io/client/compare/v7.2.0...v7.2.1) (2025-05-09)
+
+
+### Bug Fixes
+
+* downgrade `nanoid` to ensure compatibility with node &lt; 22 ([#1076](https://github.com/sanity-io/client/issues/1076)) ([368a12d](https://github.com/sanity-io/client/commit/368a12d889b4b92e7d2e62dc9af36000b51cbd44))
+
 ## [7.2.0](https://github.com/sanity-io/client/compare/v7.1.0...v7.2.0) (2025-05-09)
 
 
