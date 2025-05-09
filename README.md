@@ -1970,11 +1970,13 @@ The Agent Actions API provides programmatic access to AI-powered content generat
 #### Overview
 
 Agent Actions allow you to:
+
 - **Generate** new content for a document or specific fields using LLM instructions.
 - **Transform** a document based on instructions, optionally copying from a source document.
 - **Translate** a document or fields from one language to another, with support for style guides and protected phrases.
 
 All methods are available in both Promise and Observable forms:
+
 - `client.agent.action.generate`, `client.agent.action.transform`, `client.agent.action.translate` (Promise-based)
 - `client.observable.agent.action.generate`, etc. (Observable-based, for streaming or RxJS use)
 
@@ -1988,9 +1990,9 @@ const result = await client.agent.action.generate({
   documentId: 'your-document-id',
   instruction: 'Write a summary for the following topic: $topic',
   instructionParams: {
-    topic: 'Grapefruit'
+    topic: 'Grapefruit',
   },
-  target: { path: ['body'] }
+  target: {path: ['body']},
 })
 ```
 
@@ -2011,14 +2013,15 @@ await client.agent.action.generate({
     list: {
       type: 'groq',
       query: '*[_type==$type].title',
-      params: {type: 'article'}
-    }
+      params: {type: 'article'},
+    },
   },
-  target: { path: ['body'] }
+  target: {path: ['body']},
 })
 ```
 
 #### Example: Using the async flag
+
 The `async` parameter allows you to fire and forget and will not wait for a response from the LLMj, this works also in the Transform and Translate APIs.
 
 ```ts
@@ -2027,10 +2030,10 @@ const result = await client.agent.action.generate({
   documentId: 'article-123',
   instruction: 'Write a comprehensive article about $topic',
   instructionParams: {
-    topic: 'Climate Change'
+    topic: 'Climate Change',
   },
-  target: { path: ['body'] },
-  async: true // Enable async mode for long-running tasks or where you don't want to wait for the result
+  target: {path: ['body']},
+  async: true, // Enable async mode for long-running tasks or where you don't want to wait for the result
 })
 
 // result will return back the document id
@@ -2045,7 +2048,7 @@ const result = await client.agent.action.transform({
   documentId: 'source-document-id',
   instruction: 'Transform the content to a more formal tone.',
   targetDocument: {operation: 'edit', _id: 'target-document-id'},
-  target: { path: ['body'] }
+  target: {path: ['body']},
 })
 ```
 
@@ -2063,9 +2066,9 @@ await client.agent.action.transform({
   documentId,
   instruction: 'Summarize the following field: $content',
   instructionParams: {
-    content: {type: 'field', path: ['body']}
+    content: {type: 'field', path: ['body']},
   },
-  target: { path: ['body'] }
+  target: {path: ['body']},
 })
 ```
 
@@ -2081,7 +2084,7 @@ const result = await client.agent.action.translate({
   toLanguage: {id: 'es', title: 'Spanish'},
   styleGuide: 'Use a friendly tone.',
   protectedPhrases: ['Sanity', 'Grapefruit'],
-  target: { path: ['body'] }
+  target: {path: ['body']},
 })
 ```
 
@@ -2101,7 +2104,7 @@ await client.agent.action.translate({
   documentId,
   toLanguage: {id: 'fr', title: 'French'},
   languageFieldPath: ['language'],
-  target: { path: ['body'] }
+  target: {path: ['body']},
 })
 ```
 
