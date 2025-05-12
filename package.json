@@ -93,6 +93,7 @@
     "benchmark": "npm test -- bench",
     "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
+    "check-esm-compatibility": "node scripts/check-esm-compatibility.mjs",
     "clean": "npx rimraf dist coverage umd/*.js",
     "coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
