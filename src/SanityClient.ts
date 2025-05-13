@@ -6,6 +6,7 @@ import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
 import {LiveClient} from './data/live'
+import {QueryFetcher} from './data/QueryFetcher'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
@@ -75,6 +76,7 @@ export class ObservableSanityClient {
    */
   #clientConfig: InitializedClientConfig
   #httpRequest: HttpRequest
+  #fetcher: QueryFetcher
 
   /**
    * Instance properties
@@ -85,6 +87,7 @@ export class ObservableSanityClient {
     this.config(config)
 
     this.#httpRequest = httpRequest
+    this.#fetcher = new QueryFetcher(httpRequest)
 
     this.assets = new ObservableAssetsClient(this, this.#httpRequest)
     this.datasets = new ObservableDatasetsClient(this, this.#httpRequest)
@@ -208,14 +211,13 @@ export class ObservableSanityClient {
     params?: Q,
     options?: QueryOptions,
   ): Observable<RawQueryResponse<R> | R> {
-    return dataMethods._fetch<R, Q>(
+    return this.#fetcher.executeFetch<R, Q, G>(
       this.#clientConfig,
-      this.#httpRequest,
-      this.#clientConfig.stega,
       query,
       params,
       options,
-    )
+      this.#clientConfig.stega
+    ) as Observable<RawQueryResponse<R> | R>
   }
 
   /**
@@ -754,6 +756,7 @@ export class SanityClient {
    */
   #clientConfig: InitializedClientConfig
   #httpRequest: HttpRequest
+  #fetcher: QueryFetcher
 
   /**
    * Instance properties
@@ -764,6 +767,7 @@ export class SanityClient {
     this.config(config)
 
     this.#httpRequest = httpRequest
+    this.#fetcher = new QueryFetcher(httpRequest)
 
     this.assets = new AssetsClient(this, this.#httpRequest)
     this.datasets = new DatasetsClient(this, this.#httpRequest)
@@ -894,15 +898,14 @@ export class SanityClient {
     options?: QueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
     return lastValueFrom(
-      dataMethods._fetch<ClientReturn<G, R>, Q>(
+      this.#fetcher.executeFetch<ClientReturn<G, R>, Q, G>(
         this.#clientConfig,
-        this.#httpRequest,
-        this.#clientConfig.stega,
         query,
         params,
         options,
-      ),
-    )
+        this.#clientConfig.stega
+      )
+    ) as Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>>
   }
 
   /**

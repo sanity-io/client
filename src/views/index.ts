@@ -13,8 +13,7 @@ import type {
   UnfilteredResponseWithoutQuery,
   RawQuerylessQueryResponse,
 } from '../types'
-import {_fetch} from '../data/dataMethods'
-import {initConfig} from '../config'
+import {QueryFetcher} from '../data/QueryFetcher'
 
 /** @public */
 export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
@@ -44,10 +43,12 @@ export type ViewsQueryOptions = Pick<QueryOptions, 'perspective' | 'resultSource
 export class ViewClient {
   #config: ViewClientConfig
   #httpRequest: HttpRequest
+  #fetcher: QueryFetcher
 
   constructor(httpRequest: HttpRequest, config: ViewClientConfig) {
     this.#config = config
     this.#httpRequest = httpRequest
+    this.#fetcher = new QueryFetcher(httpRequest)
   }
 
   /**
@@ -56,10 +57,11 @@ export class ViewClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ViewClientConfig>): ViewClient {
-    return new ViewClient(this.#httpRequest, {
+    const mergedConfig = {
       ...this.#config,
       ...newConfig,
-    })
+    }
+    return new ViewClient(this.#httpRequest, mergedConfig)
   }
 
   /**
@@ -133,23 +135,29 @@ export class ViewClient {
     params?: Q,
     options?: QueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
-    const cfg = initConfig(
-      {
-        '~experimental_resource': {
-          id: viewId,
-          type: 'views',
-        },
+    const configOverrides = {
+      '~experimental_resource': {
+        id: viewId,
+        type: 'views' as const,
       },
-      this.#config,
-    )
+    }
+
     const opts = {
       returnQuery: false,
       ...options,
       useCdn: true,
     }
 
-
-    return lastValueFrom(_fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts))
+    return lastValueFrom(
+      this.#fetcher.executeFetch<ClientReturn<G, R>, Q, G>(
+        this.#config,
+        query,
+        params,
+        opts,
+        { enabled: false },
+        configOverrides
+      )
+    ) as Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>>
   }
 }
 
@@ -157,10 +165,12 @@ export class ViewClient {
 export class ObservableViewClient {
   #config: ViewClientConfig
   #httpRequest: HttpRequest
+  #fetcher: QueryFetcher
 
   constructor(httpRequest: HttpRequest, config: ViewClientConfig) {
     this.#config = config
     this.#httpRequest = httpRequest
+    this.#fetcher = new QueryFetcher(httpRequest)
   }
 
   /**
@@ -169,10 +179,11 @@ export class ObservableViewClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ViewClientConfig>): ObservableViewClient {
-    return new ObservableViewClient(this.#httpRequest, {
+    const mergedConfig = {
       ...this.#config,
       ...newConfig,
-    })
+    }
+    return new ObservableViewClient(this.#httpRequest, mergedConfig)
   }
 
   /**
@@ -246,21 +257,26 @@ export class ObservableViewClient {
     params?: Q,
     options?: QueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
-    const cfg = initConfig(
-      {
-        '~experimental_resource': {
-          id: viewId,
-          type: 'views',
-        },
+    const configOverrides = {
+      '~experimental_resource': {
+        id: viewId,
+        type: 'views' as const,
       },
-      this.#config,
-    )
+    }
+
     const opts = {
       returnQuery: false,
       ...options,
       useCdn: true,
     }
 
-    return _fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts)
+    return this.#fetcher.executeFetch<ClientReturn<G, R>, Q, G>(
+      this.#config,
+      query,
+      params,
+      opts,
+      { enabled: false },
+      configOverrides
+    ) as Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>>
   }
 }
