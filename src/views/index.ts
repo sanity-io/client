@@ -45,10 +45,17 @@ export class ViewClient {
   #httpRequest: HttpRequest
   #fetcher: QueryFetcher
 
+  /**
+   * Observable version of the view client, with the same configuration as the promise-based one
+   */
+  observable: ObservableViewClient
+
   constructor(httpRequest: HttpRequest, config: ViewClientConfig) {
     this.#config = config
     this.#httpRequest = httpRequest
     this.#fetcher = new QueryFetcher(httpRequest)
+
+    this.observable = new ObservableViewClient(httpRequest, config)
   }
 
   /**
