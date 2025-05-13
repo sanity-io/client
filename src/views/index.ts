@@ -1,12 +1,13 @@
-import {lastValueFrom} from 'rxjs'
 import type {RequestOptions as GetItRequestOptions} from 'get-it'
-import {requester as defaultRequester} from '@sanity/client'
+import {type QueryParams, type QueryWithoutParams, requester as defaultRequester} from '@sanity/client'
+import {lastValueFrom} from 'rxjs'
 import type {
   ClientReturn,
   RawQueryResponse,
   HttpRequest,
   QueryOptions,
   ClientConfig,
+  Any
 } from '../types'
 import {_fetch} from '../data/dataMethods'
 import {initConfig} from '../config'
@@ -35,6 +36,35 @@ export class ViewClient {
     this.#httpRequest = httpRequest
   }
 
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param viewId - ID of the view to query
+   * @param query - GROQ-query to perform
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams = QueryWithoutParams,
+    const G extends string = string,
+  >(viewId: string, query: G, params?: Q | QueryWithoutParams): Promise<ClientReturn<G, R>>
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    viewId: string,
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: ViewsQueryOptions,
+  ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured view.
+   *
+   * @param viewId - ID of the view to query
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
   fetch<R, Q, const G extends string>(
     viewId: string,
     query: G,
