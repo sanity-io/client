@@ -64,6 +64,12 @@
       "require": "./dist/stega.cjs",
       "default": "./dist/stega.js"
     },
+    "./views": {
+      "source": "./src/views/index.ts",
+      "import": "./dist/views.js",
+      "require": "./dist/views.cjs",
+      "default": "./dist/views.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -81,6 +87,9 @@
       ],
       "stega": [
         "./dist/stega.d.ts"
+      ],
+      "views": [
+        "./dist/views.d.ts"
       ]
     }
   },
