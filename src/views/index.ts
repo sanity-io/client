@@ -41,9 +41,16 @@ export class ViewClient {
   #config: ViewClientConfig
   #httpRequest: HttpRequest
 
+  /**
+   * Observable version of the view client, with the same configuration as the promise-based one
+   */
+  observable: ObservableViewClient
+
   constructor(httpRequest: HttpRequest, config: ViewClientConfig) {
     this.#config = config
     this.#httpRequest = httpRequest
+
+    this.observable = new ObservableViewClient(httpRequest, config)
   }
 
   /**
@@ -108,7 +115,6 @@ export class ViewClient {
       ...options,
       useCdn: true,
     }
-
 
     return lastValueFrom(_fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts))
   }
