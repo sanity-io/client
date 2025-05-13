@@ -1,12 +1,17 @@
 import {lastValueFrom} from 'rxjs'
 import type {RequestOptions as GetItRequestOptions} from 'get-it'
-import {requester as defaultRequester} from '@sanity/client'
+import {type QueryParams, type QueryWithoutParams, requester as defaultRequester} from '@sanity/client'
 import type {
   ClientReturn,
   RawQueryResponse,
   HttpRequest,
   QueryOptions,
   ClientConfig,
+  Any,
+  FilteredResponseQueryOptions,
+  UnfilteredResponseQueryOptions,
+  UnfilteredResponseWithoutQuery,
+  RawQuerylessQueryResponse,
 } from '../types'
 import {_fetch} from '../data/dataMethods'
 import {initConfig} from '../config'
@@ -35,11 +40,71 @@ export class ViewClient {
     this.#httpRequest = httpRequest
   }
 
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams = QueryWithoutParams,
+    const G extends string = string,
+  >(viewId: string, query: G, params?: Q | QueryWithoutParams): Promise<ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Optional request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    viewId: string,
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: FilteredResponseQueryOptions,
+  ): Promise<ClientReturn<G, R>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    viewId: string,
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseQueryOptions,
+  ): Promise<RawQueryResponse<ClientReturn<G, R>>>
+  /**
+   * Perform a GROQ-query against the configured dataset.
+   *
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Request options
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options: UnfilteredResponseWithoutQuery,
+  ): Promise<RawQuerylessQueryResponse<ClientReturn<G, R>>>
   fetch<R, Q, const G extends string>(
     viewId: string,
     query: G,
     params?: Q,
-    options?: ViewsQueryOptions,
+    options?: QueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
     const cfg = initConfig(
       {
