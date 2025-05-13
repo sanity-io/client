@@ -1,4 +1,6 @@
-import type {ActionError, Any, ErrorProps, MutationError} from '../types'
+import type {HttpContext} from 'get-it'
+
+import type {ActionError, Any, ErrorProps, MutationError, QueryParseError} from '../types'
 
 const MAX_ITEMS_IN_ERROR_MESSAGE = 5
 
@@ -9,8 +11,8 @@ export class ClientError extends Error {
   responseBody: ErrorProps['responseBody']
   details: ErrorProps['details']
 
-  constructor(res: Any) {
-    const props = extractErrorProps(res)
+  constructor(res: Any, context?: HttpContext) {
+    const props = extractErrorProps(res, context)
     super(props.message)
     Object.assign(this, props)
   }
@@ -30,7 +32,7 @@ export class ServerError extends Error {
   }
 }
 
-function extractErrorProps(res: Any): ErrorProps {
+function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
   const body = res.body
   const props = {
     response: res,
@@ -62,8 +64,16 @@ function extractErrorProps(res: Any): ErrorProps {
     return props
   }
 
-  // Query/database errors ({error: {description, other, arb, props}})
+  // Query parse errors
+  if (isQueryParseError(body)) {
+    const tag = context?.options?.query?.tag
+    props.message = groqParseMessage(body, tag)
+    props.details = body.error
+    return props
+  }
+
   if (body.error && body.error.description) {
+    // Query/database errors ({error: {description, other, arb, props}})
     props.message = body.error.description
     props.details = body.error
     return props
@@ -83,6 +93,17 @@ function isMutationError(body: Any): body is MutationError {
   )
 }
 
+export function isQueryParseError(body: Any): body is QueryParseError {
+  return (
+    isPlainObject(body) &&
+    isPlainObject(body.error) &&
+    body.error.type === 'queryParseError' &&
+    typeof body.error.query === 'string' &&
+    typeof body.error.start === 'number' &&
+    typeof body.error.end === 'number'
+  )
+}
+
 function isActionError(body: Any): body is ActionError {
   return (
     isPlainObject(body) &&
@@ -94,6 +115,25 @@ function isActionError(body: Any): body is ActionError {
 
 function isPlainObject(obj: Any): obj is Record<string, unknown> {
   return typeof obj === 'object' && obj !== null && !Array.isArray(obj)
+}
+
+export function groqParseMessage(res: QueryParseError, tag?: string | null) {
+  const {query, start, end, description} = res.error
+  const lineStart = query.slice(0, start).lastIndexOf('\n') + 1
+  const lineNumber = (query.slice(0, lineStart).match(/\n/g) || []).length + 1
+  const line = query.slice(lineStart, query.indexOf('\n', lineStart))
+  const column = start - lineStart
+  const columnEnd = typeof end === 'number' ? end - lineStart : undefined
+
+  const pointer = dashLine(column, columnEnd)
+  const withTag = tag ? `\nTag: ${tag}` : ''
+  return `GROQ query parse error: ${description}.\n\n${line}\n${pointer}\n\nLine: ${lineNumber}\nColumn: ${column}${withTag}`
+}
+
+function dashLine(column: number, columnEnd: number | undefined): string {
+  const line = '-'.repeat(column)
+  const hats = `^`.repeat(columnEnd ? columnEnd - column : 1)
+  return `${line}${hats}`
 }
 
 function httpErrorMessage(res: Any) {
