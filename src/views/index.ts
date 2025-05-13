@@ -1,6 +1,6 @@
+import {lastValueFrom, Observable} from 'rxjs'
 import type {RequestOptions as GetItRequestOptions} from 'get-it'
 import {type QueryParams, type QueryWithoutParams, requester as defaultRequester} from '@sanity/client'
-import {lastValueFrom} from 'rxjs'
 import type {
   ClientReturn,
   RawQueryResponse,
@@ -18,10 +18,20 @@ export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projec
 }
 
 /** @public */
-export const createViewClient = (config: ViewClientConfig) => new ViewClient(
-  (options, requester) => (requester || defaultRequester)(options as GetItRequestOptions),
-  config,
-)
+export const createViewClient = (config: ViewClientConfig) => {
+  const httpRequest = (options: any, requester?: any) =>
+    (requester || defaultRequester)(options as GetItRequestOptions)
+
+  return new ViewClient(httpRequest, config)
+}
+
+/** @public */
+export const createObservableViewClient = (config: ViewClientConfig) => {
+  const httpRequest = (options: any, requester?: any) =>
+    (requester || defaultRequester)(options as GetItRequestOptions)
+
+  return new ObservableViewClient(httpRequest, config)
+}
 
 /** @public */
 export type ViewsQueryOptions = Pick<QueryOptions, 'perspective' | 'resultSourceMap' | 'filterResponse'>
@@ -37,7 +47,20 @@ export class ViewClient {
   }
 
   /**
-   * Perform a GROQ-query against the configured dataset.
+   * Clone the client with a new (partial) configuration.
+   *
+   * @param viewId - ID of the view to query
+   * @param newConfig - New client configuration properties, shallowly merged with existing configuration
+   */
+  withConfig(newConfig?: Partial<ViewClientConfig>): ViewClient {
+    return new ViewClient(this.#httpRequest, {
+      ...this.#config,
+      ...newConfig,
+    })
+  }
+
+  /**
+   * Perform a GROQ-query against the configured view.
    *
    * @param viewId - ID of the view to query
    * @param query - GROQ-query to perform
@@ -88,5 +111,63 @@ export class ViewClient {
 
 
     return lastValueFrom(_fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts))
+  }
+}
+
+/** @public */
+export class ObservableViewClient {
+  #config: ViewClientConfig
+  #httpRequest: HttpRequest
+
+  constructor(httpRequest: HttpRequest, config: ViewClientConfig) {
+    this.#config = config
+    this.#httpRequest = httpRequest
+  }
+
+  /**
+   * Clone the client with a new (partial) configuration.
+   *
+   * @param newConfig - New client configuration properties, shallowly merged with existing configuration
+   */
+  withConfig(newConfig?: Partial<ViewClientConfig>): ObservableViewClient {
+    return new ObservableViewClient(this.#httpRequest, {
+      ...this.#config,
+      ...newConfig,
+    })
+  }
+
+  /**
+   * Perform a GROQ-query against the configured view.
+   *
+   * @param viewId - ID of the view to query
+   * @param query - GROQ-query to perform
+   */
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams = QueryWithoutParams,
+    const G extends string = string,
+  >(viewId: string, query: G, params?: Q | QueryWithoutParams): Observable<ClientReturn<G, R>>
+  fetch<R, Q, const G extends string>(
+    viewId: string,
+    query: G,
+    params?: Q,
+    options?: ViewsQueryOptions,
+  ): Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
+    const cfg = initConfig(
+      {
+        '~experimental_resource': {
+          id: viewId,
+          type: 'views',
+        },
+      },
+      this.#config,
+    )
+    const opts = {
+      returnQuery: false,
+      ...options,
+      useCdn: true,
+    }
+
+    return _fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts)
   }
 }
