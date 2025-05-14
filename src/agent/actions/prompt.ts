@@ -115,7 +115,7 @@ interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>
    *
    * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
    */
-  json: true
+  format: 'json'
 }
 
 interface PromptTextResponse {
@@ -126,7 +126,7 @@ interface PromptTextResponse {
    *
    * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
    */
-  json?: false
+  format?: 'text'
 }
 
 /** @beta */
@@ -136,11 +136,11 @@ export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> =
 ) &
   PromptRequestBase
 
-export function _prompt<DocumentShape extends Record<string, Any>>(
+export function _prompt<const DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   request: PromptRequest<DocumentShape>,
-): Observable<(typeof request)['json'] extends true ? DocumentShape : string> {
+): Observable<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',

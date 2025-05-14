@@ -3804,7 +3804,7 @@ describe('client', async () => {
 
       const body = await getClient().agent.action.prompt<{json: true}>({
         instruction: 'return the exact json: {json: true}',
-        json: true,
+        format: 'json',
       })
       expect(body).toEqual(response)
     })
@@ -3860,7 +3860,7 @@ describe('client', async () => {
           },
         },
         temperature: 0.6,
-        json: false,
+        format: 'text',
       })
       expect(body).toEqual('whatever')
     })
