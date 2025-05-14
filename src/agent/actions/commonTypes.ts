@@ -35,6 +35,16 @@ export interface ConstantAgentActionParam {
   value: string
 }
 
+type DocIdParam<TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false}> =
+  TParamConfig['docIdRequired'] extends true
+    ? {documentId: string}
+    : {
+        /**
+         * If omitted, implicitly uses the documentId of the instruction target
+         */
+        documentId?: string
+      }
+
 /**
  *
  *
@@ -58,17 +68,15 @@ export interface ConstantAgentActionParam {
  *
  * @beta
  * */
-export interface FieldAgentActionParam {
+export type FieldAgentActionParam<
+  TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false},
+> = {
   type: 'field'
   /**
    * Examples: 'title', ['array', \{_key: 'arrayItemKey'\}, 'field']
    */
   path: AgentActionPathSegment | AgentActionPath
-  /**
-   * If omitted, implicitly uses the documentId of the instruction target
-   */
-  documentId?: string
-}
+} & DocIdParam<TParamConfig>
 
 /**
  *
@@ -90,13 +98,11 @@ export interface FieldAgentActionParam {
  *
  * @beta
  * */
-export interface DocumentAgentActionParam {
+export type DocumentAgentActionParam<
+  TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false},
+> = {
   type: 'document'
-  /**
-   * If omitted, implicitly uses the documentId of the instruction target
-   */
-  documentId?: string
-}
+} & DocIdParam<TParamConfig>
 
 /**
  * Includes a LLM-friendly version of GROQ query result in the instruction
@@ -209,15 +215,19 @@ export interface AgentActionTarget {
 }
 
 /** @beta */
-export type AgentActionParam =
+export type AgentActionParam<
+  TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false},
+> =
   | string
   | ConstantAgentActionParam
-  | FieldAgentActionParam
-  | DocumentAgentActionParam
+  | FieldAgentActionParam<TParamConfig>
+  | DocumentAgentActionParam<TParamConfig>
   | GroqAgentActionParam
 
 /** @beta */
-export type AgentActionParams = Record<string, AgentActionParam>
+export type AgentActionParams<
+  TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false},
+> = Record<string, AgentActionParam<TParamConfig>>
 
 /** @beta */
 export interface AgentActionRequestBase {

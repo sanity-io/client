@@ -1,0 +1,150 @@
+import {type Observable} from 'rxjs'
+
+import {_request} from '../../data/dataMethods'
+import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
+import type {AgentActionParams, Any, HttpRequest} from '../../types'
+import {hasDataset} from '../../validators'
+
+/**  @beta */
+export interface PromptRequestBase {
+  /**
+   * Instruct the LLM how it should generate content. Be as specific and detailed as needed.
+   *
+   * The LLM only has access to information in the instruction, plus the target schema.
+   *
+   * string template using $variable
+   * */
+  instruction: string
+  /**
+   * param values for the string template, keys are the variable name, ie if the template has "$variable", one key must be "variable"
+   *
+   * ### Examples
+   *
+   * #### Constant
+   *
+   * ##### Shorthand
+   * ```ts
+   * client.agent.action.generate({
+   *   schemaId,
+   *   documentId,
+   *   instruction: 'Give the following topic:\n $topic \n ---\nReturns some facts about it',
+   *   instructionParams: {
+   *     topic: 'Grapefruit'
+   *   },
+   * })
+   * ```
+   * ##### Object-form
+   *
+   * ```ts
+   * client.agent.action.prompt({
+   *   instruction: 'Give the following topic:\n $topic \n ---\nReturns some facts about it.',
+   *   instructionParams: {
+   *     topic: {
+   *       type: 'constant',
+   *       value: 'Grapefruit'
+   *     },
+   *   },
+   * })
+   * ```
+   * #### Field
+   * ```ts
+   * client.agent.action.prompt({
+   *   instruction: 'Give the following field value:\n $pte \n ---\nGenerate keywords.',
+   *   instructionParams: {
+   *     pte: {
+   *       type: 'field',
+   *       path: ['pteField'],
+   *       documentId: 'someSanityDocId'
+   *     },
+   *   },
+   * })
+   * ```
+   * #### Document
+   * ```ts
+   * client.agent.action.prompt({
+   *   json: true,
+   *   instruction: 'Given the following document:$document\nCreate a JSON string[] array with keywords describing it.',
+   *   instructionParams: {
+   *     document: {
+   *       type: 'document',
+   *       documentId: 'someSanityDocId'
+   *     },
+   *   },
+   * })
+   * ```
+   *
+   * #### GROQ
+   * ```ts
+   * client.agent.action.prompt({
+   *   instruction: 'Return the best title amongst these: $titles.',
+   *   instructionParams: {
+   *     titles: {
+   *       type: 'groq',
+   *       query: '* [_type==$type].title',
+   *       params: {type: 'article'}
+   *     },
+   *   },
+   * })
+   * ```
+   * */
+  instructionParams?: AgentActionParams<{docIdRequired: true}>
+
+  /**
+   * Controls how much variance the instructions will run with.
+   *
+   * Value must be in the range [0, 1] (inclusive).
+   *
+   * Defaults:
+   * - generate: 0.3
+   * - translate: 0
+   * - transform: 0
+   */
+  temperature?: number
+}
+
+/**
+ * @beta
+ */
+// need the unused generic here to allow for optional callsite casting
+// eslint-disable-next-line unused-imports/no-unused-vars
+interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>> {
+  /**
+   *
+   * When true, the response body will be json according to the instruction.
+   * When false, the response is the raw text response to the instruction.
+   *
+   * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
+   */
+  json: true
+}
+
+interface PromptTextResponse {
+  /**
+   *
+   * When true, the response body will be json according to the instruction.
+   * When false, the response is the raw text response to the instruction.
+   *
+   * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
+   */
+  json?: false
+}
+
+/** @beta */
+export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> = (
+  | PromptTextResponse
+  | PromptJsonResponse<T>
+) &
+  PromptRequestBase
+
+export function _prompt<DocumentShape extends Record<string, Any>>(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  request: PromptRequest<DocumentShape>,
+): Observable<(typeof request)['json'] extends true ? DocumentShape : string> {
+  const dataset = hasDataset(client.config())
+  return _request(client, httpRequest, {
+    method: 'POST',
+    uri: `/agent/action/prompt/${dataset}`,
+    body: request,
+  })
+}

@@ -3,6 +3,7 @@ import {lastValueFrom, type Observable} from 'rxjs'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {Any, HttpRequest, IdentifiedSanityDocumentStub, TranslateDocument} from '../../types'
 import {_generate, type GenerateInstruction} from './generate'
+import {_prompt, type PromptRequest} from './prompt'
 import {_transform, type TransformDocument} from './transform'
 import {_translate} from './translate'
 
@@ -107,5 +108,15 @@ export class AgentActionsClient {
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
     return lastValueFrom(_translate(this.#client, this.#httpRequest, request))
+  }
+
+  /**
+   * Run a raw instruction and return the result either as text or json
+   * @param request - prompt request
+   */
+  prompt<DocumentShape extends Record<string, Any>>(
+    request: PromptRequest<DocumentShape>,
+  ): Promise<(typeof request)['json'] extends true ? DocumentShape : string> {
+    return lastValueFrom(_prompt(this.#client, this.#httpRequest, request))
   }
 }
