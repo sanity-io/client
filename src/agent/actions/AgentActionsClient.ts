@@ -114,9 +114,9 @@ export class AgentActionsClient {
    * Run a raw instruction and return the result either as text or json
    * @param request - prompt request
    */
-  prompt<DocumentShape extends Record<string, Any>>(
+  prompt<const DocumentShape extends Record<string, Any>>(
     request: PromptRequest<DocumentShape>,
-  ): Promise<(typeof request)['json'] extends true ? DocumentShape : string> {
+  ): Promise<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
     return lastValueFrom(_prompt(this.#client, this.#httpRequest, request))
   }
 }
