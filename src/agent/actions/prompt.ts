@@ -24,9 +24,7 @@ export interface PromptRequestBase {
    *
    * ##### Shorthand
    * ```ts
-   * client.agent.action.generate({
-   *   schemaId,
-   *   documentId,
+   * client.agent.action.prompt({
    *   instruction: 'Give the following topic:\n $topic \n ---\nReturns some facts about it',
    *   instructionParams: {
    *     topic: 'Grapefruit'
