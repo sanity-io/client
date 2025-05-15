@@ -94,10 +94,7 @@ export interface PromptRequestBase {
    *
    * Value must be in the range [0, 1] (inclusive).
    *
-   * Defaults:
-   * - generate: 0.3
-   * - translate: 0
-   * - transform: 0
+   * Default: 0.3
    */
   temperature?: number
 }
