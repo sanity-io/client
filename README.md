@@ -2129,7 +2129,7 @@ const result = await client.agent.action.prompt({
 })
 ```
 
-- **instruction**: A string template describing what to generate. Use `$variable` for dynamic values.
+- **instruction**: A string template describing what the LLM should do. Use `$variable` for dynamic values.
 - **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
 - **format**: (Optional) 'text' or 'json'. Defaults to 'text'. Note that when specifying 'json', the instruction MUST include the word "json" (ignoring case) in some form.
 - **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
