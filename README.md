@@ -1978,10 +1978,11 @@ Agent Actions allow you to:
 - **Generate** new content for a document or specific fields using LLM instructions.
 - **Transform** a document based on instructions, optionally copying from a source document.
 - **Translate** a document or fields from one language to another, with support for style guides and protected phrases.
+- **Prompt** the LLM using the same instruction template format as the above actions, to get text or json back
 
 All methods are available in both Promise and Observable forms:
 
-- `client.agent.action.generate`, `client.agent.action.transform`, `client.agent.action.translate` (Promise-based)
+- `client.agent.action.generate`, `client.agent.action.transform`, `client.agent.action.translate`, `client.agent.action.prompt` (Promise-based)
 - `client.observable.agent.action.generate`, etc. (Observable-based, for streaming or RxJS use)
 
 ---
@@ -2005,6 +2006,7 @@ const result = await client.agent.action.generate({
 - **instruction**: A string template describing what to generate. Use `$variable` for dynamic values.
 - **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
 - **target**: (Optional) Specifies which fields or paths to generate content for.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0.3
 
 ##### Example: Using GROQ in instructionParams
 
@@ -2061,6 +2063,7 @@ const result = await client.agent.action.transform({
 - **instruction**: A string template describing the transformation.
 - **targetDocument**: (Optional) Specify a different document to write the result to, or create a new one.
 - **target**: (Optional) Specifies which fields or paths to transform.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
 
 ##### Example: Field-based transformation
 
@@ -2099,6 +2102,7 @@ const result = await client.agent.action.translate({
 - **styleGuide**: (Optional) Instructions for translation style.
 - **protectedPhrases**: (Optional) Array of phrases to leave untranslated.
 - **target**: (Optional) Specifies which fields or paths to translate.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
 
 ##### Example: Storing language in a field
 
@@ -2111,6 +2115,24 @@ await client.agent.action.translate({
   target: {path: ['body']},
 })
 ```
+
+#### Prompt the LLM
+
+```ts
+const result = await client.agent.action.prompt({
+  instruction: 'Say: Oh, hi $name!',
+  instructionParams: {
+    name: 'Mark',
+  },
+  temperature: 0.5,
+  format: 'text'
+})
+```
+
+- **instruction**: A string template describing what to generate. Use `$variable` for dynamic values.
+- **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
+- **format**: (Optional) 'text' or 'json'. Defaults to 'text'. Note that when specifying 'json', the instruction MUST include the word "json" (ignoring case) in some form.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
 
 ## License
 
