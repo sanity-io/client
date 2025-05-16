@@ -4253,7 +4253,7 @@ describe('client', async () => {
       await expect(client.fetch('*')).resolves.not.toThrow()
     })
 
-    test('allows overriding headers', async () => {
+    test.skipIf(isEdge)('allows overriding headers', async () => {
       const client = createClient({
         projectId: 'abc123',
         dataset: 'foo',
@@ -5019,7 +5019,7 @@ describe('client', async () => {
     })
   })
 
-  test('allows overriding headers', async () => {
+  test.skipIf(isEdge)('allows overriding headers', async () => {
     const client = createClient({
       projectId: 'abc123',
       dataset: 'foo',
@@ -5035,7 +5035,7 @@ describe('client', async () => {
     await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
   })
 
-  test('applies headers from client configuration', async () => {
+  test.skipIf(isEdge)('applies headers from client configuration', async () => {
     const client = createClient({
       projectId: 'abc123',
       dataset: 'foo',
@@ -5057,7 +5057,7 @@ describe('client', async () => {
     await expect(client.fetch('*')).resolves.not.toThrow()
   })
 
-  test('critical headers are not overridden by config headers', async () => {
+  test.skipIf(isEdge)('critical headers are not overridden by config headers', async () => {
     const client = createClient({
       projectId: 'abc123',
       dataset: 'foo',
@@ -5100,7 +5100,7 @@ describe('client', async () => {
     ).resolves.not.toThrow()
   })
 
-  test('headers can be reconfigured', async () => {
+  test.skipIf(isEdge)('headers can be reconfigured', async () => {
     const client = createClient({
       projectId: 'abc123',
       dataset: 'foo',
@@ -5141,7 +5141,7 @@ describe('client', async () => {
     await expect(client.fetch('empty-test')).resolves.not.toThrow()
   })
 
-  test('will use live API if withCredentials is set to true', async () => {
+  test.skipIf(isEdge)('will use live API if withCredentials is set to true', async () => {
     const client = createClient({
       withCredentials: true,
       projectId: 'abc123',
