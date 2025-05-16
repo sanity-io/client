@@ -4253,7 +4253,7 @@ describe('client', async () => {
       await expect(client.fetch('*')).resolves.not.toThrow()
     })
 
-    test.skipIf(isEdge)('allows overriding headers', async () => {
+    test('allows overriding headers', async () => {
       const client = createClient({
         projectId: 'abc123',
         dataset: 'foo',
