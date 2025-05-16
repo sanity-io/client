@@ -27,6 +27,10 @@ export const client = createClient({
   projectId: 'your-project-id',
   dataset: 'your-dataset-name',
   useCdn: true, // set to `false` to bypass the edge cache
+  // Set default headers to be included with all requests
+  headers: {
+    'X-Custom-Header': 'custom-value'
+  },
   apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
   // token: process.env.SANITY_SECRET_TOKEN // Needed for certain operations like updating content, accessing drafts or using draft perspectives
 })
@@ -485,7 +489,7 @@ Request tags are values assigned to API and CDN requests that can be used to fil
 Sanity Client has out-of-the-box support for tagging every API and CDN request on two levels:
 
 - Globally: Using the `requestTagPrefix` client configuration parameter
-- Per Request: Pass the tag option to the SDK’s Request method.
+- Per Request: Pass the tag option to the SDK's Request method.
 
 The following example will result in a query with `tag=website.landing-page`:
 
@@ -1960,6 +1964,18 @@ client.config({dataset: 'newDataset'})
 `client.config(options)`
 
 Set client configuration. Required options are `projectId` and `dataset`.
+
+You can also set default headers to be included with all requests:
+
+```js
+client.config({
+  headers: {
+    'X-Custom-Header': 'custom-value',
+  },
+})
+```
+
+Note that request-specific headers will override any default headers with the same name.
 
 ### Agent Actions API
 
