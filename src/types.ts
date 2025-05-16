@@ -102,6 +102,14 @@ export interface ClientConfig {
    * Optional request tag prefix for all request tags
    */
   requestTagPrefix?: string
+
+  /**
+   * Optional default headers to include with all requests
+   *
+   * @remarks request-specific headers will override any default headers with the same name.
+   */
+  headers?: Record<string, string>
+
   ignoreBrowserTokenWarning?: boolean
   withCredentials?: boolean
   allowReconfigure?: boolean
@@ -173,6 +181,12 @@ export interface InitializedClientConfig extends ClientConfig {
    * The fully initialized stega config, can be used to check if stega is enabled
    */
   stega: InitializedStegaConfig
+  /**
+   * Default headers to include with all requests
+   *
+   * @remarks request-specific headers will override any default headers with the same name.
+   */
+  headers?: Record<string, string>
 }
 
 /** @public */

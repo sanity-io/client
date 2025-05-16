@@ -5018,4 +5018,141 @@ describe('client', async () => {
       expect(res.transactionId).toEqual('abc123')
     })
   })
+
+  test.skipIf(isEdge)('allows overriding headers', async () => {
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      token: 'foo',
+      useCdn: false,
+    })
+
+    const reqheaders = {foo: 'bar'}
+    nock('https://abc123.api.sanity.io', {reqheaders})
+      .get('/v1/data/query/foo?query=*&returnQuery=false')
+      .reply(200, {result: []})
+
+    await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
+  })
+
+  test.skipIf(isEdge)('applies headers from client configuration', async () => {
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      useCdn: false,
+      headers: {
+        'X-Custom-Header': 'custom-value',
+        'X-Another-Header': 'another-value',
+      },
+    })
+
+    const reqheaders = {
+      'X-Custom-Header': 'custom-value',
+      'X-Another-Header': 'another-value',
+    }
+    nock('https://abc123.api.sanity.io', {reqheaders})
+      .get('/v1/data/query/foo?query=*&returnQuery=false')
+      .reply(200, {result: []})
+
+    await expect(client.fetch('*')).resolves.not.toThrow()
+  })
+
+  test.skipIf(isEdge)('critical headers are not overridden by config headers', async () => {
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      token: 'auth-token',
+      useCdn: false,
+      headers: {
+        'X-Custom-Header': 'config-value',
+        Authorization: 'Bearer fake-token',
+      },
+    })
+
+    const reqheaders = {
+      Authorization: 'Bearer auth-token',
+      'X-Custom-Header': 'config-value',
+    }
+    nock('https://abc123.api.sanity.io', {reqheaders})
+      .get('/v1/data/query/foo?query=auth-test&returnQuery=false')
+      .reply(200, {result: []})
+
+    const reqheaders2 = {
+      Authorization: 'Bearer request-token',
+      'X-Custom-Header': 'request-value',
+    }
+    nock('https://abc123.api.sanity.io', {reqheaders: reqheaders2})
+      .get('/v1/data/query/foo?query=request-test&returnQuery=false')
+      .reply(200, {result: []})
+
+    await expect(client.fetch('auth-test')).resolves.not.toThrow()
+    await expect(
+      client.fetch(
+        'request-test',
+        {},
+        {
+          headers: {
+            Authorization: 'Bearer request-token',
+            'X-Custom-Header': 'request-value',
+          },
+        },
+      ),
+    ).resolves.not.toThrow()
+  })
+
+  test.skipIf(isEdge)('headers can be reconfigured', async () => {
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      useCdn: false,
+      headers: {
+        'X-Custom-Header': 'mutation-test',
+      },
+    })
+
+    const reqheaders = {'X-Custom-Header': 'mutation-test'}
+    nock('https://abc123.api.sanity.io', {reqheaders})
+      .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
+      .reply(200, {transactionId: 'abc123', results: [{id: 'doc123', operation: 'create'}]})
+
+    await expect(client.create({_type: 'test', title: 'Test Document'})).resolves.not.toThrow()
+
+    client.config({
+      headers: {
+        'X-Custom-Header': 'new-value',
+      },
+    })
+
+    const reqheaders2 = {'X-Custom-Header': 'new-value'}
+    nock('https://abc123.api.sanity.io', {reqheaders: reqheaders2})
+      .get('/v1/data/query/foo?query=*&returnQuery=false')
+      .reply(200, {result: []})
+
+    await expect(client.fetch('*')).resolves.not.toThrow()
+
+    client.config({
+      headers: {},
+    })
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/data/query/foo?query=empty-test&returnQuery=false')
+      .reply(200, {result: []})
+
+    await expect(client.fetch('empty-test')).resolves.not.toThrow()
+  })
+
+  test.skipIf(isEdge)('will use live API if withCredentials is set to true', async () => {
+    const client = createClient({
+      withCredentials: true,
+      projectId: 'abc123',
+      dataset: 'foo',
+      useCdn: true,
+    })
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/data/query/foo?query=*&returnQuery=false')
+      .reply(200, {result: []})
+
+    await expect(client.fetch('*')).resolves.not.toThrow()
+  })
 })
