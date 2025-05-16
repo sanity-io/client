@@ -5057,7 +5057,7 @@ describe('client', async () => {
     await expect(client.fetch('*')).resolves.not.toThrow()
   })
 
-  test('respects header priority: request-specific > critical > config', async () => {
+  test('critical headers are not overridden by config headers', async () => {
     const client = createClient({
       projectId: 'abc123',
       dataset: 'foo',
@@ -5069,19 +5069,19 @@ describe('client', async () => {
       },
     })
 
-    const authHeaders = {
+    const reqheaders = {
       Authorization: 'Bearer auth-token',
       'X-Custom-Header': 'config-value',
     }
-    nock('https://abc123.api.sanity.io', {reqheaders: authHeaders})
+    nock('https://abc123.api.sanity.io', {reqheaders})
       .get('/v1/data/query/foo?query=auth-test&returnQuery=false')
       .reply(200, {result: []})
 
-    const requestHeaders = {
+    const reqheaders2 = {
       Authorization: 'Bearer request-token',
       'X-Custom-Header': 'request-value',
     }
-    nock('https://abc123.api.sanity.io', {reqheaders: requestHeaders})
+    nock('https://abc123.api.sanity.io', {reqheaders: reqheaders2})
       .get('/v1/data/query/foo?query=request-test&returnQuery=false')
       .reply(200, {result: []})
 
@@ -5100,7 +5100,7 @@ describe('client', async () => {
     ).resolves.not.toThrow()
   })
 
-  test('headers work with mutations and can be reconfigured', async () => {
+  test('headers can be reconfigured', async () => {
     const client = createClient({
       projectId: 'abc123',
       dataset: 'foo',
@@ -5110,8 +5110,8 @@ describe('client', async () => {
       },
     })
 
-    const mutationHeaders = {'X-Custom-Header': 'mutation-test'}
-    nock('https://abc123.api.sanity.io', {reqheaders: mutationHeaders})
+    const reqheaders = {'X-Custom-Header': 'mutation-test'}
+    nock('https://abc123.api.sanity.io', {reqheaders})
       .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
       .reply(200, {transactionId: 'abc123', results: [{id: 'doc123', operation: 'create'}]})
 
@@ -5123,8 +5123,8 @@ describe('client', async () => {
       },
     })
 
-    const reconfiguredHeaders = {'X-Custom-Header': 'new-value'}
-    nock('https://abc123.api.sanity.io', {reqheaders: reconfiguredHeaders})
+    const reqheaders2 = {'X-Custom-Header': 'new-value'}
+    nock('https://abc123.api.sanity.io', {reqheaders: reqheaders2})
       .get('/v1/data/query/foo?query=*&returnQuery=false')
       .reply(200, {result: []})
 

@@ -490,6 +490,7 @@ Sanity Client has out-of-the-box support for tagging every API and CDN request o
 
 - Globally: Using the `requestTagPrefix` client configuration parameter
 - Per Request: Pass the tag option to the SDK’s Request method.
+
 The following example will result in a query with `tag=website.landing-page`:
 
 ```ts
