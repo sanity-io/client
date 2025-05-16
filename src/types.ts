@@ -105,6 +105,8 @@ export interface ClientConfig {
 
   /**
    * Optional default headers to include with all requests
+   *
+   * @remarks request-specific headers will override any default headers with the same name.
    */
   headers?: Record<string, string>
 
@@ -181,6 +183,8 @@ export interface InitializedClientConfig extends ClientConfig {
   stega: InitializedStegaConfig
   /**
    * Default headers to include with all requests
+   *
+   * @remarks request-specific headers will override any default headers with the same name.
    */
   headers?: Record<string, string>
 }
