@@ -1978,7 +1978,7 @@ Agent Actions allow you to:
 - **Generate** new content for a document or specific fields using LLM instructions.
 - **Transform** a document based on instructions, optionally copying from a source document.
 - **Translate** a document or fields from one language to another, with support for style guides and protected phrases.
-- **Prompt** the LLM using the same instruction template format as the above actions, to get text or json back
+- **Prompt** the LLM using the same instruction template format as the other actions, but returns text or json instead of acting on a document.
 
 All methods are available in both Promise and Observable forms:
 
