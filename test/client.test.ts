@@ -3866,6 +3866,170 @@ describe('client', async () => {
     })
   })
 
+  describe.skipIf(isEdge)('AGENT ACTION: PATCH', () => {
+    test('can create new document', async () => {
+      const response = {
+        _id: 'generated',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch({
+        schemaId: 'some-schema-id',
+        targetDocument: {
+          operation: 'create',
+          _type: 'some-type',
+        },
+        target: {path: 'title', operation: 'unset'},
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can create new document with id', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'new title',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch({
+        schemaId: 'some-schema-id',
+        targetDocument: {operation: 'createIfNotExists', _id: 'new', _type: 'some-type'},
+        target: {path: 'title', operation: 'set', value: 'new title'},
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can patch existing document', async () => {
+      const response = {
+        _id: 'generated',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch({
+        documentId: 'some-id',
+        target: {path: 'title', operation: 'unset'},
+        schemaId: 'some-schema-id',
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can apply generics to type returned document value', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch<{title?: string}>({
+        documentId: 'some-id',
+        target: {path: 'title', operation: 'set', value: 'override'},
+        schemaId: 'some-schema-id',
+      })
+      expect(body.title).toEqual(response.title)
+    })
+
+    test('providing both documentId & targetDocument should not compile', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      await getClient().agent.action.patch<{title?: string}>({
+        documentId: 'some-id',
+        //@ts-expect-error not allowed
+        targetDocument: {operation: 'create', _type: 'yolo'},
+        target: {path: 'title', operation: 'set', value: 'override'},
+        schemaId: 'some-schema-id',
+      })
+    })
+
+    test('can cannot apply generics to async request since it returns _id only', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch({
+        documentId: 'some-id',
+        target: {path: 'title', operation: 'set', value: 'override'},
+        schemaId: 'some-schema-id',
+        async: true,
+      })
+      expect(body._id).toEqual(response._id)
+    })
+
+    test('async cannot noWrite', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch({
+        documentId: 'some-id',
+        target: {path: 'title', operation: 'set', value: 'override'},
+        schemaId: 'some-schema-id',
+        async: true,
+        //@ts-expect-error not allowed
+        noWrite: true,
+      })
+      expect(body._id).toEqual(response._id)
+    })
+
+    test('all the params', async () => {
+      const response = {
+        _id: 'generated',
+        title: 'override',
+      }
+
+      nock(projectHost())
+        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.patch<{title?: string}>({
+        targetDocument: {_id: 'some-id', operation: 'edit'},
+        async: false,
+        target: [
+          {path: ['title'], operation: 'append', value: 'title'},
+          {path: 'description', operation: 'set', value: 'desc'},
+          {path: 'body', operation: 'mixed', value: 'mixed'},
+          {path: 'body', operation: 'unset'},
+        ],
+        noWrite: true,
+        conditionalPaths: {
+          defaultHidden: true,
+          defaultReadOnly: false,
+          paths: [{path: ['title'], readOnly: false, hidden: false}],
+        },
+        schemaId: 'some-schema-id',
+      })
+      expect(body.title).toEqual(response.title)
+    })
+  })
+
   describe.skipIf(isEdge)('AGENT ACTION: GENERATE', () => {
     test('can create new document', async () => {
       const response = {
@@ -3940,7 +4104,7 @@ describe('client', async () => {
       expect(body.title).toEqual(response.title)
     })
 
-    test('providing both documentId & createDocument should not compile', async () => {
+    test('providing both documentId & targetDocument should not compile', async () => {
       const response = {
         _id: 'generated',
         title: 'override',

@@ -223,7 +223,7 @@ export type GenerateTargetDocument<T extends Record<string, Any> = Record<string
  */
 interface GenerateExistingDocumentRequest {
   documentId: string
-  createDocument?: never
+  targetDocument?: never
 }
 
 /**
