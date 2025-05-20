@@ -7,6 +7,10 @@ const projectHeader = 'X-Sanity-Project-ID'
 export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOptions, 'url'> {
   const headers: Any = {}
 
+  if (config.headers) {
+    Object.assign(headers, config.headers)
+  }
+
   const token = overrides.token || config.token
   if (token) {
     headers.Authorization = `Bearer ${token}`
