@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.3.0](https://github.com/sanity-io/client/compare/v7.2.2...v7.3.0) (2025-05-20)
+
+
+### Features
+
+* pass default headers to createClient for all requests ([#1079](https://github.com/sanity-io/client/issues/1079)) ([e99c852](https://github.com/sanity-io/client/commit/e99c8521fa7df5cceb7ea1ea3d9fdbe54e8efa85))
+
 ## [7.2.2](https://github.com/sanity-io/client/compare/v7.2.1...v7.2.2) (2025-05-19)
 
 
