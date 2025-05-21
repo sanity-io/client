@@ -1,5 +1,5 @@
 import {lastValueFrom, Observable} from 'rxjs'
-import type {RequestOptions as GetItRequestOptions} from 'get-it'
+import type {Requester, RequestOptions as GetItRequestOptions} from 'get-it'
 import {type QueryParams, type QueryWithoutParams, requester as defaultRequester} from '@sanity/client'
 import type {
   ClientReturn,
@@ -19,18 +19,10 @@ export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projec
 
 /** @public */
 export const createViewClient = (config: ViewClientConfig) => {
-  const httpRequest = (options: any, requester?: any) =>
+  const httpRequest = (options: GetItRequestOptions, requester?: Requester) =>
     (requester || defaultRequester)(options as GetItRequestOptions)
 
   return new ViewClient(httpRequest, config)
-}
-
-/** @public */
-export const createObservableViewClient = (config: ViewClientConfig) => {
-  const httpRequest = (options: any, requester?: any) =>
-    (requester || defaultRequester)(options as GetItRequestOptions)
-
-  return new ObservableViewClient(httpRequest, config)
 }
 
 /** @public */
