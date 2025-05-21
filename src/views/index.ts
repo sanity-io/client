@@ -1,28 +1,40 @@
 import {lastValueFrom, Observable} from 'rxjs'
-import type {Requester, RequestOptions as GetItRequestOptions} from 'get-it'
-import {type QueryParams, type QueryWithoutParams, requester as defaultRequester} from '@sanity/client'
+import {type QueryParams, type QueryWithoutParams} from '@sanity/client'
 import type {
   ClientReturn,
   RawQueryResponse,
   HttpRequest,
   QueryOptions,
   ClientConfig,
-  Any
+  Any,
 } from '../types'
 import {_fetch} from '../data/dataMethods'
 import {initConfig} from '../config'
+import {defineHttpRequest} from '../http/request'
 
 /** @public */
 export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
   // TODO: Add our own config options
 }
 
-/** @public */
-export const createViewClient = (config: ViewClientConfig) => {
-  const httpRequest = (options: GetItRequestOptions, requester?: Requester) =>
-    (requester || defaultRequester)(options as GetItRequestOptions)
-
-  return new ViewClient(httpRequest, config)
+/**
+ * Creates a new ViewClient instance with the given configuration
+ *
+ * @param config - Configuration for the ViewClient
+ * @public
+ */
+export function createViewClient(config: ViewClientConfig): ViewClient {
+  const clientRequester = defineHttpRequest([])
+  return new ViewClient(
+    (options, requester) =>
+      (requester || clientRequester)({
+        maxRedirects: 0,
+        maxRetries: config.maxRetries,
+        retryDelay: config.retryDelay,
+        ...options,
+      } as Any),
+    config,
+  )
 }
 
 /** @public */
@@ -48,7 +60,6 @@ export class ViewClient {
   /**
    * Clone the client with a new (partial) configuration.
    *
-   * @param viewId - ID of the view to query
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ViewClientConfig>): ViewClient {
