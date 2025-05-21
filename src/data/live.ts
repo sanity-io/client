@@ -52,6 +52,7 @@ export class LiveClient {
       token,
       withCredentials,
       requestTagPrefix,
+      headers: configHeaders,
     } = this.#client.config()
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
@@ -76,13 +77,20 @@ export class LiveClient {
       url.searchParams.set('includeDrafts', 'true')
     }
     const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
-    if (includeDrafts && token) {
-      esOptions.headers = {
-        Authorization: `Bearer ${token}`,
-      }
-    }
     if (includeDrafts && withCredentials) {
       esOptions.withCredentials = true
+    }
+
+    if ((includeDrafts && token) || configHeaders) {
+      esOptions.headers = {}
+
+      if (includeDrafts && token) {
+        esOptions.headers.Authorization = `Bearer ${token}`
+      }
+
+      if (configHeaders) {
+        Object.assign(esOptions.headers, configHeaders)
+      }
     }
 
     const key = `${url.href}::${JSON.stringify(esOptions)}`

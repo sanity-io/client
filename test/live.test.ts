@@ -284,6 +284,27 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
+    test('passes custom headers from client configuration', async () => {
+      expect.assertions(1)
+
+      const {server, client} = await testSse(
+        ({request, channel}) => {
+          if (request.method === 'OPTIONS') {
+            expect(request.headers['x-custom-header']).toBe('custom-value')
+          }
+
+          if (channel) {
+            channel.send({id: '123', data: {tags: ['tag1']}})
+            process.nextTick(() => channel.close())
+          }
+        },
+        {headers: {'X-Custom-Header': 'custom-value'}},
+      )
+
+      await firstValueFrom(client.live.events(), {defaultValue: null})
+      server.close()
+    })
+
     test('deduplicates EventSource instances for same URL and options', async () => {
       expect.assertions(5)
       let instanceCount = 0
