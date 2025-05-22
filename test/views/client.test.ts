@@ -5,7 +5,7 @@ import nock from 'nock'
 const apiHost = 'api.sanity.url'
 const apicdnHost = 'apicdn.sanity.url'
 
-describe('views client', async () => {
+describe('view client', async () => {
   const defaultConfig: ViewClientConfig = {
       apiHost: `https://${apiHost}`,
       apiCdnHost: `https://${apicdnHost}`,
