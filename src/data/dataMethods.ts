@@ -586,7 +586,7 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
     case 'dashboard': {
       return `/dashboards/${id}`
     }
-    case 'views': {
+    case 'view': {
       return `/views/${id}`
     }
     default:

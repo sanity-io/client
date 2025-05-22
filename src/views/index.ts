@@ -38,7 +38,7 @@ export function createViewClient(config: ViewClientConfig): ViewClient {
 }
 
 /** @public */
-export type ViewsQueryOptions = Pick<QueryOptions, 'perspective' | 'resultSourceMap' | 'filterResponse'>
+export type ViewQueryOptions = Pick<QueryOptions, 'perspective' | 'resultSourceMap' | 'filterResponse'>
 
 /** @public */
 export class ViewClient {
@@ -88,7 +88,7 @@ export class ViewClient {
     viewId: string,
     query: G,
     params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
-    options?: ViewsQueryOptions,
+    options?: ViewQueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>>
   /**
    * Perform a GROQ-query against the configured view.
@@ -102,13 +102,13 @@ export class ViewClient {
     viewId: string,
     query: G,
     params?: Q,
-    options?: ViewsQueryOptions,
+    options?: ViewQueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
     const cfg = initConfig(
       {
         '~experimental_resource': {
           id: viewId,
-          type: 'views',
+          type: 'view',
         },
       },
       this.#config,
@@ -160,13 +160,13 @@ export class ObservableViewClient {
     viewId: string,
     query: G,
     params?: Q,
-    options?: ViewsQueryOptions,
+    options?: ViewQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
     const cfg = initConfig(
       {
         '~experimental_resource': {
           id: viewId,
-          type: 'views',
+          type: 'view',
         },
       },
       this.#config,
