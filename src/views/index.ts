@@ -156,6 +156,16 @@ export class ObservableViewClient {
     Q extends QueryWithoutParams = QueryWithoutParams,
     const G extends string = string,
   >(viewId: string, query: G, params?: Q | QueryWithoutParams): Observable<ClientReturn<G, R>>
+  fetch<
+    R = Any,
+    Q extends QueryWithoutParams | QueryParams = QueryParams,
+    const G extends string = string,
+  >(
+    viewId: string,
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    options?: ViewQueryOptions,
+  ): Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>>
   fetch<R, Q, const G extends string>(
     viewId: string,
     query: G,
