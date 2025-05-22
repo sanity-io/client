@@ -2156,7 +2156,7 @@ To ensure schema-compliant operation, `client.agent.action.patch` is available. 
 ensure no duplicate keys are inserted, and merge object values so `set` operations dont accidentally remove existing values.
 
 ```ts
-const result = await client.agent.action.prompt({
+const result = await client.agent.action.patch({
   schemaId,
   documentId,
   target: [
