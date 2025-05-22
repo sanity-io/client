@@ -2181,7 +2181,7 @@ When a path targets a key in an array, the values provided will be appended afte
 Note that when appending to arrays, `value` must be an array itself, even when only a single item should be appended.
 
 ```ts
-const result = await client.agent.action.prompt({
+const result = await client.agent.action.patch({
   schemaId,
   documentId,
   target:  {
