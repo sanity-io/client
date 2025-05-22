@@ -71,7 +71,7 @@ type ClientConfigResource =
       id: string
     }
   | {
-      type: 'views'
+      type: 'view'
       id: string
     }
 
