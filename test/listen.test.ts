@@ -305,5 +305,20 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(onRequest).not.toHaveBeenCalled()
       server.close()
     })
+
+    test('passes custom headers from client configuration', async () => {
+      expect.assertions(1)
+
+      const {server, client} = await testSse(
+        ({request, channel}) => {
+          expect(request.headers['x-custom-header']).toBe('custom-value')
+          channel!.send({event: 'welcome'})
+        },
+        {headers: {'X-Custom-Header': 'custom-value'}},
+      )
+
+      await firstValueFrom(client.listen('*', {}, {events: ['welcome']}), {defaultValue: null})
+      server.close()
+    })
   },
 )
