@@ -14,7 +14,22 @@ import {defineHttpRequest} from '../http/request'
 
 /** @public */
 export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
-  // TODO: Add our own config options
+  viewOverrides?: ViewOverride[]
+}
+
+/** @public */
+export type ViewOverride = {
+  id: string
+  connections: Partial<ViewConnectionOverride>[]
+}
+
+/** @public */
+export type ViewConnectionOverride = {
+  name: string,
+  query: string,
+  dataset: string,
+  projectId: string,
+  apiVersion: string,
 }
 
 /**
