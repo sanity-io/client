@@ -198,7 +198,7 @@ function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image'
       case 'dashboard': {
         return `/dashboards/${id}/assets/${assetTypeEndpoint}`
       }
-      case 'views': {
+      case 'view': {
         throw new Error('Assets are not supported for views.')
       }
       default:
