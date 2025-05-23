@@ -17,7 +17,13 @@ export {
 } from './data/eventsource'
 export * from './data/patch'
 export * from './data/transaction'
-export {ClientError, CorsOriginError, ServerError} from './http/errors'
+export {
+  ClientError,
+  CorsOriginError,
+  formatQueryParseError,
+  isQueryParseError,
+  ServerError,
+} from './http/errors'
 export * from './SanityClient'
 export * from './types'
 

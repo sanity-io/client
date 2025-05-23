@@ -1,4 +1,4 @@
-import {getIt, type Middlewares, type Requester} from 'get-it'
+import {getIt, type HttpContext, type Middlewares, type Requester} from 'get-it'
 import {jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/middleware'
 import {Observable} from 'rxjs'
 
@@ -6,11 +6,11 @@ import type {Any} from '../types'
 import {ClientError, ServerError} from './errors'
 
 const httpError = {
-  onResponse: (res: Any) => {
+  onResponse: (res: Any, context: HttpContext) => {
     if (res.statusCode >= 500) {
       throw new ServerError(res)
     } else if (res.statusCode >= 400) {
-      throw new ClientError(res)
+      throw new ClientError(res, context)
     }
 
     return res
