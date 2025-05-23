@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.3.1](https://github.com/sanity-io/client/compare/v7.3.0...v7.3.1) (2025-05-23)
+
+
+### Bug Fixes
+
+* improve query parse errors ([#1065](https://github.com/sanity-io/client/issues/1065)) ([a734fdb](https://github.com/sanity-io/client/commit/a734fdb98d1ca605fe7bc941d2c677f0ef7dec23))
+
 ## [7.3.0](https://github.com/sanity-io/client/compare/v7.2.2...v7.3.0) (2025-05-20)
 
 
