@@ -181,10 +181,11 @@ export class ObservableViewClient {
       },
       this.#config,
     )
-    const opts = {
+    const opts: QueryOptions = {
       returnQuery: false,
       ...options,
       useCdn: true,
+      perspective: 'published',
     }
 
     return _fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts)

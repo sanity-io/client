@@ -498,6 +498,9 @@ const hasDataConfig = (config: InitializedClientConfig) =>
 const isQuery = (config: InitializedClientConfig, uri: string) =>
   hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'query'))
 
+const isViewQuery = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'views'))
+
 const isMutate = (config: InitializedClientConfig, uri: string) =>
   hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'mutate'))
 
@@ -516,7 +519,8 @@ const isData = (config: InitializedClientConfig, uri: string) =>
   isMutate(config, uri) ||
   isDoc(config, uri) ||
   isListener(config, uri) ||
-  isHistory(config, uri)
+  isHistory(config, uri) ||
+  isViewQuery(config, uri)
 
 /**
  * @internal
@@ -529,7 +533,7 @@ export function _requestObservable<R>(
   const uri = options.url || (options.uri as string)
 
   // If the `canUseCdn`-option is not set we detect it automatically based on the method + URL.
-  // Only the /data endpoint is currently available through API-CDN.
+  // The /data endpoint and view query endpoints are available through API-CDN.
   const canUseCdn =
     typeof options.canUseCdn === 'undefined'
       ? ['GET', 'HEAD'].indexOf(options.method || 'GET') >= 0 && isData(config, uri)
