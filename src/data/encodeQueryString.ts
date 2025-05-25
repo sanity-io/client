@@ -1,4 +1,5 @@
 import type {Any, ListenParams, QueryParams} from '../types'
+import {isDefined} from '../util/isDefined'
 
 export const encodeQueryString = ({
   query,
@@ -18,7 +19,7 @@ export const encodeQueryString = ({
 
   // Iterate params, the keys are prefixed with `$` and their values JSON stringified
   for (const [key, value] of Object.entries(params)) {
-    searchParams.append(`$${key}`, JSON.stringify(value))
+    if (isDefined(value)) searchParams.append(`$${key}`, JSON.stringify(value))
   }
   // Options are passed as-is
   for (const [key, value] of Object.entries(opts)) {
