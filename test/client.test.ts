@@ -4012,6 +4012,7 @@ describe('client', async () => {
       const body = await getClient().agent.action.patch<{title?: string}>({
         targetDocument: {_id: 'some-id', operation: 'edit'},
         async: false,
+        forcePublishedWrite: true,
         target: [
           {path: ['title'], operation: 'append', value: 'title'},
           {path: 'description', operation: 'set', value: 'desc'},
@@ -4176,6 +4177,7 @@ describe('client', async () => {
       const body = await getClient().agent.action.generate<{title?: string}>({
         targetDocument: {_id: 'some-id', operation: 'edit'},
         instruction: '$a $b $d',
+        forcePublishedWrite: true,
         instructionParams: {
           a: 'constant',
           b: {
@@ -4330,6 +4332,7 @@ describe('client', async () => {
       const body = await getClient().agent.action.transform<{title?: string}>({
         documentId: 'some-id',
         instruction: '$a $b $d',
+        forcePublishedWrite: true,
         instructionParams: {
           a: 'constant',
           b: {
@@ -4500,6 +4503,7 @@ describe('client', async () => {
       const body = await getClient().agent.action.translate<{title?: string}>({
         documentId: 'some-id',
         styleGuide: '$a $b $d',
+        forcePublishedWrite: true,
         targetDocument: {
           operation: 'createIfNotExists',
           _id: 'target',

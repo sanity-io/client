@@ -235,6 +235,30 @@ export interface AgentActionSchema {
   schemaId: string
 
   /**
+   * ### forcePublishedWrite: false (default)
+   * By default, agent actions will never write to a published document.
+   *
+   * Instead, they will force the use of a draft ID ("drafts.some-id") instead of the published ID ("some-id"),
+   * even when a published ID is provided.
+   *
+   * Actions will use state from an existing draft if it exists,
+   * or use the published document to create a draft, if no draft exists.
+   *
+   * On successful responses contains the _id that was actually mutated by the action.
+   *
+   * ### forcePublishedWrite: true
+   *
+   * When forcePublishedWrite: true an agent action will write to the exact id provided.
+   * The action will also not fallback to published state for draft ids.
+   *
+   * ### Versioned ids (releases)
+   * When an ID on the form "versions.<release>.some-id" behave is provided, agent actions will
+   * always behave as if forcePublishedWrite: true. That is, only the exact document state of the id provided
+   * is considered.
+   * */
+  forcePublishedWrite?: boolean
+
+  /**
    * When a type or field in the schema has a function set for `hidden` or `readOnly`, it is conditional.
    *
    * By default, Generate will not output to conditional `readOnly` and `hidden` fields,

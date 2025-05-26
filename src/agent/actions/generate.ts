@@ -179,6 +179,7 @@ export interface GenerateTarget extends AgentActionTarget {
    * @see #AgentActionTargetInclude.operation
    * @see #include
    * @see #AgentActionTargetInclude.include
+   * @see #AgentActionSchema.forcePublishedWrite
    */
   operation?: GenerateOperation
 
@@ -196,22 +197,34 @@ export interface GenerateTarget extends AgentActionTarget {
 export type GenerateTargetDocument<T extends Record<string, Any> = Record<string, Any>> =
   | {
       operation: 'edit'
+      /**
+       * @see #AgentActionSchema.forcePublishedWrite
+       */
       _id: string
     }
   | {
       operation: 'create'
+      /**
+       * @see #AgentActionSchema.forcePublishedWrite
+       */
       _id?: string
       _type: string
       initialValues?: T
     }
   | {
       operation: 'createIfNotExists'
+      /**
+       * @see #AgentActionSchema.forcePublishedWrite
+       */
       _id: string
       _type: string
       initialValues?: T
     }
   | {
       operation: 'createOrReplace'
+      /**
+       * @see #AgentActionSchema.forcePublishedWrite
+       */
       _id: string
       _type: string
       initialValues?: T
@@ -222,6 +235,9 @@ export type GenerateTargetDocument<T extends Record<string, Any> = Record<string
  * @beta
  */
 interface GenerateExistingDocumentRequest {
+  /**
+   * @see #AgentActionSchema.forcePublishedWrite
+   */
   documentId: string
   targetDocument?: never
 }
@@ -231,6 +247,9 @@ interface GenerateExistingDocumentRequest {
  * @beta
  */
 interface GenerateTargetDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
+  /**
+   * @see #AgentActionSchema.forcePublishedWrite
+   */
   targetDocument: GenerateTargetDocument<T>
   documentId?: never
 }

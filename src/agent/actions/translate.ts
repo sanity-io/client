@@ -27,6 +27,7 @@ export interface TranslateRequestBase extends AgentActionRequestBase {
 
   /**
    * The source document the transformation will use as input.
+   * @see #AgentActionSchema.forcePublishedWrite
    */
   documentId: string
 
@@ -35,6 +36,8 @@ export interface TranslateRequestBase extends AgentActionRequestBase {
    * then it is translated according to the instruction.
    *
    * When omitted, the source document (documentId) is also the target document.
+   *
+   * @see #AgentActionSchema.forcePublishedWrite
    */
   targetDocument?: TransformTargetDocument
 
