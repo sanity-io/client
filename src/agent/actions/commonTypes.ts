@@ -244,17 +244,20 @@ export interface AgentActionSchema {
    * Actions will use state from an existing draft if it exists,
    * or use the published document to create a draft, if no draft exists.
    *
-   * On successful responses contains the _id that was actually mutated by the action.
+   * Successful responses contains the _id that was mutated by the action.
+   *
    *
    * ### forcePublishedWrite: true
    *
    * When forcePublishedWrite: true an agent action will write to the exact id provided.
    * The action will also not fallback to published state for draft ids.
    *
+   *
    * ### Versioned ids (releases)
-   * When an ID on the form "versions.<release>.some-id" behave is provided, agent actions will
-   * always behave as if forcePublishedWrite: true. That is, only the exact document state of the id provided
-   * is considered.
+   *
+   * When an ID on the form "versions.<release>.some-id" is provided, agent actions will
+   * always behave as if `forcePublishedWrite: true`.
+   * That is, only the exact document state of the id provided is considered and mutated.
    * */
   forcePublishedWrite?: boolean
 
