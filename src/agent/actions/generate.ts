@@ -121,6 +121,21 @@ export interface GenerateRequestBase extends AgentActionRequestBase {
    * - when multiple targets are provided, they will be coalesced into a single target sharing a common target root.
    * It is therefor an error to provide conflicting include/exclude across targets (ie, include title in one, and exclude it in another)
    *
+   * ## Generating images
+   *
+   * Generate will generate images the same was as AI Assist, for images that have been configured using
+   * [AI Assist schema options](https://github.com/sanity-io/assist/tree/main/plugin#image-generation).
+   *
+   * To generate images _without_ changing the schema, directly target an image asset path.
+   *
+   * For example, all the following will generate an image into the provided asset:
+   * * `target: {path: ['image', 'asset'] }`
+   * * `target: {path: 'image', include: ['asset'] }`
+   *
+   * Image generation can be combined with regular content targets:
+   * * `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
+   *
+   * Since Generate happens in a single LLM pass, the image will be contextually related to other generated content.
    * @see AgentActionRequestBase#conditionalPaths
    */
   target?: GenerateTarget | GenerateTarget[]

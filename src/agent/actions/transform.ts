@@ -138,6 +138,21 @@ export interface TransformRequestBase extends AgentActionRequestBase {
    * It is therefor an error to provide conflicting include/exclude across targets (ie, include title in one, and exclude it in another)
    *
    * Default max depth for transform: 12
+   *
+   * ## Transforming images
+   *
+   * To transform an existing image, directly target an image asset path.
+   *
+   * For example, all the following will transform the image into the provided asset:
+   * * `target: {path: ['image', 'asset'] }`
+   * * `target: {path: 'image', include: ['asset'] }`
+   *
+   * Image transform can be combined with regular content targets:
+   * * `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
+   *
+   * Image transform can have per-path instructions, just like any other target paths:
+   * * `target: [{path: ['image', 'asset'], instruction: 'Make the sky blue' }`
+   *
    * @see AgentActionRequestBase#conditionalPaths
    */
   target?: TransformTarget | TransformTarget[]
