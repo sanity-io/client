@@ -2012,10 +2012,9 @@ const result = await client.agent.action.generate({
 - **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
 - **target**: (Optional) Specifies which fields or paths to generate content for.
 - **temperature**: (Optional) Controls variance, 0-1 – defaults to 0.3
-- **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server. 
+- **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server.
 - **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
 - **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
-
 
 ##### Generating images
 
@@ -2025,11 +2024,13 @@ Generate will generate images the same was as AI Assist, for images that have be
 To generate images _without_ changing the schema, directly target an image asset path.
 
 For example, all the following will generate an image into the provided asset:
-* `target: {path: ['image', 'asset'] }`
-* `target: {path: 'image', include: ['asset'] }`
+
+- `target: {path: ['image', 'asset'] }`
+- `target: {path: 'image', include: ['asset'] }`
 
 Image generation can be combined with regular content targets:
-* `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
+
+- `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
 
 Since Generate happens in a single LLM pass, the image will be contextually related to other generated content.
 
@@ -2098,14 +2099,17 @@ const result = await client.agent.action.transform({
 To transform an existing image, directly target an image asset path.
 
 For example, all the following will transform the image into the provided asset:
-* `target: {path: ['image', 'asset'] }`
-* `target: {path: 'image', include: ['asset'] }`
+
+- `target: {path: ['image', 'asset'] }`
+- `target: {path: 'image', include: ['asset'] }`
 
 Image transform can be combined with regular content targets:
-* `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
+
+- `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
 
 Image transform can have per-path instructions, just like any other target paths:
-* `target: [{path: ['image', 'asset'], instruction: 'Make the sky blue' }`
+
+- `target: [{path: ['image', 'asset'], instruction: 'Make the sky blue' }`
 
 ##### Example: Field-based transformation
 
@@ -2172,7 +2176,7 @@ const result = await client.agent.action.prompt({
     name: 'Mark',
   },
   temperature: 0.5,
-  format: 'text'
+  format: 'text',
 })
 ```
 
@@ -2185,7 +2189,7 @@ const result = await client.agent.action.prompt({
 
 The `client.patch` and `client.transaction` API are not schema aware. This allows patching documents any way you want, but the operations will not fail if they deviate from the document schema.
 
-To ensure schema-compliant operation, `client.agent.action.patch` is available. It will ensure that provided paths and values adhere to the document schema, 
+To ensure schema-compliant operation, `client.agent.action.patch` is available. It will ensure that provided paths and values adhere to the document schema,
 ensure no duplicate keys are inserted, and merge object values so `set` operations dont accidentally remove existing values.
 
 ```ts
@@ -2194,8 +2198,12 @@ const result = await client.agent.action.patch({
   documentId,
   target: [
     {path: 'title', operation: 'set', value: 'New title'},
-    {path: ['wrapper', 'array'], operation: 'append', value: [{_type: 'item', title: 'Item title'}]},
-  ]
+    {
+      path: ['wrapper', 'array'],
+      operation: 'append',
+      value: [{_type: 'item', title: 'Item title'}],
+    },
+  ],
 })
 ```
 
@@ -2217,10 +2225,10 @@ Note that when appending to arrays, `value` must be an array itself, even when o
 const result = await client.agent.action.patch({
   schemaId,
   documentId,
-  target:  {
-    path: ['array', {_key: 'existingKey'}], 
-    operation: 'append', 
-    value: [{_type: 'item', title: 'Item title', _key: 'isOptionalAndWillBeGeneratedIfMissing'}]
+  target: {
+    path: ['array', {_key: 'existingKey'}],
+    operation: 'append',
+    value: [{_type: 'item', title: 'Item title', _key: 'isOptionalAndWillBeGeneratedIfMissing'}],
   },
 })
 ```
