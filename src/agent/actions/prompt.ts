@@ -12,7 +12,7 @@ export interface PromptRequestBase {
    *
    * The LLM only has access to information in the instruction, plus the target schema.
    *
-   * string template using $variable
+   * String template with support for $variable from `instructionParams`.
    * */
   instruction: string
   /**
@@ -24,9 +24,7 @@ export interface PromptRequestBase {
    *
    * ##### Shorthand
    * ```ts
-   * client.agent.action.generate({
-   *   schemaId,
-   *   documentId,
+   * client.agent.action.prompt({
    *   instruction: 'Give the following topic:\n $topic \n ---\nReturns some facts about it',
    *   instructionParams: {
    *     topic: 'Grapefruit'
@@ -94,10 +92,7 @@ export interface PromptRequestBase {
    *
    * Value must be in the range [0, 1] (inclusive).
    *
-   * Defaults:
-   * - generate: 0.3
-   * - translate: 0
-   * - transform: 0
+   * Default: 0.3
    */
   temperature?: number
 }
@@ -115,7 +110,7 @@ interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>
    *
    * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
    */
-  json: true
+  format: 'json'
 }
 
 interface PromptTextResponse {
@@ -126,7 +121,7 @@ interface PromptTextResponse {
    *
    * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
    */
-  json?: false
+  format?: 'text'
 }
 
 /** @beta */
@@ -136,11 +131,11 @@ export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> =
 ) &
   PromptRequestBase
 
-export function _prompt<DocumentShape extends Record<string, Any>>(
+export function _prompt<const DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   request: PromptRequest<DocumentShape>,
-): Observable<(typeof request)['json'] extends true ? DocumentShape : string> {
+): Observable<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',

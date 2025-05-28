@@ -123,6 +123,8 @@ export async function updateDocumentTitle(_id, title) {
         - [Example: Field-based transformation](#example-field-based-transformation)
       - [Translating Documents](#translating-documents)
         - [Example: Storing language in a field](#example-storing-language-in-a-field)
+      - [Prompt the LLM](#prompt-the-llm)
+      - [Patch with a schema-aware API](#patch-with-a-schema-aware-api)
     - [Version actions](#version-actions)
       - [Create Version Action](#create-version)
       - [Discard Version Action](#discard-version)
@@ -1978,10 +1980,12 @@ Agent Actions allow you to:
 - **Generate** new content for a document or specific fields using LLM instructions.
 - **Transform** a document based on instructions, optionally copying from a source document.
 - **Translate** a document or fields from one language to another, with support for style guides and protected phrases.
+- **Prompt** the LLM using the same instruction template format as the other actions, but returns text or json instead of acting on a document.
+- **Patch** documents using a schema-aware API; validates that provided paths and values are schema compliant and handles `setIfMissing` semantics for deep value operations
 
 All methods are available in both Promise and Observable forms:
 
-- `client.agent.action.generate`, `client.agent.action.transform`, `client.agent.action.translate` (Promise-based)
+- `client.agent.action.generate`, `client.agent.action.transform`, `client.agent.action.translate`, `client.agent.action.prompt`, `client.agent.action.patch` (Promise-based)
 - `client.observable.agent.action.generate`, etc. (Observable-based, for streaming or RxJS use)
 
 ---
@@ -2005,6 +2009,10 @@ const result = await client.agent.action.generate({
 - **instruction**: A string template describing what to generate. Use `$variable` for dynamic values.
 - **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
 - **target**: (Optional) Specifies which fields or paths to generate content for.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0.3
+- **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server. 
+- **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
+- **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
 
 ##### Example: Using GROQ in instructionParams
 
@@ -2061,6 +2069,10 @@ const result = await client.agent.action.transform({
 - **instruction**: A string template describing the transformation.
 - **targetDocument**: (Optional) Specify a different document to write the result to, or create a new one.
 - **target**: (Optional) Specifies which fields or paths to transform.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
+- **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server.
+- **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
+- **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
 
 ##### Example: Field-based transformation
 
@@ -2084,6 +2096,7 @@ await client.agent.action.transform({
 const result = await client.agent.action.translate({
   schemaId: 'your-schema-id',
   documentId: 'source-document-id',
+  targetDocument: {operation: 'create'},
   fromLanguage: {id: 'en', title: 'English'},
   toLanguage: {id: 'es', title: 'Spanish'},
   styleGuide: 'Use a friendly tone.',
@@ -2094,11 +2107,16 @@ const result = await client.agent.action.translate({
 
 - **schemaId**: The schema identifier for the document type.
 - **documentId**: The source document ID.
+- **targetDocument**: (Optional) Specify a different document to write the result to, or create a new one.
 - **fromLanguage**: (Optional) The source language code and title.
 - **toLanguage**: The target language code and title.
 - **styleGuide**: (Optional) Instructions for translation style.
 - **protectedPhrases**: (Optional) Array of phrases to leave untranslated.
 - **target**: (Optional) Specifies which fields or paths to translate.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
+- **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server.
+- **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
+- **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
 
 ##### Example: Storing language in a field
 
@@ -2109,6 +2127,68 @@ await client.agent.action.translate({
   toLanguage: {id: 'fr', title: 'French'},
   languageFieldPath: ['language'],
   target: {path: ['body']},
+})
+```
+
+#### Prompt the LLM
+
+```ts
+const result = await client.agent.action.prompt({
+  instruction: 'Say: Oh, hi $name!',
+  instructionParams: {
+    name: 'Mark',
+  },
+  temperature: 0.5,
+  format: 'text'
+})
+```
+
+- **instruction**: A string template describing what the LLM should do. Use `$variable` for dynamic values.
+- **instructionParams**: Values for variables in the instruction. Supports constants, fields, documents, or GROQ queries.
+- **format**: (Optional) 'text' or 'json'. Defaults to 'text'. Note that when specifying 'json', the instruction MUST include the word "json" (ignoring case) in some form.
+- **temperature**: (Optional) Controls variance, 0-1 – defaults to 0
+
+#### Patch with a schema-aware API
+
+The `client.patch` and `client.transaction` API are not schema aware. This allows patching documents any way you want, but the operations will not fail if they deviate from the document schema.
+
+To ensure schema-compliant operation, `client.agent.action.patch` is available. It will ensure that provided paths and values adhere to the document schema, 
+ensure no duplicate keys are inserted, and merge object values so `set` operations dont accidentally remove existing values.
+
+```ts
+const result = await client.agent.action.patch({
+  schemaId,
+  documentId,
+  target: [
+    {path: 'title', operation: 'set', value: 'New title'},
+    {path: ['wrapper', 'array'], operation: 'append', value: [{_type: 'item', title: 'Item title'}]},
+  ]
+})
+```
+
+- **schemaId**: The schema identifier for the document type.
+- **documentId**: The source document ID OR use `targetDocument`
+- **targetDocument**: (Optional) Specify a different document to write the result to, or create a new one. Incompatible with `documentId`
+- **target**: Specify patch operations and values for paths in the document.
+- **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server.
+- **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
+- **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
+
+#### Appending into array after a key
+
+When appending to arrays, providing a `_key` is optional.
+When a path targets a key in an array, the values provided will be appended after that key'ed item in the array.
+Note that when appending to arrays, `value` must be an array itself, even when only a single item should be appended.
+
+```ts
+const result = await client.agent.action.patch({
+  schemaId,
+  documentId,
+  target:  {
+    path: ['array', {_key: 'existingKey'}], 
+    operation: 'append', 
+    value: [{_type: 'item', title: 'Item title', _key: 'isOptionalAndWillBeGeneratedIfMissing'}]
+  },
 })
 ```
 

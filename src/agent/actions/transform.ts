@@ -34,7 +34,7 @@ export interface TransformRequestBase extends AgentActionRequestBase {
   /**
    * Instruct the LLM how to transform the input to th output.
    *
-   * String template using $variable from instructionParams.
+   * String template with support for $variable from `instructionParams`.
    *
    * Capped to 2000 characters, after variables has been injected.
    * */
@@ -151,7 +151,7 @@ export interface TransformTargetInclude extends AgentActionTargetInclude {
   /**
    * Specifies a tailored instruction of this target.
    *
-   * string template using $variable from instructionParams  */
+   * String template with support for $variable from `instructionParams`.  */
   instruction?: string
 
   /**
@@ -169,7 +169,7 @@ export interface TransformTarget extends AgentActionTarget {
   /**
    * Specifies a tailored instruction of this target.
    *
-   * string template using $variable from instructionParams.
+   * String template with support for $variable from `instructionParams`.
    * */
   instruction?: string
 

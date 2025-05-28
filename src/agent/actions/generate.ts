@@ -25,7 +25,7 @@ export interface GenerateRequestBase extends AgentActionRequestBase {
    *
    * The LLM only has access to information in the instruction, plus the target schema.
    *
-   * string template using $variable
+   * String template with support for $variable from `instructionParams`.
    * */
   instruction: string
   /**
@@ -223,7 +223,7 @@ export type GenerateTargetDocument<T extends Record<string, Any> = Record<string
  */
 interface GenerateExistingDocumentRequest {
   documentId: string
-  createDocument?: never
+  targetDocument?: never
 }
 
 /**

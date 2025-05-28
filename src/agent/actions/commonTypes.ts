@@ -230,7 +230,7 @@ export type AgentActionParams<
 > = Record<string, AgentActionParam<TParamConfig>>
 
 /** @beta */
-export interface AgentActionRequestBase {
+export interface AgentActionSchema {
   /** schemaId as reported by sanity deploy / sanity schema store */
   schemaId: string
 
@@ -264,7 +264,10 @@ export interface AgentActionRequestBase {
       hidden: boolean
     }[]
   }
+}
 
+/** @beta */
+export interface AgentActionRequestBase extends AgentActionSchema {
   /**
    * When localeSettings is provided on the request, instruct can write to date and datetime fields.
    * Otherwise, such fields will be ignored.
