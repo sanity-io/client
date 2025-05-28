@@ -3781,6 +3781,91 @@ describe('client', async () => {
     })
   })
 
+  describe.skipIf(isEdge)('AGENT ACTION: PROMPT', () => {
+    test('can use instruction', async () => {
+      const response = 'i did the thing'
+
+      nock(projectHost())
+        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.prompt({
+        instruction: 'say you did the thing',
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('can ask for json', async () => {
+      const response = {json: true}
+
+      nock(projectHost())
+        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.prompt<{json: true}>({
+        instruction: 'return the exact json: {json: true}',
+        json: true,
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('requires documentId for field and document params', async () => {
+      const response = {json: true}
+
+      nock(projectHost())
+        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.prompt({
+        instruction: '$a $b',
+        instructionParams: {
+          //@ts-expect-error documentId is required
+          a: {
+            type: 'field',
+            path: ['title'],
+          },
+          //@ts-expect-error documentId is required
+          b: {
+            type: 'document',
+          },
+        },
+      })
+      expect(body).toEqual(response)
+    })
+
+    test('all the params', async () => {
+      const response = 'whatever'
+
+      nock(projectHost())
+        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .reply(200, response)
+
+      const body = await getClient().agent.action.prompt<{title?: string}>({
+        instruction: '$a $b $d',
+        instructionParams: {
+          a: 'constant',
+          b: {
+            type: 'field',
+            path: ['title'],
+            documentId: 'somewhere',
+          },
+          c: {
+            type: 'groq',
+            query: '*[id=$id].title',
+            params: {id: 'abc'},
+          },
+          d: {
+            type: 'document',
+            documentId: 'somewhere',
+          },
+        },
+        temperature: 0.6,
+        json: false,
+      })
+      expect(body).toEqual('whatever')
+    })
+  })
+
   describe.skipIf(isEdge)('AGENT ACTION: GENERATE', () => {
     test('can create new document', async () => {
       const response = {
