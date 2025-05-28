@@ -117,9 +117,11 @@ export async function updateDocumentTitle(_id, title) {
     - [Agent Actions API](#agent-actions-api)
       - [Overview](#overview)
       - [Generating Content](#generating-content)
+        - [Generating images](#generating-images)
         - [Example: Using GROQ in instructionParams](#example-using-groq-in-instructionparams)
         - [Example: Using the async flag](#example-using-the-async-flag)
       - [Transforming Documents](#transforming-documents)
+        - [Transforming images](#transforming-images)
         - [Example: Field-based transformation](#example-field-based-transformation)
       - [Translating Documents](#translating-documents)
         - [Example: Storing language in a field](#example-storing-language-in-a-field)
@@ -2014,6 +2016,23 @@ const result = await client.agent.action.generate({
 - **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
 - **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
 
+
+##### Generating images
+
+Generate will generate images the same was as AI Assist, for images that have been configured using
+[AI Assist schema options](https://github.com/sanity-io/assist/tree/main/plugin#image-generation).
+
+To generate images _without_ changing the schema, directly target an image asset path.
+
+For example, all the following will generate an image into the provided asset:
+* `target: {path: ['image', 'asset'] }`
+* `target: {path: 'image', include: ['asset'] }`
+
+Image generation can be combined with regular content targets:
+* `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
+
+Since Generate happens in a single LLM pass, the image will be contextually related to other generated content.
+
 ##### Example: Using GROQ in instructionParams
 
 ```ts
@@ -2073,6 +2092,20 @@ const result = await client.agent.action.transform({
 - **async**: (Optional) when true, the request will respond with the document id; the LLM request and mutations will continue on the server.
 - **noWrite**: (Optional) when true, the document will not be changed. The response will contain the document value with the changes.
 - **conditionalPaths**: (Optional) control how conditionally readOnly and hidden fields and types will be treated
+
+##### Transforming images
+
+To transform an existing image, directly target an image asset path.
+
+For example, all the following will transform the image into the provided asset:
+* `target: {path: ['image', 'asset'] }`
+* `target: {path: 'image', include: ['asset'] }`
+
+Image transform can be combined with regular content targets:
+* `target: [{path: ['image', 'asset'] }, {include: ['title', 'description']}]`
+
+Image transform can have per-path instructions, just like any other target paths:
+* `target: [{path: ['image', 'asset'], instruction: 'Make the sky blue' }`
 
 ##### Example: Field-based transformation
 

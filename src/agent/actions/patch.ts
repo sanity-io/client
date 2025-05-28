@@ -78,6 +78,9 @@ export type PatchTarget = {
  * @beta
  */
 interface PatchExistingDocumentRequest {
+  /**
+   * @see #AgentActionSchema.forcePublishedWrite
+   */
   documentId: string
   targetDocument?: never
 }
