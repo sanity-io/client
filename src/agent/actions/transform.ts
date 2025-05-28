@@ -20,6 +20,8 @@ export interface TransformRequestBase extends AgentActionRequestBase {
 
   /**
    * The source document the transformation will use as input.
+   *
+   * @see #AgentActionSchema.forcePublishedWrite
    */
   documentId: string
 
@@ -28,6 +30,8 @@ export interface TransformRequestBase extends AgentActionRequestBase {
    * then it is transformed according to the instruction.
    *
    * When omitted, the source document (documentId) is also the target document.
+   *
+   *  @see #AgentActionSchema.forcePublishedWrite
    */
   targetDocument?: TransformTargetDocument
 
@@ -139,7 +143,11 @@ export interface TransformRequestBase extends AgentActionRequestBase {
   target?: TransformTarget | TransformTarget[]
 }
 
-/**  @beta */
+/**
+ * @see #AgentActionSchema.forcePublishedWrite
+ *
+ * @beta
+ */
 export type TransformTargetDocument =
   | {operation: 'edit'; _id: string}
   | {operation: 'create'; _id?: string}
