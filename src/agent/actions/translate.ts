@@ -105,7 +105,7 @@ export interface TranslateLanguage {
 
 /**  @beta */
 export interface TranslateTargetInclude extends AgentActionTargetInclude {
-  /** string template using $variable from instructionParams  */
+  /** String template using $variable from styleGuideParams.  */
   styleGuide?: string
 
   /**
@@ -120,7 +120,7 @@ export interface TranslateTargetInclude extends AgentActionTargetInclude {
 
 /**  @beta */
 export interface TranslateTarget extends AgentActionTarget {
-  /** string template using $variable from instructionParams  */
+  /** String template using $variable from styleGuideParams.  */
   styleGuide?: string
 
   /**

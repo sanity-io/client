@@ -1632,6 +1632,7 @@ export type {
   GenerateTargetDocument,
   GenerateTargetInclude,
 } from './agent/actions/generate'
+export type {PatchDocument, PatchOperation, PatchTarget} from './agent/actions/patch'
 export type {PromptRequest} from './agent/actions/prompt'
 export type {
   TransformDocument,
