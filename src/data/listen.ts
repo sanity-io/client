@@ -70,7 +70,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   params?: ListenParams,
   opts: ListenOptions = {},
 ): Observable<MutationEvent<R> | ListenEvent<R>> {
-  const {url, token, withCredentials, requestTagPrefix} = this.config()
+  const {url, token, withCredentials, requestTagPrefix, headers: configHeaders} = this.config()
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag
   const options = {...defaults(opts, defaultOptions), tag}
   const listenOpts = pick(options, possibleOptions)
@@ -88,9 +88,15 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     esOptions.withCredentials = true
   }
 
-  if (token) {
-    esOptions.headers = {
-      Authorization: `Bearer ${token}`,
+  if (token || configHeaders) {
+    esOptions.headers = {}
+
+    if (token) {
+      esOptions.headers.Authorization = `Bearer ${token}`
+    }
+
+    if (configHeaders) {
+      Object.assign(esOptions.headers, configHeaders)
     }
   }
 
