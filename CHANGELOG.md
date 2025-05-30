@@ -5,6 +5,23 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.4.0](https://github.com/sanity-io/client/compare/v7.3.0...v7.4.0) (2025-05-29)
+
+
+### Features
+
+* agent.action.patch - a schema aware patch api ([#1091](https://github.com/sanity-io/client/issues/1091)) ([0bf6de3](https://github.com/sanity-io/client/commit/0bf6de3d582d81ccf114b7354b571a4db0a887a7))
+* agent.action.prompt ([d6b08b7](https://github.com/sanity-io/client/commit/d6b08b760bd1a2b9ff39a9dd28a79857840e9540))
+* agent.action.prompt – for when you dont want to bring an LLM key and just use Sanity ([#1078](https://github.com/sanity-io/client/issues/1078)) ([d6b08b7](https://github.com/sanity-io/client/commit/d6b08b760bd1a2b9ff39a9dd28a79857840e9540))
+* new agent action parameter forcePublishedWrite – agent actions never write to published doc by default ([#1092](https://github.com/sanity-io/client/issues/1092)) ([7587e2c](https://github.com/sanity-io/client/commit/7587e2cadd98a503ac1d38139bd4b0c5a8d2327e))
+
+
+### Bug Fixes
+
+* add support for custom headers in listen and live clients ([#1087](https://github.com/sanity-io/client/issues/1087)) ([11a103f](https://github.com/sanity-io/client/commit/11a103fe6d1cea0618835e8fa0bc8492d0a83558))
+* **docs:** adds examples on how to generate and transform images ([#1093](https://github.com/sanity-io/client/issues/1093)) ([475214d](https://github.com/sanity-io/client/commit/475214df57e734b03df5940573e120e1ef87eb22))
+* improve query parse errors ([#1065](https://github.com/sanity-io/client/issues/1065)) ([a734fdb](https://github.com/sanity-io/client/commit/a734fdb98d1ca605fe7bc941d2c677f0ef7dec23))
+
 ## [7.3.0](https://github.com/sanity-io/client/compare/v7.2.2...v7.3.0) (2025-05-20)
 
 
