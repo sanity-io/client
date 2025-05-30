@@ -77,7 +77,7 @@ export type PatchTarget = {
  * Patches an existing document
  * @beta
  */
-interface PatchExistingDocumentRequest {
+export interface PatchExistingDocumentRequest {
   /**
    * @see #AgentActionSchema.forcePublishedWrite
    */
@@ -89,7 +89,7 @@ interface PatchExistingDocumentRequest {
  * Create a new document, then patch it
  * @beta
  */
-interface PatchTargetDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
+export interface PatchTargetDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
   /**
    * @see #AgentActionSchema.forcePublishedWrite
    */
