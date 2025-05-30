@@ -35,7 +35,7 @@ export interface ConstantAgentActionParam {
   value: string
 }
 
-type DocIdParam<TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false}> =
+export type DocIdParam<TParamConfig extends {docIdRequired: boolean} = {docIdRequired: false}> =
   TParamConfig['docIdRequired'] extends true
     ? {documentId: string}
     : {
