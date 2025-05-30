@@ -217,7 +217,7 @@ export class Transaction extends BaseTransaction {
   /**
    * Performs a patch on the given selection. Can either be a builder function or an object of patch operations.
    *
-   * @param selection - An object with `query` and optional `params`, defining which document(s) to patch
+   * @param patch - A string representing a document ID, or an object with `query` and optional `params`, defining which document(s) to patch
    * @param patchOps - Operations to perform, or a builder function
    */
   patch(patch: MutationSelection, patchOps?: PatchBuilder | PatchOperations): this

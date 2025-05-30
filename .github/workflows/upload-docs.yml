@@ -1,0 +1,41 @@
+name: Upload Docs
+
+on:
+  # Build on pushes to the main branch
+  push:
+    branches:
+      - main
+  # Or when a new release is published
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm' # or 'pnpm' or 'yarn'
+
+      - name: Install dependencies
+        run: npm ci # or pnpm install or yarn install
+
+      - name: Build Docs
+        run: npm run docs
+
+      - name: Upload Docs
+        uses: sanity-io/reference-api-typedoc/.github/actions/typedoc-upload@latest
+        with:
+          packageName: '@sanity/client' # for example: @sanity/client
+          version: "${{ github.event.release.tag_name || '0.0.0' }}" # make sure it's the "next" and not current version being published
+          typedocJsonPath: 'docs/typedoc.json'
+        env:
+          SANITY_DOCS_API_TOKEN: ${{ secrets.SANITY_DOCS_API_TOKEN }} # this will be available org wide

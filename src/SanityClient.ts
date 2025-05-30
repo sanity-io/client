@@ -473,7 +473,7 @@ export class ObservableSanityClient {
    *
    * @category Versions
    *
-   * @param params - Version action parameters:
+   * @param args - Version action parameters:
    *   - `document` - The document to create as a new version (must include `_type`).
    *   - `publishedId` - The ID of the published document being versioned.
    *   - `releaseId` - The ID of the release to create the version for.
@@ -741,7 +741,7 @@ export class ObservableSanityClient {
    * * Replacing a version with no `releaseId` will replace the draft version of the published document.
    * * At least one of the **version** or **published** documents must exist.
    *
-   * @param params - Version action parameters:
+   * @param args - Version action parameters:
    *   - `document` - The new document to replace the version with.
    *   - `releaseId` - The ID of the release where the document version is replaced.
    *   - `publishedId` - The ID of the published document to replace.
@@ -1454,7 +1454,7 @@ export class SanityClient {
    *
    * @category Versions
    *
-   * @param params - Version action parameters:
+   * @param args - Version action parameters:
    *   - `document` - The document to create as a new version (must include `_type`).
    *   - `publishedId` - The ID of the published document being versioned.
    *   - `releaseId` - The ID of the release to create the version for.
@@ -1726,7 +1726,7 @@ export class SanityClient {
    * * Replacing a version with no `releaseId` will replace the draft version of the published document.
    * * At least one of the **version** or **published** documents must exist.
    *
-   * @param params - Version action parameters:
+   * @param args - Version action parameters:
    *   - `document` - The new document to replace the version with.
    *   - `releaseId` - The ID of the release where the document version is replaced.
    *   - `publishedId` - The ID of the published document to replace.

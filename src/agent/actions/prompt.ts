@@ -102,7 +102,7 @@ export interface PromptRequestBase {
  */
 // need the unused generic here to allow for optional callsite casting
 // eslint-disable-next-line unused-imports/no-unused-vars
-interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>> {
+export interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>> {
   /**
    *
    * When true, the response body will be json according to the instruction.
@@ -113,7 +113,10 @@ interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>
   format: 'json'
 }
 
-interface PromptTextResponse {
+/**
+ * @beta
+ */
+export interface PromptTextResponse {
   /**
    *
    * When true, the response body will be json according to the instruction.

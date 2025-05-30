@@ -72,36 +72,13 @@ export class ObservableReleasesClient {
   /**
    * @public
    *
-   * Creates a new release under the given id, with metadata.
-   *
-   * @remarks
-   * * If no releaseId is provided, a release id will be generated.
-   * * If no metadata is provided, then an `undecided` releaseType will be used.
+   * Creates a new release and generates an id and metadata.
    *
    * @category Releases
    *
-   * @param params - Release action parameters:
-   *   - `releaseId` - The id of the release to create.
-   *   - `metadata` - The metadata to associate with the release {@link ReleaseDocument}.
    * @param options - Additional action options.
+   *
    * @returns An observable that resolves to the `transactionId` and the release id and metadata.
-   *
-   * @example Creating a release with a custom id and metadata
-   * ```ts
-   * const releaseId = 'my-release'
-   * const metadata: ReleaseDocument['metadata'] = {
-   *   releaseType: 'asap',
-   * }
-   *
-   * client.observable.releases.create({releaseId, metadata}).pipe(
-   *   tap(({transactionId, releaseId, metadata}) => console.log(transactionId, releaseId, metadata)),
-   *   // {
-   *   //   transactionId: 'transaction-id',
-   *   //   releaseId: 'my-release',
-   *   //   metadata: {releaseType: 'asap'},
-   *   // }
-   * ).subscribe()
-   * ```
    *
    * @example Creating a release with generated id and metadata
    * ```ts
@@ -127,6 +104,48 @@ export class ObservableReleasesClient {
   create(
     options: BaseActionOptions,
   ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
+  /**
+   * @public
+   *
+   * Creates a new release under the given id, with metadata.
+   *
+   * @category Releases
+   *
+   * @param release - Release action parameters:
+   *   - `releaseId` - The id of the release to create.
+   *   - `metadata` - The metadata to associate with the release {@link ReleaseDocument}.
+   * @param options - Additional action options.
+   *
+   * @returns An observable that resolves to the `transactionId` and the release id and metadata.
+   *
+   * @example Creating a release with a custom id and metadata
+   * ```ts
+   * const releaseId = 'my-release'
+   * const metadata: ReleaseDocument['metadata'] = {
+   *   releaseType: 'asap',
+   * }
+   *
+   * client.observable.releases.create({releaseId, metadata}).pipe(
+   *   tap(({transactionId, releaseId, metadata}) => console.log(transactionId, releaseId, metadata)),
+   *   // {
+   *   //   transactionId: 'transaction-id',
+   *   //   releaseId: 'my-release',
+   *   //   metadata: {releaseType: 'asap'},
+   *   // }
+   * ).subscribe()
+   * ```
+   *
+   * @example Creating a release using a custom transaction id
+   * ```ts
+   * client.observable.releases.create({transactionId: 'my-transaction-id'}).pipe(
+   *   tap(({transactionId, metadata}) => console.log(transactionId, metadata)),
+   *   // {
+   *   //   transactionId: 'my-transaction-id',
+   *   //   metadata: {releaseType: 'undecided'},
+   *   // }
+   * ).subscribe()
+   * ```
+   */
   create(
     release: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,
@@ -410,7 +429,7 @@ export class ReleasesClient {
   /**
    * @public
    *
-   * Creates a new release under the given id, with metadata.
+   * Creates a new release and generates an id and metadata.
    *
    * @remarks
    * * If no releaseId is provided, a release id will be generated.
@@ -418,9 +437,29 @@ export class ReleasesClient {
    *
    * @category Releases
    *
-   * @param params - Release action parameters:
-   *   - `releaseId` - The id of the release to create.
-   *   - `metadata` - The metadata to associate with the release {@link ReleaseDocument}.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the `transactionId` and the release id and metadata.
+   *
+   * @example Creating a release with generated id and metadata
+   * ```ts
+   * const {releaseId, metadata} = await client.releases.create()
+   * console.log(releaseId) // 'my-release'
+   * console.log(metadata.releaseType) // 'undecided'
+   * ```
+   */
+  async create(
+    options: BaseActionOptions,
+  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
+  /**
+   * @public
+   *
+   * Creates a new release under the given id and metadata.
+   *
+   * @category Releases
+   *
+   * @param release - Release action parameters:
+   *   - `releaseId` (optional) - The id of the release to create.
+   *   - `metadata` (optional) - The metadata to associate with the release {@link ReleaseDocument}.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId` and the release id and metadata.
    *
@@ -441,22 +480,7 @@ export class ReleasesClient {
    * // }
    * ```
    *
-   * @example Creating a release with generated id and metadata
-   * ```ts
-   * const {metadata} = await client.releases.create()
-   * console.log(metadata.releaseType) // 'undecided'
-   * ```
-   *
-   * @example Creating a release with a custom transaction id
-   * ```ts
-   * const {transactionId, metadata} = await client.releases.create({transactionId: 'my-transaction-id'})
-   * console.log(metadata.releaseType) // 'undecided'
-   * console.log(transactionId) // 'my-transaction-id'
-   * ```
    */
-  async create(
-    options: BaseActionOptions,
-  ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   async create(
     release: {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>},
     options?: BaseActionOptions,

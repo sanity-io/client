@@ -576,7 +576,7 @@ export type MutationSelection =
   | {id: string | string[]}
 /** @internal */
 export type PatchSelection = string | string[] | MutationSelection
-/** @internal */
+/** @public */
 export type PatchMutationOperation = PatchOperations & MutationSelection
 
 /** @public */
@@ -586,6 +586,8 @@ export type Mutation<R extends Record<string, Any> = Record<string, Any>> =
   | {createIfNotExists: IdentifiedSanityDocumentStub<R>}
   | {delete: MutationSelection}
   | {patch: PatchMutationOperation}
+
+export type {ObservableReleasesClient, ReleasesClient} from './releases/ReleasesClient'
 
 /** @public */
 export type ReleaseAction =
@@ -1242,7 +1244,7 @@ export interface RawQueryResponse<R> {
 /** @public */
 export type RawQuerylessQueryResponse<R> = Omit<RawQueryResponse<R>, 'query'>
 
-/** @internal */
+/** @public */
 export type BaseMutationOptions = RequestOptions & {
   visibility?: 'sync' | 'async' | 'deferred'
   returnDocuments?: boolean
@@ -1328,7 +1330,7 @@ export type TransactionMutationOptions =
   | TransactionAllDocumentsMutationOptions
   | TransactionAllDocumentIdsMutationOptions
 
-/** @internal */
+/** @public */
 export type BaseActionOptions = RequestOptions & {
   transactionId?: string
   skipCrossDatasetReferenceValidation?: boolean
@@ -1438,7 +1440,7 @@ export type ReleaseState =
 /** @internal */
 export type ReleaseType = 'asap' | 'scheduled' | 'undecided'
 
-/** @internal */
+/** @public */
 export interface ReleaseDocument extends SanityDocument {
   /**
    * typically
@@ -1606,7 +1608,14 @@ export type LiveEvent =
   | LiveEventGoAway
 
 /** @public */
-export interface SanityQueries {}
+export type FooResult = {
+  bar: number
+}
+
+/** @public */
+export interface SanityQueries {
+  "*[_type == 'foo']": FooResult
+}
 
 /** @public */
 export type ClientReturn<
@@ -1615,16 +1624,22 @@ export type ClientReturn<
 > = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
 
 export type {
+  AgentActionsClient,
+  ObservableAgentsActionClient,
+} from './agent/actions/AgentActionsClient'
+export type {
   AgentActionParam,
   AgentActionParams,
   AgentActionPath,
   AgentActionPathSegment,
   AgentActionTarget,
+  AgentActionTypeConfig,
   ConstantAgentActionParam,
   DocumentAgentActionParam,
   FieldAgentActionParam,
   GroqAgentActionParam,
 } from './agent/actions/commonTypes'
+export type {AgentActionAsync, AgentActionSync, DocIdParam} from './agent/actions/commonTypes'
 export type {
   GenerateInstruction,
   GenerateOperation,
@@ -1632,16 +1647,42 @@ export type {
   GenerateTargetDocument,
   GenerateTargetInclude,
 } from './agent/actions/generate'
+export type {
+  GenerateAsyncInstruction,
+  GenerateExistingDocumentRequest,
+  GenerateRequestBase,
+  GenerateSyncInstruction,
+  GenerateTargetDocumentRequest,
+} from './agent/actions/generate'
 export type {PatchDocument, PatchOperation, PatchTarget} from './agent/actions/patch'
-export type {PromptRequest} from './agent/actions/prompt'
+export type {
+  PatchDocumentAsync,
+  PatchDocumentSync,
+  PatchExistingDocumentRequest,
+  PatchRequestBase,
+  PatchTargetDocumentRequest,
+} from './agent/actions/patch'
+export type {
+  PromptJsonResponse,
+  PromptRequest,
+  PromptRequestBase,
+  PromptTextResponse,
+} from './agent/actions/prompt'
 export type {
   TransformDocument,
+  TransformDocumentAsync,
+  TransformDocumentSync,
+  TransformRequestBase,
   TransformTarget,
   TransformTargetDocument,
   TransformTargetInclude,
 } from './agent/actions/transform'
 export type {
   TranslateDocument,
+  TranslateDocumentAsync,
+  TranslateDocumentSync,
+  TranslateLanguage,
+  TranslateRequestBase,
   TranslateTarget,
   TranslateTargetInclude,
 } from './agent/actions/translate'

@@ -41,7 +41,6 @@ const defaultOptions = {
  *
  * @param query - GROQ-filter to listen to changes for
  * @param params - Optional query parameters
- * @param options - Optional listener options
  * @public
  */
 export function _listen<R extends Record<string, Any> = Record<string, Any>>(

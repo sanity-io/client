@@ -20,3 +20,6 @@ tsconfig.vitest-temp.json
 #Jetbrains
 .idea
 *.iml
+# Docs
+docs
+

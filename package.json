@@ -96,6 +96,7 @@
     "check-esm-compatibility": "node scripts/check-esm-compatibility.mjs",
     "clean": "npx rimraf dist coverage umd/*.js",
     "coverage": "vitest run --coverage",
+    "docs": "typedoc src/index.ts --json docs/typedoc.json --ignoredHighlightLanguages diff",
     "lint": "eslint . --max-warnings 0",
     "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
     "prepublishOnly": "npm run build",
@@ -161,6 +162,7 @@
     "rollup": "^4.39.0",
     "sse-channel": "^4.0.0",
     "terser": "^5.39.0",
+    "typedoc": "^0.28.3",
     "typescript": "5.8.3",
     "vitest": "3.1.1"
   },
