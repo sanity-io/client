@@ -1615,16 +1615,22 @@ export type ClientReturn<
 > = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
 
 export type {
+  AgentActionsClient,
+  ObservableAgentsActionClient,
+} from './agent/actions/AgentActionsClient'
+export type {
   AgentActionParam,
   AgentActionParams,
   AgentActionPath,
   AgentActionPathSegment,
   AgentActionTarget,
+  AgentActionTypeConfig,
   ConstantAgentActionParam,
   DocumentAgentActionParam,
   FieldAgentActionParam,
   GroqAgentActionParam,
 } from './agent/actions/commonTypes'
+export type {AgentActionAsync, AgentActionSync, DocIdParam} from './agent/actions/commonTypes'
 export type {
   GenerateInstruction,
   GenerateOperation,
@@ -1632,16 +1638,42 @@ export type {
   GenerateTargetDocument,
   GenerateTargetInclude,
 } from './agent/actions/generate'
+export type {
+  GenerateAsyncInstruction,
+  GenerateExistingDocumentRequest,
+  GenerateRequestBase,
+  GenerateSyncInstruction,
+  GenerateTargetDocumentRequest,
+} from './agent/actions/generate'
 export type {PatchDocument, PatchOperation, PatchTarget} from './agent/actions/patch'
-export type {PromptRequest} from './agent/actions/prompt'
+export type {
+  PatchDocumentAsync,
+  PatchDocumentSync,
+  PatchExistingDocumentRequest,
+  PatchRequestBase,
+  PatchTargetDocumentRequest,
+} from './agent/actions/patch'
+export type {
+  PromptJsonResponse,
+  PromptRequest,
+  PromptRequestBase,
+  PromptTextResponse,
+} from './agent/actions/prompt'
 export type {
   TransformDocument,
+  TransformDocumentAsync,
+  TransformDocumentSync,
+  TransformRequestBase,
   TransformTarget,
   TransformTargetDocument,
   TransformTargetInclude,
 } from './agent/actions/transform'
 export type {
   TranslateDocument,
+  TranslateDocumentAsync,
+  TranslateDocumentSync,
+  TranslateLanguage,
+  TranslateRequestBase,
   TranslateTarget,
   TranslateTargetInclude,
 } from './agent/actions/translate'
