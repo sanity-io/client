@@ -169,6 +169,29 @@ export type TransformTargetDocument =
   | {operation: 'createIfNotExists'; _id: string}
   | {operation: 'createOrReplace'; _id: string}
 
+/**
+ *
+ * ## Set by default
+ * By default, transform will change the value of every target field in place using a set operation.
+ *
+ * ## Image description
+ *
+ * Images can be transformed to an textual description by targeting a `string`, `text` or Portable Text field (`array` with `block`)
+ * with `operation: 'image-description'`.
+ *
+ * Custom instructions for image description targets will be used to generate the description.
+ *
+ * Such targets must be a descendant field of an image object.
+ *
+ * For example:
+ * * `target: {path: ['image', 'description'], operation: 'image-description' }`
+ * * `target: {path: ['array', {_key: 'abc'}, 'alt'], operation: 'image-description' } //assuming the item in the array on the key-ed path is an image`
+ * * `target: {path: ['image'], include: ['portableTextField'], operation: 'image-description', instruction: 'Use formatting and headings to describe the image in great detail' }`
+ *
+ * @beta
+ */
+export type TransformOperation = 'set' | 'image-description'
+
 /**  @beta */
 export interface TransformTargetInclude extends AgentActionTargetInclude {
   /**
@@ -185,6 +208,12 @@ export interface TransformTargetInclude extends AgentActionTargetInclude {
    * Fields or array items not on the include list, are implicitly excluded.
    */
   include?: (AgentActionPathSegment | TransformTargetInclude)[]
+
+  /**
+   * Default to: `set`
+   * @see #TransformOperation
+   */
+  operation?: TransformOperation
 }
 
 /**  @beta */

@@ -122,6 +122,7 @@ export async function updateDocumentTitle(_id, title) {
         - [Example: Using the async flag](#example-using-the-async-flag)
       - [Transforming Documents](#transforming-documents)
         - [Transforming images](#transforming-images)
+        - [Image descriptions](#image-descriptions)
         - [Example: Field-based transformation](#example-field-based-transformation)
       - [Translating Documents](#translating-documents)
         - [Example: Storing language in a field](#example-storing-language-in-a-field)
@@ -2110,6 +2111,20 @@ Image transform can be combined with regular content targets:
 Image transform can have per-path instructions, just like any other target paths:
 
 - `target: [{path: ['image', 'asset'], instruction: 'Make the sky blue' }`
+
+##### Image descriptions
+
+Images can be transformed to an textual description by targeting a `string`, `text` or Portable Text field (`array` with `block`)
+and with `operation: 'image-description'`.
+
+Custom instructions for image description targets will be used to generate the description.
+
+Such targets must be a descendant field of an image object.
+
+For example:
+* `target: {path: ['image', 'description'], operation: 'image-description' }`
+* `target: {path: ['array', {_key: 'abc'}, 'alt'], operation: 'image-description' } //assuming the item in the array on the key-ed path is an image`
+* `target: {path: ['image'], include: ['portableTextField'], operation: 'image-description', instruction: 'Use formatting and headings to describe the image in great detail' }`
 
 ##### Example: Field-based transformation
 
