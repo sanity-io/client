@@ -4352,13 +4352,15 @@ describe('client', async () => {
         temperature: 0.6,
         async: false,
         target: [
-          {path: ['title']},
+          {path: ['title'], operation: 'set'},
+          {path: ['image', 'alt'], operation: 'image-description'},
           {
             instruction: 'based on $c – replace this field',
             include: [
               'object',
               {
                 path: 'array',
+                operation: 'set',
                 include: [{_key: '123'}],
                 instruction: 'based on $b – replace this field',
                 types: {

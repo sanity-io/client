@@ -210,7 +210,7 @@ export interface TransformTargetInclude extends AgentActionTargetInclude {
   include?: (AgentActionPathSegment | TransformTargetInclude)[]
 
   /**
-   * Default to: `set`
+   * Default: `set`
    * @see #TransformOperation
    */
   operation?: TransformOperation
@@ -233,6 +233,12 @@ export interface TransformTarget extends AgentActionTarget {
    * Fields or array items not on the include list, are implicitly excluded.
    */
   include?: (AgentActionPathSegment | TransformTargetInclude)[]
+
+  /**
+   * Default: `set`
+   * @see #TransformOperation
+   */
+  operation?: TransformOperation
 }
 
 /** @beta */
