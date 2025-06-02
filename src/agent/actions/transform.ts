@@ -175,6 +175,11 @@ export type TransformTargetDocument =
   | {operation: 'createIfNotExists'; _id: string}
   | {operation: 'createOrReplace'; _id: string}
 
+/**
+ *
+ * @see #TransformOperation
+ * @beta
+ */
 export interface ImageDescriptionOperation {
   type: 'image-description'
   /**
