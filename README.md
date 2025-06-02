@@ -2114,17 +2114,29 @@ Image transform can have per-path instructions, just like any other target paths
 
 ##### Image descriptions
 
-Images can be transformed to an textual description by targeting a `string`, `text` or Portable Text field (`array` with `block`)
-and with `operation: 'image-description'`.
+## Image description
+
+Images can be transformed to a textual description by targeting a `string`, `text` or Portable Text field (`array` with `block`)
+with `operation: {type: 'image-description'}`.
 
 Custom instructions for image description targets will be used to generate the description.
 
-Such targets must be a descendant field of an image object.
+###### Targeting image fields
+If a target is a descendant field of an image object, no `sourcePath` is required in the operation:
 
 For example:
-* `target: {path: ['image', 'description'], operation: 'image-description' }`
-* `target: {path: ['array', {_key: 'abc'}, 'alt'], operation: 'image-description' } //assuming the item in the array on the key-ed path is an image`
-* `target: {path: ['image'], include: ['portableTextField'], operation: 'image-description', instruction: 'Use formatting and headings to describe the image in great detail' }`
+- `target: {path: ['image', 'description'], operation: {type: 'image-description'} }`
+- `target: {path: ['array', {_key: 'abc'}, 'alt'], operation: {type: 'image-description'} } //assuming the item in the array on the key-ed path is an image`
+- `target: {path: ['image'], include: ['portableTextField'], operation: {type: 'image-description'}, instruction: 'Use formatting and headings to describe the image in great detail' }`
+
+###### Targeting non-image fields
+If the target image description lives outside an image object, use the `sourcePath` option to specify the path to the image field.
+`sourcePath` must be an image or image asset field.
+
+For example:
+- `target: {path: ['description'], operation: operation: {type: 'image-description', sourcePath: ['image', 'asset'] }`
+- `target: {path: ['wrapper', 'title'], operation: {type: 'image-description', sourcePath: ['array', {_key: 'abc'}, 'image'] }`
+- `target: {path: ['wrapper'], include: ['portableTextField'], operation: {type: 'image-description', sourcePath: ['image', 'asset'] }, instruction: 'Use formatting and headings to describe the image in great detail' }`
 
 ##### Example: Field-based transformation
 
