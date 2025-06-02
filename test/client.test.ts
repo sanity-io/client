@@ -4353,7 +4353,7 @@ describe('client', async () => {
         async: false,
         target: [
           {path: ['title'], operation: 'set'},
-          {path: ['image', 'alt'], operation: 'image-description'},
+          {path: ['description'], operation: {type: 'image-description', sourcePath: ['image']}},
           {
             instruction: 'based on $c – replace this field',
             include: [
