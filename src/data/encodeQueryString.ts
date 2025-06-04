@@ -18,7 +18,7 @@ export const encodeQueryString = ({
 
   // Iterate params, the keys are prefixed with `$` and their values JSON stringified
   for (const [key, value] of Object.entries(params)) {
-    searchParams.append(`$${key}`, JSON.stringify(value))
+    if (value !== undefined) searchParams.append(`$${key}`, JSON.stringify(value))
   }
   // Options are passed as-is
   for (const [key, value] of Object.entries(opts)) {
