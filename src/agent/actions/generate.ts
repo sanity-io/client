@@ -249,7 +249,7 @@ export type GenerateTargetDocument<T extends Record<string, Any> = Record<string
  * Instruction for an existing document.
  * @beta
  */
-interface GenerateExistingDocumentRequest {
+export interface GenerateExistingDocumentRequest {
   /**
    * @see #AgentActionSchema.forcePublishedWrite
    */
@@ -261,7 +261,9 @@ interface GenerateExistingDocumentRequest {
  * Instruction to create a new document
  * @beta
  */
-interface GenerateTargetDocumentRequest<T extends Record<string, Any> = Record<string, Any>> {
+export interface GenerateTargetDocumentRequest<
+  T extends Record<string, Any> = Record<string, Any>,
+> {
   /**
    * @see #AgentActionSchema.forcePublishedWrite
    */

@@ -1,0 +1,9 @@
+{
+  "entryPoints": ["src/types.ts", "src/SanityClient.ts"],
+  "exclude": ["/**/*.test.ts", "/**/*.test-d.ts", "/**/*.d.ts"],
+  "readme": "README.md",
+  "out": "docs",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true
+}
