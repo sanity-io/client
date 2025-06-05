@@ -2134,7 +2134,7 @@ If the target image description lives outside an image object, use the `sourcePa
 `sourcePath` must be an image or image asset field.
 
 For example:
-- `target: {path: ['description'], operation: operation: {type: 'image-description', sourcePath: ['image', 'asset'] }`
+- `target: {path: ['description'], operation: {type: 'image-description', sourcePath: ['image', 'asset'] }`
 - `target: {path: ['wrapper', 'title'], operation: {type: 'image-description', sourcePath: ['array', {_key: 'abc'}, 'image'] }`
 - `target: {path: ['wrapper'], include: ['portableTextField'], operation: {type: 'image-description', sourcePath: ['image', 'asset'] }, instruction: 'Use formatting and headings to describe the image in great detail' }`
 
