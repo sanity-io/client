@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.4.1](https://github.com/sanity-io/client/compare/v7.4.0...v7.4.1) (2025-06-04)
+
+
+### Bug Fixes
+
+* only allow non-nullable values in search params ([#1043](https://github.com/sanity-io/client/issues/1043)) ([19c00ea](https://github.com/sanity-io/client/commit/19c00ea7166ca36eb29c38c5e97ccebf6b8b19a4))
+
 ## [7.4.0](https://github.com/sanity-io/client/compare/v7.3.0...v7.4.0) (2025-05-29)
 
 
