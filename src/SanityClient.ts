@@ -565,7 +565,7 @@ export class ObservableSanityClient {
     const versionPublishedId = publishedId || getPublishedId(document._id)
 
     return dataMethods._createVersion<R>(
-      this,
+      this.config(),
       this.#httpRequest,
       documentVersion,
       versionPublishedId,
@@ -726,7 +726,7 @@ export class ObservableSanityClient {
   ): Observable<SingleActionResult | MultipleActionResult> {
     const documentVersionId = getDocumentVersionId(publishedId, releaseId)
 
-    return dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options)
+    return dataMethods._discardVersion(this.config(), this.#httpRequest, documentVersionId, purge, options)
   }
 
   /**
@@ -830,7 +830,7 @@ export class ObservableSanityClient {
 
     const documentVersion = {...document, _id: documentVersionId}
 
-    return dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options)
+    return dataMethods._replaceVersion<R>(this.config(), this.#httpRequest, documentVersion, options)
   }
 
   /**
@@ -860,7 +860,7 @@ export class ObservableSanityClient {
   ): Observable<SingleActionResult | MultipleActionResult> {
     const versionId = getVersionId(publishedId, releaseId)
 
-    return dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options)
+    return dataMethods._unpublishVersion(this.config(), this.#httpRequest, versionId, publishedId, options)
   }
 
   /**
@@ -1547,7 +1547,7 @@ export class SanityClient {
 
     return firstValueFrom(
       dataMethods._createVersion<R>(
-        this,
+        this.config(),
         this.#httpRequest,
         documentVersion,
         versionPublishedId,
@@ -1710,7 +1710,7 @@ export class SanityClient {
     const documentVersionId = getDocumentVersionId(publishedId, releaseId)
 
     return lastValueFrom(
-      dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options),
+      dataMethods._discardVersion(this.config(), this.#httpRequest, documentVersionId, purge, options),
     )
   }
 
@@ -1817,7 +1817,7 @@ export class SanityClient {
     const documentVersion = {...document, _id: documentVersionId}
 
     return firstValueFrom(
-      dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options),
+      dataMethods._replaceVersion<R>(this.config(), this.#httpRequest, documentVersion, options),
     )
   }
 
@@ -1849,7 +1849,7 @@ export class SanityClient {
     const versionId = getVersionId(publishedId, releaseId)
 
     return lastValueFrom(
-      dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options),
+      dataMethods._unpublishVersion(this.config(), this.#httpRequest, versionId, publishedId, options),
     )
   }
 

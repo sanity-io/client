@@ -137,7 +137,7 @@ export function _prompt<const DocumentShape extends Record<string, Any>>(
   request: PromptRequest<DocumentShape>,
 ): Observable<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequest, {
+  return _request(client.config(), httpRequest, {
     method: 'POST',
     uri: `/agent/action/prompt/${dataset}`,
     body: request,
