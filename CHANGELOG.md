@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.5.0](https://github.com/sanity-io/client/compare/v7.4.1...v7.5.0) (2025-06-06)
+
+
+### Features
+
+* `agent.action.transform` can now transform images to text descriptions ([#1096](https://github.com/sanity-io/client/issues/1096)) ([609e572](https://github.com/sanity-io/client/commit/609e572702090607cdca49df4ad313a8585a76be))
+
 ## [7.4.1](https://github.com/sanity-io/client/compare/v7.4.0...v7.4.1) (2025-06-04)
 
 
