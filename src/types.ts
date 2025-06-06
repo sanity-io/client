@@ -1631,34 +1631,9 @@ export type {
   GroqAgentActionParam,
 } from './agent/actions/commonTypes'
 export type {AgentActionAsync, AgentActionSync, DocIdParam} from './agent/actions/commonTypes'
-export type {
-  GenerateInstruction,
-  GenerateOperation,
-  GenerateTarget,
-  GenerateTargetDocument,
-  GenerateTargetInclude,
-} from './agent/actions/generate'
-export type {
-  GenerateAsyncInstruction,
-  GenerateExistingDocumentRequest,
-  GenerateRequestBase,
-  GenerateSyncInstruction,
-  GenerateTargetDocumentRequest,
-} from './agent/actions/generate'
+export type {GenerateInstruction} from './agent/actions/generate'
 export type {PatchDocument, PatchOperation, PatchTarget} from './agent/actions/patch'
-export type {
-  PatchDocumentAsync,
-  PatchDocumentSync,
-  PatchExistingDocumentRequest,
-  PatchRequestBase,
-  PatchTargetDocumentRequest,
-} from './agent/actions/patch'
-export type {
-  PromptJsonResponse,
-  PromptRequest,
-  PromptRequestBase,
-  PromptTextResponse,
-} from './agent/actions/prompt'
+export type {PromptRequest} from './agent/actions/prompt'
 export type {
   TransformDocument,
   TransformDocumentAsync,
@@ -1668,15 +1643,7 @@ export type {
   TransformTargetDocument,
   TransformTargetInclude,
 } from './agent/actions/transform'
-export type {
-  TranslateDocument,
-  TranslateDocumentAsync,
-  TranslateDocumentSync,
-  TranslateLanguage,
-  TranslateRequestBase,
-  TranslateTarget,
-  TranslateTargetInclude,
-} from './agent/actions/translate'
+export type {TranslateLanguage} from './agent/actions/translate'
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,
