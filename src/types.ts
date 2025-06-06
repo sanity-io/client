@@ -1631,7 +1631,7 @@ export type {
   GroqAgentActionParam,
 } from './agent/actions/commonTypes'
 export type {AgentActionAsync, AgentActionSync, DocIdParam} from './agent/actions/commonTypes'
-export type {GenerateInstruction} from './agent/actions/generate'
+export type {GenerateInstruction, GenerateTargetDocument} from './agent/actions/generate'
 export type {PatchDocument, PatchOperation, PatchTarget} from './agent/actions/patch'
 export type {PromptRequest} from './agent/actions/prompt'
 export type {
