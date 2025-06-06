@@ -1608,16 +1608,7 @@ export type LiveEvent =
   | LiveEventGoAway
 
 /** @public */
-export type FooResult = {
-  bar: number
-}
-
-/** @public */
-export interface SanityQueries {
-  "*[_type == 'foo']": FooResult
-}
-
-/** @public */
+export interface SanityQueries {}
 export type ClientReturn<
   GroqString extends string,
   Fallback = Any,
