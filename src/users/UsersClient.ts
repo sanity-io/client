@@ -47,9 +47,13 @@ export class UsersClient {
     id: T,
   ): Promise<T extends 'me' ? CurrentSanityUser : SanityUser> {
     return lastValueFrom(
-      _request<T extends 'me' ? CurrentSanityUser : SanityUser>(this.#client.config(), this.#httpRequest, {
-        uri: `/users/${id}`,
-      }),
+      _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
+        this.#client.config(),
+        this.#httpRequest,
+        {
+          uri: `/users/${id}`,
+        },
+      ),
     )
   }
 }

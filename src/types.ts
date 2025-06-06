@@ -73,6 +73,7 @@ type ClientConfigResource =
   | {
       type: 'view'
       id: string
+      useEmulate?: boolean
     }
 
 /** @public */
@@ -1229,10 +1230,44 @@ export interface UnfilteredResponseWithoutQuery extends ResponseQueryOptions {
 }
 
 /** @public */
+export enum ViewResourceType {
+  Dataset = 'dataset',
+}
+
+/** @public */
+export type ViewOverride = {
+  id: string
+  connections: ViewConnectionOverride[]
+}
+
+/** @public */
+export type ViewConnectionOverride = {
+  query: string
+  resourceType: ViewResourceType
+  resourceId: string
+}
+
+/** @public */
+export interface EmulatedResponseQueryOptions extends ResponseQueryOptions {
+  useEmulate: boolean
+  connections?: ViewConnectionOverride[] | undefined
+
+  filterResponse?: false
+  returnQuery?: false
+}
+
+/** @public */
 export type QueryOptions =
   | FilteredResponseQueryOptions
   | UnfilteredResponseQueryOptions
   | UnfilteredResponseWithoutQuery
+  | EmulatedResponseQueryOptions
+
+/** @public */
+export type ViewQueryOptions = Pick<
+  EmulatedResponseQueryOptions,
+  'perspective' | 'resultSourceMap' | 'filterResponse'
+>
 
 /** @public */
 export interface RawQueryResponse<R> {
