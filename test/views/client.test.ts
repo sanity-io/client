@@ -226,11 +226,17 @@ describe('view client', async () => {
 
       // Mock the emulate endpoint (POST request)
       nock(`https://${apicdnHost}`)
-        .post('/v2025-01-01/views/vw-dataset-test/emulate/emulate?returnQuery=false', {
+        .post('/v2025-01-01/views/vw-dataset-test/emulate?returnQuery=false', {
           query: '*[_type == "test"]',
           params: {},
-          // TODO: Add view connections configuration to the body
-          // This should include the dataset connections from viewOverrides
+          connections: [
+            {
+              name: 'main',
+              query: '*[_type == "document"]',
+              resourceType: ViewResourceType.Dataset,
+              resourceId: 'project123.dataset456',
+            },
+          ],
         })
         .reply(200, {ms: 100, result})
 
@@ -489,12 +495,18 @@ describe('view client', async () => {
         // Mock the emulate endpoint (POST request)
         nock(`https://${apicdnHost}`)
           .post(
-            '/v2025-01-01/views/vw-obs-dataset/emulate/emulate?returnQuery=false&perspective=published',
+            '/v2025-01-01/views/vw-obs-dataset/emulate?returnQuery=false&perspective=published',
             {
               query: '*[_type == "obs-test"]',
               params: {},
-              // TODO: Add view connections configuration to the body
-              // This should include the dataset connections from viewOverrides
+              connections: [
+                {
+                  name: 'main',
+                  query: '*[_type == "document"]',
+                  resourceType: ViewResourceType.Dataset,
+                  resourceId: 'project789.dataset101',
+                },
+              ],
             },
           )
           .reply(200, {ms: 120, result})

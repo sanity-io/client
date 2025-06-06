@@ -146,12 +146,16 @@ export class ViewClient {
     // Check if this view has dataset connections
     const useEmulateEndpoint = hasDatasetConnections(viewId, this.#config.viewOverrides)
 
+    // Get connections for this view if using emulate endpoint
+    const connections = useEmulateEndpoint
+      ? this.#config.viewOverrides?.find((override) => override.id === viewId)?.connections || []
+      : undefined
+
     const cfg = initConfig(
       {
         '~experimental_resource': {
           id: viewId,
           type: 'view',
-          useEmulate: useEmulateEndpoint,
         },
       },
       this.#config,
@@ -160,6 +164,8 @@ export class ViewClient {
       returnQuery: false,
       ...options,
       useCdn: true,
+      useEmulate: useEmulateEndpoint,
+      connections,
     }
 
     return lastValueFrom(_fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts))
@@ -218,21 +224,27 @@ export class ObservableViewClient {
     // Check if this view has dataset connections
     const useEmulateEndpoint = hasDatasetConnections(viewId, this.#config.viewOverrides)
 
+    // Get connections for this view if using emulate endpoint
+    const connections = useEmulateEndpoint
+      ? this.#config.viewOverrides?.find((override) => override.id === viewId)?.connections || []
+      : undefined
+
     const cfg = initConfig(
       {
         '~experimental_resource': {
           id: viewId,
           type: 'view',
-          useEmulate: useEmulateEndpoint,
         },
       },
       this.#config,
     )
-    const opts: QueryOptions = {
+    const opts: QueryOptions & {useEmulate?: boolean; connections?: ViewConnectionOverride[]} = {
       returnQuery: false,
       ...options,
       useCdn: true,
       perspective: 'published',
+      useEmulate: useEmulateEndpoint,
+      connections,
     }
 
     return _fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts)

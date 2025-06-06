@@ -38,6 +38,7 @@ import type {
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
+import type {ViewConnectionOverride} from '../views'
 import {printCdnPreviewDraftsWarning, printPreviewDraftsDeprecationWarning} from '../warnings'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
@@ -77,7 +78,7 @@ export function _fetch<R, Q>(
   _stega: InitializedStegaConfig,
   query: string,
   _params: Q = {} as Q,
-  options: QueryOptions = {},
+  options: QueryOptions & {useEmulate?: boolean; connections?: ViewConnectionOverride[]} = {},
 ): Observable<RawQueryResponse<R> | R> {
   const stega =
     'stega' in options
@@ -90,7 +91,7 @@ export function _fetch<R, Q>(
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
 
-  const {cache, next, ...opts} = {
+  const {cache, next, useEmulate, connections, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
     useAbortSignal: typeof options.signal !== 'undefined',
@@ -106,19 +107,17 @@ export function _fetch<R, Q>(
       ? {...opts, fetch: {cache, next}}
       : opts
 
-  // By default, we use the /query endpoint
-  // But if we're in dev mode and using a view then we use /emulate
-  let endpoint = 'query'
-  const experimentalResource = config['~experimental_resource']
-  if (
-    experimentalResource &&
-    experimentalResource.type === 'view' &&
-    experimentalResource.useEmulate
-  ) {
-    endpoint = 'emulate'
-  }
+  // Use 'emulate' endpoint for view emulation, otherwise use 'query'
+  const endpoint = useEmulate ? 'emulate' : 'query'
+  const requestBody = useEmulate
+    ? {
+        query,
+        params,
+        connections: connections || [],
+      }
+    : {query, params}
 
-  const $request = _dataRequest(config, httpRequest, endpoint, {query, params}, reqOpts)
+  const $request = _dataRequest(config, httpRequest, endpoint, requestBody, reqOpts)
   return stega.enabled
     ? $request.pipe(
         combineLatestWith(
@@ -744,11 +743,6 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
       return `/dashboards/${id}`
     }
     case 'view': {
-      const emulate = config['~experimental_resource'].useEmulate
-      if (emulate) {
-        return `/views/${id}/emulate`
-      }
-
       return `/views/${id}`
     }
     default:
