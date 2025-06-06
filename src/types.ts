@@ -1635,7 +1635,9 @@ export type {
 export type {PatchDocument, PatchOperation, PatchTarget} from './agent/actions/patch'
 export type {PromptRequest} from './agent/actions/prompt'
 export type {
+  ImageDescriptionOperation,
   TransformDocument,
+  TransformOperation,
   TransformTarget,
   TransformTargetDocument,
   TransformTargetInclude,

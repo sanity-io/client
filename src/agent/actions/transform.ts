@@ -2,7 +2,13 @@ import {type Observable} from 'rxjs'
 
 import {_request} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
-import type {AgentActionParams, Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
+import type {
+  AgentActionParams,
+  AgentActionPath,
+  Any,
+  HttpRequest,
+  IdentifiedSanityDocumentStub,
+} from '../../types'
 import {hasDataset} from '../../validators'
 import type {
   AgentActionAsync,
@@ -169,7 +175,61 @@ export type TransformTargetDocument =
   | {operation: 'createIfNotExists'; _id: string}
   | {operation: 'createOrReplace'; _id: string}
 
-/**  @beta */
+/**
+ *
+ * @see #TransformOperation
+ * @beta
+ */
+export interface ImageDescriptionOperation {
+  type: 'image-description'
+  /**
+   * When omitted, parent image value will be inferred from the arget path.
+   *
+   * When specified, the `sourcePath` should be a path to an image (or image asset) field:
+   * - `['image']`
+   * - `['wrapper', 'mainImage']`
+   * - `['heroImage', 'asset'] // the asset segment is optional, but supported`
+   */
+  sourcePath?: AgentActionPath
+}
+
+/**
+ *
+ * ## `set` by default
+ * By default, Transform will change the value of every target field in place using a set operation.
+ *
+ * ## Image description
+ *
+ * ### Targeting image fields
+ * Images can be transformed to a textual description by targeting a `string`, `text` or Portable Text field (`array` with `block`)
+ * with `operation: {type: 'image-description'}`.
+ *
+ * Custom instructions for image description targets will be used to generate the description.
+ *
+ * Such targets must be a descendant field of an image object.
+ *
+ * For example:
+ * - `target: {path: ['image', 'description'], operation: {type: 'image-description'} }`
+ * - `target: {path: ['array', {_key: 'abc'}, 'alt'], operation: {type: 'image-description'} } //assuming the item in the array on the key-ed path is an image`
+ * - `target: {path: ['image'], include: ['portableTextField'], operation: {type: 'image-description'}, instruction: 'Use formatting and headings to describe the image in great detail' }`
+ *
+ * ### Targeting non-image fields
+ * If the target image description lives outside an image object, use the `sourcePath` option to specify the path to the image field.
+ * `sourcePath` must be an image or image asset field.
+ *
+ * For example:
+ * - `target: {path: ['description'], operation: operation: {type: 'image-description', sourcePath: ['image', 'asset'] }`
+ * - `target: {path: ['wrapper', 'title'], operation: {type: 'image-description', sourcePath: ['array', {_key: 'abc'}, 'image'] }`
+ * - `target: {path: ['wrapper'], include: ['portableTextField'], operation: {type: 'image-description', sourcePath: ['image', 'asset'] }, instruction: 'Use formatting and headings to describe the image in great detail' }`
+ *
+ * @beta
+ */
+export type TransformOperation = 'set' | ImageDescriptionOperation
+
+/**
+ * @see #TransformOperation
+ * @beta
+ * */
 export interface TransformTargetInclude extends AgentActionTargetInclude {
   /**
    * Specifies a tailored instruction of this target.
@@ -185,9 +245,18 @@ export interface TransformTargetInclude extends AgentActionTargetInclude {
    * Fields or array items not on the include list, are implicitly excluded.
    */
   include?: (AgentActionPathSegment | TransformTargetInclude)[]
+
+  /**
+   * Default: `set`
+   * @see #TransformOperation
+   */
+  operation?: TransformOperation
 }
 
-/**  @beta */
+/**
+ * @see #TransformOperation
+ * @beta
+ * */
 export interface TransformTarget extends AgentActionTarget {
   /**
    * Specifies a tailored instruction of this target.
@@ -204,6 +273,12 @@ export interface TransformTarget extends AgentActionTarget {
    * Fields or array items not on the include list, are implicitly excluded.
    */
   include?: (AgentActionPathSegment | TransformTargetInclude)[]
+
+  /**
+   * Default: `set`
+   * @see #TransformOperation
+   */
+  operation?: TransformOperation
 }
 
 /** @beta */
