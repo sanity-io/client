@@ -582,7 +582,9 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return lastValueFrom(_action(this.#client.config(), this.#httpRequest, unarchiveAction, options))
+    return lastValueFrom(
+      _action(this.#client.config(), this.#httpRequest, unarchiveAction, options),
+    )
   }
 
   /**
@@ -638,7 +640,9 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return lastValueFrom(_action(this.#client.config(), this.#httpRequest, unscheduleAction, options))
+    return lastValueFrom(
+      _action(this.#client.config(), this.#httpRequest, unscheduleAction, options),
+    )
   }
 
   /**
@@ -682,6 +686,8 @@ export class ReleasesClient {
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Promise<RawQueryResponse<SanityDocument[]>> {
-    return lastValueFrom(_getReleaseDocuments(this.#client.config(), this.#httpRequest, releaseId, options))
+    return lastValueFrom(
+      _getReleaseDocuments(this.#client.config(), this.#httpRequest, releaseId, options),
+    )
   }
 }

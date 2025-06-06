@@ -38,6 +38,7 @@ import type {
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
+import type {ViewConnectionOverride} from '../views'
 import {printCdnPreviewDraftsWarning, printPreviewDraftsDeprecationWarning} from '../warnings'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
@@ -77,7 +78,7 @@ export function _fetch<R, Q>(
   _stega: InitializedStegaConfig,
   query: string,
   _params: Q = {} as Q,
-  options: QueryOptions = {},
+  options: QueryOptions & {useEmulate?: boolean; connections?: ViewConnectionOverride[]} = {},
 ): Observable<RawQueryResponse<R> | R> {
   const stega =
     'stega' in options
@@ -90,7 +91,7 @@ export function _fetch<R, Q>(
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
 
-  const {cache, next, ...opts} = {
+  const {cache, next, useEmulate, connections, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
     useAbortSignal: typeof options.signal !== 'undefined',
@@ -106,7 +107,17 @@ export function _fetch<R, Q>(
       ? {...opts, fetch: {cache, next}}
       : opts
 
-  const $request = _dataRequest(config, httpRequest, 'query', {query, params}, reqOpts)
+  // Use 'emulate' endpoint for view emulation, otherwise use 'query'
+  const endpoint = useEmulate ? 'emulate' : 'query'
+  const requestBody = useEmulate
+    ? {
+        query,
+        params,
+        connections: connections || [],
+      }
+    : {query, params}
+
+  const $request = _dataRequest(config, httpRequest, endpoint, requestBody, reqOpts)
   return stega.enabled
     ? $request.pipe(
         combineLatestWith(
@@ -413,11 +424,13 @@ export function _dataRequest(
   const isMutation = endpoint === 'mutate'
   const isAction = endpoint === 'actions'
   const isQuery = endpoint === 'query'
+  const isEmulate = endpoint === 'emulate'
 
   // Check if the query string is within a configured threshold,
   // in which case we can use GET. Otherwise, use POST.
-  const strQuery = isMutation || isAction ? '' : encodeQueryString(body)
-  const useGet = !isMutation && !isAction && strQuery.length < getQuerySizeLimit
+  // Emulate endpoint always uses POST
+  const strQuery = isMutation || isAction || isEmulate ? '' : encodeQueryString(body)
+  const useGet = !isMutation && !isAction && !isEmulate && strQuery.length < getQuerySizeLimit
   const stringQuery = useGet ? strQuery : ''
   const returnFirst = options.returnFirst
   const {timeout, token, tag, headers, returnQuery, lastLiveEventId, cacheMode} = options
@@ -439,7 +452,7 @@ export function _dataRequest(
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     cacheMode: cacheMode,
-    canUseCdn: isQuery,
+    canUseCdn: isQuery || isEmulate,
     signal: options.signal,
     fetch: options.fetch,
     useAbortSignal: options.useAbortSignal,
@@ -501,6 +514,9 @@ const isQuery = (config: InitializedClientConfig, uri: string) =>
 const isViewQuery = (config: InitializedClientConfig, uri: string) =>
   hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'views'))
 
+const isEmulate = (config: InitializedClientConfig, uri: string) =>
+  hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'emulate'))
+
 const isMutate = (config: InitializedClientConfig, uri: string) =>
   hasDataConfig(config) && uri.startsWith(_getDataUrl(config, 'mutate'))
 
@@ -520,7 +536,8 @@ const isData = (config: InitializedClientConfig, uri: string) =>
   isDoc(config, uri) ||
   isListener(config, uri) ||
   isHistory(config, uri) ||
-  isViewQuery(config, uri)
+  isViewQuery(config, uri) ||
+  isEmulate(config, uri)
 
 /**
  * @internal
@@ -549,8 +566,11 @@ export function _requestObservable<R>(
     options.query = {tag: validate.requestTag(tag), ...options.query}
   }
 
-  // GROQ query-only parameters
-  if (['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 && isQuery(config, uri)) {
+  // GROQ query-only parameters (applies to both query and emulate endpoints)
+  if (
+    ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
+    (isQuery(config, uri) || isEmulate(config, uri))
+  ) {
     const resultSourceMap = options.resultSourceMap ?? config.resultSourceMap
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
       options.query = {resultSourceMap, ...options.query}
@@ -610,7 +630,11 @@ export function _requestObservable<R>(
 /**
  * @internal
  */
-export function _request<R>(config: InitializedClientConfig, httpRequest: HttpRequest, options: Any): Observable<R> {
+export function _request<R>(
+  config: InitializedClientConfig,
+  httpRequest: HttpRequest,
+  options: Any,
+): Observable<R> {
   const observable = _requestObservable<R>(config, httpRequest, options).pipe(
     filter((event: Any) => event.type === 'response'),
     map((event: Any) => event.body),
@@ -622,7 +646,11 @@ export function _request<R>(config: InitializedClientConfig, httpRequest: HttpRe
 /**
  * @internal
  */
-export function _getDataUrl(config: InitializedClientConfig, operation: string, path?: string): string {
+export function _getDataUrl(
+  config: InitializedClientConfig,
+  operation: string,
+  path?: string,
+): string {
   if (config['~experimental_resource']) {
     validators.resourceConfig(config)
     const resourceBase = resourceDataBase(config)
@@ -638,7 +666,7 @@ export function _getDataUrl(config: InitializedClientConfig, operation: string, 
 /**
  * @internal
  */
-export function _getUrl(config: InitializedClientConfig, uri: string, canUseCdn = false, options: {forceApiUrl?: boolean} = {}): string {
+export function _getUrl(config: InitializedClientConfig, uri: string, canUseCdn = false): string {
   const {url, cdnUrl} = config
   const base = canUseCdn ? cdnUrl : url
   return `${base}/${uri.replace(/^\//, '')}`
