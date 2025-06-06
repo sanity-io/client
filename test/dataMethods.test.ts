@@ -142,13 +142,15 @@ const testSignalOption = <T = unknown>(
 describe('dataMethods', async () => {
   describe('getUrl', () => {
     test('can use getUrl() to get API-relative paths', () => {
-      expect(dataMethods._getUrl(getClient().config(), '/bar/baz')).toEqual(`${projectHost()}/v1/bar/baz`)
+      expect(dataMethods._getUrl(getClient().config(), '/bar/baz')).toEqual(
+        `${projectHost()}/v1/bar/baz`,
+      )
     })
 
     test('can use getUrl() to get API-relative paths (custom api version)', () => {
-      expect(dataMethods._getUrl(getClient({apiVersion: '2019-01-29'}).config(), '/bar/baz')).toEqual(
-        `${projectHost()}/v2019-01-29/bar/baz`,
-      )
+      expect(
+        dataMethods._getUrl(getClient({apiVersion: '2019-01-29'}).config(), '/bar/baz'),
+      ).toEqual(`${projectHost()}/v2019-01-29/bar/baz`)
     })
   })
 
@@ -362,7 +364,11 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockQueryResponse(mockDocs))
 
       const client = getClient()
-      const observable = dataMethods._getReleaseDocuments(client.config(), mockHttpRequest, releaseId)
+      const observable = dataMethods._getReleaseDocuments(
+        client.config(),
+        mockHttpRequest,
+        releaseId,
+      )
 
       return assertObservable<RawQueryResponse<SanityDocument[]>>(observable, (response) => {
         expect(response.result).toEqual(mockDocs)
@@ -383,7 +389,11 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockQueryResponse([]))
 
       const client = getClient()
-      const observable = dataMethods._getReleaseDocuments(client.config(), mockHttpRequest, releaseId)
+      const observable = dataMethods._getReleaseDocuments(
+        client.config(),
+        mockHttpRequest,
+        releaseId,
+      )
 
       return assertObservable<RawQueryResponse<SanityDocument[]>>(observable, (response) => {
         expect(response.result).toEqual([])

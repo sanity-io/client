@@ -154,7 +154,9 @@ export const initConfig = (
   const protocol = hostParts[0]
   const host = hostParts[1]
 
-  const cdnURL = newConfig.isDefaultApi ? `https://${defaultCdnHost}` : newConfig.apiCdnHost || newConfig.apiHost
+  const cdnURL = newConfig.isDefaultApi
+    ? `https://${defaultCdnHost}`
+    : newConfig.apiCdnHost || newConfig.apiHost
   const cdnURLParts = cdnURL.split('://', 2)
   const cdnProtocol = cdnURLParts[0]
   const cdnHost = cdnURLParts[1]

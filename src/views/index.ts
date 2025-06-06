@@ -1,20 +1,42 @@
+import {
+  type QueryParams,
+  type QueryWithoutParams,
+  type ViewOverride,
+  ViewResourceType,
+} from '@sanity/client'
 import {lastValueFrom, Observable} from 'rxjs'
-import {type QueryParams, type QueryWithoutParams} from '@sanity/client'
-import type {
-  ClientReturn,
-  RawQueryResponse,
-  HttpRequest,
-  QueryOptions,
-  ClientConfig,
-  Any,
-} from '../types'
-import {_fetch} from '../data/dataMethods'
+
 import {initConfig} from '../config'
+import {_fetch} from '../data/dataMethods'
 import {defineHttpRequest} from '../http/request'
+import type {
+  Any,
+  ClientConfig,
+  ClientReturn,
+  HttpRequest,
+  RawQueryResponse,
+  ViewQueryOptions,
+} from '../types'
+
+/**
+ * Helper function to check if a view has any dataset connections
+ * @internal
+ */
+function hasDatasetConnections(viewId: string, viewOverrides?: ViewOverride[]): boolean {
+  if (!viewOverrides) return false
+
+  const viewOverride = viewOverrides.find((override) => override.id === viewId)
+  if (!viewOverride || !viewOverride.connections.length) return false
+
+  // Check if any connection has dataset resourceType
+  return viewOverride.connections.some((conn) => conn.resourceType === ViewResourceType.Dataset)
+}
 
 /** @public */
-export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
-  // TODO: Add our own config options
+export interface ViewClientConfig
+  extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
+  viewOverrides?: ViewOverride[]
+  apiVersion: string
 }
 
 /**
@@ -36,9 +58,6 @@ export function createViewClient(config: ViewClientConfig): ViewClient {
     config,
   )
 }
-
-/** @public */
-export type ViewQueryOptions = Pick<QueryOptions, 'perspective' | 'resultSourceMap' | 'filterResponse'>
 
 /** @public */
 export class ViewClient {
@@ -104,6 +123,13 @@ export class ViewClient {
     params?: Q,
     options?: ViewQueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
+    // Check if this view has dataset connections
+    const useEmulate = hasDatasetConnections(viewId, this.#config.viewOverrides)
+
+    // Get connections for this view if using emulate endpoint
+    const viewOverride = this.#config.viewOverrides?.find((override) => override.id === viewId)
+    const connections = useEmulate ? viewOverride?.connections || [] : undefined
+
     const cfg = initConfig(
       {
         '~experimental_resource': {
@@ -117,6 +143,8 @@ export class ViewClient {
       returnQuery: false,
       ...options,
       useCdn: true,
+      useEmulate,
+      connections,
     }
 
     return lastValueFrom(_fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts))
@@ -172,6 +200,13 @@ export class ObservableViewClient {
     params?: Q,
     options?: ViewQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
+    // Check if this view has dataset connections
+    const useEmulateEndpoint = hasDatasetConnections(viewId, this.#config.viewOverrides)
+
+    // Get connections for this view if using emulate endpoint
+    const viewOverride = this.#config.viewOverrides?.find((override) => override.id === viewId)
+    const connections = useEmulateEndpoint ? viewOverride?.connections || [] : undefined
+
     const cfg = initConfig(
       {
         '~experimental_resource': {
@@ -181,11 +216,12 @@ export class ObservableViewClient {
       },
       this.#config,
     )
-    const opts: QueryOptions = {
+    const opts = {
       returnQuery: false,
       ...options,
       useCdn: true,
-      perspective: 'published',
+      useEmulate: useEmulateEndpoint,
+      connections,
     }
 
     return _fetch(cfg, this.#httpRequest, {enabled: false}, query, params, opts)

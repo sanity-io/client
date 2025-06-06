@@ -1,4 +1,6 @@
-import {describe, expect, test, afterEach} from 'vitest'
+import {ViewResourceType} from '@sanity/client'
+import {afterEach, describe, expect, test} from 'vitest'
+
 import {createViewClient, ObservableViewClient, type ViewClientConfig} from '../../src/views'
 
 const apiHost = 'api.sanity.url'
@@ -21,9 +23,9 @@ describe('view client', async () => {
   })
 
   const defaultConfig: ViewClientConfig = {
-      apiHost: `https://${apiHost}`,
-      apiCdnHost: `https://${apicdnHost}`,
-      apiVersion: '2025-01-01',
+    apiHost: `https://${apiHost}`,
+    apiCdnHost: `https://${apicdnHost}`,
+    apiVersion: '2025-01-01',
   }
 
   describe('createViewClient', () => {
@@ -52,9 +54,7 @@ describe('view client', async () => {
       const result = [{_id: 'njgNkngskjg'}]
 
       // Mock both hosts to see which one gets called
-      const apiMock = nock(`https://${apiHost}`)
-        .get(/.*/)
-        .reply(200, {ms: 123, result})
+      const apiMock = nock(`https://${apiHost}`).get(/.*/).reply(200, {ms: 123, result})
 
       const apicdnMock = nock(`https://${apicdnHost}`)
         .get(
@@ -157,7 +157,12 @@ describe('view client', async () => {
 
       nock(`https://${apicdnHost}`).get(/.*/).reply(200, {ms: 250, result, resultSourceMap})
 
-      const res = await client.fetch('vw203', '*[_type == "page"]', {}, {resultSourceMap: true, filterResponse: false})
+      const res = await client.fetch(
+        'vw203',
+        '*[_type == "page"]',
+        {},
+        {resultSourceMap: true, filterResponse: false},
+      )
       // With filterResponse: false, the client returns the full response object
       expect(res).toEqual({result, resultSourceMap, ms: 250})
     })
@@ -194,6 +199,74 @@ describe('view client', async () => {
       const res = await client.fetch('vw404', '*')
       expect(res).toEqual(result)
     })
+
+    test.skipIf(isEdge)('uses emulate endpoint when dataset connections are detected', async () => {
+      const configWithOverrides: ViewClientConfig = {
+        ...defaultConfig,
+        viewOverrides: [
+          {
+            id: 'vw-dataset-test',
+            connections: [
+              {
+                query: '*[_type == "document"]',
+                resourceType: ViewResourceType.Dataset,
+                resourceId: 'project123.dataset456',
+              },
+            ],
+          },
+        ],
+      }
+      const client = createViewClient(configWithOverrides)
+      const result = [{_id: 'dataset-doc', title: 'Dataset Document'}]
+
+      // Mock the emulate endpoint (POST request)
+      nock(`https://${apicdnHost}`)
+        .post('/v2025-01-01/views/vw-dataset-test/emulate?returnQuery=false', {
+          query: '*[_type == "test"]',
+          params: {},
+          connections: [
+            {
+              query: '*[_type == "document"]',
+              resourceType: ViewResourceType.Dataset,
+              resourceId: 'project123.dataset456',
+            },
+          ],
+        })
+        .reply(200, {ms: 100, result})
+
+      const res = await client.fetch('vw-dataset-test', '*[_type == "test"]')
+      expect(res).toEqual(result)
+    })
+
+    test.skipIf(isEdge)('falls back to view endpoint when no override matches', async () => {
+      const configWithOverrides: ViewClientConfig = {
+        ...defaultConfig,
+        viewOverrides: [
+          {
+            id: 'vw-other',
+            connections: [
+              {
+                query: '*[_type == "document"]',
+                resourceType: ViewResourceType.Dataset,
+                resourceId: 'project123.dataset456',
+              },
+            ],
+          },
+        ],
+      }
+      const client = createViewClient(configWithOverrides)
+      const result = [{_id: 'view-doc', title: 'View Document'}]
+
+      // Mock the view endpoint (default behavior)
+      nock(`https://${apicdnHost}`)
+        .get(
+          '/v2025-01-01/views/vw-no-override/query?query=*%5B_type+%3D%3D+%22test%22%5D&returnQuery=false',
+        )
+        .reply(200, {ms: 100, result})
+
+      const res = await client.fetch('vw-no-override', '*[_type == "test"]')
+      expect(res).toEqual(result)
+    })
   })
 
   describe('observable client', () => {
@@ -226,10 +299,12 @@ describe('view client', async () => {
       const client = createViewClient(defaultConfig)
       let didRequest = false
 
-      nock(`https://${apicdnHost}`).get(/.*/).reply(() => {
-        didRequest = true
-        return [200, {ms: 100, result: []}]
-      })
+      nock(`https://${apicdnHost}`)
+        .get(/.*/)
+        .reply(() => {
+          didRequest = true
+          return [200, {ms: 100, result: []}]
+        })
 
       const req = client.observable.fetch('vw505', '*')
       await new Promise((resolve) => setTimeout(resolve, 1))
@@ -252,10 +327,13 @@ describe('view client', async () => {
       let requestCount = 0
 
       // Mock CDN host
-      nock(`https://${apicdnHost}`).get(/.*/).twice().reply(() => {
-        requestCount++
-        return [200, {ms: 100, result: [{_id: `doc${requestCount}`}]}]
-      })
+      nock(`https://${apicdnHost}`)
+        .get(/.*/)
+        .twice()
+        .reply(() => {
+          requestCount++
+          return [200, {ms: 100, result: [{_id: `doc${requestCount}`}]}]
+        })
 
       const req = client.observable.fetch('vw606', '*')
 
@@ -318,19 +396,19 @@ describe('view client', async () => {
       const client = createViewClient(defaultConfig)
       const result = [{_id: 'obs-doc3', status: 'draft'}]
 
-      // Mock CDN host
-      nock(`https://${apicdnHost}`)
-        .get(/.*/)
-        .reply(200, {ms: 190, result})
+      // Mock API host (not CDN) because previewDrafts perspective disables CDN
+      nock(`https://${apiHost}`).get(/.*/).reply(200, {ms: 190, result})
 
       await new Promise<void>((resolve, reject) => {
-        client.observable.fetch('vw909', '*[_type == "article"]', {}, {perspective: 'previewDrafts'}).subscribe({
-          next: (res) => {
-            expect(res).toEqual(result)
-          },
-          error: reject,
-          complete: resolve,
-        })
+        client.observable
+          .fetch('vw909', '*[_type == "article"]', {}, {perspective: 'previewDrafts'})
+          .subscribe({
+            next: (res) => {
+              expect(res).toEqual(result)
+            },
+            error: reject,
+            complete: resolve,
+          })
       })
     })
 
@@ -342,27 +420,30 @@ describe('view client', async () => {
       expect(newObservableClient).toBeInstanceOf(ObservableViewClient)
     })
 
-    test.skipIf(isEdge)('withConfig on observable client preserves existing configuration', async () => {
-      const client = createViewClient({
-        ...defaultConfig,
-        timeout: 8000,
-      })
-      const newObservableClient = client.observable.withConfig({apiVersion: '2024-11-01'})
-      const result = [{_id: 'config-test'}]
-
-      // Mock CDN host
-      nock(`https://${apicdnHost}`).get(/.*/).reply(200, {ms: 80, result})
-
-      await new Promise<void>((resolve, reject) => {
-        newObservableClient.fetch('vw1010', '*').subscribe({
-          next: (res) => {
-            expect(res).toEqual(result)
-          },
-          error: reject,
-          complete: resolve,
+    test.skipIf(isEdge)(
+      'withConfig on observable client preserves existing configuration',
+      async () => {
+        const client = createViewClient({
+          ...defaultConfig,
+          timeout: 8000,
         })
-      })
-    })
+        const newObservableClient = client.observable.withConfig({apiVersion: '2024-11-01'})
+        const result = [{_id: 'config-test'}]
+
+        // Mock CDN host
+        nock(`https://${apicdnHost}`).get(/.*/).reply(200, {ms: 80, result})
+
+        await new Promise<void>((resolve, reject) => {
+          newObservableClient.fetch('vw1010', '*').subscribe({
+            next: (res) => {
+              expect(res).toEqual(result)
+            },
+            error: reject,
+            complete: resolve,
+          })
+        })
+      },
+    )
 
     test.skipIf(isEdge)('always uses CDN for observable view queries', async () => {
       const client = createViewClient(defaultConfig)
@@ -381,5 +462,53 @@ describe('view client', async () => {
         })
       })
     })
+
+    test.skipIf(isEdge)(
+      'observable client uses emulate endpoint when dataset connections are detected',
+      async () => {
+        const configWithOverrides: ViewClientConfig = {
+          ...defaultConfig,
+          viewOverrides: [
+            {
+              id: 'vw-obs-dataset',
+              connections: [
+                {
+                  query: '*[_type == "document"]',
+                  resourceType: ViewResourceType.Dataset,
+                  resourceId: 'project789.dataset101',
+                },
+              ],
+            },
+          ],
+        }
+        const client = createViewClient(configWithOverrides)
+        const result = [{_id: 'obs-dataset-doc', title: 'Observable Dataset Document'}]
+
+        // Mock the emulate endpoint (POST request)
+        nock(`https://${apicdnHost}`)
+          .post('/v2025-01-01/views/vw-obs-dataset/emulate?returnQuery=false', {
+            query: '*[_type == "obs-test"]',
+            params: {},
+            connections: [
+              {
+                query: '*[_type == "document"]',
+                resourceType: ViewResourceType.Dataset,
+                resourceId: 'project789.dataset101',
+              },
+            ],
+          })
+          .reply(200, {ms: 120, result})
+
+        await new Promise<void>((resolve, reject) => {
+          client.observable.fetch('vw-obs-dataset', '*[_type == "obs-test"]').subscribe({
+            next: (res) => {
+              expect(res).toEqual(result)
+            },
+            error: reject,
+            complete: resolve,
+          })
+        })
+      },
+    )
   })
 })
