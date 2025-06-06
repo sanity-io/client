@@ -105,7 +105,10 @@ export class DatasetsClient {
   list(): Promise<DatasetsResponse> {
     validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
-      _request<DatasetsResponse>(this.#client.config(), this.#httpRequest, {uri: '/datasets', tag: null}),
+      _request<DatasetsResponse>(this.#client.config(), this.#httpRequest, {
+        uri: '/datasets',
+        tag: null,
+      }),
     )
   }
 }

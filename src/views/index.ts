@@ -1,36 +1,35 @@
-import {lastValueFrom, Observable} from 'rxjs'
 import {type QueryParams, type QueryWithoutParams} from '@sanity/client'
+import {lastValueFrom, Observable} from 'rxjs'
+
+import {initConfig} from '../config'
+import {_fetch} from '../data/dataMethods'
+import {defineHttpRequest} from '../http/request'
 import type {
+  Any,
+  ClientConfig,
   ClientReturn,
-  RawQueryResponse,
   HttpRequest,
   QueryOptions,
-  ClientConfig,
-  Any,
+  RawQueryResponse,
 } from '../types'
-import {_fetch} from '../data/dataMethods'
-import {initConfig} from '../config'
-import {defineHttpRequest} from '../http/request'
 
 /**
  * Helper function to check if a view has any dataset connections
  * @internal
  */
-function hasDatasetConnections(
-  viewId: string,
-  viewOverrides?: ViewOverride[],
-): boolean {
+function hasDatasetConnections(viewId: string, viewOverrides?: ViewOverride[]): boolean {
   if (!viewOverrides) return false
 
-  const viewOverride = viewOverrides.find(override => override.id === viewId)
+  const viewOverride = viewOverrides.find((override) => override.id === viewId)
   if (!viewOverride || !viewOverride.connections.length) return false
 
   // Check if any connection has dataset resourceType
-  return viewOverride.connections.some(conn => conn.resourceType === ViewResourceType.Dataset)
+  return viewOverride.connections.some((conn) => conn.resourceType === ViewResourceType.Dataset)
 }
 
 /** @public */
-export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
+export interface ViewClientConfig
+  extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
   viewOverrides?: ViewOverride[]
   apiVersion: string
 }
@@ -48,10 +47,10 @@ export type ViewOverride = {
 
 /** @public */
 export type ViewConnectionOverride = {
-  name: string,
-  query: string,
-  resourceType: ViewResourceType,
-  resourceId: string,
+  name: string
+  query: string
+  resourceType: ViewResourceType
+  resourceId: string
 }
 
 /**
@@ -75,7 +74,10 @@ export function createViewClient(config: ViewClientConfig): ViewClient {
 }
 
 /** @public */
-export type ViewQueryOptions = Pick<QueryOptions, 'perspective' | 'resultSourceMap' | 'filterResponse'>
+export type ViewQueryOptions = Pick<
+  QueryOptions,
+  'perspective' | 'resultSourceMap' | 'filterResponse'
+>
 
 /** @public */
 export class ViewClient {

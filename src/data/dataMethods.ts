@@ -110,7 +110,11 @@ export function _fetch<R, Q>(
   // But if we're in dev mode and using a view then we use /emulate
   let endpoint = 'query'
   const experimentalResource = config['~experimental_resource']
-  if (experimentalResource && experimentalResource.type === 'view' && experimentalResource.useEmulate) {
+  if (
+    experimentalResource &&
+    experimentalResource.type === 'view' &&
+    experimentalResource.useEmulate
+  ) {
     endpoint = 'emulate'
   }
 
@@ -564,7 +568,10 @@ export function _requestObservable<R>(
   }
 
   // GROQ query-only parameters (applies to both query and emulate endpoints)
-  if (['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 && (isQuery(config, uri) || isEmulate(config, uri))) {
+  if (
+    ['GET', 'HEAD', 'POST'].indexOf(options.method || 'GET') >= 0 &&
+    (isQuery(config, uri) || isEmulate(config, uri))
+  ) {
     const resultSourceMap = options.resultSourceMap ?? config.resultSourceMap
     if (resultSourceMap !== undefined && resultSourceMap !== false) {
       options.query = {resultSourceMap, ...options.query}
@@ -624,7 +631,11 @@ export function _requestObservable<R>(
 /**
  * @internal
  */
-export function _request<R>(config: InitializedClientConfig, httpRequest: HttpRequest, options: Any): Observable<R> {
+export function _request<R>(
+  config: InitializedClientConfig,
+  httpRequest: HttpRequest,
+  options: Any,
+): Observable<R> {
   const observable = _requestObservable<R>(config, httpRequest, options).pipe(
     filter((event: Any) => event.type === 'response'),
     map((event: Any) => event.body),
@@ -636,7 +647,11 @@ export function _request<R>(config: InitializedClientConfig, httpRequest: HttpRe
 /**
  * @internal
  */
-export function _getDataUrl(config: InitializedClientConfig, operation: string, path?: string): string {
+export function _getDataUrl(
+  config: InitializedClientConfig,
+  operation: string,
+  path?: string,
+): string {
   if (config['~experimental_resource']) {
     validators.resourceConfig(config)
     const resourceBase = resourceDataBase(config)
@@ -652,7 +667,7 @@ export function _getDataUrl(config: InitializedClientConfig, operation: string, 
 /**
  * @internal
  */
-export function _getUrl(config: InitializedClientConfig, uri: string, canUseCdn = false, options: {forceApiUrl?: boolean} = {}): string {
+export function _getUrl(config: InitializedClientConfig, uri: string, canUseCdn = false): string {
   const {url, cdnUrl} = config
   const base = canUseCdn ? cdnUrl : url
   return `${base}/${uri.replace(/^\//, '')}`
@@ -729,7 +744,7 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
       return `/dashboards/${id}`
     }
     case 'view': {
-      const emulate = config['~experimental_resource'].useEmulate;
+      const emulate = config['~experimental_resource'].useEmulate
       if (emulate) {
         return `/views/${id}/emulate`
       }
