@@ -12,9 +12,32 @@ import {_fetch} from '../data/dataMethods'
 import {initConfig} from '../config'
 import {defineHttpRequest} from '../http/request'
 
+/**
+ * Helper function to check if a view has any dataset connections
+ * @internal
+ */
+function hasDatasetConnections(
+  viewId: string,
+  viewOverrides?: ViewOverride[],
+): boolean {
+  if (!viewOverrides) return false
+
+  const viewOverride = viewOverrides.find(override => override.id === viewId)
+  if (!viewOverride || !viewOverride.connections.length) return false
+
+  // Check if any connection has dataset resourceType
+  return viewOverride.connections.some(conn => conn.resourceType === ViewResourceType.Dataset)
+}
+
 /** @public */
 export interface ViewClientConfig extends Omit<ClientConfig, 'dataset' | 'projectId' | 'useCdn' | 'useProjectHostname'> {
   viewOverrides?: ViewOverride[]
+  apiVersion: string
+}
+
+/** @public */
+export enum ViewResourceType {
+  Dataset = 'dataset',
 }
 
 /** @public */
@@ -27,9 +50,8 @@ export type ViewOverride = {
 export type ViewConnectionOverride = {
   name: string,
   query: string,
-  dataset: string,
-  projectId: string,
-  apiVersion: string,
+  resourceType: ViewResourceType,
+  resourceId: string,
 }
 
 /**
@@ -119,11 +141,15 @@ export class ViewClient {
     params?: Q,
     options?: ViewQueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
+    // Check if this view has dataset connections
+    const useEmulateEndpoint = hasDatasetConnections(viewId, this.#config.viewOverrides)
+
     const cfg = initConfig(
       {
         '~experimental_resource': {
           id: viewId,
           type: 'view',
+          useEmulate: useEmulateEndpoint,
         },
       },
       this.#config,
@@ -187,11 +213,15 @@ export class ObservableViewClient {
     params?: Q,
     options?: ViewQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
+    // Check if this view has dataset connections
+    const useEmulateEndpoint = hasDatasetConnections(viewId, this.#config.viewOverrides)
+
     const cfg = initConfig(
       {
         '~experimental_resource': {
           id: viewId,
           type: 'view',
+          useEmulate: useEmulateEndpoint,
         },
       },
       this.#config,

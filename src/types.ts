@@ -73,6 +73,7 @@ type ClientConfigResource =
   | {
       type: 'view'
       id: string
+      useEmulate?: boolean
     }
 
 /** @public */

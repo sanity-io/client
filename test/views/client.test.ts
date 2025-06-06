@@ -1,5 +1,5 @@
 import {describe, expect, test, afterEach} from 'vitest'
-import {createViewClient, ObservableViewClient, type ViewClientConfig} from '../../src/views'
+import {createViewClient, ObservableViewClient, type ViewClientConfig, ViewResourceType} from '../../src/views'
 
 const apiHost = 'api.sanity.url'
 const apicdnHost = 'apicdn.sanity.url'
@@ -194,6 +194,69 @@ describe('view client', async () => {
       const res = await client.fetch('vw404', '*')
       expect(res).toEqual(result)
     })
+
+    test.skipIf(isEdge)('uses emulate endpoint when dataset connections are detected', async () => {
+      const configWithOverrides: ViewClientConfig = {
+        ...defaultConfig,
+        viewOverrides: [
+          {
+            id: 'vw-dataset-test',
+            connections: [
+              {
+                name: 'main',
+                query: '*[_type == "document"]',
+                resourceType: ViewResourceType.Dataset,
+                resourceId: 'project123.dataset456',
+              },
+            ],
+          },
+        ],
+      }
+      const client = createViewClient(configWithOverrides)
+      const result = [{_id: 'dataset-doc', title: 'Dataset Document'}]
+
+      // Mock the emulate endpoint (POST request)
+      nock(`https://${apicdnHost}`)
+        .post('/v2025-01-01/views/vw-dataset-test/emulate/emulate?returnQuery=false', {
+          query: '*[_type == "test"]',
+          params: {},
+          // TODO: Add view connections configuration to the body
+          // This should include the dataset connections from viewOverrides
+        })
+        .reply(200, {ms: 100, result})
+
+      const res = await client.fetch('vw-dataset-test', '*[_type == "test"]')
+      expect(res).toEqual(result)
+    })
+
+    test.skipIf(isEdge)('falls back to view endpoint when no override matches', async () => {
+      const configWithOverrides: ViewClientConfig = {
+        ...defaultConfig,
+        viewOverrides: [
+          {
+            id: 'vw-other',
+            connections: [
+              {
+                name: 'main',
+                query: '*[_type == "document"]',
+                resourceType: ViewResourceType.Dataset,
+                resourceId: 'project123.dataset456',
+              },
+            ],
+          },
+        ],
+      }
+      const client = createViewClient(configWithOverrides)
+      const result = [{_id: 'view-doc', title: 'View Document'}]
+
+      // Mock the view endpoint (default behavior)
+      nock(`https://${apicdnHost}`)
+        .get('/v2025-01-01/views/vw-no-override/query?query=*%5B_type+%3D%3D+%22test%22%5D&returnQuery=false')
+        .reply(200, {ms: 100, result})
+
+      const res = await client.fetch('vw-no-override', '*[_type == "test"]')
+      expect(res).toEqual(result)
+    })
   })
 
   describe('observable client', () => {
@@ -373,6 +436,47 @@ describe('view client', async () => {
 
       await new Promise<void>((resolve, reject) => {
         client.observable.fetch('vw1111', '*').subscribe({
+          next: (res) => {
+            expect(res).toEqual(result)
+          },
+          error: reject,
+          complete: resolve,
+        })
+      })
+    })
+
+    test.skipIf(isEdge)('observable client uses emulate endpoint when dataset connections are detected', async () => {
+      const configWithOverrides: ViewClientConfig = {
+        ...defaultConfig,
+        viewOverrides: [
+          {
+            id: 'vw-obs-dataset',
+            connections: [
+              {
+                name: 'main',
+                query: '*[_type == "document"]',
+                resourceType: ViewResourceType.Dataset,
+                resourceId: 'project789.dataset101',
+              },
+            ],
+          },
+        ],
+      }
+      const client = createViewClient(configWithOverrides)
+      const result = [{_id: 'obs-dataset-doc', title: 'Observable Dataset Document'}]
+
+      // Mock the emulate endpoint (POST request)
+      nock(`https://${apicdnHost}`)
+        .post('/v2025-01-01/views/vw-obs-dataset/emulate/emulate?returnQuery=false&perspective=published', {
+          query: '*[_type == "obs-test"]',
+          params: {},
+          // TODO: Add view connections configuration to the body
+          // This should include the dataset connections from viewOverrides
+        })
+        .reply(200, {ms: 120, result})
+
+      await new Promise<void>((resolve, reject) => {
+        client.observable.fetch('vw-obs-dataset', '*[_type == "obs-test"]').subscribe({
           next: (res) => {
             expect(res).toEqual(result)
           },
