@@ -2138,6 +2138,13 @@ For example:
 - `target: {path: ['wrapper', 'title'], operation: {type: 'image-description', sourcePath: ['array', {_key: 'abc'}, 'image'] }`
 - `target: {path: ['wrapper'], include: ['portableTextField'], operation: {type: 'image-description', sourcePath: ['image', 'asset'] }, instruction: 'Use formatting and headings to describe the image in great detail' }`
 
+
+###### Targeting images outside the document (URL)
+If the source image is available on a https URL outside the target document, it is possible to get a description for it using `imageUrl`.
+
+Example:
+- `target: {path: ['description'], operation: operation: {type: 'image-description', imageUrL: 'https://www.sanity.io/static/images/favicons/android-icon-192x192.png?v=2' }`
+
 ##### Example: Field-based transformation
 
 ```ts

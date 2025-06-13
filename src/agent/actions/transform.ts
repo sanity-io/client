@@ -180,7 +180,7 @@ export type TransformTargetDocument =
  * @see #TransformOperation
  * @beta
  */
-export interface ImageDescriptionOperation {
+export type ImageDescriptionOperation = {
   type: 'image-description'
   /**
    * When omitted, parent image value will be inferred from the arget path.
@@ -191,7 +191,32 @@ export interface ImageDescriptionOperation {
    * - `['heroImage', 'asset'] // the asset segment is optional, but supported`
    */
   sourcePath?: AgentActionPath
-}
+} & (
+  | {
+      /**
+       * When omitted, parent image value will be inferred from the target path.
+       *
+       * When specified, the `sourcePath` should be a path to an image (or image asset) field:
+       * - `['image']`
+       * - `['wrapper', 'mainImage']`
+       * - `['heroImage', 'asset'] // the asset segment is optional, but supported`
+       *
+       * Incompatible with `imageUrl`
+       *
+       */
+      sourcePath?: AgentActionPath
+      imageUrl?: never
+    }
+  | {
+      /**
+       * When specified, the image source to be described will be fetched from the URL.
+       *
+       * Incompatible with `sourcePath`
+       */
+      imageUrl?: `https://${string}`
+      sourcePath?: never
+    }
+)
 
 /**
  *
@@ -222,6 +247,11 @@ export interface ImageDescriptionOperation {
  * - `target: {path: ['wrapper', 'title'], operation: {type: 'image-description', sourcePath: ['array', {_key: 'abc'}, 'image'] }`
  * - `target: {path: ['wrapper'], include: ['portableTextField'], operation: {type: 'image-description', sourcePath: ['image', 'asset'] }, instruction: 'Use formatting and headings to describe the image in great detail' }`
  *
+ * ### Targeting images outside the document (URL)
+ * If the source image is available on a https URL outside the target document, it is possible to get a description for it using `imageUrl`.
+ *
+ * Example:
+ * - `target: {path: ['description'], operation: operation: {type: 'image-description', imageUrL: 'https://www.sanity.io/static/images/favicons/android-icon-192x192.png?v=2' }`
  * @beta
  */
 export type TransformOperation = 'set' | ImageDescriptionOperation
