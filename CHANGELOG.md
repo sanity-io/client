@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.6.0](https://github.com/sanity-io/client/compare/v7.5.0...v7.6.0) (2025-06-13)
+
+
+### Features
+
+* **transform:** adds support for optional imageUrl param in for target.operation image-description ([#1105](https://github.com/sanity-io/client/issues/1105)) ([c47214f](https://github.com/sanity-io/client/commit/c47214fc502d8605914228d9a89d6d482eb26ec1))
+
 ## [7.5.0](https://github.com/sanity-io/client/compare/v7.4.1...v7.5.0) (2025-06-06)
 
 
