@@ -4355,6 +4355,19 @@ describe('client', async () => {
           {path: ['title'], operation: 'set'},
           {path: ['description'], operation: {type: 'image-description', sourcePath: ['image']}},
           {
+            path: ['remoteImageDescription'],
+            operation: {type: 'image-description', imageUrl: 'https://www.santiy.io/logo.png'},
+          },
+          {
+            path: ['errorDesc'],
+            operation: {
+              type: 'image-description',
+              imageUrl: 'https://www.santiy.io/logo.png',
+              //@ts-expect-error imageUrl and sourcePath are mutually exclusive
+              sourcePath: ['image'],
+            },
+          },
+          {
             instruction: 'based on $c – replace this field',
             include: [
               'object',
