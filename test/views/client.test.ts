@@ -219,8 +219,8 @@ describe('view client', async () => {
       const client = createViewClient(configWithOverrides)
       const result = [{_id: 'dataset-doc', title: 'Dataset Document'}]
 
-      // Mock the emulate endpoint (POST request)
-      nock(`https://${apicdnHost}`)
+      // Mock the emulate endpoint (POST request) - uses API host, not CDN
+      nock(`https://${apiHost}`)
         .post('/v2025-01-01/views/vw-dataset-test/emulate?returnQuery=false', {
           query: '*[_type == "test"]',
           params: {},
@@ -484,8 +484,8 @@ describe('view client', async () => {
         const client = createViewClient(configWithOverrides)
         const result = [{_id: 'obs-dataset-doc', title: 'Observable Dataset Document'}]
 
-        // Mock the emulate endpoint (POST request)
-        nock(`https://${apicdnHost}`)
+        // Mock the emulate endpoint (POST request) - uses API host, not CDN
+        nock(`https://${apiHost}`)
           .post('/v2025-01-01/views/vw-obs-dataset/emulate?returnQuery=false', {
             query: '*[_type == "obs-test"]',
             params: {},

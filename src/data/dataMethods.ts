@@ -458,7 +458,7 @@ export function _dataRequest(
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     cacheMode: cacheMode,
-    canUseCdn: isQuery || isEmulate,
+    canUseCdn: isQuery,
     signal: options.signal,
     fetch: options.fetch,
     useAbortSignal: options.useAbortSignal,
