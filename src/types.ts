@@ -111,6 +111,7 @@ export interface ClientConfig {
   headers?: Record<string, string>
 
   ignoreBrowserTokenWarning?: boolean
+  ignoreExperimentalApiWarning?: boolean
   withCredentials?: boolean
   allowReconfigure?: boolean
   timeout?: number

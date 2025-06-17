@@ -17,7 +17,7 @@ const httpError = {
   },
 }
 
-function printWarnings() {
+function printWarnings(config: {ignoreExperimentalApiWarning?: boolean} = {}) {
   const seen: Record<string, boolean> = {}
   return {
     onResponse: (res: Any) => {
@@ -25,6 +25,15 @@ function printWarnings() {
       const warnings = Array.isArray(warn) ? warn : [warn]
       for (const msg of warnings) {
         if (!msg || seen[msg]) continue
+
+        // Skip experimental API warnings if configured to ignore them
+        if (
+          config.ignoreExperimentalApiWarning &&
+          msg.includes('This is an experimental API version')
+        ) {
+          continue
+        }
+
         seen[msg] = true
         console.warn(msg) // eslint-disable-line no-console
       }
@@ -34,11 +43,14 @@ function printWarnings() {
 }
 
 /** @internal */
-export function defineHttpRequest(envMiddleware: Middlewares): Requester {
+export function defineHttpRequest(
+  envMiddleware: Middlewares,
+  config: {ignoreExperimentalApiWarning?: boolean} = {},
+): Requester {
   return getIt([
     retry({shouldRetry}),
     ...envMiddleware,
-    printWarnings(),
+    printWarnings(config),
     jsonRequest(),
     jsonResponse(),
     progress(),
