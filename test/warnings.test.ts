@@ -84,41 +84,59 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
 
-  test.skipIf(isEdge)('suppresses experimental API warnings when ignoreExperimentalApiWarning is true', async () => {
-    expect.assertions(1)
+  test.skipIf(isEdge)(
+    'suppresses experimental API warnings when ignoreExperimentalApiWarning is true',
+    async () => {
+      expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+      const {default: nock} = await import('nock')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version, which will change without warning and may have serious bugs.'})
+      nock('https://abc123.api.sanity.io').get('/v1/users/me').reply(
+        200,
+        {},
+        {
+          'X-Sanity-Warning':
+            'This is an experimental API version, which will change without warning and may have serious bugs.',
+        },
+      )
 
-    await createClient({
-      projectId: 'abc123',
-      useCdn: true,
-      apiVersion: '1',
-      ignoreExperimentalApiWarning: true,
-    }).users.getById('me')
-    
-    expect(warn).not.toHaveBeenCalled()
-  })
+      await createClient({
+        projectId: 'abc123',
+        useCdn: true,
+        apiVersion: '1',
+        ignoreExperimentalApiWarning: true,
+      }).users.getById('me')
 
-  test.skipIf(isEdge)('shows experimental API warnings when ignoreExperimentalApiWarning is false', async () => {
-    expect.assertions(1)
+      expect(warn).not.toHaveBeenCalled()
+    },
+  )
 
-    const {default: nock} = await import('nock')
+  test.skipIf(isEdge)(
+    'shows experimental API warnings when ignoreExperimentalApiWarning is false',
+    async () => {
+      expect.assertions(1)
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version, which will change without warning and may have serious bugs.'})
+      const {default: nock} = await import('nock')
 
-    await createClient({
-      projectId: 'abc123',
-      useCdn: true,
-      apiVersion: '1',
-      ignoreExperimentalApiWarning: false,
-    }).users.getById('me')
-    
-    expect(warn).toHaveBeenCalledWith('This is an experimental API version, which will change without warning and may have serious bugs.')
-  })
+      nock('https://abc123.api.sanity.io').get('/v1/users/me').reply(
+        200,
+        {},
+        {
+          'X-Sanity-Warning':
+            'This is an experimental API version, which will change without warning and may have serious bugs.',
+        },
+      )
+
+      await createClient({
+        projectId: 'abc123',
+        useCdn: true,
+        apiVersion: '1',
+        ignoreExperimentalApiWarning: false,
+      }).users.getById('me')
+
+      expect(warn).toHaveBeenCalledWith(
+        'This is an experimental API version, which will change without warning and may have serious bugs.',
+      )
+    },
+  )
 })
