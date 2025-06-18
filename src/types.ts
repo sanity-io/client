@@ -1663,13 +1663,53 @@ export type {
 } from './stega/types'
 
 /**
- * Common warning patterns that can be used with the `ignoreWarnings` configuration option
+ * A string constant containing the experimental API version warning message.
+ * Use this with the `ignoreWarnings` option to suppress warnings when using experimental API versions.
+ *
+ * @example
+ * ```typescript
+ * import { createClient, EXPERIMENTAL_API_WARNING } from '@sanity/client'
+ *
+ * const client = createClient({
+ *   projectId: 'your-project-id',
+ *   dataset: 'production',
+ *   apiVersion: 'vX', // experimental version
+ *   ignoreWarnings: EXPERIMENTAL_API_WARNING
+ * })
+ * ```
+ *
  * @public
  */
 export const EXPERIMENTAL_API_WARNING = 'This is an experimental API version'
 
 /**
- * Regex pattern to match experimental API version warnings
+ * A regex pattern that matches experimental API version warnings.
+ * Use this with the `ignoreWarnings` option for more flexible matching of experimental API warnings.
+ * This pattern will match any warning message that contains "This is an experimental API version".
+ *
+ * @example
+ * ```typescript
+ * import { createClient, EXPERIMENTAL_API_WARNING_PATTERN } from '@sanity/client'
+ *
+ * const client = createClient({
+ *   projectId: 'your-project-id',
+ *   dataset: 'production',
+ *   apiVersion: 'vX', // experimental version
+ *   ignoreWarnings: EXPERIMENTAL_API_WARNING_PATTERN
+ * })
+ *
+ * // Or combine with other patterns
+ * const client2 = createClient({
+ *   projectId: 'your-project-id',
+ *   dataset: 'production',
+ *   ignoreWarnings: [
+ *     EXPERIMENTAL_API_WARNING_PATTERN,
+ *     /deprecated/i,
+ *     'rate limit'
+ *   ]
+ * })
+ * ```
+ *
  * @public
  */
 export const EXPERIMENTAL_API_WARNING_PATTERN = /This is an experimental API version/
