@@ -46,7 +46,7 @@ export default function defineCreateClientExports<
 
   const createClient = (config: ClientConfigType) => {
     const clientRequester = defineHttpRequest(envMiddleware, {
-      ignoreExperimentalApiWarning: config.ignoreExperimentalApiWarning,
+      ignoreWarnings: config.ignoreWarnings,
     })
     return new ClassConstructor(
       (options, requester) =>

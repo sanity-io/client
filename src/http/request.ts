@@ -17,8 +17,27 @@ const httpError = {
   },
 }
 
-function printWarnings(config: {ignoreExperimentalApiWarning?: boolean} = {}) {
+function printWarnings(config: {ignoreWarnings?: string | RegExp | Array<string | RegExp>} = {}) {
   const seen: Record<string, boolean> = {}
+
+  // Helper function to check if a warning should be ignored
+  const shouldIgnoreWarning = (message: string): boolean => {
+    if (!config.ignoreWarnings) return false
+
+    const patterns = Array.isArray(config.ignoreWarnings)
+      ? config.ignoreWarnings
+      : [config.ignoreWarnings]
+
+    return patterns.some((pattern) => {
+      if (typeof pattern === 'string') {
+        return message.includes(pattern)
+      } else if (pattern instanceof RegExp) {
+        return pattern.test(message)
+      }
+      return false
+    })
+  }
+
   return {
     onResponse: (res: Any) => {
       const warn = res.headers['x-sanity-warning']
@@ -26,11 +45,8 @@ function printWarnings(config: {ignoreExperimentalApiWarning?: boolean} = {}) {
       for (const msg of warnings) {
         if (!msg || seen[msg]) continue
 
-        // Skip experimental API warnings if configured to ignore them
-        if (
-          config.ignoreExperimentalApiWarning &&
-          msg.includes('This is an experimental API version')
-        ) {
+        // Skip warnings that match ignore patterns
+        if (shouldIgnoreWarning(msg)) {
           continue
         }
 
@@ -45,7 +61,7 @@ function printWarnings(config: {ignoreExperimentalApiWarning?: boolean} = {}) {
 /** @internal */
 export function defineHttpRequest(
   envMiddleware: Middlewares,
-  config: {ignoreExperimentalApiWarning?: boolean} = {},
+  config: {ignoreWarnings?: string | RegExp | Array<string | RegExp>} = {},
 ): Requester {
   return getIt([
     retry({shouldRetry}),

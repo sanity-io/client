@@ -111,7 +111,7 @@ export interface ClientConfig {
   headers?: Record<string, string>
 
   ignoreBrowserTokenWarning?: boolean
-  ignoreExperimentalApiWarning?: boolean
+  ignoreWarnings?: string | RegExp | Array<string | RegExp>
   withCredentials?: boolean
   allowReconfigure?: boolean
   timeout?: number
@@ -1661,3 +1661,15 @@ export type {
   StudioBaseUrl,
   StudioUrl,
 } from './stega/types'
+
+/**
+ * Common warning patterns that can be used with the `ignoreWarnings` configuration option
+ * @public
+ */
+export const EXPERIMENTAL_API_WARNING = 'This is an experimental API version'
+
+/**
+ * Regex pattern to match experimental API version warnings
+ * @public
+ */
+export const EXPERIMENTAL_API_WARNING_PATTERN = /This is an experimental API version/
