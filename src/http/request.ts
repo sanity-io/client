@@ -22,7 +22,7 @@ function printWarnings(config: {ignoreWarnings?: string | RegExp | Array<string 
 
   // Helper function to check if a warning should be ignored
   const shouldIgnoreWarning = (message: string): boolean => {
-    if (!config.ignoreWarnings) return false
+    if (config.ignoreWarnings === undefined) return false
 
     const patterns = Array.isArray(config.ignoreWarnings)
       ? config.ignoreWarnings

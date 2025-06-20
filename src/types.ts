@@ -111,6 +111,29 @@ export interface ClientConfig {
   headers?: Record<string, string>
 
   ignoreBrowserTokenWarning?: boolean
+  /**
+   * Ignore specific warning messages from the client.
+   *
+   * @remarks
+   * - String values perform substring matching (not exact matching) against warning messages
+   * - RegExp values are tested against the full warning message
+   * - Array values allow multiple patterns to be specified
+   *
+   * @example
+   * ```typescript
+   * // Ignore warnings containing "experimental"
+   * ignoreWarnings: 'experimental'
+   *
+   * // Ignore multiple warning types
+   * ignoreWarnings: ['experimental', 'deprecated']
+   *
+   * // Use regex for exact matching
+   * ignoreWarnings: /^This is an experimental API version$/
+   *
+   * // Mix strings and regex patterns
+   * ignoreWarnings: ['rate limit', /^deprecated/i]
+   * ```
+   */
   ignoreWarnings?: string | RegExp | Array<string | RegExp>
   withCredentials?: boolean
   allowReconfigure?: boolean
@@ -1681,35 +1704,3 @@ export type {
  * @public
  */
 export const EXPERIMENTAL_API_WARNING = 'This is an experimental API version'
-
-/**
- * A regex pattern that matches experimental API version warnings.
- * Use this with the `ignoreWarnings` option for more flexible matching of experimental API warnings.
- * This pattern will match any warning message that contains "This is an experimental API version".
- *
- * @example
- * ```typescript
- * import { createClient, EXPERIMENTAL_API_WARNING_PATTERN } from '@sanity/client'
- *
- * const client = createClient({
- *   projectId: 'your-project-id',
- *   dataset: 'production',
- *   apiVersion: 'vX', // experimental version
- *   ignoreWarnings: EXPERIMENTAL_API_WARNING_PATTERN
- * })
- *
- * // Or combine with other patterns
- * const client2 = createClient({
- *   projectId: 'your-project-id',
- *   dataset: 'production',
- *   ignoreWarnings: [
- *     EXPERIMENTAL_API_WARNING_PATTERN,
- *     /deprecated/i,
- *     'rate limit'
- *   ]
- * })
- * ```
- *
- * @public
- */
-export const EXPERIMENTAL_API_WARNING_PATTERN = /This is an experimental API version/
