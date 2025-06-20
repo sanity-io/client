@@ -111,6 +111,30 @@ export interface ClientConfig {
   headers?: Record<string, string>
 
   ignoreBrowserTokenWarning?: boolean
+  /**
+   * Ignore specific warning messages from the client.
+   *
+   * @remarks
+   * - String values perform substring matching (not exact matching) against warning messages
+   * - RegExp values are tested against the full warning message
+   * - Array values allow multiple patterns to be specified
+   *
+   * @example
+   * ```typescript
+   * // Ignore warnings containing "experimental"
+   * ignoreWarnings: 'experimental'
+   *
+   * // Ignore multiple warning types
+   * ignoreWarnings: ['experimental', 'deprecated']
+   *
+   * // Use regex for exact matching
+   * ignoreWarnings: /^This is an experimental API version$/
+   *
+   * // Mix strings and regex patterns
+   * ignoreWarnings: ['rate limit', /^deprecated/i]
+   * ```
+   */
+  ignoreWarnings?: string | RegExp | Array<string | RegExp>
   withCredentials?: boolean
   allowReconfigure?: boolean
   timeout?: number
@@ -1660,3 +1684,23 @@ export type {
   StudioBaseUrl,
   StudioUrl,
 } from './stega/types'
+
+/**
+ * A string constant containing the experimental API version warning message.
+ * Use this with the `ignoreWarnings` option to suppress warnings when using experimental API versions.
+ *
+ * @example
+ * ```typescript
+ * import { createClient, EXPERIMENTAL_API_WARNING } from '@sanity/client'
+ *
+ * const client = createClient({
+ *   projectId: 'your-project-id',
+ *   dataset: 'production',
+ *   apiVersion: 'vX', // experimental version
+ *   ignoreWarnings: EXPERIMENTAL_API_WARNING
+ * })
+ * ```
+ *
+ * @public
+ */
+export const EXPERIMENTAL_API_WARNING = 'This is an experimental API version'

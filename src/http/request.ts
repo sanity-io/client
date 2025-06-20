@@ -17,14 +17,39 @@ const httpError = {
   },
 }
 
-function printWarnings() {
+function printWarnings(config: {ignoreWarnings?: string | RegExp | Array<string | RegExp>} = {}) {
   const seen: Record<string, boolean> = {}
+
+  // Helper function to check if a warning should be ignored
+  const shouldIgnoreWarning = (message: string): boolean => {
+    if (config.ignoreWarnings === undefined) return false
+
+    const patterns = Array.isArray(config.ignoreWarnings)
+      ? config.ignoreWarnings
+      : [config.ignoreWarnings]
+
+    return patterns.some((pattern) => {
+      if (typeof pattern === 'string') {
+        return message.includes(pattern)
+      } else if (pattern instanceof RegExp) {
+        return pattern.test(message)
+      }
+      return false
+    })
+  }
+
   return {
     onResponse: (res: Any) => {
       const warn = res.headers['x-sanity-warning']
       const warnings = Array.isArray(warn) ? warn : [warn]
       for (const msg of warnings) {
         if (!msg || seen[msg]) continue
+
+        // Skip warnings that match ignore patterns
+        if (shouldIgnoreWarning(msg)) {
+          continue
+        }
+
         seen[msg] = true
         console.warn(msg) // eslint-disable-line no-console
       }
@@ -34,11 +59,14 @@ function printWarnings() {
 }
 
 /** @internal */
-export function defineHttpRequest(envMiddleware: Middlewares): Requester {
+export function defineHttpRequest(
+  envMiddleware: Middlewares,
+  config: {ignoreWarnings?: string | RegExp | Array<string | RegExp>} = {},
+): Requester {
   return getIt([
     retry({shouldRetry}),
     ...envMiddleware,
-    printWarnings(),
+    printWarnings(config),
     jsonRequest(),
     jsonResponse(),
     progress(),
