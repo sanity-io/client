@@ -164,7 +164,7 @@ describe('Client config warnings', async () => {
     expect.assertions(1)
 
     const {default: nock} = await import('nock')
-    const {EXPERIMENTAL_API_WARNING_PATTERN} = await import('../src/types')
+    const {EXPERIMENTAL_API_WARNING} = await import('../src/types')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -174,7 +174,7 @@ describe('Client config warnings', async () => {
       projectId: 'abc123',
       useCdn: true,
       apiVersion: '1',
-      ignoreWarnings: EXPERIMENTAL_API_WARNING_PATTERN,
+      ignoreWarnings: EXPERIMENTAL_API_WARNING,
     }).users.getById('me')
 
     expect(warn).not.toHaveBeenCalled()
