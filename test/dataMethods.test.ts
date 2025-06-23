@@ -400,4 +400,191 @@ describe('dataMethods', async () => {
       })
     })
   })
+
+  describe('_createVersionFromBase', () => {
+    const mockHttpRequest = vi.fn()
+    const publishedId = 'pub123'
+    const baseId = 'base456'
+    const versionId = 'versions.release789.target123'
+
+    beforeEach(() => {
+      mockHttpRequest.mockClear()
+    })
+
+    test('creates version from base with correct action structure', () => {
+      const expectedAction = {
+        actionType: 'sanity.action.document.version.create',
+        publishedId,
+        baseId,
+        versionId,
+      }
+
+      mockHttpRequest.mockReturnValueOnce(
+        of({
+          type: 'response',
+          body: {transactionId: 'abc123'},
+        }),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        publishedId,
+        baseId,
+        versionId,
+      )
+
+      return assertObservable(observable, (result) => {
+        expect(result.transactionId).toEqual('abc123')
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+
+        const request = mockHttpRequest.mock.calls[0][0]
+        expect(request.uri).toEqual('/data/actions/foo')
+        expect(request.body).toEqual({
+          actions: [expectedAction],
+        })
+      })
+    })
+
+    test('creates version from base with ifBaseRevisionId', () => {
+      const ifBaseRevisionId = 'rev456'
+      const expectedAction = {
+        actionType: 'sanity.action.document.version.create',
+        publishedId,
+        baseId,
+        versionId,
+        ifBaseRevisionId,
+      }
+
+      mockHttpRequest.mockReturnValueOnce(
+        of({
+          type: 'response',
+          body: {transactionId: 'abc123'},
+        }),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        publishedId,
+        baseId,
+        versionId,
+        ifBaseRevisionId,
+      )
+
+      return assertObservable(observable, (result) => {
+        expect(result.transactionId).toEqual('abc123')
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+
+        const request = mockHttpRequest.mock.calls[0][0]
+        expect(request.body).toEqual({
+          actions: [expectedAction],
+        })
+      })
+    })
+
+    test('creates version from base with options', () => {
+      const options = {
+        skipCrossDatasetReferenceValidation: true,
+        dryRun: true,
+      }
+
+      mockHttpRequest.mockReturnValueOnce(
+        of({
+          type: 'response',
+          body: {transactionId: 'abc123'},
+        }),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        publishedId,
+        baseId,
+        versionId,
+        undefined,
+        options,
+      )
+
+      return assertObservable(observable, (result) => {
+        expect(result.transactionId).toEqual('abc123')
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+
+        const request = mockHttpRequest.mock.calls[0][0]
+        expect(request.body).toEqual({
+          actions: [
+            {
+              actionType: 'sanity.action.document.version.create',
+              publishedId,
+              baseId,
+              versionId,
+            },
+          ],
+          skipCrossDatasetReferenceValidation: true,
+          dryRun: true,
+        })
+      })
+    })
+
+    test('throws when baseId is missing', () => {
+      const client = getClient()
+
+      expect(() => {
+        dataMethods._createVersionFromBase(
+          client,
+          mockHttpRequest,
+          publishedId,
+          undefined,
+          versionId,
+        )
+      }).toThrow('`createVersion()` requires `baseId` when no `document` is provided')
+    })
+
+    test('throws when versionId is missing', () => {
+      const client = getClient()
+
+      expect(() => {
+        dataMethods._createVersionFromBase(client, mockHttpRequest, publishedId, baseId, undefined)
+      }).toThrow('`createVersion()` requires `versionId` when `baseId` is provided')
+    })
+
+    test('throws when publishedId is missing', () => {
+      const client = getClient()
+
+      expect(() => {
+        dataMethods._createVersionFromBase(client, mockHttpRequest, undefined, baseId, versionId)
+      }).toThrow('`createVersion()` requires `publishedId` when `baseId` is provided')
+    })
+
+    test('validates document IDs', () => {
+      const client = getClient()
+
+      expect(() => {
+        dataMethods._createVersionFromBase(client, mockHttpRequest, 'invalid*id', baseId, versionId)
+      }).toThrow(/is not a valid document ID/)
+
+      expect(() => {
+        dataMethods._createVersionFromBase(
+          client,
+          mockHttpRequest,
+          publishedId,
+          'invalid*id',
+          versionId,
+        )
+      }).toThrow(/is not a valid document ID/)
+
+      expect(() => {
+        dataMethods._createVersionFromBase(
+          client,
+          mockHttpRequest,
+          publishedId,
+          baseId,
+          'invalid*id',
+        )
+      }).toThrow(/is not a valid document ID/)
+    })
+  })
 })

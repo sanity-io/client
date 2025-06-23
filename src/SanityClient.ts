@@ -543,18 +543,49 @@ export class ObservableSanityClient {
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult>
+  createVersion(
+    args: {
+      baseId: string
+      versionId: string
+      publishedId: string
+      ifBaseRevisionId?: string
+    },
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult | MultipleActionResult>
   createVersion<R extends Record<string, Any>>(
     {
       document,
       publishedId,
       releaseId,
+      baseId,
+      versionId,
+      ifBaseRevisionId,
     }: {
-      document: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
+      document?: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
       publishedId?: string
       releaseId?: string
+      baseId?: string
+      versionId?: string
+      ifBaseRevisionId?: string
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
+    if ((!document && !baseId) || (document && baseId)) {
+      throw new Error('Either `document` or `baseId` must be provided to `createVersion()`')
+    }
+
+    if (!document) {
+      return dataMethods._createVersionFromBase(
+        this,
+        this.#httpRequest,
+        publishedId,
+        baseId,
+        versionId,
+        ifBaseRevisionId,
+        options,
+      )
+    }
+
     const documentVersionId = deriveDocumentVersionId('createVersion', {
       document,
       publishedId,
@@ -1524,18 +1555,51 @@ export class SanityClient {
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult>
+  createVersion(
+    args: {
+      publishedId: string
+      baseId: string
+      versionId: string
+      ifBaseRevisionId?: string
+    },
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult | MultipleActionResult>
   createVersion<R extends Record<string, Any>>(
     {
       document,
       publishedId,
       releaseId,
+      baseId,
+      versionId,
+      ifBaseRevisionId,
     }: {
-      document: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
+      document?: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
       publishedId?: string
       releaseId?: string
+      baseId?: string
+      versionId?: string
+      ifBaseRevisionId?: string
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
+    if ((!document && !baseId) || (document && baseId)) {
+      throw new Error('Either `document` or `baseId` must be provided to `createVersion()`')
+    }
+
+    if (!document) {
+      return firstValueFrom(
+        dataMethods._createVersionFromBase(
+          this,
+          this.#httpRequest,
+          publishedId,
+          baseId,
+          versionId,
+          ifBaseRevisionId,
+          options,
+        ),
+      )
+    }
+
     const documentVersionId = deriveDocumentVersionId('createVersion', {
       document,
       publishedId,

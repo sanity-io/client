@@ -39,7 +39,11 @@ import type {
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
-import {printCdnPreviewDraftsWarning, printPreviewDraftsDeprecationWarning} from '../warnings'
+import {
+  printCdnPreviewDraftsWarning,
+  printCreateVersionWithBaseIdWarning,
+  printPreviewDraftsDeprecationWarning,
+} from '../warnings'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
@@ -266,11 +270,49 @@ export function _createVersion<R extends Record<string, Any>>(
 ): Observable<SingleActionResult> {
   validators.requireDocumentId('createVersion', doc)
   validators.requireDocumentType('createVersion', doc)
+  printCreateVersionWithBaseIdWarning()
 
   const createVersionAction: CreateVersionAction = {
     actionType: 'sanity.action.document.version.create',
     publishedId,
     document: doc,
+  }
+
+  return _action(client, httpRequest, createVersionAction, options)
+}
+
+/** @internal */
+export function _createVersionFromBase(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  publishedId: string | undefined,
+  baseId: string | undefined,
+  versionId: string | undefined,
+  ifBaseRevisionId?: string,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  if (!baseId) {
+    throw new Error('`createVersion()` requires `baseId` when no `document` is provided')
+  }
+
+  if (!versionId) {
+    throw new Error('`createVersion()` requires `versionId` when `baseId` is provided')
+  }
+
+  if (!publishedId) {
+    throw new Error('`createVersion()` requires `publishedId` when `baseId` is provided')
+  }
+
+  validators.validateDocumentId('createVersion', baseId)
+  validators.validateDocumentId('createVersion', versionId)
+  validators.validateDocumentId('createVersion', publishedId)
+
+  const createVersionAction: CreateVersionAction = {
+    actionType: 'sanity.action.document.version.create',
+    publishedId,
+    baseId,
+    versionId,
+    ifBaseRevisionId,
   }
 
   return _action(client, httpRequest, createVersionAction, options)

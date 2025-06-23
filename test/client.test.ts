@@ -2786,6 +2786,188 @@ describe('client', async () => {
           `\`createVersion()\` was called with a document ID (\`${versionId}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${wrongReleaseId}\`).`,
         )
       })
+
+      test('can create version using baseId and versionId', async () => {
+        const baseId = 'baseDoc123'
+        const versionId = 'versions.release456.targetDoc123'
+        const publishedId = 'targetDoc123'
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId,
+              },
+            ],
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({baseId, versionId, publishedId})
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('can create version using baseId and versionId with ifBaseRevisionId', async () => {
+        const baseId = 'baseDoc123'
+        const versionId = 'versions.release456.targetDoc123'
+        const publishedId = 'targetDoc123'
+        const ifBaseRevisionId = 'rev456'
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId,
+                ifBaseRevisionId,
+              },
+            ],
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({
+          baseId,
+          versionId,
+          publishedId,
+          ifBaseRevisionId,
+        })
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('can create version using baseId with additional options', async () => {
+        const baseId = 'baseDoc123'
+        const versionId = 'versions.release456.targetDoc123'
+        const publishedId = 'targetDoc123'
+        const options = {
+          skipCrossDatasetReferenceValidation: true,
+          dryRun: true,
+        }
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId,
+              },
+            ],
+            skipCrossDatasetReferenceValidation: true,
+            dryRun: true,
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({baseId, versionId, publishedId}, options)
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('throws when both document and baseId are provided', async () => {
+        const document = {_type: 'post', title: 'Test'}
+        const baseId = 'baseDoc123'
+        const versionId = 'versions.release456.targetDoc123'
+        const publishedId = 'targetDoc123'
+
+        let error: Error | null = null
+        try {
+          const invalidArgs = {document, publishedId, baseId, versionId}
+          await getClient().createVersion(invalidArgs)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          'Either `document` or `baseId` must be provided to `createVersion()`',
+        )
+      })
+
+      test('throws when neither document nor baseId are provided', async () => {
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          'Either `document` or `baseId` must be provided to `createVersion()`',
+        )
+      })
+
+      test('throws when baseId is provided but versionId is missing', async () => {
+        const baseId = 'baseDoc123'
+        const publishedId = 'targetDoc123'
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({baseId, publishedId} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          '`createVersion()` requires `versionId` when `baseId` is provided',
+        )
+      })
+
+      test('throws when baseId is provided but publishedId is missing', async () => {
+        const baseId = 'baseDoc123'
+        const versionId = 'versions.release456.targetDoc123'
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({baseId, versionId} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          '`createVersion()` requires `publishedId` when `baseId` is provided',
+        )
+      })
+
+      test('throws when versionId is provided but baseId is missing', async () => {
+        const versionId = 'versions.release456.targetDoc123'
+        const publishedId = 'targetDoc123'
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({versionId, publishedId} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          'Either `document` or `baseId` must be provided to `createVersion()`',
+        )
+      })
+
+      test('handles errors when creating versions using baseId', async () => {
+        const baseId = 'baseDoc123'
+        const versionId = 'versions.release456.targetDoc123'
+        const publishedId = 'targetDoc123'
+
+        nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
+
+        await expect(
+          getClient().createVersion({baseId, versionId, publishedId}),
+        ).rejects.toThrowError()
+      })
     })
   })
 
