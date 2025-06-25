@@ -142,6 +142,15 @@ export async function updateDocumentTitle(_id, title) {
       - [Archive Release Action](#archive-release)
       - [Unarchive Release Action](#unarchive-release)
       - [Delete Release Action](#delete-release)
+  - [Views API](#views-api)
+    - [Quickstart](#quickstart-1)
+    - [Creating a views client instance](#creating-a-views-client-instance)
+      - [ESM](#esm-1)
+      - [CommonJS](#commonjs-1)
+      - [TypeScript](#typescript-1)
+      - [Other frameworks, type safety, etc](#other-frameworks-type-safety-etc)
+    - [Using a view](#using-a-view)
+    - [Developing a view](#developing-a-view)
 - [License](#license)
 - [From `v5`](#from-v5)
   - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
@@ -2258,6 +2267,139 @@ const result = await client.agent.action.patch({
     value: [{_type: 'item', title: 'Item title', _key: 'isOptionalAndWillBeGeneratedIfMissing'}],
   },
 })
+```
+
+### Views API
+
+#### Quickstart
+
+```js
+import {createViewClient} from '@sanity/client/views'
+
+const config: ViewClientConfig = {
+  apiVersion: '2025-06-25', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+}
+const client = createViewClient(config)
+
+const data = await client.fetch('viewId', 'count(*)') // this will now query the view, or the overrides if specified 
+console.log(`Number of documents: ${data}`)
+```
+
+#### Creating a views client instance
+
+```js
+const client = createViewClient(options)
+```
+
+Initializes a new Sanity View Client. Required options are `apiVersion`.  
+
+##### [ESM](https://hacks.mozilla.org/2018/03/es-modules-a-cartoon-deep-dive/)
+
+```js
+import {createViewClient} from '@sanity/client/views'
+
+const client = createViewClient({
+  apiVersion: '2025-06-25',  // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+})
+
+const data = await client.fetch('viewId', 'count(*)')
+console.log(`Number of documents: ${data}`)
+```
+
+##### [CommonJS]
+
+```js
+const { createViewClient } = require('@sanity/client/views')
+
+const client = createViewClient({
+  apiVersion: '2025-06-25',  // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+})
+
+client.fetch('viewId', 'count(*)')
+        .fetch('viewId', 'count(*)')
+        .then((data) => console.log(`Number of documents: ${data}`))
+        .catch(console.error);
+```
+
+##### [TypeScript]
+
+```ts
+import {createViewClient, ViewClientConfig} from '@sanity/client/views'
+
+const config: ViewClientConfig = {
+  apiVersion: '2025-06-25', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+}
+const client = createViewClient(config)
+
+const data = await client.fetch<number>('viewId', 'count(*)')
+console.log(`Number of documents: ${data}`)
+```
+
+##### Other frameworks, type safety, etc
+The Views client supports the same conventions as the `sanityClient`. You can follow the same patterns [documented for the sanity client](#creating-a-client-instance) to achieve integration with your framework, typesafety, etc.
+
+#### Using a view
+
+Once the View client has been initialized you can use the `fetch` method to query a view. The `fetch` method required two arguments: `viewId` and `query`.
+
+```js
+const data = await client.fetch('viewId', 'count(*)')
+console.log(`Number of documents: ${data}`)
+```
+
+If the view you are querying is a private view you will need to specify a `token` in the client config.  
+
+```js
+const client = createViewClient({
+  apiVersion: '2025-06-25',  // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+  token: process.env.SANITY_API_TOKEN,
+})
+
+const data = await client.fetch('viewId', 'count(*)')
+console.log(`Number of documents: ${data}`)
+```
+
+The fetch method can also accept parameters and options, the same as the sanity client.
+
+```js
+const data = await client.fetch('viewId', 'count(*[_type == $type])', {type: 'post'})
+console.log(`Number of documents: ${data}`)
+```
+
+Unlike the sanity client the views client does not support the `dataset`, `projectId`, or `useProjectHostname` options as it does not belong to any single project or dataset. `apiCdn` is not supported, and all requests will be routed via the CDN. Other options are the same as `sanityClient`.  
+
+#### Developing a view
+
+Views are deployed in the form of a series of view connections which can take some minutes to build. In order to facilitate an improved developer workflow the views client supports a `viewOverrides` option, which will allow the development of views locally at the cost of some performance. 
+
+To do this we must specify the new option `viewOverrides` on instantiation of the client. Note that a token is required to access this development workflow. 
+
+```js
+const config: ViewClientConfig = {
+  apiVersion: '2025-06-25', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
+  token: process.env.SANITY_API_TOKEN, // this is required to use the override functionality
+  viewOverrides: [
+    {
+      id: 'vw2x09caysNaZdjksWEsToG43meSg', // the view id you are developing
+      connections: [
+        {
+          query: '*[_type == "location"]', // the query to use for this connection - this is what you would deploy later
+          resourceType: ViewResourceType.Dataset, // currently only dataset is supported
+          resourceId: '469jfrel.eu_data', // the project and dataset to use for this connection, note the format is `projectId.datasetName`
+        },
+        {
+          query: '*[_type == "location"]', // You can stack as many connections as you require
+          resourceType: ViewResourceType.Dataset,
+          resourceId: '469jfrel.us_data',
+        }
+      ]
+    }
+  ]
+}
+const client = createViewClient(config)
+
+const data = await client.fetch('viewId', 'count(*)') // this query is now run against the result of all the queries above
+console.log(`Number of documents: ${data}`)
 ```
 
 ## License
