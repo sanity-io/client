@@ -48,5 +48,5 @@ export const printNoDefaultExport = createWarningPrinter([
 ])
 
 export const printCreateVersionWithBaseIdWarning = createWarningPrinter([
-  'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `versionId` instead.',
+  'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `releaseId` instead.',
 ])

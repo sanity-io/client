@@ -707,7 +707,7 @@ export interface DeleteReleaseAction {
  * attached to the release as given by `document._id`
  *
  * If the `baseId` and `versionId` are provided, the version is created from the base document
- * and the version is attached to the release as given by `baseId` and `versionId`
+ * and the version is attached to the release as given by `publishedId` and `versionId`
  *
  * @public
  */
