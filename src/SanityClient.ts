@@ -546,7 +546,7 @@ export class ObservableSanityClient {
   createVersion(
     args: {
       baseId: string
-      versionId: string
+      releaseId: string
       publishedId: string
       ifBaseRevisionId?: string
     },
@@ -558,29 +558,23 @@ export class ObservableSanityClient {
       publishedId,
       releaseId,
       baseId,
-      versionId,
       ifBaseRevisionId,
     }: {
       document?: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
       publishedId?: string
       releaseId?: string
       baseId?: string
-      versionId?: string
       ifBaseRevisionId?: string
     },
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    if ((!document && !baseId) || (document && baseId)) {
-      throw new Error('Either `document` or `baseId` must be provided to `createVersion()`')
-    }
-
     if (!document) {
       return dataMethods._createVersionFromBase(
         this,
         this.#httpRequest,
         publishedId,
         baseId,
-        versionId,
+        releaseId,
         ifBaseRevisionId,
         options,
       )
