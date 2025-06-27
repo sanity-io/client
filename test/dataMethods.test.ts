@@ -412,11 +412,13 @@ describe('dataMethods', async () => {
     })
 
     test('creates version from base with correct action structure', () => {
+      const releaseId = 'release789'
+
       const expectedAction = {
         actionType: 'sanity.action.document.version.create',
         publishedId,
         baseId,
-        versionId,
+        versionId: `versions.${releaseId}.${publishedId}`,
       }
 
       mockHttpRequest.mockReturnValueOnce(
@@ -432,7 +434,7 @@ describe('dataMethods', async () => {
         mockHttpRequest,
         publishedId,
         baseId,
-        versionId,
+        releaseId,
       )
 
       return assertObservable(observable, (result) => {
@@ -449,11 +451,13 @@ describe('dataMethods', async () => {
 
     test('creates version from base with ifBaseRevisionId', () => {
       const ifBaseRevisionId = 'rev456'
+      const releaseId = 'release789'
+
       const expectedAction = {
         actionType: 'sanity.action.document.version.create',
         publishedId,
         baseId,
-        versionId,
+        versionId: `versions.${releaseId}.${publishedId}`,
         ifBaseRevisionId,
       }
 
@@ -470,7 +474,7 @@ describe('dataMethods', async () => {
         mockHttpRequest,
         publishedId,
         baseId,
-        versionId,
+        releaseId,
         ifBaseRevisionId,
       )
 
@@ -490,6 +494,7 @@ describe('dataMethods', async () => {
         skipCrossDatasetReferenceValidation: true,
         dryRun: true,
       }
+      const releaseId = 'release789'
 
       mockHttpRequest.mockReturnValueOnce(
         of({
@@ -504,7 +509,7 @@ describe('dataMethods', async () => {
         mockHttpRequest,
         publishedId,
         baseId,
-        versionId,
+        releaseId,
         undefined,
         options,
       )
@@ -520,7 +525,7 @@ describe('dataMethods', async () => {
               actionType: 'sanity.action.document.version.create',
               publishedId,
               baseId,
-              versionId,
+              versionId: `versions.${releaseId}.${publishedId}`,
             },
           ],
           skipCrossDatasetReferenceValidation: true,
@@ -543,12 +548,39 @@ describe('dataMethods', async () => {
       }).toThrow('`createVersion()` requires `baseId` when no `document` is provided')
     })
 
-    test('throws when versionId is missing', () => {
-      const client = getClient()
+    test('creates draft version when releaseId is missing', () => {
+      const expectedAction = {
+        actionType: 'sanity.action.document.version.create',
+        publishedId,
+        baseId,
+        versionId: `drafts.${publishedId}`,
+      }
 
-      expect(() => {
-        dataMethods._createVersionFromBase(client, mockHttpRequest, publishedId, baseId, undefined)
-      }).toThrow('`createVersion()` requires `versionId` when `baseId` is provided')
+      mockHttpRequest.mockReturnValueOnce(
+        of({
+          type: 'response',
+          body: {transactionId: 'abc123'},
+        }),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        publishedId,
+        baseId,
+        undefined,
+      )
+
+      return assertObservable(observable, (result) => {
+        expect(result.transactionId).toEqual('abc123')
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+
+        const request = mockHttpRequest.mock.calls[0][0]
+        expect(request.body).toEqual({
+          actions: [expectedAction],
+        })
+      })
     })
 
     test('throws when publishedId is missing', () => {
@@ -563,16 +595,12 @@ describe('dataMethods', async () => {
       const client = getClient()
 
       expect(() => {
-        dataMethods._createVersionFromBase(client, mockHttpRequest, 'invalid*id', baseId, versionId)
-      }).toThrow(/is not a valid document ID/)
-
-      expect(() => {
         dataMethods._createVersionFromBase(
           client,
           mockHttpRequest,
-          publishedId,
           'invalid*id',
-          versionId,
+          baseId,
+          'release123',
         )
       }).toThrow(/is not a valid document ID/)
 
@@ -581,8 +609,8 @@ describe('dataMethods', async () => {
           client,
           mockHttpRequest,
           publishedId,
-          baseId,
           'invalid*id',
+          'release123',
         )
       }).toThrow(/is not a valid document ID/)
     })

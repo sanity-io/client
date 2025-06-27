@@ -1,4 +1,4 @@
-import {getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
+import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
 import {from, type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {combineLatestWith, filter, map} from 'rxjs/operators'
 
@@ -285,9 +285,9 @@ export function _createVersion<R extends Record<string, Any>>(
 export function _createVersionFromBase(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
-  publishedId: string | undefined,
-  baseId: string | undefined,
-  versionId: string | undefined,
+  publishedId?: string,
+  baseId?: string,
+  releaseId?: string,
   ifBaseRevisionId?: string,
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
@@ -295,23 +295,18 @@ export function _createVersionFromBase(
     throw new Error('`createVersion()` requires `baseId` when no `document` is provided')
   }
 
-  if (!versionId) {
-    throw new Error('`createVersion()` requires `versionId` when `baseId` is provided')
-  }
-
   if (!publishedId) {
     throw new Error('`createVersion()` requires `publishedId` when `baseId` is provided')
   }
 
   validators.validateDocumentId('createVersion', baseId)
-  validators.validateDocumentId('createVersion', versionId)
   validators.validateDocumentId('createVersion', publishedId)
 
   const createVersionAction: CreateVersionAction = {
     actionType: 'sanity.action.document.version.create',
     publishedId,
     baseId,
-    versionId,
+    versionId: releaseId ? getVersionId(publishedId, releaseId) : getDraftId(publishedId),
     ifBaseRevisionId,
   }
 

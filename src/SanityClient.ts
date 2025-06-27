@@ -1477,7 +1477,8 @@ export class SanityClient {
    * Creates a new version of a published document.
    *
    * @remarks
-   * * Requires a document with a `_type` property.
+   * * The preferred approach is to use `baseId` to refer to the existing published document, but it is also possible to provide a complete `document` instead.
+   * * If `document` is provided, it must have a `_type` property.
    * * Creating a version with no `releaseId` will create a new draft version of the published document.
    * * If the `document._id` is defined, it should be a draft or release version ID that matches the version ID generated from `publishedId` and `releaseId`.
    * * If the `document._id` is not defined, it will be generated from `publishedId` and `releaseId`.
@@ -1486,17 +1487,18 @@ export class SanityClient {
    * @category Versions
    *
    * @param params - Version action parameters:
+   *   - `baseId` - The ID of the published document from which to create a new version from.
+   *   - `ifBaseRevisionId` - If `baseId` is provided, this ensures the `baseId`'s revision Id is as expected before creating the new version from it.
    *   - `document` - The document to create as a new version (must include `_type`).
    *   - `publishedId` - The ID of the published document being versioned.
    *   - `releaseId` - The ID of the release to create the version for.
    * @param options - Additional action options.
    * @returns A promise that resolves to the `transactionId`.
    *
-   * @example Creating a new version of a published document with a generated version ID
+   * @example Creating a new version of a published document
    * ```ts
    * const transactionId = await client.createVersion({
-   *   // The document does not need to include an `_id` property since it will be generated from `publishedId` and `releaseId`
-   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   baseId: 'myDocument',
    *   publishedId: 'myDocument',
    *   releaseId: 'myRelease',
    * })
@@ -1509,25 +1511,11 @@ export class SanityClient {
    * // }
    * ```
    *
-   * @example Creating a new version of a published document with a specified version ID
-   * ```ts
-   * const transactionId = await client.createVersion({
-   *   document: {_type: 'myDocument', _id: 'versions.myRelease.myDocument', title: 'My Document'},
-   *   // `publishedId` and `releaseId` are not required since `document._id` has been specified
-   * })
-   *
-   * // The following document will be created:
-   * // {
-   * //   _id: 'versions.myRelease.myDocument',
-   * //   _type: 'myDocument',
-   * //   title: 'My Document',
-   * // }
-   * ```
    *
    * @example Creating a new draft version of a published document
    * ```ts
    * const transactionId = await client.createVersion({
-   *   document: {_type: 'myDocument', title: 'My Document'},
+   *   baseId: 'myDocument',
    *   publishedId: 'myDocument',
    * })
    *
@@ -1559,7 +1547,7 @@ export class SanityClient {
     args: {
       publishedId: string
       baseId: string
-      versionId: string
+      releaseId: string
       ifBaseRevisionId?: string
     },
     options?: BaseActionOptions,
@@ -1570,22 +1558,16 @@ export class SanityClient {
       publishedId,
       releaseId,
       baseId,
-      versionId,
       ifBaseRevisionId,
     }: {
       document?: SanityDocumentStub<R> | IdentifiedSanityDocumentStub<R>
       publishedId?: string
       releaseId?: string
       baseId?: string
-      versionId?: string
       ifBaseRevisionId?: string
     },
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    if ((!document && !baseId) || (document && baseId)) {
-      throw new Error('Either `document` or `baseId` must be provided to `createVersion()`')
-    }
-
     if (!document) {
       return firstValueFrom(
         dataMethods._createVersionFromBase(
@@ -1593,7 +1575,7 @@ export class SanityClient {
           this.#httpRequest,
           publishedId,
           baseId,
-          versionId,
+          releaseId,
           ifBaseRevisionId,
           options,
         ),
