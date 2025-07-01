@@ -83,4 +83,100 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledWith('Friction endures')
     expect(warn).toHaveBeenCalledTimes(1)
   })
+
+  test.skipIf(isEdge)('ignores warnings using string pattern', async () => {
+    expect.assertions(1)
+
+    const {default: nock} = await import('nock')
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version warning'})
+
+    await createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+      ignoreWarnings: 'experimental API version',
+    }).users.getById('me')
+
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  test.skipIf(isEdge)('ignores warnings using regex pattern', async () => {
+    expect.assertions(1)
+
+    const {default: nock} = await import('nock')
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version warning'})
+
+    await createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+      ignoreWarnings: /experimental.*version/i,
+    }).users.getById('me')
+
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  test.skipIf(isEdge)('ignores warnings using array of patterns', async () => {
+    expect.assertions(1)
+
+    const {default: nock} = await import('nock')
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .reply(200, {}, {'X-Sanity-Warning': 'Rate limit warning'})
+
+    await createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+      ignoreWarnings: [/experimental/i, /rate limit/i, /deprecated/],
+    }).users.getById('me')
+
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  test.skipIf(isEdge)('shows warnings when ignoreWarnings does not match', async () => {
+    expect.assertions(1)
+
+    const {default: nock} = await import('nock')
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .reply(200, {}, {'X-Sanity-Warning': 'This is an important warning'})
+
+    await createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+      ignoreWarnings: 'experimental',
+    }).users.getById('me')
+
+    expect(warn).toHaveBeenCalledWith('This is an important warning')
+  })
+
+  test.skipIf(isEdge)('ignores warnings using exported constant', async () => {
+    expect.assertions(1)
+
+    const {default: nock} = await import('nock')
+    const {EXPERIMENTAL_API_WARNING} = await import('../src/types')
+
+    nock('https://abc123.api.sanity.io')
+      .get('/v1/users/me')
+      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version warning'})
+
+    await createClient({
+      projectId: 'abc123',
+      useCdn: true,
+      apiVersion: '1',
+      ignoreWarnings: EXPERIMENTAL_API_WARNING,
+    }).users.getById('me')
+
+    expect(warn).not.toHaveBeenCalled()
+  })
 })
