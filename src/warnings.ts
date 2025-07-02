@@ -46,3 +46,7 @@ export const printNoApiVersionSpecifiedWarning = createWarningPrinter([
 export const printNoDefaultExport = createWarningPrinter([
   'The default export of @sanity/client has been deprecated. Use the named export `createClient` instead.',
 ])
+
+export const printCreateVersionWithBaseIdWarning = createWarningPrinter([
+  'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `releaseId` instead.',
+])

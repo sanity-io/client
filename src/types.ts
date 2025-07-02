@@ -725,16 +725,29 @@ export interface DeleteReleaseAction {
 }
 
 /**
- * Creates a new version of an existing document, attached to the release as given
- * by `document._id`
+ * Creates a new version of an existing document.
+ *
+ * If the `document` is provided, the version is created from the document
+ * attached to the release as given by `document._id`
+ *
+ * If the `baseId` and `versionId` are provided, the version is created from the base document
+ * and the version is attached to the release as given by `publishedId` and `versionId`
  *
  * @public
  */
-export interface CreateVersionAction {
+export type CreateVersionAction = {
   actionType: 'sanity.action.document.version.create'
   publishedId: string
-  document: IdentifiedSanityDocumentStub
-}
+} & (
+  | {
+      document: IdentifiedSanityDocumentStub
+    }
+  | {
+      baseId: string
+      versionId: string
+      ifBaseRevisionId?: string
+    }
+)
 
 /**
  * Delete a version of a document.

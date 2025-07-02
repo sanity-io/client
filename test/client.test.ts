@@ -2786,6 +2786,178 @@ describe('client', async () => {
           `\`createVersion()\` was called with a document ID (\`${versionId}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${wrongReleaseId}\`).`,
         )
       })
+
+      test('can create version using baseId and releaseId', async () => {
+        const baseId = 'baseDoc123'
+        const releaseId = 'release456'
+        const publishedId = 'targetDoc123'
+        const expectedVersionId = 'versions.release456.targetDoc123'
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId: expectedVersionId,
+              },
+            ],
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({baseId, releaseId, publishedId})
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('can create version using baseId and releaseId with ifBaseRevisionId', async () => {
+        const baseId = 'baseDoc123'
+        const releaseId = 'release456'
+        const publishedId = 'targetDoc123'
+        const ifBaseRevisionId = 'rev456'
+        const expectedVersionId = 'versions.release456.targetDoc123'
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId: expectedVersionId,
+                ifBaseRevisionId,
+              },
+            ],
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({
+          baseId,
+          releaseId,
+          publishedId,
+          ifBaseRevisionId,
+        })
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('can create version using baseId with additional options', async () => {
+        const baseId = 'baseDoc123'
+        const releaseId = 'release456'
+        const publishedId = 'targetDoc123'
+        const expectedVersionId = 'versions.release456.targetDoc123'
+        const options = {
+          skipCrossDatasetReferenceValidation: true,
+          dryRun: true,
+        }
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId: expectedVersionId,
+              },
+            ],
+            skipCrossDatasetReferenceValidation: true,
+            dryRun: true,
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({baseId, releaseId, publishedId}, options)
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('throws when neither document nor baseId are provided', async () => {
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          '`createVersion()` requires `baseId` when no `document` is provided',
+        )
+      })
+
+      test('creates draft version when baseId is provided but releaseId is missing', async () => {
+        const baseId = 'baseDoc123'
+        const publishedId = 'targetDoc123'
+        const expectedVersionId = 'drafts.targetDoc123'
+
+        nock(projectHost())
+          .post('/v1/data/actions/foo', {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.create',
+                publishedId,
+                baseId,
+                versionId: expectedVersionId,
+              },
+            ],
+          })
+          .reply(200, {
+            transactionId: 'abc123',
+          })
+
+        const res = await getClient().createVersion({baseId, publishedId} as any)
+        expect(res.transactionId).toEqual('abc123')
+      })
+
+      test('throws when baseId is provided but publishedId is missing', async () => {
+        const baseId = 'baseDoc123'
+        const releaseId = 'release456'
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({baseId, releaseId} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          '`createVersion()` requires `publishedId` when `baseId` is provided',
+        )
+      })
+
+      test('throws when releaseId is provided but baseId is missing', async () => {
+        const releaseId = 'release456'
+        const publishedId = 'targetDoc123'
+
+        let error: Error | null = null
+        try {
+          await getClient().createVersion({releaseId, publishedId} as any)
+        } catch (err) {
+          error = err as Error
+        }
+
+        expect(error).not.toBeNull()
+        expect(error?.message).toMatch(
+          '`createVersion()` requires `baseId` when no `document` is provided',
+        )
+      })
+
+      test('handles errors when creating versions using baseId', async () => {
+        const baseId = 'baseDoc123'
+        const releaseId = 'release456'
+        const publishedId = 'targetDoc123'
+
+        nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
+
+        await expect(
+          getClient().createVersion({baseId, releaseId, publishedId}),
+        ).rejects.toThrowError()
+      })
     })
   })
 
