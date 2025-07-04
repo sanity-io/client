@@ -2316,7 +2316,6 @@ const client = createViewClient({
 })
 
 client.fetch('viewId', 'count(*)')
-        .fetch('viewId', 'count(*)')
         .then((data) => console.log(`Number of documents: ${data}`))
         .catch(console.error);
 ```
