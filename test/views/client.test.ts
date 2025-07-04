@@ -46,6 +46,22 @@ describe('view client', async () => {
       expect(client).toBeDefined()
       expect(client.observable).toBeInstanceOf(ObservableViewClient)
     })
+
+    test('throws if viewOverrides contains a non-view resource type', () => {
+      expect(() =>
+        createViewClient({
+          ...defaultConfig,
+          viewOverrides: [
+            {
+              // @ts-expect-error - we want to test that it throws an error
+              resourceType: ViewResourceType.Dataset,
+              resourceId: 'vw-dataset-test',
+              connections: [],
+            },
+          ],
+        }),
+      ).toThrow(/View overrides only support resource type "view"/)
+    })
   })
 
   describe('promise client', () => {
@@ -205,7 +221,8 @@ describe('view client', async () => {
         ...defaultConfig,
         viewOverrides: [
           {
-            id: 'vw-dataset-test',
+            resourceType: ViewResourceType.View,
+            resourceId: 'vw-dataset-test',
             connections: [
               {
                 query: '*[_type == "document"]',
@@ -243,7 +260,8 @@ describe('view client', async () => {
         ...defaultConfig,
         viewOverrides: [
           {
-            id: 'vw-other',
+            resourceType: ViewResourceType.View,
+            resourceId: 'vw-other',
             connections: [
               {
                 query: '*[_type == "document"]',
@@ -470,7 +488,8 @@ describe('view client', async () => {
           ...defaultConfig,
           viewOverrides: [
             {
-              id: 'vw-obs-dataset',
+              resourceType: ViewResourceType.View,
+              resourceId: 'vw-obs-dataset',
               connections: [
                 {
                   query: '*[_type == "document"]',

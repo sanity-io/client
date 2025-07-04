@@ -25,7 +25,7 @@ import type {
 function hasDatasetConnections(viewId: string, viewOverrides?: ViewOverride[]): boolean {
   if (!viewOverrides) return false
 
-  const viewOverride = viewOverrides.find((override) => override.id === viewId)
+  const viewOverride = viewOverrides.find((override) => override.resourceId === viewId)
   if (!viewOverride || !viewOverride.connections.length) return false
 
   // Check if any connection has dataset resourceType
@@ -46,6 +46,16 @@ export interface ViewClientConfig
  * @public
  */
 export function createViewClient(config: ViewClientConfig): ViewClient {
+  // Validate we have the correct view resourceType
+  // Fail early if we don't.
+  if (config.viewOverrides) {
+    config.viewOverrides.forEach((override: ViewOverride) => {
+      if (override.resourceType !== ViewResourceType.View) {
+        throw new Error('View overrides only support resource type "view"')
+      }
+    })
+  }
+
   const clientRequester = defineHttpRequest([])
   return new ViewClient(
     (options, requester) =>
@@ -127,7 +137,9 @@ export class ViewClient {
     const useEmulate = hasDatasetConnections(viewId, this.#config.viewOverrides)
 
     // Get connections for this view if using emulate endpoint
-    const viewOverride = this.#config.viewOverrides?.find((override) => override.id === viewId)
+    const viewOverride = this.#config.viewOverrides?.find(
+      (override) => override.resourceId === viewId,
+    )
     const connections = useEmulate ? viewOverride?.connections || [] : undefined
 
     const cfg = initConfig(
@@ -204,7 +216,9 @@ export class ObservableViewClient {
     const useEmulateEndpoint = hasDatasetConnections(viewId, this.#config.viewOverrides)
 
     // Get connections for this view if using emulate endpoint
-    const viewOverride = this.#config.viewOverrides?.find((override) => override.id === viewId)
+    const viewOverride = this.#config.viewOverrides?.find(
+      (override) => override.resourceId === viewId,
+    )
     const connections = useEmulateEndpoint ? viewOverride?.connections || [] : undefined
 
     const cfg = initConfig(

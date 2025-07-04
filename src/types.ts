@@ -1232,11 +1232,13 @@ export interface UnfilteredResponseWithoutQuery extends ResponseQueryOptions {
 /** @public */
 export enum ViewResourceType {
   Dataset = 'dataset',
+  View = 'view',
 }
 
 /** @public */
 export type ViewOverride = {
-  id: string
+  resourceType: ViewResourceType.View
+  resourceId: string
   connections: ViewConnectionOverride[]
 }
 
