@@ -2316,7 +2316,6 @@ const client = createViewClient({
 })
 
 client.fetch('viewId', 'count(*)')
-        .fetch('viewId', 'count(*)')
         .then((data) => console.log(`Number of documents: ${data}`))
         .catch(console.error);
 ```
@@ -2331,7 +2330,7 @@ const config: ViewClientConfig = {
 }
 const client = createViewClient(config)
 
-const data = await client.fetch<number>('viewId', 'count(*)')
+const data = await client.fe\tch<number>('viewId', 'count(*)')
 console.log(`Number of documents: ${data}`)
 ```
 
