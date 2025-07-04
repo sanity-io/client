@@ -2380,7 +2380,8 @@ const config: ViewClientConfig = {
   token: process.env.SANITY_API_TOKEN, // this is required to use the override functionality
   viewOverrides: [
     {
-      id: 'vw2x09caysNaZdjksWEsToG43meSg', // the view id you are developing
+      resourceType: ViewResourceType.View,
+      resourceId: 'vw2x09caysNaZdjksWEsToG43meSg', // the view id you are developing
       connections: [
         {
           query: '*[_type == "location"]', // the query to use for this connection - this is what you would deploy later
