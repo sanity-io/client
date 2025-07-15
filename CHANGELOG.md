@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.7.0](https://github.com/sanity-io/client/compare/v7.6.0...v7.7.0) (2025-07-15)
+
+
+### Features
+
+* add `isHttpError` method (and shared `HttpError` interface) ([#1112](https://github.com/sanity-io/client/issues/1112)) ([98ee6d3](https://github.com/sanity-io/client/commit/98ee6d39a28ea3480e198a222b138c669f2cb16d))
+* add ignoreExperimentalApiWarning configuration option ([#1107](https://github.com/sanity-io/client/issues/1107)) ([b1cdfbe](https://github.com/sanity-io/client/commit/b1cdfbec3774e3fe6d76f4a658f0a43b4b7e2eb6))
+
 ## [7.6.0](https://github.com/sanity-io/client/compare/v7.5.0...v7.6.0) (2025-06-13)
 
 
