@@ -6,6 +6,59 @@ import {isRecord} from '../util/isRecord'
 
 const MAX_ITEMS_IN_ERROR_MESSAGE = 5
 
+/**
+ * Shared properties for HTTP errors (eg both ClientError and ServerError)
+ * Use `isHttpError` for type narrowing and accessing response properties.
+ *
+ * @public
+ */
+export interface HttpError {
+  statusCode: number
+  message: string
+  response: {
+    body: unknown
+    url: string
+    method: string
+    headers: Record<string, string>
+    statusCode: number
+    statusMessage: string | null
+  }
+}
+
+/**
+ * Checks if the provided error is an HTTP error.
+ *
+ * @param error - The error to check.
+ * @returns `true` if the error is an HTTP error, `false` otherwise.
+ * @public
+ */
+export function isHttpError(error: unknown): error is HttpError {
+  if (!isRecord(error)) {
+    return false
+  }
+
+  const response = error.response
+  if (
+    typeof error.statusCode !== 'number' ||
+    typeof error.message !== 'string' ||
+    !isRecord(response)
+  ) {
+    return false
+  }
+
+  if (
+    typeof response.body === 'undefined' ||
+    typeof response.url !== 'string' ||
+    typeof response.method !== 'string' ||
+    typeof response.headers !== 'object' ||
+    typeof response.statusCode !== 'number'
+  ) {
+    return false
+  }
+
+  return true
+}
+
 /** @public */
 export class ClientError extends Error {
   response: ErrorProps['response']

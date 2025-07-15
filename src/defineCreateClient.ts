@@ -21,6 +21,8 @@ export {
   ClientError,
   CorsOriginError,
   formatQueryParseError,
+  type HttpError,
+  isHttpError,
   isQueryParseError,
   ServerError,
 } from './http/errors'
