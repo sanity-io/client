@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.8.0](https://github.com/sanity-io/client/compare/v7.7.0...v7.8.0) (2025-07-16)
+
+
+### Features
+
+* version.create action supports optional `baseId` and `versionId` instead of `document` ([#1108](https://github.com/sanity-io/client/issues/1108)) ([aaa1042](https://github.com/sanity-io/client/commit/aaa1042f0e47b358088d15bf6b06ab1d80ecf289))
+
 ## [7.7.0](https://github.com/sanity-io/client/compare/v7.6.0...v7.7.0) (2025-07-15)
 
 
