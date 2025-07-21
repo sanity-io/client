@@ -508,6 +508,7 @@ export interface CurrentSanityUser {
   email: string
   profileImage: string | null
   role: string
+  provider: string
 }
 
 /** @public */
