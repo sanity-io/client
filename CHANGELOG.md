@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.8.1](https://github.com/sanity-io/client/compare/v7.8.0...v7.8.1) (2025-07-22)
+
+
+### Bug Fixes
+
+* add missing `provider` property to `CurrentSanityUser` type ([#1115](https://github.com/sanity-io/client/issues/1115)) ([5d98eca](https://github.com/sanity-io/client/commit/5d98eca1883b41380f2995dcbb1c6b9196724663))
+
 ## [7.8.0](https://github.com/sanity-io/client/compare/v7.7.0...v7.8.0) (2025-07-16)
 
 
