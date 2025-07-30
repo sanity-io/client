@@ -86,13 +86,41 @@ function isValidDate(dateString: string) {
   return /^\d{4}-\d{2}-\d{2}/.test(dateString) ? Boolean(Date.parse(dateString)) : false
 }
 
+const allowedProtocols = new Set([
+  'app:',
+  'data:',
+  'discord:',
+  'file:',
+  'ftp:',
+  'ftps:',
+  'geo:',
+  'http:',
+  'https:',
+  'imap:',
+  'javascript:',
+  'magnet:',
+  'mailto:',
+  'maps:',
+  'ms-excel:',
+  'ms-powerpoint:',
+  'ms-word:',
+  'slack:',
+  'sms:',
+  'spotify:',
+  'steam:',
+  'teams:',
+  'tel:',
+  'vscode:',
+  'zoom:',
+])
+
 function isValidURL(url: string) {
   try {
-    new URL(url, url.startsWith('/') ? 'https://acme.com' : undefined)
+    const {protocol} = new URL(url, url.startsWith('/') ? 'https://acme.com' : undefined)
+    return allowedProtocols.has(protocol) || protocol.startsWith('web+')
   } catch {
     return false
   }
-  return true
 }
 
 function hasTypeLike(path: ContentSourceMapParsedPath): boolean {
