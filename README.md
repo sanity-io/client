@@ -1488,7 +1488,7 @@ client
   })
 ```
 
-`sanity.action.document.delete` cannot be used to delete documents that have not yet been published. Use `.delete()` from the Mutation API instead.
+`sanity.action.document.delete` cannot be used to delete documents that have not yet been published. Use `sanity.action.version.discard` or `.delete()` from the Mutation API instead.
 
 #### Edit Action
 
@@ -1500,9 +1500,9 @@ client
     {
       actionType: 'sanity.action.document.edit',
       publishedId: 'bike-123',
-      draftId: 'drafts.bike-123',
+      versionId: 'drafts.bike-123',
       patch: {
-        set: { seats: 1 },
+        set: {seats: 1},
       },
     },
     actionOptions,
@@ -1525,7 +1525,7 @@ client
     {
       actionType: 'sanity.action.document.publish',
       versionId: 'drafts.bike-123',
-      ifDraftRevisionId: '<previously-known-revision>',
+      ifVersionRevisionId: '<previously-known-revision>',
       publishedId: 'bike-123',
       ifPublishedRevisionId: '<previously-known-revision>',
     },

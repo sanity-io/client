@@ -2248,7 +2248,7 @@ describe('client', async () => {
       const action6: PublishAction = {
         actionType: 'sanity.action.document.publish',
         versionId: 'drafts.post6',
-        ifDraftRevisionId: 'rev7',
+        ifVersionRevisionId: 'rev7',
         publishedId: 'post6',
         ifPublishedRevisionId: 'rev6',
       }
