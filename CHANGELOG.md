@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.8.2](https://github.com/sanity-io/client/compare/v7.8.1...v7.8.2) (2025-08-01)
+
+
+### Bug Fixes
+
+* **stega:** narrow filtering URL patterns to valid URL protocols ([#1118](https://github.com/sanity-io/client/issues/1118)) ([b8788f5](https://github.com/sanity-io/client/commit/b8788f5cf47e674c56673f9cbf400d94d351b76a))
+
 ## [7.8.1](https://github.com/sanity-io/client/compare/v7.8.0...v7.8.1) (2025-07-22)
 
 
