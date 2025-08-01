@@ -870,11 +870,16 @@ export type DeleteAction = {
    * Published document ID to delete
    */
   publishedId: string
+  
+  /**
+   * Draft or version IDs of the published document to delete
+   */
+  includeVersions: [string, ...string[]]
 
   /**
-   * Draft document ID to delete
+   * @deprecated Use `includeVersions` instead
    */
-  includeDrafts: string[]
+  includeDrafts?: string[]
 
   /**
    * Delete document history
@@ -916,12 +921,22 @@ export type PublishAction = {
   actionType: 'sanity.action.document.publish'
 
   /**
-   * Draft document ID to publish
+   * Draft or version document ID to publish
    */
-  draftId: string
+  versionId: string
 
   /**
-   * Draft revision ID to match
+   * @deprecated Use `versionId` instead
+   */
+  draftId?: string
+
+  /**
+   * Draft or version revision ID to match
+   */
+  ifVersionRevisionId?: string
+
+  /**
+   * @deprecated Use `ifVersionRevisionId` instead
    */
   ifDraftRevisionId?: string
 
@@ -947,9 +962,14 @@ export type UnpublishAction = {
   actionType: 'sanity.action.document.unpublish'
 
   /**
-   * Draft document ID to replace the published document with
+   * Draft or version document ID to replace the published document with
    */
-  draftId: string
+  versionId: string
+
+  /**
+   * @deprecated Use `versionId` instead
+   */
+  draftId?: string
 
   /**
    * Published document ID to delete
