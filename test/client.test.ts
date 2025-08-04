@@ -4360,6 +4360,7 @@ describe('client', async () => {
             type: 'groq',
             query: '*[id=$id].title',
             params: {id: 'abc'},
+            perspective: 'drafts',
           },
           d: {
             type: 'document',
@@ -4515,6 +4516,7 @@ describe('client', async () => {
             type: 'groq',
             query: '*[id=$id].title',
             params: {id: 'abc'},
+            perspective: 'published',
           },
           d: {
             type: 'document',

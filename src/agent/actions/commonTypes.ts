@@ -1,3 +1,5 @@
+import type {ClientPerspective} from '@sanity/client'
+
 /**
  * Include a string in the instruction: do not have to escape $ signs in the string.
  *
@@ -128,6 +130,7 @@ export interface GroqAgentActionParam {
   type: 'groq'
   query: string
   params?: Record<string, string>
+  perspective?: ClientPerspective
 }
 
 /**  @beta */
