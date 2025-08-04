@@ -2047,6 +2047,7 @@ await client.agent.action.generate({
       type: 'groq',
       query: '*[_type==$type].title',
       params: {type: 'article'},
+      perspective: 'drafts' // optional
     },
   },
   target: {path: ['body']},
