@@ -4032,7 +4032,7 @@ describe('client', async () => {
           },
         },
         temperature: 0.6,
-        format: 'text',
+        format: 'string',
       })
       expect(body).toEqual('whatever')
     })
