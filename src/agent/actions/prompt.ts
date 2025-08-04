@@ -113,7 +113,7 @@ interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>
 
 interface PromptTextResponse {
   /**
-   * When format is 'string', the response will be a string
+   * When format is 'string', the response will be a raw text response to the instruction.
    */
   format?: 'string'
 }
