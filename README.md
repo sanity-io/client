@@ -1424,7 +1424,7 @@ if (runRelease.state === 'published' && !runRelease.error) {
 
 ### Actions
 
-The Actions API provides a new interface for creating, updating and publishing documents. It is a wrapper around the [Actions API](https://www.sanity.io/docs/http-actions).
+The Actions API provides a new interface for creating, updating and publishing documents with a greater focus on handling document versions such as drafts and releases. It is a wrapper around the [Actions API](https://www.sanity.io/docs/http-actions).
 
 This API is only available from API version `v2024-05-23`.
 
@@ -1438,7 +1438,7 @@ The following options are available for actions, and can be applied as the secon
 
 #### Create Action
 
-A document draft can be created by specifying a create action type:
+A document version can be created by specifying a `sanity.action.document.create` action type.
 
 ```js
 client
@@ -1446,7 +1446,12 @@ client
     {
       actionType: 'sanity.action.document.create',
       publishedId: 'bike-123',
-      attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 1},
+      attributes: {
+        _id: 'drafts.bike-123',
+        _type: 'bike',
+        name: 'Sanity Tandem Extraordinaire',
+        seats: 1,
+      },
       ifExists: 'fail',
     },
     actionOptions,
@@ -1459,9 +1464,11 @@ client
   })
 ```
 
+`sanity.action.document.create` cannot be used to create documents with published IDs. Use `.create()` from the Mutation API instead.
+
 #### Delete Action
 
-A published document can be deleted by specifying a delete action type, optionally including some drafts:
+A published document can be deleted by specifying a `sanity.action.document.delete` action type, optionally including some draft or version IDs of the published document:
 
 ```js
 client
@@ -1469,7 +1476,7 @@ client
     {
       actionType: 'sanity.action.document.delete',
       publishedId: 'bike-123',
-      includeDrafts: ['draft.bike-123'],
+      includeVersions: ['drafts.bike-123'],
     },
     actionOptions,
   )
@@ -1481,9 +1488,11 @@ client
   })
 ```
 
+`sanity.action.document.delete` cannot be used to delete documents that have not yet been published. Use `sanity.action.version.discard` or `.delete()` from the Mutation API instead.
+
 #### Edit Action
 
-A patch can be applied to an existing document draft or create a new one by specifying an edit action type:
+The `sanity.action.document.edit` action will update an existing draft document if it exists, or create a new draft document from the published version and then apply the edit:
 
 ```js
 client
@@ -1491,7 +1500,10 @@ client
     {
       actionType: 'sanity.action.document.edit',
       publishedId: 'bike-123',
-      attributes: {name: 'Sanity Tandem Extraordinaire', _type: 'bike', seats: 2},
+      versionId: 'drafts.bike-123',
+      patch: {
+        set: {seats: 1},
+      },
     },
     actionOptions,
   )
@@ -1512,8 +1524,8 @@ client
   .action(
     {
       actionType: 'sanity.action.document.publish',
-      draftId: 'draft.bike-123',
-      ifDraftRevisionId: '<previously-known-revision>',
+      versionId: 'drafts.bike-123',
+      ifVersionRevisionId: '<previously-known-revision>',
       publishedId: 'bike-123',
       ifPublishedRevisionId: '<previously-known-revision>',
     },
@@ -1536,7 +1548,7 @@ client
   .action(
     {
       actionType: 'sanity.action.document.unpublish',
-      draftId: 'draft.bike-123',
+      versionId: 'drafts.bike-123',
       publishedId: 'bike-123',
     },
     actionOptions,

@@ -2235,7 +2235,7 @@ describe('client', async () => {
       const action4: DeleteAction = {
         actionType: 'sanity.action.document.delete',
         publishedId: 'post4',
-        includeDrafts: ['drafts.post4'],
+        includeVersions: ['drafts.post4'],
         purge: true,
       }
 
@@ -2247,15 +2247,15 @@ describe('client', async () => {
 
       const action6: PublishAction = {
         actionType: 'sanity.action.document.publish',
-        draftId: 'drafts.post6',
-        ifDraftRevisionId: 'rev7',
+        versionId: 'drafts.post6',
+        ifVersionRevisionId: 'rev7',
         publishedId: 'post6',
         ifPublishedRevisionId: 'rev6',
       }
 
       const action7: UnpublishAction = {
         actionType: 'sanity.action.document.unpublish',
-        draftId: 'drafts.post7',
+        versionId: 'drafts.post7',
         publishedId: 'post7',
       }
 
