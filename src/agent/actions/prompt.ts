@@ -105,23 +105,17 @@ export interface PromptRequestBase {
 interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>> {
   /**
    *
-   * When true, the response body will be json according to the instruction.
-   * When false, the response is the raw text response to the instruction.
-   *
-   * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
+   * When format is 'json', the response will be json according to the instruction.
+   * Note: In addition to setting this to 'json',  `instruction` MUST include the word 'JSON', or 'json' for this to work.
    */
   format: 'json'
 }
 
 interface PromptTextResponse {
   /**
-   *
-   * When true, the response body will be json according to the instruction.
-   * When false, the response is the raw text response to the instruction.
-   *
-   * Note: In addition to setting this to true,  `instruction` MUST include the word 'JSON', or 'json' for this to work.
+   * When format is 'string', the response will be a raw text response to the instruction.
    */
-  format?: 'text'
+  format?: 'string'
 }
 
 /** @beta */
