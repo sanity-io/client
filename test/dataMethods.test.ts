@@ -156,6 +156,121 @@ describe('dataMethods', async () => {
     })
   })
 
+  describe('_getDataUrl', () => {
+    test('legacy mode: returns correct data URL', () => {
+      const client = getClient()
+      const url = dataMethods._getDataUrl(client, 'doc', 'someDocId')
+      expect(url).toBe('/data/doc/foo/someDocId')
+    })
+
+    test('legacy mode: returns correct management URL', () => {
+      const client = getClient()
+      const url = dataMethods._getDataUrl(client, '', 'datasets')
+      expect(url).toBe('/datasets')
+    })
+
+    test('resource mode (project): returns correct URL', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'project', id: 'proj1'},
+      })
+      const url = dataMethods._getDataUrl(client, 'query')
+      expect(url).toBe('/projects/proj1/query')
+    })
+
+    test('resource mode (dataset): returns correct data URL', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'dataset', id: 'proj1.data1'},
+      })
+      const url = dataMethods._getDataUrl(client, 'doc', 'someDocId')
+      expect(url).toBe('/projects/proj1/datasets/data1/doc/someDocId')
+    })
+
+    test('resource mode (dataset): returns correct management URL for list', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'dataset', id: 'proj1.data1'},
+      })
+      const url = dataMethods._getDataUrl(client, '', 'datasets')
+      expect(url).toBe('/projects/proj1/datasets')
+    })
+
+    test('resource mode (dataset): returns correct management URL for specific dataset', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'dataset', id: 'proj1.data1'},
+      })
+      const url = dataMethods._getDataUrl(client, '', 'datasets/other-dataset')
+      expect(url).toBe('/projects/proj1/datasets/other-dataset')
+    })
+
+    test('resource mode (dataset): throws on invalid dataset ID for management URL', () => {
+      const client = {
+        config: () => ({
+          '~experimental_resource': {type: 'dataset', id: 'invalidid'},
+        }),
+      } as any
+      expect(() => dataMethods._getDataUrl(client, '', 'datasets')).toThrow(
+        'Dataset resource ID must be in the format "project.dataset"',
+      )
+    })
+
+    test('resource mode (project): does not throw on invalid dataset ID for management URL', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'project', id: 'proj1'},
+      })
+      const url = dataMethods._getDataUrl(client, '', 'datasets')
+      expect(url).toBe('/projects/proj1/datasets')
+    })
+
+    test('resource mode (project): returns correct URL for specific dataset operations', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'project', id: 'proj1'},
+      })
+      const url = dataMethods._getDataUrl(client, '', 'datasets/test-dataset')
+      expect(url).toBe('/projects/proj1/datasets/test-dataset')
+    })
+
+    test('resource mode (dataset): returns correct URL for individual dataset operations', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'dataset', id: 'proj1.data1'},
+      })
+      const url = dataMethods._getDataUrl(client, '', 'datasets/data1')
+      expect(url).toBe('/projects/proj1/datasets/data1')
+    })
+
+    test('resource mode (dataset): returns project-level URL for dataset list operations', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'dataset', id: 'proj1.data1'},
+      })
+      const url = dataMethods._getDataUrl(client, '', 'datasets')
+      expect(url).toBe('/projects/proj1/datasets')
+    })
+
+    test('resource mode (media-library): returns correct URL', () => {
+      const client = getClient({
+        projectId: undefined,
+        dataset: undefined,
+        '~experimental_resource': {type: 'media-library', id: 'media1'},
+      })
+      const url = dataMethods._getDataUrl(client, 'assets', 'some-asset-id')
+      expect(url).toBe('/media-libraries/media1/assets/some-asset-id')
+    })
+  })
+
   describe('_getDocument', () => {
     const mockHttpRequest = vi.fn()
     const docId = 'someDocId'

@@ -70,6 +70,10 @@ type ClientConfigResource =
       type: 'dashboard'
       id: string
     }
+  | {
+      type: 'project'
+      id: string
+    }
 
 /** @public */
 export interface ClientConfig {
