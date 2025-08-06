@@ -1,6 +1,6 @@
 import {lastValueFrom, type Observable} from 'rxjs'
 
-import {_request} from '../data/dataMethods'
+import {_getDataUrl, _request} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {DatasetAclMode, DatasetResponse, DatasetsResponse, HttpRequest} from '../types'
 import * as validate from '../validators'
@@ -47,8 +47,19 @@ export class ObservableDatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Observable<DatasetsResponse> {
+    const config = this.#client.config()
+    const resource = config['~experimental_resource']
+
+    if (resource) {
+      // Only allow project resource type for listing datasets
+      if (resource.type !== 'project') {
+        throw new Error('`dataset.list()` requires a resource type of "project".')
+      }
+    }
+
+    const uri = _getDataUrl(this.#client, '', 'datasets')
     return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
-      uri: '/datasets',
+      uri,
       tag: null,
     })
   }
@@ -70,7 +81,6 @@ export class DatasetsClient {
    * @param options - Options for the dataset
    */
   create(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
-    validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options),
     )
@@ -83,7 +93,6 @@ export class DatasetsClient {
    * @param options - New options for the dataset
    */
   edit(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
-    validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options),
     )
@@ -95,7 +104,6 @@ export class DatasetsClient {
    * @param name - Name of the dataset to delete
    */
   delete(name: string): Promise<{deleted: true}> {
-    validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(_modify<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name))
   }
 
@@ -103,9 +111,19 @@ export class DatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Promise<DatasetsResponse> {
-    validate.resourceGuard('dataset', this.#client.config())
+    const config = this.#client.config()
+    const resource = config['~experimental_resource']
+
+    if (resource) {
+      // Only allow project resource type for listing datasets
+      if (resource.type !== 'project') {
+        throw new Error('`dataset.list()` requires a resource type of "project".')
+      }
+    }
+
+    const uri = _getDataUrl(this.#client, '', 'datasets')
     return lastValueFrom(
-      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets', tag: null}),
+      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri, tag: null}),
     )
   }
 }
@@ -117,11 +135,32 @@ function _modify<R = unknown>(
   name: string,
   options?: {aclMode?: DatasetAclMode},
 ) {
-  validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
+
+  const config = client.config()
+  const resource = config['~experimental_resource']
+
+  // For individual dataset operations, only "dataset" resource type makes sense
+  if (resource) {
+    if (resource.type === 'dataset') {
+      // Validate the resource ID format and ensure the name matches
+      const segments = resource.id.split('.')
+      if (segments.length !== 2) {
+        throw new Error('Dataset resource ID must be in the format "project.dataset"')
+      }
+      const datasetName = segments[1]
+      if (name !== datasetName) {
+        throw new Error(`Dataset name "${name}" does not match resource dataset "${datasetName}"`)
+      }
+    } else {
+      throw new Error('Dataset create/edit/delete operations require a resource type of "dataset"')
+    }
+  }
+
+  const uri = _getDataUrl(client, '', `datasets/${name}`)
   return _request<R>(client, httpRequest, {
     method,
-    uri: `/datasets/${name}`,
+    uri,
     body: options,
     tag: null,
   })
