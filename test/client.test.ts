@@ -902,19 +902,19 @@ describe('client', async () => {
       await expect(dsClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
     })
 
-    test('can create datasets', async () => {
+    test.skipIf(isEdge)('can create datasets', async () => {
       nock(projectHost()).put('/v1/datasets/bar').reply(200, {})
       const client = getClient()
       await expect(client.datasets.create('bar')).resolves.toEqual({})
     })
 
-    test('can create datasets with a given ACL mode', async () => {
+    test.skipIf(isEdge)('can create datasets with a given ACL mode', async () => {
       nock(projectHost()).put('/v1/datasets/bar', {aclMode: 'private'}).reply(200, {})
       const client = getClient()
       await expect(client.datasets.create('bar', {aclMode: 'private'})).resolves.toEqual({})
     })
 
-    test('can delete datasets', async () => {
+    test.skipIf(isEdge)('can delete datasets', async () => {
       nock(projectHost()).delete('/v1/datasets/bar').reply(200, {deleted: true})
       const client = getClient()
       await expect(client.datasets.delete('bar')).resolves.toEqual({deleted: true})
@@ -922,7 +922,7 @@ describe('client', async () => {
 
     // Resource-based tests
     describe('resource-based operations', () => {
-      test('list() works with project resource type', async () => {
+      test.skipIf(isEdge)('list() works with project resource type', async () => {
         const projectClient = getClient({
           projectId: undefined,
           dataset: undefined,
@@ -946,7 +946,7 @@ describe('client', async () => {
         expect(() => datasetClient.datasets.list()).toThrow('requires a resource type of "project"')
       })
 
-      test('create() works with dataset resource type', async () => {
+      test.skipIf(isEdge)('create() works with dataset resource type', async () => {
         const datasetClient = getClient({
           projectId: undefined,
           dataset: undefined,
@@ -984,7 +984,7 @@ describe('client', async () => {
         )
       })
 
-      test('edit() works with dataset resource type', async () => {
+      test.skipIf(isEdge)('edit() works with dataset resource type', async () => {
         const datasetClient = getClient({
           projectId: undefined,
           dataset: undefined,
@@ -1000,7 +1000,7 @@ describe('client', async () => {
         ).resolves.toEqual({})
       })
 
-      test('delete() works with dataset resource type', async () => {
+      test.skipIf(isEdge)('delete() works with dataset resource type', async () => {
         const datasetClient = getClient({
           projectId: undefined,
           dataset: undefined,
@@ -1024,7 +1024,7 @@ describe('client', async () => {
       )
     })
 
-    test('can create dataset with resource configured client', async () => {
+    test.skipIf(isEdge)('can create dataset with resource configured client', async () => {
       const client = getClient({
         '~experimental_resource': {type: 'dataset', id: 'p.valid-dataset-name'},
       })
@@ -1032,7 +1032,7 @@ describe('client', async () => {
       await expect(client.datasets.create('valid-dataset-name')).resolves.toEqual({})
     })
 
-    test('can delete dataset with resource configured client', async () => {
+    test.skipIf(isEdge)('can delete dataset with resource configured client', async () => {
       const client = getClient({
         '~experimental_resource': {type: 'dataset', id: 'p.valid-dataset-name'},
       })
@@ -1042,7 +1042,7 @@ describe('client', async () => {
       await expect(client.datasets.delete('valid-dataset-name')).resolves.toEqual({deleted: true})
     })
 
-    test('can edit dataset with resource configured client', async () => {
+    test.skipIf(isEdge)('can edit dataset with resource configured client', async () => {
       const client = getClient({
         '~experimental_resource': {type: 'dataset', id: 'p.valid-dataset-name'},
       })
@@ -5904,7 +5904,7 @@ describe('client', async () => {
     ).toThrow(/requires a resource type of "project"/i)
   })
 
-  test.each([429, 502, 503])('can be configured to not retry %d', async (code) => {
+  test.skipIf(isEdge).each([429, 502, 503])('can be configured to not retry %d', async (code) => {
     nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
     const client = createClient({
       useProjectHostname: false,
