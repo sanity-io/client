@@ -4190,7 +4190,7 @@ describe('client', async () => {
           },
         },
         temperature: 0.6,
-        format: 'text',
+        format: 'string',
       })
       expect(body).toEqual('whatever')
     })
@@ -4518,6 +4518,7 @@ describe('client', async () => {
             type: 'groq',
             query: '*[id=$id].title',
             params: {id: 'abc'},
+            perspective: 'drafts',
           },
           d: {
             type: 'document',
@@ -4673,6 +4674,7 @@ describe('client', async () => {
             type: 'groq',
             query: '*[id=$id].title',
             params: {id: 'abc'},
+            perspective: 'published',
           },
           d: {
             type: 'document',

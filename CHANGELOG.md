@@ -5,6 +5,15 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.8.2](https://github.com/sanity-io/client/compare/v7.8.1...v7.8.2) (2025-08-04)
+
+
+### Bug Fixes
+
+* allows perspective on instructionParams ([#1122](https://github.com/sanity-io/client/issues/1122)) ([32a9463](https://github.com/sanity-io/client/commit/32a9463b6cd67e2f0a3f0deb2f4001ed29812466))
+* correctly uses format: 'string' typing for prompt ([#1121](https://github.com/sanity-io/client/issues/1121)) ([f3e07ea](https://github.com/sanity-io/client/commit/f3e07ea64c825cacdec83999b11914909ebe41a2))
+* **stega:** narrow filtering URL patterns to valid URL protocols ([#1118](https://github.com/sanity-io/client/issues/1118)) ([b8788f5](https://github.com/sanity-io/client/commit/b8788f5cf47e674c56673f9cbf400d94d351b76a))
+
 ## [7.8.1](https://github.com/sanity-io/client/compare/v7.8.0...v7.8.1) (2025-07-22)
 
 
