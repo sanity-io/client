@@ -47,8 +47,11 @@ export class ObservableDatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Observable<DatasetsResponse> {
+    const config = this.#client.config()
+    validate.resourceGuard('dataset', config)
+
     return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
-      uri: '/datasets',
+      uri: `/projects/${config.projectId}/datasets`,
       tag: null,
     })
   }
@@ -70,7 +73,8 @@ export class DatasetsClient {
    * @param options - Options for the dataset
    */
   create(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
-    validate.resourceGuard('dataset', this.#client.config())
+    const config = this.#client.config()
+    validate.resourceGuard('dataset', config)
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options),
     )
@@ -83,7 +87,8 @@ export class DatasetsClient {
    * @param options - New options for the dataset
    */
   edit(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
-    validate.resourceGuard('dataset', this.#client.config())
+    const config = this.#client.config()
+    validate.resourceGuard('dataset', config)
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options),
     )
@@ -95,7 +100,8 @@ export class DatasetsClient {
    * @param name - Name of the dataset to delete
    */
   delete(name: string): Promise<{deleted: true}> {
-    validate.resourceGuard('dataset', this.#client.config())
+    const config = this.#client.config()
+    validate.resourceGuard('dataset', config)
     return lastValueFrom(_modify<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name))
   }
 
@@ -103,9 +109,14 @@ export class DatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Promise<DatasetsResponse> {
-    validate.resourceGuard('dataset', this.#client.config())
+    const config = this.#client.config()
+    validate.resourceGuard('dataset', config)
+
     return lastValueFrom(
-      _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri: '/datasets', tag: null}),
+      _request<DatasetsResponse>(this.#client, this.#httpRequest, {
+        uri: `/projects/${config.projectId}/datasets`,
+        tag: null,
+      }),
     )
   }
 }
@@ -117,11 +128,13 @@ function _modify<R = unknown>(
   name: string,
   options?: {aclMode?: DatasetAclMode},
 ) {
-  validate.resourceGuard('dataset', client.config())
+  const config = client.config()
+  validate.resourceGuard('dataset', config)
   validate.dataset(name)
+
   return _request<R>(client, httpRequest, {
     method,
-    uri: `/datasets/${name}`,
+    uri: `/projects/${config.projectId}/datasets/${name}`,
     body: options,
     tag: null,
   })
