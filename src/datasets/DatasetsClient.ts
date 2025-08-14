@@ -47,6 +47,7 @@ export class ObservableDatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Observable<DatasetsResponse> {
+    validate.resourceGuard('dataset', this.#client.config())
     const config = this.#client.config()
     const projectId = config.projectId
     let uri = '/datasets'
@@ -110,6 +111,7 @@ export class DatasetsClient {
    * Fetch a list of datasets for the configured project
    */
   list(): Promise<DatasetsResponse> {
+    validate.resourceGuard('dataset', this.#client.config())
     const config = this.#client.config()
     const projectId = config.projectId
     let uri = '/datasets'
