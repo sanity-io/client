@@ -50,7 +50,7 @@ export class ObservableDatasetsClient {
     const config = this.#client.config()
     const projectId = config.projectId
     let uri = '/datasets'
-    if (config['~experimental_resource']) {
+    if (config.useProjectHostname === false) {
       uri = `/projects/${projectId}/datasets`
     }
 
@@ -113,7 +113,7 @@ export class DatasetsClient {
     const config = this.#client.config()
     const projectId = config.projectId
     let uri = '/datasets'
-    if (config['~experimental_resource']) {
+    if (config.useProjectHostname === false) {
       uri = `/projects/${projectId}/datasets`
     }
 

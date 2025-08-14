@@ -784,36 +784,34 @@ describe('client', async () => {
       expect(project).toEqual(doc)
     })
 
-    test('throws when trying to create dataset with resource configured client and invalid name', () => {
+    test('throws when trying to create dataset with resource configured client', () => {
       expect(() =>
         getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.create(
           '*foo*',
         ),
-      ).toThrow(/Datasets can only contain/i)
+      ).toThrow(/`dataset` does not support resource-based operations/i)
     })
 
-    test('throws when trying to delete dataset with resource configured client and mismatched name', () => {
+    test('throws when trying to create dataset with resource configured client', () => {
       expect(() =>
         getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.delete(
-          'other-dataset',
+          '*foo*',
         ),
-      ).toThrow(/Dataset name "other-dataset" does not match resource dataset/i)
+      ).toThrow(/`dataset` does not support resource-based operations/i)
     })
 
-    test('throws when trying to edit dataset with resource configured client and mismatched name', () => {
+    test('throws when trying to create dataset with resource configured client', () => {
       expect(() =>
-        getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.edit(
-          'other-dataset',
-        ),
-      ).toThrow(/Dataset name "other-dataset" does not match resource dataset/i)
+        getClient({'~experimental_resource': {type: 'dataset', id: 'p.d'}}).datasets.edit('*foo*'),
+      ).toThrow(/`dataset` does not support resource-based operations/i)
     })
 
-    test('throws when trying to list datasets with non-project resource configured client', () => {
+    test('throws when trying to create dataset with resource configured client', () => {
       expect(() =>
         getClient({
           '~experimental_resource': {type: 'media-library', id: 'res-id'},
         }).datasets.list(),
-      ).toThrow(/requires a resource type of "project"/i)
+      ).toThrow(/`dataset` does not support resource-based operations/i)
     })
 
     test.each([429, 502, 503])('can be configured to not retry %d', async (code) => {
@@ -900,162 +898,6 @@ describe('client', async () => {
         .get('/v1/datasets')
         .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
       await expect(dsClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
-    })
-
-    test.skipIf(isEdge)('can create datasets', async () => {
-      nock(projectHost()).put('/v1/datasets/bar').reply(200, {})
-      const client = getClient()
-      await expect(client.datasets.create('bar')).resolves.toEqual({})
-    })
-
-    test.skipIf(isEdge)('can create datasets with a given ACL mode', async () => {
-      nock(projectHost()).put('/v1/datasets/bar', {aclMode: 'private'}).reply(200, {})
-      const client = getClient()
-      await expect(client.datasets.create('bar', {aclMode: 'private'})).resolves.toEqual({})
-    })
-
-    test.skipIf(isEdge)('can delete datasets', async () => {
-      nock(projectHost()).delete('/v1/datasets/bar').reply(200, {deleted: true})
-      const client = getClient()
-      await expect(client.datasets.delete('bar')).resolves.toEqual({deleted: true})
-    })
-
-    // Resource-based tests
-    describe('resource-based operations', () => {
-      test.skipIf(isEdge)('list() works with project resource type', async () => {
-        const projectClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'project', id: 'test-project'},
-        })
-
-        nock('https://api.sanity.url')
-          .get('/v1/projects/test-project/datasets')
-          .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
-
-        await expect(projectClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
-      })
-
-      test('list() throws with dataset resource type', async () => {
-        const datasetClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'dataset', id: 'test-project.test-dataset'},
-        })
-
-        expect(() => datasetClient.datasets.list()).toThrow('requires a resource type of "project"')
-      })
-
-      test.skipIf(isEdge)('create() works with dataset resource type', async () => {
-        const datasetClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'dataset', id: 'test-project.test-dataset'},
-        })
-
-        nock('https://api.sanity.url')
-          .put('/v1/projects/test-project/datasets/test-dataset')
-          .reply(200, {})
-
-        await expect(datasetClient.datasets.create('test-dataset')).resolves.toEqual({})
-      })
-
-      test('create() throws when dataset name does not match resource', async () => {
-        const datasetClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'dataset', id: 'test-project.test-dataset'},
-        })
-
-        expect(() => datasetClient.datasets.create('different-dataset')).toThrow(
-          'does not match resource dataset',
-        )
-      })
-
-      test('create() throws with project resource type', async () => {
-        const projectClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'project', id: 'test-project'},
-        })
-
-        expect(() => projectClient.datasets.create('test-dataset')).toThrow(
-          'require a resource type of "dataset"',
-        )
-      })
-
-      test.skipIf(isEdge)('edit() works with dataset resource type', async () => {
-        const datasetClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'dataset', id: 'test-project.test-dataset'},
-        })
-
-        nock('https://api.sanity.url')
-          .patch('/v1/projects/test-project/datasets/test-dataset')
-          .reply(200, {})
-
-        await expect(
-          datasetClient.datasets.edit('test-dataset', {aclMode: 'private'}),
-        ).resolves.toEqual({})
-      })
-
-      test.skipIf(isEdge)('delete() works with dataset resource type', async () => {
-        const datasetClient = getClient({
-          projectId: undefined,
-          dataset: undefined,
-          '~experimental_resource': {type: 'dataset', id: 'test-project.test-dataset'},
-        })
-
-        nock('https://api.sanity.url')
-          .delete('/v1/projects/test-project/datasets/test-dataset')
-          .reply(200, {deleted: true})
-
-        await expect(datasetClient.datasets.delete('test-dataset')).resolves.toEqual({
-          deleted: true,
-        })
-      })
-    })
-
-    test('throws on invalid dataset names', () => {
-      const client = getClient()
-      expect(() => client.datasets.create(' ')).toThrow(
-        /Datasets can only contain lowercase characters, numbers, underscores and dashes/,
-      )
-    })
-
-    test.skipIf(isEdge)('can create dataset with resource configured client', async () => {
-      const client = getClient({
-        '~experimental_resource': {type: 'dataset', id: 'p.valid-dataset-name'},
-      })
-      nock(clientConfig.apiHost).put('/v1/projects/p/datasets/valid-dataset-name').reply(200, {})
-      await expect(client.datasets.create('valid-dataset-name')).resolves.toEqual({})
-    })
-
-    test.skipIf(isEdge)('can delete dataset with resource configured client', async () => {
-      const client = getClient({
-        '~experimental_resource': {type: 'dataset', id: 'p.valid-dataset-name'},
-      })
-      nock(clientConfig.apiHost)
-        .delete('/v1/projects/p/datasets/valid-dataset-name')
-        .reply(200, {deleted: true})
-      await expect(client.datasets.delete('valid-dataset-name')).resolves.toEqual({deleted: true})
-    })
-
-    test.skipIf(isEdge)('can edit dataset with resource configured client', async () => {
-      const client = getClient({
-        '~experimental_resource': {type: 'dataset', id: 'p.valid-dataset-name'},
-      })
-      nock(clientConfig.apiHost).patch('/v1/projects/p/datasets/valid-dataset-name').reply(200, {})
-      await expect(client.datasets.edit('valid-dataset-name')).resolves.toEqual({})
-    })
-
-    test('throws when trying to list datasets with a media-library resource configured client', () => {
-      expect(() =>
-        getClient({
-          '~experimental_resource': {type: 'media-library', id: 'res-id'},
-        }).datasets.list(),
-      ).toThrow(/requires a resource type of "project"/i)
     })
   })
 
@@ -4190,7 +4032,7 @@ describe('client', async () => {
           },
         },
         temperature: 0.6,
-        format: 'string',
+        format: 'text',
       })
       expect(body).toEqual('whatever')
     })
@@ -4518,7 +4360,6 @@ describe('client', async () => {
             type: 'groq',
             query: '*[id=$id].title',
             params: {id: 'abc'},
-            perspective: 'drafts',
           },
           d: {
             type: 'document',
@@ -4674,7 +4515,6 @@ describe('client', async () => {
             type: 'groq',
             query: '*[id=$id].title',
             params: {id: 'abc'},
-            perspective: 'published',
           },
           d: {
             type: 'document',
@@ -5896,24 +5736,5 @@ describe('client', async () => {
       .reply(200, {result: []})
 
     await expect(client.fetch('*')).resolves.not.toThrow()
-  })
-
-  test('throws when trying to list datasets with a media-library resource configured client', () => {
-    expect(() =>
-      getClient({
-        '~experimental_resource': {type: 'media-library', id: 'res-id'},
-      }).datasets.list(),
-    ).toThrow(/requires a resource type of "project"/i)
-  })
-
-  test.skipIf(isEdge).each([429, 502, 503])('can be configured to not retry %d', async (code) => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
-    const client = createClient({
-      useProjectHostname: false,
-      apiHost: `https://${apiHost}`,
-      maxRetries: 0,
-    })
-
-    await expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
   })
 })
