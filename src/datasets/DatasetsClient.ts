@@ -1,6 +1,6 @@
 import {lastValueFrom, type Observable} from 'rxjs'
 
-import {_getDataUrl, _request} from '../data/dataMethods'
+import {_request} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {DatasetAclMode, DatasetResponse, DatasetsResponse, HttpRequest} from '../types'
 import * as validate from '../validators'
@@ -133,30 +133,9 @@ function _modify<R = unknown>(
   validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
 
-  const config = client.config()
-  const resource = config['~experimental_resource']
-
-  // For individual dataset operations, only "dataset" resource type makes sense
-  if (resource) {
-    if (resource.type === 'dataset') {
-      // Validate the resource ID format and ensure the name matches
-      const segments = resource.id.split('.')
-      if (segments.length !== 2) {
-        throw new Error('Dataset resource ID must be in the format "project.dataset"')
-      }
-      const datasetName = segments[1]
-      if (name !== datasetName) {
-        throw new Error(`Dataset name "${name}" does not match resource dataset "${datasetName}"`)
-      }
-    } else {
-      throw new Error('Dataset create/edit/delete operations require a resource type of "dataset"')
-    }
-  }
-
-  const uri = _getDataUrl(client, '', `datasets/${name}`)
   return _request<R>(client, httpRequest, {
     method,
-    uri,
+    uri: `/datasets/${name}`,
     body: options,
     tag: null,
   })
