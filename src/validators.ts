@@ -113,7 +113,6 @@ export const resourceConfig = (config: InitializedClientConfig): void => {
       }
       return
     }
-    case 'project':
     case 'dashboard':
     case 'media-library':
     case 'canvas': {

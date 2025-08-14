@@ -664,40 +664,10 @@ export function _getDataUrl(client: Client, operation: string, path?: string): s
   const config = client.config()
   if (config['~experimental_resource']) {
     validators.resourceConfig(config)
-
-    // Special handling for dataset-related operations
-    if (operation === '' && path?.startsWith('datasets')) {
-      const {type, id} = config['~experimental_resource']
-
-      if (type === 'dataset') {
-        // For dataset resource performing dataset management operations,
-        // we need to use the project base URL
-        const segments = id.split('.')
-        if (segments.length !== 2) {
-          throw new Error('Invalid dataset resource ID. Expected format "project.dataset".')
-        }
-        const projectId = segments[0]
-        const base = `/projects/${projectId}`
-        const uri = [path].filter(Boolean).join('/')
-        return `${base}/${uri}`.replace(/\/($|\?)/, '$1')
-      } else if (type === 'project') {
-        // For project resource, use project base directly
-        const base = `/projects/${id}`
-        const uri = [path].filter(Boolean).join('/')
-        return `${base}/${uri}`.replace(/\/($|\?)/, '$1')
-      }
-    }
-
-    // For all other resource operations, use the standard resource base
     const resourceBase = resourceDataBase(config)
-    const uri = [operation, path].filter(Boolean).join('/')
+    const uri = path !== undefined ? `${operation}/${path}` : operation
     return `${resourceBase}/${uri}`.replace(/\/($|\?)/, '$1')
   }
-
-  if (operation === '') {
-    return `/${path || ''}`
-  }
-
   const catalog = validators.hasDataset(config)
   const baseUri = `/${operation}/${catalog}`
   const uri = path !== undefined ? `${baseUri}/${path}` : baseUri
@@ -782,9 +752,6 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
     }
     case 'dashboard': {
       return `/dashboards/${id}`
-    }
-    case 'project': {
-      return `/projects/${id}`
     }
     default:
       // @ts-expect-error - handle all supported resource types

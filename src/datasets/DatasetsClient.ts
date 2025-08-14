@@ -48,16 +48,12 @@ export class ObservableDatasetsClient {
    */
   list(): Observable<DatasetsResponse> {
     const config = this.#client.config()
-    const resource = config['~experimental_resource']
-
-    if (resource) {
-      // Only allow project resource type for listing datasets
-      if (resource.type !== 'project') {
-        throw new Error('`dataset.list()` requires a resource type of "project".')
-      }
+    const projectId = config.projectId
+    let uri = '/datasets'
+    if (config['~experimental_resource']) {
+      uri = `/projects/${projectId}/datasets`
     }
 
-    const uri = _getDataUrl(this.#client, '', 'datasets')
     return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
       uri,
       tag: null,
@@ -81,6 +77,7 @@ export class DatasetsClient {
    * @param options - Options for the dataset
    */
   create(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
+    validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options),
     )
@@ -93,6 +90,7 @@ export class DatasetsClient {
    * @param options - New options for the dataset
    */
   edit(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
+    validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options),
     )
@@ -104,6 +102,7 @@ export class DatasetsClient {
    * @param name - Name of the dataset to delete
    */
   delete(name: string): Promise<{deleted: true}> {
+    validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(_modify<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name))
   }
 
@@ -112,16 +111,12 @@ export class DatasetsClient {
    */
   list(): Promise<DatasetsResponse> {
     const config = this.#client.config()
-    const resource = config['~experimental_resource']
-
-    if (resource) {
-      // Only allow project resource type for listing datasets
-      if (resource.type !== 'project') {
-        throw new Error('`dataset.list()` requires a resource type of "project".')
-      }
+    const projectId = config.projectId
+    let uri = '/datasets'
+    if (config['~experimental_resource']) {
+      uri = `/projects/${projectId}/datasets`
     }
 
-    const uri = _getDataUrl(this.#client, '', 'datasets')
     return lastValueFrom(
       _request<DatasetsResponse>(this.#client, this.#httpRequest, {uri, tag: null}),
     )
@@ -135,6 +130,7 @@ function _modify<R = unknown>(
   name: string,
   options?: {aclMode?: DatasetAclMode},
 ) {
+  validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
 
   const config = client.config()

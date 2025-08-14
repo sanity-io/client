@@ -184,11 +184,6 @@ function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image'
   if (config['~experimental_resource']) {
     const {type, id} = config['~experimental_resource']
     switch (type) {
-      case 'project': {
-        throw new Error(
-          'Assets are not supported for project resources, yet. Configure the client with `{projectId: <projectId>}` instead.',
-        )
-      }
       case 'dataset': {
         throw new Error(
           'Assets are not supported for dataset resources, yet. Configure the client with `{projectId: <projectId>, dataset: <datasetId>}` instead.',
