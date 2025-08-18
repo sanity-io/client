@@ -899,6 +899,19 @@ describe('client', async () => {
         .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
       await expect(dsClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
     })
+
+    test.skipIf(isEdge)('can list datasets with useProjectHostname=false', async () => {
+      nock.cleanAll()
+      const scope = nock(`https://${apiHost}`)
+        .get(`/v1/projects/${defaultProjectId}/datasets`)
+        .times(1) // ensure it's called exactly once
+        .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
+
+      const client = getClient({useProjectHostname: false})
+      await expect(client.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
+
+      expect(scope.isDone()).toBe(true) // all expectations satisfied
+    })
   })
 
   describe('DATA', () => {
