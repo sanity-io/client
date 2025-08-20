@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.9.0](https://github.com/sanity-io/client/compare/v7.8.2...v7.9.0) (2025-08-20)
+
+
+### Features
+
+* add ReleaseCardinality type and update ReleaseDocument interface ([#1129](https://github.com/sanity-io/client/issues/1129)) ([fd5198e](https://github.com/sanity-io/client/commit/fd5198efe3d3c685375a8bcb133568d7fd8055f8))
+* allow experimental resource for projects and datasets ([#1124](https://github.com/sanity-io/client/issues/1124)) ([a2c8892](https://github.com/sanity-io/client/commit/a2c889218b2b0895b4257c50b47eaf95bda5876e))
+
 ## [7.8.2](https://github.com/sanity-io/client/compare/v7.8.1...v7.8.2) (2025-08-04)
 
 
