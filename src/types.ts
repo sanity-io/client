@@ -1476,6 +1476,9 @@ export type ReleaseState =
 /** @internal */
 export type ReleaseType = 'asap' | 'scheduled' | 'undecided'
 
+/** @public */
+export type ReleaseCardinality = 'many' | 'one' | undefined
+
 /** @internal */
 export interface ReleaseDocument extends SanityDocument {
   /**
@@ -1512,6 +1515,7 @@ export interface ReleaseDocument extends SanityDocument {
     description?: string
     intendedPublishAt?: string
     releaseType: ReleaseType
+    cardinality?: ReleaseCardinality
   }
 }
 
