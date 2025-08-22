@@ -231,14 +231,38 @@ export class ObservableSanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
+    options: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions: true
+    },
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Fetch a single document with the given ID.
+   *
+   * @param id - Document ID to fetch
+   * @param options - Request options
+   */
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: false
+    },
+  ): Observable<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
     options?: {
       signal?: AbortSignal
       tag?: string
       releaseId?: string
       includeAllVersions?: boolean
     },
-  ): Observable<SanityDocument<R> | undefined> {
-    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options)
+  ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options as any)
   }
 
   /**
@@ -1236,14 +1260,38 @@ export class SanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
+    options: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions: true
+    },
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Fetch a single document with the given ID.
+   *
+   * @param id - Document ID to fetch
+   * @param options - Request options
+   */
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: false
+    },
+  ): Promise<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
     options?: {
       signal?: AbortSignal
       tag?: string
       releaseId?: string
       includeAllVersions?: boolean
     },
-  ): Promise<SanityDocument<R> | undefined> {
-    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
+  ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options as any))
   }
 
   /**

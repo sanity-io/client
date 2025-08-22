@@ -141,8 +141,22 @@ export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
+  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions: true},
+): Observable<SanityDocument<R>[]>
+/** @internal */
+export function _getDocument<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  id: string,
+  opts?: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: false},
+): Observable<SanityDocument<R> | undefined>
+/** @internal */
+export function _getDocument<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
-): Observable<SanityDocument<R> | undefined> {
+): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
   const getDocId = () => {
     if (!opts.releaseId) {
       return id
@@ -179,9 +193,19 @@ export function _getDocument<R extends Record<string, Any>>(
         ? {includeAllVersions: opts.includeAllVersions}
         : undefined,
   }
-  return _requestObservable<SanityDocument<R> | undefined>(client, httpRequest, options).pipe(
+  return _requestObservable<SanityDocument<R> | undefined | SanityDocument<R>[]>(
+    client,
+    httpRequest,
+    options,
+  ).pipe(
     filter(isResponse),
-    map((event) => event.body.documents && event.body.documents[0]),
+    map((event) => {
+      const documents = event.body.documents
+      if (!documents) {
+        return opts.includeAllVersions ? [] : undefined
+      }
+      return opts.includeAllVersions ? documents : documents[0]
+    }),
   )
 }
 
