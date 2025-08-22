@@ -231,9 +231,52 @@ export class ObservableSanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
-    options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
-  ): Observable<SanityDocument<R> | undefined> {
-    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options)
+    options: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions: true
+    },
+  ): Observable<SanityDocument<R>[]>
+  /**
+   * Fetch a single document with the given ID.
+   *
+   * @param id - Document ID to fetch
+   * @param options - Request options
+   */
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: false
+    },
+  ): Observable<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: boolean
+    },
+  ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+    // Implementation needs to handle union type safely
+    if (options?.includeAllVersions === true) {
+      return dataMethods._getDocument<R>(this, this.#httpRequest, id, {
+        ...options,
+        includeAllVersions: true,
+      })
+    }
+    // When includeAllVersions is not true, pass options but only include includeAllVersions if it was explicitly set
+    const opts = {
+      signal: options?.signal,
+      tag: options?.tag,
+      releaseId: options?.releaseId,
+      ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
+    }
+    return dataMethods._getDocument<R>(this, this.#httpRequest, id, opts)
   }
 
   /**
@@ -1231,9 +1274,54 @@ export class SanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
-    options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
-  ): Promise<SanityDocument<R> | undefined> {
-    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
+    options: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions: true
+    },
+  ): Promise<SanityDocument<R>[]>
+  /**
+   * Fetch a single document with the given ID.
+   *
+   * @param id - Document ID to fetch
+   * @param options - Request options
+   */
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: false
+    },
+  ): Promise<SanityDocument<R> | undefined>
+  getDocument<R extends Record<string, Any> = Record<string, Any>>(
+    id: string,
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: boolean
+    },
+  ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+    // Implementation needs to handle union type safely
+    if (options?.includeAllVersions === true) {
+      return lastValueFrom(
+        dataMethods._getDocument<R>(this, this.#httpRequest, id, {
+          ...options,
+          includeAllVersions: true,
+        }),
+      )
+    }
+    // When includeAllVersions is not true, pass options but only include includeAllVersions if it was explicitly set
+    const opts = {
+      signal: options?.signal,
+      tag: options?.tag,
+      releaseId: options?.releaseId,
+      ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
+    }
+    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, opts))
   }
 
   /**
