@@ -231,7 +231,12 @@ export class ObservableSanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
-    options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: boolean
+    },
   ): Observable<SanityDocument<R> | undefined> {
     return dataMethods._getDocument<R>(this, this.#httpRequest, id, options)
   }
@@ -1231,7 +1236,12 @@ export class SanityClient {
    */
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
     id: string,
-    options?: {signal?: AbortSignal; tag?: string; releaseId?: string},
+    options?: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: boolean
+    },
   ): Promise<SanityDocument<R> | undefined> {
     return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options))
   }

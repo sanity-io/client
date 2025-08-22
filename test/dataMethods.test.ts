@@ -253,6 +253,46 @@ describe('dataMethods', async () => {
         })
       }).toThrow(/The document ID .* is already a version .* but this does not match the provided/)
     })
+
+    test('passes includeAllVersions option to request query', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        includeAllVersions: true,
+      })
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({includeAllVersions: true})
+      })
+    })
+
+    test('does not add query when includeAllVersions is false', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        includeAllVersions: false,
+      })
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({includeAllVersions: false})
+      })
+    })
+
+    test('does not add query when includeAllVersions is undefined', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {})
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toBeUndefined()
+      })
+    })
   })
 
   describe('_getDocuments', () => {

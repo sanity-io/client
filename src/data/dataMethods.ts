@@ -141,7 +141,7 @@ export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
-  opts: {signal?: AbortSignal; tag?: string; releaseId?: string} = {},
+  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
 ): Observable<SanityDocument<R> | undefined> {
   const getDocId = () => {
     if (!opts.releaseId) {
@@ -174,6 +174,10 @@ export function _getDocument<R extends Record<string, Any>>(
     json: true,
     tag: opts.tag,
     signal: opts.signal,
+    query:
+      opts.includeAllVersions !== undefined
+        ? {includeAllVersions: opts.includeAllVersions}
+        : undefined,
   }
   return _requestObservable<SanityDocument<R> | undefined>(client, httpRequest, options).pipe(
     filter(isResponse),
