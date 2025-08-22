@@ -262,7 +262,17 @@ export class ObservableSanityClient {
       includeAllVersions?: boolean
     },
   ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
-    return dataMethods._getDocument<R>(this, this.#httpRequest, id, options as any)
+    // Implementation needs to handle union type safely
+    if (options?.includeAllVersions === true) {
+      return dataMethods._getDocument<R>(this, this.#httpRequest, id, {
+        ...options,
+        includeAllVersions: true,
+      })
+    }
+    return dataMethods._getDocument<R>(this, this.#httpRequest, id, {
+      ...options,
+      includeAllVersions: false,
+    })
   }
 
   /**
@@ -1291,7 +1301,21 @@ export class SanityClient {
       includeAllVersions?: boolean
     },
   ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
-    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, options as any))
+    // Implementation needs to handle union type safely
+    if (options?.includeAllVersions === true) {
+      return lastValueFrom(
+        dataMethods._getDocument<R>(this, this.#httpRequest, id, {
+          ...options,
+          includeAllVersions: true,
+        }),
+      )
+    }
+    return lastValueFrom(
+      dataMethods._getDocument<R>(this, this.#httpRequest, id, {
+        ...options,
+        includeAllVersions: false,
+      }),
+    )
   }
 
   /**
