@@ -269,10 +269,14 @@ export class ObservableSanityClient {
         includeAllVersions: true,
       })
     }
-    return dataMethods._getDocument<R>(this, this.#httpRequest, id, {
-      ...options,
-      includeAllVersions: false,
-    })
+    // When includeAllVersions is not true, pass options but only include includeAllVersions if it was explicitly set
+    const opts = {
+      signal: options?.signal,
+      tag: options?.tag,
+      releaseId: options?.releaseId,
+      ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
+    }
+    return dataMethods._getDocument<R>(this, this.#httpRequest, id, opts)
   }
 
   /**
@@ -1310,12 +1314,14 @@ export class SanityClient {
         }),
       )
     }
-    return lastValueFrom(
-      dataMethods._getDocument<R>(this, this.#httpRequest, id, {
-        ...options,
-        includeAllVersions: false,
-      }),
-    )
+    // When includeAllVersions is not true, pass options but only include includeAllVersions if it was explicitly set
+    const opts = {
+      signal: options?.signal,
+      tag: options?.tag,
+      releaseId: options?.releaseId,
+      ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
+    }
+    return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, opts))
   }
 
   /**
