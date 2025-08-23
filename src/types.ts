@@ -451,10 +451,17 @@ export type DatasetsResponse = {
   tags: string[]
 }[]
 
+interface SanityRole {
+  name: string
+  title: string
+  description: string
+}
+
 /** @public */
 export interface SanityProjectMember {
   id: string
   role: string
+  roles: SanityRole[]
   isRobot: boolean
   isCurrentUser: boolean
 }
