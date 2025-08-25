@@ -18,14 +18,27 @@ export class ObservableProjectsClient {
    *
    * @param options - Options for the list request
    *   - `includeMembers` - Whether to include members in the response (default: true)
+   *   - `organizationId` - ID of the organization to fetch projects for
    */
-  list(options?: {includeMembers?: true}): Observable<SanityProject[]>
-  list(options?: {includeMembers?: false}): Observable<Omit<SanityProject, 'members'>[]>
+  list(options?: {includeMembers?: true; organizationId?: string}): Observable<SanityProject[]>
+  list(options?: {
+    includeMembers?: false
+    organizationId?: string
+  }): Observable<Omit<SanityProject, 'members'>[]>
   list(options?: {
     includeMembers?: boolean
+    organizationId?: string
   }): Observable<SanityProject[] | Omit<SanityProject, 'members'>[]> {
-    const uri = options?.includeMembers === false ? '/projects?includeMembers=false' : '/projects'
-    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri})
+    const params: Record<string, string> = {}
+    const uri = '/projects'
+    if (options?.includeMembers === false) {
+      params.includeMembers = 'false'
+    }
+    if (options?.organizationId) {
+      params.organizationId = options.organizationId
+    }
+
+    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query: params})
   }
 
   /**
@@ -52,11 +65,19 @@ export class ProjectsClient {
    *
    * @param options - Options for the list request
    *   - `includeMembers` - Whether to include members in the response (default: true)
+   *   - `organizationId` - ID of the organization to fetch projects for
    */
   list(options?: {includeMembers?: true}): Promise<SanityProject[]>
   list(options?: {includeMembers?: false}): Promise<Omit<SanityProject, 'members'>[]>
-  list(options?: {includeMembers?: boolean}): Promise<SanityProject[]> {
-    const uri = options?.includeMembers === false ? '/projects?includeMembers=false' : '/projects'
+  list(options?: {includeMembers?: boolean; organizationId?: string}): Promise<SanityProject[]> {
+    const params: Record<string, string> = {}
+    const uri = '/projects'
+    if (options?.includeMembers === false) {
+      params.includeMembers = 'false'
+    }
+    if (options?.organizationId) {
+      params.organizationId = options.organizationId
+    }
     return lastValueFrom(_request<SanityProject[]>(this.#client, this.#httpRequest, {uri}))
   }
 
