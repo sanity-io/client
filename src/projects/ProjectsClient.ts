@@ -67,9 +67,15 @@ export class ProjectsClient {
    *   - `includeMembers` - Whether to include members in the response (default: true)
    *   - `organizationId` - ID of the organization to fetch projects for
    */
-  list(options?: {includeMembers?: true}): Promise<SanityProject[]>
-  list(options?: {includeMembers?: false}): Promise<Omit<SanityProject, 'members'>[]>
-  list(options?: {includeMembers?: boolean; organizationId?: string}): Promise<SanityProject[]> {
+  list(options?: {includeMembers?: true; organizationId?: string}): Promise<SanityProject[]>
+  list(options?: {
+    includeMembers?: false
+    organizationId?: string
+  }): Promise<Omit<SanityProject, 'members'>[]>
+  list(options?: {
+    includeMembers?: boolean
+    organizationId?: string
+  }): Promise<SanityProject[] | Omit<SanityProject, 'members'>[]> {
     const params: Record<string, string> = {}
     const uri = '/projects'
     if (options?.includeMembers === false) {
