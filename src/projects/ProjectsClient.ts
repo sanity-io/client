@@ -78,7 +78,9 @@ export class ProjectsClient {
     if (options?.organizationId) {
       params.organizationId = options.organizationId
     }
-    return lastValueFrom(_request<SanityProject[]>(this.#client, this.#httpRequest, {uri}))
+    return lastValueFrom(
+      _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query: params}),
+    )
   }
 
   /**
