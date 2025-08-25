@@ -29,16 +29,16 @@ export class ObservableProjectsClient {
     includeMembers?: boolean
     organizationId?: string
   }): Observable<SanityProject[] | Omit<SanityProject, 'members'>[]> {
-    const params: Record<string, string> = {}
+    const query: Record<string, string> = {}
     const uri = '/projects'
     if (options?.includeMembers === false) {
-      params.includeMembers = 'false'
+      query.includeMembers = 'false'
     }
     if (options?.organizationId) {
-      params.organizationId = options.organizationId
+      query.organizationId = options.organizationId
     }
 
-    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query: params})
+    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query})
   }
 
   /**
@@ -76,17 +76,15 @@ export class ProjectsClient {
     includeMembers?: boolean
     organizationId?: string
   }): Promise<SanityProject[] | Omit<SanityProject, 'members'>[]> {
-    const params: Record<string, string> = {}
+    const query: Record<string, string> = {}
     const uri = '/projects'
     if (options?.includeMembers === false) {
-      params.includeMembers = 'false'
+      query.includeMembers = 'false'
     }
     if (options?.organizationId) {
-      params.organizationId = options.organizationId
+      query.organizationId = options.organizationId
     }
-    return lastValueFrom(
-      _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query: params}),
-    )
+    return lastValueFrom(_request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query}))
   }
 
   /**
