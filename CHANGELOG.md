@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.10.0](https://github.com/sanity-io/client/compare/v7.9.0...v7.10.0) (2025-08-26)
+
+
+### Features
+
+* **projects:** allow a project list to be filtered to a specific Organization ID ([#1131](https://github.com/sanity-io/client/issues/1131)) ([b455862](https://github.com/sanity-io/client/commit/b4558625de4888efd17f6c84292724059e16e958))
+
 ## [7.9.0](https://github.com/sanity-io/client/compare/v7.8.2...v7.9.0) (2025-08-20)
 
 
