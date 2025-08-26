@@ -711,6 +711,17 @@ describe('client', async () => {
       expect(projects[0].members, 'should not have "members" prop').toBeUndefined()
     })
 
+    test('can request list of projects for an organization', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects?organizationId=org_123')
+        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      const projects = await client.projects.list({organizationId: 'org_123'})
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+    })
+
     test('can request list of projects, ignoring non-false `includeMembers` option', async () => {
       nock(`https://${apiHost}`)
         .get('/v1/projects')
