@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.11.0](https://github.com/sanity-io/client/compare/v7.10.0...v7.11.0) (2025-08-27)
+
+
+### Features
+
+* add includeAllVersions option to getDocument method ([#1130](https://github.com/sanity-io/client/issues/1130)) ([dc5e882](https://github.com/sanity-io/client/commit/dc5e882ad0701b211382c6138fbe6b4831816b80))
+
 ## [7.10.0](https://github.com/sanity-io/client/compare/v7.9.0...v7.10.0) (2025-08-26)
 
 
