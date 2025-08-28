@@ -763,6 +763,7 @@ describe('client', async () => {
             role: 'administrator',
             isCurrentUser: true,
             isRobot: false,
+            roles: [{name: 'administrator', title: 'Administrator', description: 'Administrator'}],
           },
         ],
       }
@@ -785,6 +786,7 @@ describe('client', async () => {
             role: 'administrator',
             isCurrentUser: true,
             isRobot: false,
+            roles: [{name: 'administrator', title: 'Administrator', description: 'Administrator'}],
           },
         ],
       }
