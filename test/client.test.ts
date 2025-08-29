@@ -21,10 +21,11 @@ import {
   ServerError,
   Transaction,
   type UnpublishAction,
+  type VideoPlaybackInfoSigned,
 } from '@sanity/client'
 import {firstValueFrom, lastValueFrom, of as observableOf, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'
-import {describe, expect, test, vi} from 'vitest'
+import {describe, expect, expectTypeOf, test, vi} from 'vitest'
 
 const apiHost = 'api.sanity.url'
 const defaultProjectId = 'bf1942'
@@ -5762,5 +5763,278 @@ describe('client', async () => {
       .reply(200, {result: []})
 
     await expect(client.fetch('*')).resolves.not.toThrow()
+  })
+
+  describe('mediaLibrary', () => {
+    test.skipIf(isEdge)('video.getPlaybackInfo with string asset identifier', async () => {
+      const client = getClient()
+      const assetId = 'video-abc123def'
+      const mockResponse = {
+        id: assetId,
+        thumbnail: {url: 'https://example.com/thumb.jpg'},
+        animated: {url: 'https://example.com/animated.gif'},
+        storyboard: {url: 'https://example.com/storyboard.vtt'},
+        stream: {url: 'https://example.com/stream.m3u8'},
+        duration: 120,
+        aspectRatio: 1.77,
+      }
+
+      nock(projectHost())
+        .get('/v1/media-libraries/default/video/video-abc123def/playback-info')
+        .reply(200, mockResponse)
+
+      const result = await client.mediaLibrary.video.getPlaybackInfo(assetId)
+      expect(result).toEqual(mockResponse)
+    })
+
+    test.skipIf(isEdge)('video.getPlaybackInfo with GDR asset identifier', async () => {
+      const client = getClient()
+      const assetRef = {_ref: 'media-library:ml123abc:instance456'}
+      const mockResponse = {
+        id: 'instance456',
+        thumbnail: {url: 'https://example.com/thumb.jpg'},
+        animated: {url: 'https://example.com/animated.gif'},
+        storyboard: {url: 'https://example.com/storyboard.vtt'},
+        stream: {url: 'https://example.com/stream.m3u8'},
+        duration: 120,
+        aspectRatio: 1.77,
+      }
+
+      nock(projectHost())
+        .get('/v1/media-libraries/ml123abc/video/instance456/playback-info')
+        .reply(200, mockResponse)
+
+      const result = await client.mediaLibrary.video.getPlaybackInfo(assetRef)
+      expect(result).toEqual(mockResponse)
+    })
+
+    test.skipIf(isEdge)('video.getPlaybackInfo with transformation options', async () => {
+      const client = getClient()
+      const assetId = 'video-test123'
+      const options = {
+        transformations: {
+          thumbnail: {
+            width: 640,
+            height: 360,
+            time: 30,
+            fit: 'crop' as const,
+            format: 'jpg' as const,
+          },
+          animated: {width: 320, height: 180, start: 10, end: 20, fps: 15, format: 'gif' as const},
+          storyboard: {format: 'jpg' as const},
+        },
+        expiration: 3600,
+      }
+      const mockResponse = {
+        id: assetId,
+        thumbnail: {url: 'https://example.com/thumb-640x360.jpg'},
+        animated: {url: 'https://example.com/animated-320x180.gif'},
+        storyboard: {url: 'https://example.com/storyboard.vtt'},
+        stream: {url: 'https://example.com/stream.m3u8'},
+        duration: 120,
+        aspectRatio: 1.77,
+      }
+
+      nock(projectHost())
+        .get('/v1/media-libraries/default/video/video-test123/playback-info')
+        .query({
+          thumbnailWidth: 640,
+          thumbnailHeight: 360,
+          thumbnailTime: 30,
+          thumbnailFit: 'crop',
+          thumbnailFormat: 'jpg',
+          animatedWidth: 320,
+          animatedHeight: 180,
+          animatedStart: 10,
+          animatedEnd: 20,
+          animatedFps: 15,
+          animatedFormat: 'gif',
+          storyboardFormat: 'jpg',
+          expiration: 3600,
+        })
+        .reply(200, mockResponse)
+
+      const result = await client.mediaLibrary.video.getPlaybackInfo(assetId, options)
+      expect(result).toEqual(mockResponse)
+    })
+
+    test.skipIf(isEdge)('video.getPlaybackInfo with container ID fallback', async () => {
+      const client = getClient()
+      const containerId = 'container-xyz789'
+      const mockResponse = {
+        id: containerId,
+        thumbnail: {url: 'https://example.com/thumb.jpg'},
+        animated: {url: 'https://example.com/animated.gif'},
+        storyboard: {url: 'https://example.com/storyboard.vtt'},
+        stream: {url: 'https://example.com/stream.m3u8'},
+        duration: 120,
+        aspectRatio: 1.77,
+      }
+
+      nock(projectHost())
+        .get('/v1/media-libraries/default/video/container-xyz789/playback-info')
+        .reply(200, mockResponse)
+
+      const result = await client.mediaLibrary.video.getPlaybackInfo(containerId)
+      expect(result).toEqual(mockResponse)
+    })
+
+    test.skipIf(isEdge)('video.getPlaybackInfo throws error for invalid GDR format', async () => {
+      const client = getClient()
+
+      // Test various invalid GDR formats
+      const invalidRefs = [
+        {
+          _ref: 'invalid:format',
+          expectedError: 'Invalid media library reference format: "invalid:format"',
+        },
+        {
+          _ref: 'media-library:',
+          expectedError: 'Invalid media library reference format: "media-library:"',
+        },
+        {
+          _ref: 'media-library:ml123:',
+          expectedError: 'Invalid media library reference format: "media-library:ml123:"',
+        },
+        {
+          _ref: 'media-library::instanceId',
+          expectedError: 'Invalid media library reference format: "media-library::instanceId"',
+        },
+        {
+          _ref: 'wrongPrefix:ml123:instance',
+          expectedError: 'Invalid media library reference format: "wrongPrefix:ml123:instance"',
+        },
+        {
+          _ref: 'media-library:ml123:instance:extra',
+          expectedError:
+            'Invalid media library reference format: "media-library:ml123:instance:extra"',
+        },
+        {
+          _ref: 'media-library:library123:instance456', // Missing 'ml' prefix
+          expectedError: 'Invalid library ID in reference: "media-library:library123:instance456"',
+        },
+      ]
+
+      for (const {_ref, expectedError} of invalidRefs) {
+        try {
+          await client.mediaLibrary.video.getPlaybackInfo({_ref})
+          // Should not reach here
+          expect.fail(`Expected error for ref: ${_ref}`)
+        } catch (err) {
+          expect((err as Error).message).toContain(expectedError)
+        }
+      }
+    })
+
+    test.skipIf(isEdge)(
+      'video.getPlaybackInfo throws error for invalid asset identifier',
+      async () => {
+        const client = getClient()
+
+        expect.assertions(2)
+
+        try {
+          await client.mediaLibrary.video.getPlaybackInfo({} as any)
+        } catch (err) {
+          expect((err as Error).message).toBe(
+            'Invalid asset identifier: must be a string or an object with a _ref property',
+          )
+        }
+
+        try {
+          await client.mediaLibrary.video.getPlaybackInfo({_ref: 123} as any)
+        } catch (err) {
+          expect((err as Error).message).toBe(
+            'Invalid asset identifier: must be a string or an object with a _ref property',
+          )
+        }
+      },
+    )
+
+    test.skipIf(isEdge)('video.getPlaybackInfo handles API errors', async () => {
+      const client = getClient()
+      const assetId = 'video-error123'
+
+      nock(projectHost())
+        .get('/v1/media-libraries/default/video/video-error123/playback-info')
+        .reply(404, {error: 'Asset not found'})
+
+      await expect(client.mediaLibrary.video.getPlaybackInfo(assetId)).rejects.toThrow()
+    })
+
+    test.skipIf(isEdge)('video.getPlaybackInfo with partial transformation options', async () => {
+      const client = getClient()
+      const assetId = 'video-partial123'
+      const options = {
+        transformations: {
+          thumbnail: {width: 800},
+          animated: {format: 'webp' as const},
+        },
+      }
+      const mockResponse = {
+        id: assetId,
+        thumbnail: {url: 'https://example.com/thumb-800.jpg'},
+        animated: {url: 'https://example.com/animated.webp'},
+        storyboard: {url: 'https://example.com/storyboard.vtt'},
+        stream: {url: 'https://example.com/stream.m3u8'},
+        duration: 120,
+        aspectRatio: 1.77,
+      }
+
+      nock(projectHost())
+        .get('/v1/media-libraries/default/video/video-partial123/playback-info')
+        .query({
+          thumbnailWidth: 800,
+          animatedFormat: 'webp',
+        })
+        .reply(200, mockResponse)
+
+      const result = await client.mediaLibrary.video.getPlaybackInfo(assetId, options)
+      expect(result).toEqual(mockResponse)
+    })
+
+    test.skipIf(isEdge)('video.getPlaybackInfo with signed/secured response', async () => {
+      const client = getClient()
+      const assetId = 'video-secured123'
+      const mockResponse = {
+        id: assetId,
+        thumbnail: {url: 'https://example.com/thumb.jpg', token: 'thumb-token-123'},
+        animated: {url: 'https://example.com/animated.gif', token: 'anim-token-456'},
+        storyboard: {url: 'https://example.com/storyboard.vtt', token: 'story-token-789'},
+        stream: {url: 'https://example.com/stream.m3u8', token: 'stream-token-abc'},
+        duration: 90,
+        aspectRatio: 1.77,
+      }
+
+      nock(projectHost())
+        .get('/v1/media-libraries/default/video/video-secured123/playback-info')
+        .reply(200, mockResponse)
+
+      const result = await client.mediaLibrary.video.getPlaybackInfo(assetId)
+      expect(result).toEqual(mockResponse)
+
+      // Test that we can detect it's a signed response
+      expect('token' in result.stream).toBe(true)
+      expect('token' in result.thumbnail).toBe(true)
+
+      // Test token extraction using the method
+      const tokens = client.mediaLibrary.video.getPlaybackTokens(result)
+      expect(tokens).toEqual({
+        playback: 'stream-token-abc',
+        thumbnail: 'thumb-token-123',
+        storyboard: 'story-token-789',
+        animated: 'anim-token-456',
+      })
+
+      // Type assertions - check that tokens are present
+      if (tokens && 'token' in result.stream) {
+        // Result is a signed response, cast it for type checking
+        const signedResult = result as VideoPlaybackInfoSigned
+        expectTypeOf(signedResult.stream.token).toBeString()
+        expectTypeOf(signedResult.thumbnail.token).toBeString()
+        expectTypeOf(signedResult.storyboard.token).toBeString()
+        expectTypeOf(signedResult.animated.token).toBeString()
+      }
+    })
   })
 })
