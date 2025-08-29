@@ -10,6 +10,10 @@ import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
+import {
+  MediaLibraryVideoClient,
+  ObservableMediaLibraryVideoClient,
+} from './mediaLibrary/MediaLibraryVideoClient'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
 import {ObservableReleasesClient, ReleasesClient} from './releases/ReleasesClient'
 import type {
@@ -54,8 +58,10 @@ export type {
   AssetsClient,
   DatasetsClient,
   LiveClient,
+  MediaLibraryVideoClient,
   ObservableAssetsClient,
   ObservableDatasetsClient,
+  ObservableMediaLibraryVideoClient,
   ObservableProjectsClient,
   ObservableUsersClient,
   ProjectsClient,
@@ -67,6 +73,9 @@ export class ObservableSanityClient {
   assets: ObservableAssetsClient
   datasets: ObservableDatasetsClient
   live: LiveClient
+  mediaLibrary: {
+    video: ObservableMediaLibraryVideoClient
+  }
   projects: ObservableProjectsClient
   users: ObservableUsersClient
   agent: {
@@ -93,6 +102,9 @@ export class ObservableSanityClient {
     this.assets = new ObservableAssetsClient(this, this.#httpRequest)
     this.datasets = new ObservableDatasetsClient(this, this.#httpRequest)
     this.live = new LiveClient(this)
+    this.mediaLibrary = {
+      video: new ObservableMediaLibraryVideoClient(this, this.#httpRequest),
+    }
     this.projects = new ObservableProjectsClient(this, this.#httpRequest)
     this.users = new ObservableUsersClient(this, this.#httpRequest)
     this.agent = {
@@ -1097,6 +1109,9 @@ export class SanityClient {
   assets: AssetsClient
   datasets: DatasetsClient
   live: LiveClient
+  mediaLibrary: {
+    video: MediaLibraryVideoClient
+  }
   projects: ProjectsClient
   users: UsersClient
   agent: {
@@ -1128,6 +1143,9 @@ export class SanityClient {
     this.assets = new AssetsClient(this, this.#httpRequest)
     this.datasets = new DatasetsClient(this, this.#httpRequest)
     this.live = new LiveClient(this)
+    this.mediaLibrary = {
+      video: new MediaLibraryVideoClient(this, this.#httpRequest),
+    }
     this.projects = new ProjectsClient(this, this.#httpRequest)
     this.users = new UsersClient(this, this.#httpRequest)
     this.agent = {

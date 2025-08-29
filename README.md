@@ -2273,6 +2273,92 @@ const result = await client.agent.action.patch({
 })
 ```
 
+### Media Library API
+
+The Media Library provides centralized asset management for your organization. Store, organize, and manage digital assets across multiple applications and datasets with programmatic access through the `client.mediaLibrary` interface.
+
+👉 Read more about [Media Library in Sanity](https://www.sanity.io/docs/media-library)
+
+#### Getting video playback information
+
+```js
+// Basic usage with video asset ID
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
+
+// With transformations
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4', {
+  transformations: {
+    thumbnail: { width: 300, format: 'webp', fit: 'smartcrop' },
+    animated: { width: 200, fps: 15, format: 'webp' }
+  },
+  expiration: 3600  // seconds
+})
+
+// Using Global Dataset Reference (GDR)
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
+  _ref: 'media-library:mlZxz9rvqf76:30rh9U3GDEK3ToiId1Zje4uvalC'
+})
+```
+
+The response contains playback URLs and metadata:
+
+```js
+// Public playback response
+{
+  id: "30rh9U3GDEK3ToiId1Zje4uvalC",
+  stream: { url: "https://stream.m.sanity-cdn.com/..." },
+  thumbnail: { url: "https://image.m.sanity-cdn.com/..." },
+  animated: { url: "https://image.m.sanity-cdn.com/..." },
+  storyboard: { url: "https://storyboard.m.sanity-cdn.com/..." },
+  duration: 120.5,
+  aspectRatio: 1.77
+}
+
+// Signed playback response (when video requires authentication)
+{
+  id: "30rh9U3GDEK3ToiId1Zje4uvalC",
+  stream: { 
+    url: "https://stream.m.sanity-cdn.com/...",
+    token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+  },
+  thumbnail: { 
+    url: "https://image.m.sanity-cdn.com/...",
+    token: "eyJ0a2VuIjoiVGh1bWJuYWlsVG9rZW4tMTIz..."
+  },
+  animated: { 
+    url: "https://image.m.sanity-cdn.com/...",
+    token: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY..."
+  },
+  storyboard: { 
+    url: "https://storyboard.m.sanity-cdn.com/...",
+    token: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
+  },
+  duration: 120.5,
+  aspectRatio: 1.77
+}
+```
+
+#### Working with signed playback information
+
+```js
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
+
+// Extract tokens for use with video players (returns undefined if not signed)
+const tokens = client.mediaLibrary.video.getPlaybackTokens(playbackInfo)
+if (tokens) {
+  console.log(tokens)
+  // {
+  //   playback: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  //   animated: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY...",
+  //   thumbnail: "eyJ0a2VuIjoiVGh1bWJuYWlsVG9rZW4tMTIz...",
+  //   storyboard: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
+  // }
+  
+  // Use with Mux Player or other compatible players
+  // The tokens authenticate access to the video resources
+}
+```
+
 ## License
 
 MIT © [Sanity.io](https://www.sanity.io/)
