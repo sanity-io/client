@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.11.0](https://github.com/sanity-io/client/compare/v7.10.0...v7.11.0) (2025-09-02)
+
+
+### Features
+
+* add includeAllVersions option to getDocument method ([#1130](https://github.com/sanity-io/client/issues/1130)) ([dc5e882](https://github.com/sanity-io/client/commit/dc5e882ad0701b211382c6138fbe6b4831816b80))
+* add media library video client ([#1134](https://github.com/sanity-io/client/issues/1134)) ([0cb6e64](https://github.com/sanity-io/client/commit/0cb6e644f7923c8ab1e868fa4dd062c2e7f0b4a3))
+
 ## [7.10.0](https://github.com/sanity-io/client/compare/v7.9.0...v7.10.0) (2025-08-26)
 
 
