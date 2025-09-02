@@ -2295,20 +2295,25 @@ const client = createClient({
 })
 
 // Basic usage with video asset ID
-const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
+  'video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
+)
 
 // With transformations
-const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4', {
-  transformations: {
-    thumbnail: { width: 300, format: 'webp', fit: 'smartcrop' },
-    animated: { width: 200, fps: 15, format: 'webp' }
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
+  'video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
+  {
+    transformations: {
+      thumbnail: {width: 300, format: 'webp', fit: 'smartcrop'},
+      animated: {width: 200, fps: 15, format: 'webp'},
+    },
+    expiration: 3600, // seconds
   },
-  expiration: 3600  // seconds
-})
+)
 
 // Using Global Dataset Reference (GDR)
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
-  _ref: 'media-library:mlZxz9rvqf76:30rh9U3GDEK3ToiId1Zje4uvalC'
+  _ref: 'media-library:mlZxz9rvqf76:30rh9U3GDEK3ToiId1Zje4uvalC',
 })
 ```
 
@@ -2329,19 +2334,19 @@ The response contains playback URLs and metadata:
 // Signed playback response (when video requires authentication)
 {
   id: "30rh9U3GDEK3ToiId1Zje4uvalC",
-  stream: { 
+  stream: {
     url: "https://stream.m.sanity-cdn.com/...",
     token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
   },
-  thumbnail: { 
+  thumbnail: {
     url: "https://image.m.sanity-cdn.com/...",
     token: "eyJ0a2VuIjoiVGh1bWJuYWlsVG9rZW4tMTIz..."
   },
-  animated: { 
+  animated: {
     url: "https://image.m.sanity-cdn.com/...",
     token: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY..."
   },
-  storyboard: { 
+  storyboard: {
     url: "https://storyboard.m.sanity-cdn.com/...",
     token: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
   },
@@ -2355,7 +2360,9 @@ The response contains playback URLs and metadata:
 ```js
 import {getPlaybackTokens, isSignedPlaybackInfo} from '@sanity/client/media-library'
 
-const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
+  'video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
+)
 
 // Check if the response requires signed URLs
 if (isSignedPlaybackInfo(playbackInfo)) {
@@ -2368,7 +2375,7 @@ if (isSignedPlaybackInfo(playbackInfo)) {
   //   animated: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY...",
   //   storyboard: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
   // }
-  
+
   // Use with Mux Player or other compatible players
   // The tokens authenticate access to the video resources
 }
