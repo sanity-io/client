@@ -1722,3 +1722,139 @@ export type {
  * @public
  */
 export const EXPERIMENTAL_API_WARNING = 'This is an experimental API version'
+
+// Media Libraries types
+/**
+ * Fit / resize modes accepted for thumbnail params.
+ * @public
+ */
+export type FitMode = 'preserve' | 'stretch' | 'crop' | 'smartcrop' | 'pad'
+
+/**
+ * Allowed still image formats (thumbnail + storyboard).
+ * @public
+ */
+export type StillImageFormat = 'jpg' | 'png' | 'webp'
+
+/**
+ * Allowed animated image formats.
+ * @public
+ */
+export type AnimatedImageFormat = 'gif' | 'webp'
+
+/**
+ * Thumbnail rendition (single frame) options.
+ * @public
+ */
+export interface ThumbnailTransformOptions {
+  /** Pixel width of the thumbnail frame. */
+  width?: number
+  /** Pixel height of the thumbnail frame. */
+  height?: number
+  /** Timestamp (seconds) from which to grab the frame. */
+  time?: number
+  /** Resize / fit mode applied to the extracted frame. */
+  fit?: FitMode
+  /** Output image format. */
+  format?: StillImageFormat
+}
+
+/**
+ * Animated preview rendition options (e.g. GIF / animated WebP).
+ * @public
+ */
+export interface AnimatedTransformOptions {
+  /** Pixel width of the animated output. Max 640 px. */
+  width?: number
+  /** Pixel height of the animated output. Max 640 px. */
+  height?: number
+  /** Start time in seconds (inclusive). */
+  start?: number
+  /** End time in seconds. */
+  end?: number
+  /** Frames per second (1–30). */
+  fps?: number
+  /** Output animated format. */
+  format?: AnimatedImageFormat
+}
+
+/**
+ * Storyboard (contact sheet) options.
+ * @public
+ */
+export interface StoryboardTransformOptions {
+  /** Output image format for the storyboard. */
+  format?: StillImageFormat
+}
+
+/**
+ * Video-specific playback transformation option groups.
+ * Only explicitly provided values are serialized into query parameters.
+ * @public
+ */
+export interface MediaLibraryVideoPlaybackTransformations {
+  /** Static thumbnail (single frame) options. */
+  thumbnail?: ThumbnailTransformOptions
+  /** Animated preview options (GIF / animated WebP). */
+  animated?: AnimatedTransformOptions
+  /** Storyboard (contact sheet) options. */
+  storyboard?: StoryboardTransformOptions
+}
+
+/**
+ * Options for requesting playback info (URLs + optional tokens) for a Media Library video asset.
+ *
+ * Removed: generic fallback parameters (width, height, fit, format). Supply per‑transformation values instead.
+ * Animated transformations intentionally exclude any fit option (not supported by Mux).
+ *
+ * includeTokens is a client-side flag (not sent to the server) controlling whether
+ * returned tokens should be appended to URLs when consumed.
+ * @public
+ */
+export interface MediaLibraryPlaybackInfoOptions {
+  /** Explicit per-video transformation options (thumbnail, animated, storyboard). */
+  transformations?: MediaLibraryVideoPlaybackTransformations
+  /** Expiration hint for secured/signed URLs (string or number, number will be stringified). */
+  expiration?: string | number
+}
+
+/** @public */
+export interface VideoPlaybackInfoItemPublic {
+  url: string
+}
+
+/** @public */
+export interface VideoPlaybackInfoItemSigned extends VideoPlaybackInfoItemPublic {
+  token: string
+}
+
+/** @public */
+export type VideoPlaybackInfoItem = VideoPlaybackInfoItemPublic | VideoPlaybackInfoItemSigned
+
+/** @public */
+export interface VideoPlaybackInfo<T extends VideoPlaybackInfoItem = VideoPlaybackInfoItem> {
+  id: string
+  thumbnail: T
+  animated: T
+  storyboard: T
+  stream: T
+  duration: number
+  aspectRatio: number
+}
+
+/** @public */
+export type VideoPlaybackInfoSigned = VideoPlaybackInfo<VideoPlaybackInfoItemSigned>
+
+/** @public */
+export type VideoPlaybackInfoPublic = VideoPlaybackInfo<VideoPlaybackInfoItemPublic>
+
+/** @public */
+export interface VideoPlaybackTokens {
+  stream?: string
+  thumbnail?: string
+  storyboard?: string
+  animated?: string
+}
+
+/** @public */
+export type MediaLibraryAssetInstanceIdentifier = string | SanityReference

@@ -142,6 +142,9 @@ export async function updateDocumentTitle(_id, title) {
       - [Example: Storing language in a field](#example-storing-language-in-a-field)
     - [Prompt the LLM](#prompt-the-llm)
     - [Patch with a schema-aware API](#patch-with-a-schema-aware-api)
+  - [Media Library API](#media-library-api)
+    - [Getting video playback information](#getting-video-playback-information)
+    - [Working with signed playback information](#working-with-signed-playback-information)
 - [License](#license)
 - [From `v5`](#from-v5)
   - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
@@ -2271,6 +2274,104 @@ const result = await client.agent.action.patch({
     value: [{_type: 'item', title: 'Item title', _key: 'isOptionalAndWillBeGeneratedIfMissing'}],
   },
 })
+```
+
+### Media Library API
+
+The Media Library provides centralized asset management for your organization. Store, organize, and manage digital assets across multiple applications and datasets with programmatic access through the `client.mediaLibrary` interface.
+
+👉 Read more about [Media Library in Sanity](https://www.sanity.io/docs/media-library)
+
+#### Getting video playback information
+
+```js
+const client = createClient({
+  token: 'valid-token',
+  useCdn: false,
+  '~experimental_resource': {
+    type: 'media-library',
+    id: 'mediaLibraryId',
+  },
+})
+
+// Basic usage with video asset ID
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
+
+// With transformations
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4', {
+  transformations: {
+    thumbnail: { width: 300, format: 'webp', fit: 'smartcrop' },
+    animated: { width: 200, fps: 15, format: 'webp' }
+  },
+  expiration: 3600  // seconds
+})
+
+// Using Global Dataset Reference (GDR)
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
+  _ref: 'media-library:mlZxz9rvqf76:30rh9U3GDEK3ToiId1Zje4uvalC'
+})
+```
+
+The response contains playback URLs and metadata:
+
+```js
+// Public playback response
+{
+  id: "30rh9U3GDEK3ToiId1Zje4uvalC",
+  stream: { url: "https://stream.m.sanity-cdn.com/..." },
+  thumbnail: { url: "https://image.m.sanity-cdn.com/..." },
+  animated: { url: "https://image.m.sanity-cdn.com/..." },
+  storyboard: { url: "https://storyboard.m.sanity-cdn.com/..." },
+  duration: 120.5,
+  aspectRatio: 1.77
+}
+
+// Signed playback response (when video requires authentication)
+{
+  id: "30rh9U3GDEK3ToiId1Zje4uvalC",
+  stream: { 
+    url: "https://stream.m.sanity-cdn.com/...",
+    token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+  },
+  thumbnail: { 
+    url: "https://image.m.sanity-cdn.com/...",
+    token: "eyJ0a2VuIjoiVGh1bWJuYWlsVG9rZW4tMTIz..."
+  },
+  animated: { 
+    url: "https://image.m.sanity-cdn.com/...",
+    token: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY..."
+  },
+  storyboard: { 
+    url: "https://storyboard.m.sanity-cdn.com/...",
+    token: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
+  },
+  duration: 120.5,
+  aspectRatio: 1.77
+}
+```
+
+#### Working with signed playback information
+
+```js
+import {getPlaybackTokens, isSignedPlaybackInfo} from '@sanity/client/media-library'
+
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
+
+// Check if the response requires signed URLs
+if (isSignedPlaybackInfo(playbackInfo)) {
+  // Extract tokens for use with video players
+  const tokens = getPlaybackTokens(playbackInfo)
+  console.log(tokens)
+  // {
+  //   stream: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  //   thumbnail: "eyJ0a2VuIjoiVGh1bWJuYWlsVG9rZW4tMTIz...",
+  //   animated: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY...",
+  //   storyboard: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
+  // }
+  
+  // Use with Mux Player or other compatible players
+  // The tokens authenticate access to the video resources
+}
 ```
 
 ## License
