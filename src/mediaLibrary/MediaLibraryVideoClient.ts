@@ -6,11 +6,8 @@ import type {
   HttpRequest,
   MediaLibraryAssetInstanceIdentifier,
   MediaLibraryPlaybackInfoOptions,
+  SanityReference,
   VideoPlaybackInfo,
-  VideoPlaybackInfoItem,
-  VideoPlaybackInfoItemSigned,
-  VideoPlaybackInfoSigned,
-  VideoPlaybackTokens,
 } from '../types'
 
 /** @internal */
@@ -32,8 +29,18 @@ export class ObservableMediaLibraryVideoClient {
     assetIdentifier: MediaLibraryAssetInstanceIdentifier,
     options: MediaLibraryPlaybackInfoOptions = {},
   ): Observable<VideoPlaybackInfo> {
+    const configMediaLibraryId = this.#client.config()['~experimental_resource']?.id
+
     const {instanceId, libraryId} = parseAssetInstanceId(assetIdentifier)
-    const uri = buildVideoPlaybackInfoUrl(instanceId, libraryId)
+    const effectiveLibraryId = libraryId || configMediaLibraryId
+
+    if (!effectiveLibraryId) {
+      throw new Error(
+        'Could not determine Media Library ID - you need to provide a valid Media Library ID in the client config or a Media Library GDR',
+      )
+    }
+
+    const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
     return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
@@ -41,25 +48,6 @@ export class ObservableMediaLibraryVideoClient {
       uri,
       query: queryParams,
     })
-  }
-
-  /**
-   * Extract playback tokens from signed video playback info
-   *
-   * @param playbackInfo - The playback info response
-   * @returns Object containing playback, thumbnail, and storyboard tokens if signed, undefined otherwise
-   */
-  getPlaybackTokens(playbackInfo: VideoPlaybackInfo): VideoPlaybackTokens | undefined {
-    if (isSignedPlaybackInfo(playbackInfo)) {
-      return {
-        playback: playbackInfo.stream.token,
-        thumbnail: playbackInfo.thumbnail.token,
-        storyboard: playbackInfo.storyboard.token,
-        animated: playbackInfo.animated.token,
-      }
-    }
-
-    return undefined
   }
 }
 
@@ -89,84 +77,47 @@ export class MediaLibraryVideoClient {
       ).getPlaybackInfo(assetIdentifier, options),
     )
   }
-
-  /**
-   * Extract playback tokens from signed video playback info
-   *
-   * @param playbackInfo - The playback info response
-   * @returns Object containing playback, thumbnail, and storyboard tokens if signed, undefined otherwise
-   */
-  getPlaybackTokens(playbackInfo: VideoPlaybackInfo): VideoPlaybackTokens | undefined {
-    if (isSignedPlaybackInfo(playbackInfo)) {
-      return {
-        playback: playbackInfo.stream.token,
-        thumbnail: playbackInfo.thumbnail.token,
-        storyboard: playbackInfo.storyboard.token,
-        animated: playbackInfo.animated.token,
-      }
-    }
-
-    return undefined
-  }
 }
 
-function parseAssetInstanceId(assetIdentifier: MediaLibraryAssetInstanceIdentifier): {
+const ML_GDR_PATTERN = /^media-library:(ml[^:]+):([^:]+)$/
+
+/** @internal */
+function isSanityReference(
+  assetIdentifier: MediaLibraryAssetInstanceIdentifier,
+): assetIdentifier is SanityReference {
+  return typeof assetIdentifier === 'object' && '_ref' in assetIdentifier
+}
+
+/**
+ * Parse the asset instance id and library id from the asset identifier
+ *
+ * @param assetIdentifier - The asset identifier - either a asset instance id or a Media Library GDR
+ * @returns The asset instance id and library id
+ */
+export function parseAssetInstanceId(assetIdentifier: MediaLibraryAssetInstanceIdentifier): {
   instanceId: string
   libraryId?: string
 } {
-  if (typeof assetIdentifier === 'string') {
-    // Handle video-prefixed asset instance ID
-    if (assetIdentifier.startsWith('video-')) {
-      return {instanceId: assetIdentifier}
-    }
-    // Assume it's a container ID or plain instance ID
+  const ref = isSanityReference(assetIdentifier) ? assetIdentifier._ref : assetIdentifier
+
+  const match = ML_GDR_PATTERN.exec(ref)
+  if (match) {
+    const [, libraryId, instanceId] = match
+    return {libraryId, instanceId}
+  }
+
+  // Asumes valid asset instance id
+  if (typeof assetIdentifier === 'string' && assetIdentifier.startsWith('video-')) {
     return {instanceId: assetIdentifier}
   }
 
-  if (assetIdentifier && typeof assetIdentifier === 'object' && '_ref' in assetIdentifier) {
-    const ref = assetIdentifier._ref
-    if (typeof ref === 'string') {
-      // Parse GDR to extract library ID and instance ID
-      // Expected format: "media-library:libraryId:instanceId"
-      const gdrParts = ref.split(':')
-
-      // Valid GDR must have exactly 3 parts and start with 'media-library'
-      if (gdrParts.length === 3 && gdrParts[0] === 'media-library') {
-        const [, libraryId, instanceId] = gdrParts
-
-        // Validate that libraryId and instanceId are not empty
-        if (!libraryId || !instanceId) {
-          throw new Error(
-            `Invalid media library reference format: "${ref}". Expected format: "media-library:mlXXXX:instanceId"`,
-          )
-        }
-
-        // Validate that libraryId starts with 'ml' prefix
-        if (!libraryId.startsWith('ml')) {
-          throw new Error(
-            `Invalid library ID in reference: "${ref}". Library ID must start with "ml" prefix`,
-          )
-        }
-
-        return {
-          libraryId,
-          instanceId,
-        }
-      }
-
-      // Invalid GDR format
-      throw new Error(
-        `Invalid media library reference format: "${ref}". Expected format: "media-library:mlXXXX:instanceId"`,
-      )
-    }
-  }
-
-  throw new Error('Invalid asset identifier: must be a string or an object with a _ref property')
+  throw new Error(
+    `Invalid video asset instance identifier "${ref}": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library`,
+  )
 }
 
-function buildVideoPlaybackInfoUrl(instanceId: string, libraryId?: string): string {
-  const effectiveLibraryId = libraryId || 'default'
-  return `/media-libraries/${effectiveLibraryId}/video/${instanceId}/playback-info`
+function buildVideoPlaybackInfoUrl(instanceId: string, libraryId: string): string {
+  return `/media-libraries/${libraryId}/video/${instanceId}/playback-info`
 }
 
 function buildQueryParams(options: MediaLibraryPlaybackInfoOptions): Record<string, unknown> {
@@ -202,16 +153,4 @@ function buildQueryParams(options: MediaLibraryPlaybackInfoOptions): Record<stri
   }
 
   return params
-}
-
-/** @internal */
-function isSignedPlayback(item: VideoPlaybackInfoItem): item is VideoPlaybackInfoItemSigned {
-  return 'token' in item
-}
-
-/** @internal */
-function isSignedPlaybackInfo(
-  playbackInfo: VideoPlaybackInfo,
-): playbackInfo is VideoPlaybackInfoSigned {
-  return isSignedPlayback(playbackInfo.stream)
 }

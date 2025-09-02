@@ -64,6 +64,12 @@
       "require": "./dist/stega.cjs",
       "default": "./dist/stega.js"
     },
+    "./media-library": {
+      "source": "./src/media-library.ts",
+      "import": "./dist/media-library.js",
+      "require": "./dist/media-library.cjs",
+      "default": "./dist/media-library.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -81,6 +87,9 @@
       ],
       "stega": [
         "./dist/stega.d.ts"
+      ],
+      "media-library": [
+        "./dist/media-library.d.ts"
       ]
     }
   },

@@ -2353,16 +2353,19 @@ The response contains playback URLs and metadata:
 #### Working with signed playback information
 
 ```js
+import {getPlaybackTokens, isSignedPlaybackInfo} from '@sanity/client/media-library'
+
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo('video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4')
 
-// Extract tokens for use with video players (returns undefined if not signed)
-const tokens = client.mediaLibrary.video.getPlaybackTokens(playbackInfo)
-if (tokens) {
+// Check if the response requires signed URLs
+if (isSignedPlaybackInfo(playbackInfo)) {
+  // Extract tokens for use with video players
+  const tokens = getPlaybackTokens(playbackInfo)
   console.log(tokens)
   // {
-  //   playback: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  //   animated: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY...",
+  //   stream: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
   //   thumbnail: "eyJ0a2VuIjoiVGh1bWJuYWlsVG9rZW4tMTIz...",
+  //   animated: "eyJ0a2VuIjoiQW5pbWF0ZWRUb2tlbi1kZWY...",
   //   storyboard: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
   // }
   

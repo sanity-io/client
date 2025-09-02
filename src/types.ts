@@ -1802,13 +1802,6 @@ export interface MediaLibraryVideoPlaybackTransformations {
 }
 
 /**
- * Backwards compatibility alias.
- * @deprecated Use MediaLibraryVideoPlaybackTransformations instead.
- * @public
- */
-export type MediaLibraryPlaybackTransformations = MediaLibraryVideoPlaybackTransformations
-
-/**
  * Options for requesting playback info (URLs + optional tokens) for a Media Library video asset.
  *
  * Removed: generic fallback parameters (width, height, fit, format). Supply per‑transformation values instead.
@@ -1857,7 +1850,7 @@ export type VideoPlaybackInfoPublic = VideoPlaybackInfo<VideoPlaybackInfoItemPub
 
 /** @public */
 export interface VideoPlaybackTokens {
-  playback?: string
+  stream?: string
   thumbnail?: string
   storyboard?: string
   animated?: string
