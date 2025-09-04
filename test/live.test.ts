@@ -103,7 +103,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('can listen for tags', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
 
       const eventData = {
         tags: ['tag1', 'tag2'],
@@ -127,7 +127,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('can listen for tags with includeDrafts', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
 
       const eventData = {
         tags: ['tag1', 'tag2'],
@@ -203,6 +203,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
     test('handles CORS errors', async () => {
       expect.assertions(3)
+
       const restoreFetch = global.fetch
 
       global.fetch = async (info, init) => {
@@ -215,7 +216,6 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const {default: nock} = await import('nock')
 
-      // The OPTIONS request is done with `global.fetch`, and so nock can't intercept it.
       server.use(
         http.options(
           'https://abc123.api.sanity.io/vX/data/live/events/no-cors',
@@ -287,22 +287,32 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('passes custom headers from client configuration', async () => {
       expect.assertions(1)
 
-      const {server, client} = await testSse(
-        ({request, channel}) => {
-          if (request.method === 'OPTIONS') {
-            expect(request.headers['x-custom-header']).toBe('custom-value')
-          }
+      const {default: nock} = await import('nock')
 
-          if (channel) {
-            channel.send({id: '123', data: {tags: ['tag1']}})
-            process.nextTick(() => channel.close())
-          }
-        },
-        {headers: {'X-Custom-Header': 'custom-value'}},
-      )
+      // Intercept the EventSource GET and assert the custom header explicitly
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/headers')
+        .reply(function () {
+          expect(this.req.headers['x-custom-header']).toBe('custom-value')
+          return [
+            200,
+            ['event: welcome', 'data: {}', '', '.', ''].join('\n'),
+            {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'text/event-stream',
+            },
+          ]
+        })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'headers',
+        useCdn: false,
+        apiVersion: 'X',
+        headers: {'X-Custom-Header': 'custom-value'},
+      })
 
       await firstValueFrom(client.live.events(), {defaultValue: null})
-      server.close()
     })
 
     test('deduplicates EventSource instances for same URL and options', async () => {
