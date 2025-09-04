@@ -1,4 +1,4 @@
-import {catchError, concat, EMPTY, mergeMap, Observable, of} from 'rxjs'
+import {catchError, mergeMap, Observable, of} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
@@ -113,7 +113,26 @@ export class LiveClient {
       'welcome',
       'reconnect',
       'goaway',
-    ]).pipe(
+    ])
+
+    const checkCors$ = fetchObservable(url, {
+      method: 'OPTIONS',
+      mode: 'cors',
+      credentials: esOptions.withCredentials ? 'include' : 'omit',
+      headers: esOptions.headers,
+    }).pipe(
+      catchError(() => {
+        // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
+        throw new CorsOriginError({projectId: projectId!})
+      }),
+    )
+
+    const observable = events.pipe(
+      // Do our best to detect CORS errors first
+      catchError((err) => checkCors$.pipe(mergeMap(() => {
+        // If the CORS check succeeds, then we rethrow the original error
+        throw err
+      }))),
       reconnectOnConnectionFailure(),
       map((event) => {
         if (event.type === 'message') {
@@ -123,22 +142,7 @@ export class LiveClient {
         }
         return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome | LiveEventGoAway
       }),
-    )
-
-    // Detect if CORS is allowed, the way the CORS is checked supports preflight caching, so when the EventSource boots up it knows it sees the preflight was already made and we're good to go
-    const checkCors = fetchObservable(url, {
-      method: 'OPTIONS',
-      mode: 'cors',
-      credentials: esOptions.withCredentials ? 'include' : 'omit',
-      headers: esOptions.headers,
-    }).pipe(
-      mergeMap(() => EMPTY),
-      catchError(() => {
-        // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
-        throw new CorsOriginError({projectId: projectId!})
-      }),
-    )
-    const observable = concat(checkCors, events).pipe(
+    ).pipe(
       finalize(() => eventsCache.delete(key)),
       shareReplayLatest({
         predicate: (event) => event.type === 'welcome',
