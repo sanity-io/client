@@ -115,7 +115,7 @@ export class LiveClient {
       'goaway',
     ])
 
-    const checkCors$ = fetchObservable(url, {
+    const checkCors = fetchObservable(url, {
       method: 'OPTIONS',
       mode: 'cors',
       credentials: esOptions.withCredentials ? 'include' : 'omit',
@@ -127,27 +127,39 @@ export class LiveClient {
       }),
     )
 
-    const observable = events.pipe(
-      // Do our best to detect CORS errors first
-      catchError((err) => checkCors$.pipe(mergeMap(() => {
-        // If the CORS check succeeds, then we rethrow the original error
-        throw err
-      }))),
-      reconnectOnConnectionFailure(),
-      map((event) => {
-        if (event.type === 'message') {
-          const {data, ...rest} = event
-          // Splat data properties from the eventsource message onto the returned event
-          return {...rest, tags: (data as {tags: SyncTag[]}).tags} as LiveEventMessage
-        }
-        return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome | LiveEventGoAway
-      }),
-    ).pipe(
-      finalize(() => eventsCache.delete(key)),
-      shareReplayLatest({
-        predicate: (event) => event.type === 'welcome',
-      }),
-    )
+    const observable = events
+      .pipe(
+        reconnectOnConnectionFailure(),
+        mergeMap((event) => {
+          if (event.type === 'reconnect') {
+            // Check for CORS on reconnect events (which happen on 403s)
+            return checkCors.pipe(mergeMap(() => of(event)))
+          }
+          return of(event)
+        }),
+        catchError((err) => {
+          return checkCors.pipe(
+            mergeMap(() => {
+              // rethrow the original error if checkCors passed
+              throw err
+            }),
+          )
+        }),
+        map((event) => {
+          if (event.type === 'message') {
+            const {data, ...rest} = event
+            // Splat data properties from the eventsource message onto the returned event
+            return {...rest, tags: (data as {tags: SyncTag[]}).tags} as LiveEventMessage
+          }
+          return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome | LiveEventGoAway
+        }),
+      )
+      .pipe(
+        finalize(() => eventsCache.delete(key)),
+        shareReplayLatest({
+          predicate: (event) => event.type === 'welcome',
+        }),
+      )
     eventsCache.set(key, observable)
     return observable
   }

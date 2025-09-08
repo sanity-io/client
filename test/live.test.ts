@@ -203,7 +203,6 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
     test('handles CORS errors', async () => {
       expect.assertions(3)
-
       const restoreFetch = global.fetch
 
       global.fetch = async (info, init) => {
@@ -216,6 +215,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const {default: nock} = await import('nock')
 
+      // The OPTIONS request is done with `global.fetch`, and so nock can't intercept it.
       server.use(
         http.options(
           'https://abc123.api.sanity.io/vX/data/live/events/no-cors',
@@ -256,6 +256,39 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       const event = await firstValueFrom(client2.live.events().pipe(catchError((err) => of(err))))
       expect(event.type).toBe('welcome')
       global.fetch = restoreFetch
+    })
+
+    test('handles non-CORS reconnect errors correctly', async () => {
+      expect.assertions(1)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.options(
+          'https://abc123.api.sanity.io/vX/data/live/events/error-dataset',
+          () =>
+            new HttpResponse(null, {
+              status: 204,
+              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
+            }),
+        ),
+      )
+
+      // Simulate 500 server error (not CORS)
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/error-dataset')
+        .reply(500, 'Internal Server Error')
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'error-dataset',
+        useCdn: false,
+        apiVersion: 'X',
+      })
+
+      // Since CORS check passes, should get reconnect event (not CorsOriginError)
+      const event = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
+      expect(event.type).toBe('reconnect')
     })
 
     test('can immediately unsubscribe, does not connect to server', async () => {
