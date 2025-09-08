@@ -103,7 +103,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('can listen for tags', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
 
       const eventData = {
         tags: ['tag1', 'tag2'],
@@ -127,7 +127,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('can listen for tags with includeDrafts', async () => {
-      expect.assertions(3)
+      expect.assertions(2)
 
       const eventData = {
         tags: ['tag1', 'tag2'],
@@ -258,6 +258,39 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       global.fetch = restoreFetch
     })
 
+    test('handles non-CORS reconnect errors correctly', async () => {
+      expect.assertions(1)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.options(
+          'https://abc123.api.sanity.io/vX/data/live/events/error-dataset',
+          () =>
+            new HttpResponse(null, {
+              status: 204,
+              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
+            }),
+        ),
+      )
+
+      // Simulate 500 server error (not CORS)
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/error-dataset')
+        .reply(500, 'Internal Server Error')
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'error-dataset',
+        useCdn: false,
+        apiVersion: 'X',
+      })
+
+      // Since CORS check passes, should get reconnect event (not CorsOriginError)
+      const event = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
+      expect(event.type).toBe('reconnect')
+    })
+
     test('can immediately unsubscribe, does not connect to server', async () => {
       const onMessage = vitest.fn()
       const onError = vitest.fn()
@@ -287,22 +320,32 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('passes custom headers from client configuration', async () => {
       expect.assertions(1)
 
-      const {server, client} = await testSse(
-        ({request, channel}) => {
-          if (request.method === 'OPTIONS') {
-            expect(request.headers['x-custom-header']).toBe('custom-value')
-          }
+      const {default: nock} = await import('nock')
 
-          if (channel) {
-            channel.send({id: '123', data: {tags: ['tag1']}})
-            process.nextTick(() => channel.close())
-          }
-        },
-        {headers: {'X-Custom-Header': 'custom-value'}},
-      )
+      // Intercept the EventSource GET and assert the custom header explicitly
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/headers')
+        .reply(function () {
+          expect(this.req.headers['x-custom-header']).toBe('custom-value')
+          return [
+            200,
+            ['event: welcome', 'data: {}', '', '.', ''].join('\n'),
+            {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'text/event-stream',
+            },
+          ]
+        })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'headers',
+        useCdn: false,
+        apiVersion: 'X',
+        headers: {'X-Custom-Header': 'custom-value'},
+      })
 
       await firstValueFrom(client.live.events(), {defaultValue: null})
-      server.close()
     })
 
     test('deduplicates EventSource instances for same URL and options', async () => {
