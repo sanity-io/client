@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.11.1](https://github.com/sanity-io/client/compare/v7.11.0...v7.11.1) (2025-09-08)
+
+
+### Bug Fixes
+
+* move extra options check after first connect attempt ([#1136](https://github.com/sanity-io/client/issues/1136)) ([fa8a040](https://github.com/sanity-io/client/commit/fa8a0401a8b166aba067836425dc22282fac6fb9))
+
 ## [7.11.0](https://github.com/sanity-io/client/compare/v7.10.0...v7.11.0) (2025-09-02)
 
 
