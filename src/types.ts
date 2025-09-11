@@ -622,6 +622,7 @@ export type ReleaseAction =
   | ScheduleReleaseAction
   | UnscheduleReleaseAction
   | DeleteReleaseAction
+  | ImportReleaseAction
 
 /** @public */
 export type VersionAction =
@@ -641,6 +642,15 @@ export type Action =
   | UnpublishAction
   | VersionAction
   | ReleaseAction
+
+/** @public */
+export interface ImportReleaseAction {
+  actionType: 'sanity.action.release.import'
+  attributes: IdentifiedSanityDocumentStub
+  document: IdentifiedSanityDocumentStub
+  releaseId: string
+  ifExists: 'fail' | 'ignore' | 'replace'
+}
 
 /**
  * Creates a new release under the given id, with metadata.
