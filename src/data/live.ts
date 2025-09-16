@@ -13,7 +13,6 @@ import type {
   SyncTag,
 } from '../types'
 import {shareReplayLatest} from '../util/shareReplayLatest'
-import * as validate from '../validators'
 import {_getDataUrl} from './dataMethods'
 import {connectEventSource} from './eventsource'
 import {eventSourcePolyfill} from './eventsourcePolyfill'
@@ -45,7 +44,6 @@ export class LiveClient {
      */
     tag?: string
   } = {}): Observable<LiveEvent> {
-    validate.resourceGuard('live', this.#client.config())
     const {
       projectId,
       apiVersion: _apiVersion,
