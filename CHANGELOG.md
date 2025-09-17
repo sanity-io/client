@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.11.2](https://github.com/sanity-io/client/compare/v7.11.1...v7.11.2) (2025-09-15)
+
+
+### Bug Fixes
+
+* **types:** add import release action type ([#1138](https://github.com/sanity-io/client/issues/1138)) ([d7aeae7](https://github.com/sanity-io/client/commit/d7aeae7c6e60b40f9071f89b661e91478cfa78f6))
+
 ## [7.11.1](https://github.com/sanity-io/client/compare/v7.11.0...v7.11.1) (2025-09-08)
 
 
