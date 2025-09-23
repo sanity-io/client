@@ -53,6 +53,12 @@ export type ClientPerspective =
   | 'raw'
   | StackablePerspective[]
 
+/** @public */
+export interface DecideParameters {
+  audience: string | string[]
+  [key: string]: unknown
+}
+
 type ClientConfigResource =
   | {
       type: 'canvas'
@@ -89,6 +95,12 @@ export interface ClientConfig {
    * @defaultValue 'published'
    */
   perspective?: ClientPerspective
+
+  /**
+   * Parameters to pass to Sanity Decide for personalisation
+   */
+  decideParameters?: DecideParameters
+
   apiHost?: string
 
   /**
@@ -396,6 +408,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   returnQuery?: boolean
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
+  decideParameters?: DecideParameters
   lastLiveEventId?: string
   cacheMode?: 'noStale'
 }
@@ -552,6 +565,8 @@ export interface QueryParams {
   body?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   cache?: 'next' extends keyof RequestInit ? never : any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  decideParameters?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   filterResponse?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
@@ -1231,6 +1246,7 @@ export interface ListenOptions {
 /** @public */
 export interface ResponseQueryOptions extends RequestOptions {
   perspective?: ClientPerspective
+  decideParameters?: DecideParameters
   resultSourceMap?: boolean | 'withKeyArraySelector'
   returnQuery?: boolean
   useCdn?: boolean

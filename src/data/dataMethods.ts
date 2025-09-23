@@ -44,6 +44,7 @@ import {
   printCreateVersionWithBaseIdWarning,
   printPreviewDraftsDeprecationWarning,
 } from '../warnings'
+import {processDecideFields} from './decideResponseProcessor'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
@@ -97,6 +98,15 @@ export function _fetch<R, Q>(
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
 
+  // Helper function to apply decide processing to response data
+  const processDecideResponse = (response: Any): Any => {
+    if (options.decideParameters && options.decideParameters.audience) {
+      const processedData = processDecideFields(response, options.decideParameters)
+      return processedData
+    }
+    return response
+  }
+
   const {cache, next, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
@@ -129,11 +139,12 @@ export function _fetch<R, Q>(
             (typeof import('../stega/stegaEncodeSourceMap'))['stegaEncodeSourceMap'],
           ]) => {
             const result = stegaEncodeSourceMap(res.result, res.resultSourceMap, stega)
-            return mapResponse({...res, result})
+            const mappedResponse = mapResponse({...res, result})
+            return processDecideResponse(mappedResponse)
           },
         ),
       )
-    : $request.pipe(map(mapResponse))
+    : $request.pipe(map(mapResponse), map(processDecideResponse))
 }
 
 /** @internal */
@@ -504,6 +515,7 @@ export function _dataRequest(
     tag,
     returnQuery,
     perspective: options.perspective,
+    decideParameters: options.decideParameters,
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     cacheMode: cacheMode,
@@ -643,6 +655,23 @@ export function _requestObservable<R>(
       ) {
         useCdn = false
         printCdnPreviewDraftsWarning()
+      }
+    }
+
+    // Process decideParameters
+    const decideParametersOption = options.decideParameters || config.decideParameters
+    if (decideParametersOption && typeof decideParametersOption === 'object') {
+      // Add decide parameters to query string
+      options.query = {
+        ...options.query,
+        ...Object.keys(decideParametersOption).reduce(
+          (acc, key) => {
+            // Prefix decide parameters to avoid conflicts
+            acc[`decide.${key}`] = decideParametersOption[key]
+            return acc
+          },
+          {} as Record<string, unknown>,
+        ),
       }
     }
 
