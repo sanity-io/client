@@ -50,6 +50,11 @@ describe('decideResponseProcessor', () => {
       expect(resolveDecideField(decideField, {audience: ''})).toBe('default name')
     })
 
+    test('should return default when no parameters provided', () => {
+      expect(resolveDecideField(decideField, undefined)).toBe('default name')
+      expect(resolveDecideField(decideField)).toBe('default name')
+    })
+
     test('should return first matching condition when multiple matches exist', () => {
       const fieldWithDuplicates: DecideField = {
         default: 'default',
@@ -62,8 +67,12 @@ describe('decideResponseProcessor', () => {
     })
 
     test('should support array audiences', () => {
-      expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-a']})).toBe('name for audience a')
-      expect(resolveDecideField(decideField, {audience: ['aud-b', 'aud-c']})).toBe('name for audience b')
+      expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-a']})).toBe(
+        'name for audience a',
+      )
+      expect(resolveDecideField(decideField, {audience: ['aud-b', 'aud-c']})).toBe(
+        'name for audience b',
+      )
     })
 
     test('should return default when no audience in array matches', () => {
@@ -171,12 +180,16 @@ describe('decideResponseProcessor', () => {
       expect(result).toEqual({decideName: 'special'})
     })
 
-    test('should return original data when no audience provided', () => {
-      const input = {decideName: {default: 'default', conditions: []}}
+    test('should resolve defaults when no audience provided', () => {
+      const input = {
+        decideName: {default: 'default', conditions: [{audience: 'aud-a', value: 'special'}]},
+      }
 
-      expect(processDecideFields(input, {audience: ''})).toBe(input)
-      expect(processDecideFields(input, null as any)).toBe(input)
-      expect(processDecideFields(input, undefined as any)).toBe(input)
+      expect(processDecideFields(input, {audience: ''})).toEqual({decideName: 'default'})
+      expect(processDecideFields(input, {audience: []})).toEqual({decideName: 'default'})
+      expect(processDecideFields(input, null as any)).toEqual({decideName: 'default'})
+      expect(processDecideFields(input, undefined as any)).toEqual({decideName: 'default'})
+      expect(processDecideFields(input)).toEqual({decideName: 'default'})
     })
 
     test('should handle processing errors gracefully', () => {
@@ -200,6 +213,177 @@ describe('decideResponseProcessor', () => {
         },
       })
     })
+  })
+
+  test('should handle different response structures with decide fields', () => {
+    // Test 1: Direct array response structure
+    const arrayResponse = [
+      {
+        _id: 'doc1',
+        price: {
+          default: 100,
+          conditions: [{audience: 'premium', value: 200}],
+        },
+      },
+      {
+        _id: 'doc2',
+        price: {
+          default: 150,
+          conditions: [{audience: 'premium', value: 300}],
+        },
+      },
+    ]
+
+    const processedArray = processDecideFields(arrayResponse, {audience: 'premium'}) as any
+    expect(processedArray[0].price).toBe(200)
+    expect(processedArray[1].price).toBe(300)
+
+    // Test 2: {documents: [...]} response structure (common for queries)
+    const documentsResponse = {
+      documents: [
+        {
+          _id: 'doc1',
+          title: {
+            default: 'Default Title',
+            conditions: [{audience: 'premium', value: 'Premium Title'}],
+          },
+        },
+      ],
+      omitted: [],
+    }
+
+    const processedDocuments = processDecideFields(documentsResponse, {audience: 'premium'}) as any
+    expect(processedDocuments.documents[0].title).toBe('Premium Title')
+
+    // Test 3: {result: [...]} response structure (if filterResponse is false)
+    const resultResponse = {
+      result: [
+        {
+          _id: 'doc1',
+          name: {
+            default: 'Default Name',
+            conditions: [{audience: 'premium', value: 'Premium Name'}],
+          },
+        },
+      ],
+      ms: 45,
+      query: '*[_type == "document"]',
+    }
+
+    const processedResult = processDecideFields(resultResponse, {audience: 'premium'}) as any
+    expect(processedResult.result[0].name).toBe('Premium Name')
+    expect(processedResult.ms).toBe(45) // Non-decide fields should remain unchanged
+
+    // Test 4: Single document response
+    const singleDocResponse = {
+      _id: 'doc1',
+      price: {
+        default: 100,
+        conditions: [{audience: 'premium', value: 200}],
+      },
+    }
+
+    const processedSingle = processDecideFields(singleDocResponse, {audience: 'premium'}) as any
+    expect(processedSingle.price).toBe(200)
+
+    // Test 5: No audience - should resolve to defaults in all structures
+    const processedArrayDefault = processDecideFields(arrayResponse, undefined) as any
+    expect(processedArrayDefault[0].price).toBe(100)
+    expect(processedArrayDefault[1].price).toBe(150)
+
+    const processedDocumentsDefault = processDecideFields(documentsResponse, undefined) as any
+    expect(processedDocumentsDefault.documents[0].title).toBe('Default Title')
+  })
+
+  test('should handle the exact structure from user example', () => {
+    // This is the exact structure the user provided - it should be processed
+    const userResponse = {
+      result: [
+        {
+          brand: {
+            logo: {
+              alt: 'a nike shoe is surrounded by colorful paint splashes on a black background .',
+              asset: {
+                _dataset: 'cross-dataset-references',
+                _projectId: 'hiomol4a',
+                _ref: 'image-03e9840b591f21ffcda034572b1ab80cd26b1e77-225x225-png',
+                _type: 'reference',
+              },
+              crop: {
+                _type: 'sanity.imageCrop',
+                bottom: 0.19111111111111112,
+                left: 0,
+                right: 0,
+                top: 0,
+              },
+              hotspot: {
+                _type: 'sanity.imageHotspot',
+                height: 0.6622222222222228,
+                width: 0.9200000000000005,
+                x: 0.508888888888889,
+                y: 0.366666666666667,
+              },
+            },
+            name: 'Nike',
+            slug: {
+              _type: 'slug',
+              current: 'nike',
+            },
+          },
+          media: {
+            alt: 'a pair of red and white puma shoes on a white background',
+            asset: {
+              _ref: 'image-30b82c6709c0f21268b679126abea51953ee95e0-2000x2000-png',
+              _type: 'reference',
+            },
+            crop: {
+              _type: 'sanity.imageCrop',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              top: 0,
+            },
+            hotspot: {
+              _type: 'sanity.imageHotspot',
+              height: 0.3284313725490209,
+              width: 0.7009803921568629,
+              x: 0.4950980392156863,
+              y: 0.5514705882352939,
+            },
+          },
+          price: {
+            conditions: [
+              {
+                _key: 'c4bf584e7d70',
+                _type: 'condition',
+                audience: 'aud-b',
+                value: 987,
+              },
+            ],
+            default: 12,
+          },
+          slug: {
+            _type: 'slug',
+            current: 'lunar-glide-moon-walking-sneakers',
+          },
+          title: 'Lunar Glide: Moon [Draft] [decide]',
+        },
+      ],
+    }
+
+    // Test with matching audience - should resolve to conditional value
+    const processedWithAudience = processDecideFields(userResponse, {audience: 'aud-b'}) as any
+    expect(processedWithAudience.result[0].price).toBe(987)
+
+    // Test with no audience - should resolve to default value
+    const processedWithoutAudience = processDecideFields(userResponse) as any
+    expect(processedWithoutAudience.result[0].price).toBe(12)
+
+    // Test with non-matching audience - should resolve to default value
+    const processedWithOtherAudience = processDecideFields(userResponse, {
+      audience: 'some-other-audience',
+    }) as any
+    expect(processedWithOtherAudience.result[0].price).toBe(12)
   })
 
   test('should handle deeply nested decide fields in complex document structures', () => {

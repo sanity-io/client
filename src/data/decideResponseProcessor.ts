@@ -22,14 +22,15 @@ export interface DecideField {
  * @internal
  */
 export function isDecideField(value: unknown): value is DecideField {
-  return (
+  const isValid =
     value != null &&
     typeof value === 'object' &&
     !Array.isArray(value) &&
     'default' in value &&
     'conditions' in value &&
-    Array.isArray(value.conditions)
-  )
+    Array.isArray((value as any).conditions)
+
+  return isValid
 }
 
 /**
@@ -38,15 +39,22 @@ export function isDecideField(value: unknown): value is DecideField {
  */
 export function resolveDecideField(
   field: DecideField,
-  decideParameters: DecideParameters,
+  decideParameters?: DecideParameters,
 ): unknown {
-  const audience = decideParameters.audience
+  const audience = decideParameters?.audience
+
+  // If no audience defined or empty, return default
+  if (!audience || (Array.isArray(audience) && audience.length === 0) || audience === '') {
+    return field.default
+  }
 
   // Find matching condition for the audience
   const matchingCondition = field.conditions.find((condition) => {
-    return Array.isArray(audience)
+    const isMatch = Array.isArray(audience)
       ? audience.includes(condition.audience)
       : condition.audience === audience
+
+    return isMatch
   })
 
   // Return matching value or fall back to default
@@ -59,7 +67,7 @@ export function resolveDecideField(
  */
 export function processObjectRecursively(
   obj: unknown,
-  decideParameters: DecideParameters,
+  decideParameters?: DecideParameters,
 ): unknown {
   // Handle null, undefined, or primitive values
   if (obj === null || obj === undefined || typeof obj !== 'object') {
@@ -73,18 +81,18 @@ export function processObjectRecursively(
 
   // Handle objects using reduce
   return Object.entries(obj).reduce<Record<string, unknown>>((processed, [key, value]) => {
+    const isDecide = isDecideField(value)
+
     try {
-      if (isDecideField(value)) {
+      if (isDecide) {
         // Resolve decide field
         processed[key] = resolveDecideField(value, decideParameters)
       } else {
         // Recursively process nested objects/arrays
         processed[key] = processObjectRecursively(value, decideParameters)
       }
-    } catch (error) {
+    } catch {
       // On error, preserve original value and continue
-      // eslint-disable-next-line no-console
-      console.warn(`Failed to process decide field '${key}':`, error)
       processed[key] = value
     }
     return processed
@@ -95,17 +103,11 @@ export function processObjectRecursively(
  * Main function to process decide fields in API response data
  * @internal
  */
-export function processDecideFields(data: unknown, decideParameters: DecideParameters): unknown {
-  if (!decideParameters || !decideParameters.audience) {
-    return data
-  }
-
+export function processDecideFields(data: unknown, decideParameters?: DecideParameters): unknown {
   try {
-    return processObjectRecursively(data, decideParameters)
-  } catch (error) {
-    // On any processing error, return original data
-    // eslint-disable-next-line no-console
-    console.warn('Failed to process decide fields:', error)
+    const result = processObjectRecursively(data, decideParameters)
+    return result
+  } catch {
     return data
   }
 }

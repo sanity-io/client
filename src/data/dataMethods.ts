@@ -98,15 +98,6 @@ export function _fetch<R, Q>(
   const mapResponse =
     options.filterResponse === false ? (res: Any) => res : (res: Any) => res.result
 
-  // Helper function to apply decide processing to response data
-  const processDecideResponse = (response: Any): Any => {
-    if (options.decideParameters && options.decideParameters.audience) {
-      const processedData = processDecideFields(response, options.decideParameters)
-      return processedData
-    }
-    return response
-  }
-
   const {cache, next, ...opts} = {
     // Opt out of setting a `signal` on an internal `fetch` if one isn't provided.
     // This is necessary in React Server Components to avoid opting out of Request Memoization.
@@ -138,13 +129,22 @@ export function _fetch<R, Q>(
             Any,
             (typeof import('../stega/stegaEncodeSourceMap'))['stegaEncodeSourceMap'],
           ]) => {
-            const result = stegaEncodeSourceMap(res.result, res.resultSourceMap, stega)
+            // Process decide fields BEFORE stega encoding to avoid processing source map references
+            const processedResult = processDecideFields(res.result, options.decideParameters)
+            const result = stegaEncodeSourceMap(processedResult, res.resultSourceMap, stega)
             const mappedResponse = mapResponse({...res, result})
-            return processDecideResponse(mappedResponse)
+            return mappedResponse
           },
         ),
       )
-    : $request.pipe(map(mapResponse), map(processDecideResponse))
+    : $request.pipe(
+        map((res) => {
+          // Process decide fields on res.result (consistent with stega path)
+          const processedResult = processDecideFields(res.result, options.decideParameters)
+          const mappedResponse = mapResponse({...res, result: processedResult})
+          return mappedResponse
+        }),
+      )
 }
 
 /** @internal */
@@ -658,23 +658,6 @@ export function _requestObservable<R>(
       }
     }
 
-    // Process decideParameters
-    const decideParametersOption = options.decideParameters || config.decideParameters
-    if (decideParametersOption && typeof decideParametersOption === 'object') {
-      // Add decide parameters to query string
-      options.query = {
-        ...options.query,
-        ...Object.keys(decideParametersOption).reduce(
-          (acc, key) => {
-            // Prefix decide parameters to avoid conflicts
-            acc[`decide.${key}`] = decideParametersOption[key]
-            return acc
-          },
-          {} as Record<string, unknown>,
-        ),
-      }
-    }
-
     if (options.lastLiveEventId) {
       options.query = {...options.query, lastLiveEventId: options.lastLiveEventId}
     }
@@ -688,12 +671,11 @@ export function _requestObservable<R>(
     }
   }
 
-  const reqOptions = requestOptions(
-    config,
-    Object.assign({}, options, {
-      url: _getUrl(client, uri, useCdn),
-    }),
-  ) as RequestOptions
+  const finalOptions = Object.assign({}, options, {
+    url: _getUrl(client, uri, useCdn),
+  })
+
+  const reqOptions = requestOptions(config, finalOptions) as RequestOptions
 
   const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
     httpRequest(reqOptions, config.requester!).subscribe(subscriber),
