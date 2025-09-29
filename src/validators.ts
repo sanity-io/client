@@ -92,7 +92,7 @@ export const hasDataset = (config: InitializedClientConfig): string => {
 export const requestTag = (tag: string) => {
   if (typeof tag !== 'string' || !/^[a-z0-9._-]{1,75}$/i.test(tag)) {
     throw new Error(
-      `Tag can only contain alphanumeric characters, underscores, dashes and dots, and be between one and 75 characters long.`,
+      `Tag ${tag} can only contain alphanumeric characters, underscores, dashes and dots, and be between one and 75 characters long.`,
     )
   }
 

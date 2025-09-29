@@ -44,6 +44,7 @@ import {
   printCreateVersionWithBaseIdWarning,
   printPreviewDraftsDeprecationWarning,
 } from '../warnings'
+import {processDecideFields} from './decideResponseProcessor'
 import {encodeQueryString} from './encodeQueryString'
 import {ObservablePatch, Patch} from './patch'
 import {ObservableTransaction, Transaction} from './transaction'
@@ -128,12 +129,22 @@ export function _fetch<R, Q>(
             Any,
             (typeof import('../stega/stegaEncodeSourceMap'))['stegaEncodeSourceMap'],
           ]) => {
-            const result = stegaEncodeSourceMap(res.result, res.resultSourceMap, stega)
-            return mapResponse({...res, result})
+            // Process decide fields BEFORE stega encoding to avoid processing source map references
+            const processedResult = processDecideFields(res.result, options.decideParameters)
+            const result = stegaEncodeSourceMap(processedResult, res.resultSourceMap, stega)
+            const mappedResponse = mapResponse({...res, result})
+            return mappedResponse
           },
         ),
       )
-    : $request.pipe(map(mapResponse))
+    : $request.pipe(
+        map((res) => {
+          // Process decide fields on res.result (consistent with stega path)
+          const processedResult = processDecideFields(res.result, options.decideParameters)
+          const mappedResponse = mapResponse({...res, result: processedResult})
+          return mappedResponse
+        }),
+      )
 }
 
 /** @internal */
@@ -504,6 +515,7 @@ export function _dataRequest(
     tag,
     returnQuery,
     perspective: options.perspective,
+    decideParameters: options.decideParameters,
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     cacheMode: cacheMode,
@@ -659,12 +671,11 @@ export function _requestObservable<R>(
     }
   }
 
-  const reqOptions = requestOptions(
-    config,
-    Object.assign({}, options, {
-      url: _getUrl(client, uri, useCdn),
-    }),
-  ) as RequestOptions
+  const finalOptions = Object.assign({}, options, {
+    url: _getUrl(client, uri, useCdn),
+  })
+
+  const reqOptions = requestOptions(config, finalOptions) as RequestOptions
 
   const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
     httpRequest(reqOptions, config.requester!).subscribe(subscriber),
