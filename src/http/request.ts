@@ -112,7 +112,7 @@ function shouldRetry(err: any, attempt: number, options: any) {
  */
 function lineage() {
   const lineageHeaders: Record<string, unknown> = {}
-  
+
   if (typeof globalThis !== 'undefined' && globalThis.process?.env?.X_SANITY_LINEAGE) {
     lineageHeaders['X-Sanity-Lineage'] = globalThis.process.env.X_SANITY_LINEAGE
   }
