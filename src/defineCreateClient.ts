@@ -49,6 +49,7 @@ export default function defineCreateClientExports<
   const createClient = (config: ClientConfigType) => {
     const clientRequester = defineHttpRequest(envMiddleware, {
       ignoreWarnings: config.ignoreWarnings,
+      lineage: config.lineage
     })
     return new ClassConstructor(
       (options, requester) =>
