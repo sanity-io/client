@@ -1,5 +1,5 @@
 import {getIt, type HttpContext, type Middlewares, type Requester} from 'get-it'
-import {headers, jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/middleware'
+import {jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/middleware'
 import {Observable} from 'rxjs'
 
 import type {Any} from '../types'
@@ -60,7 +60,6 @@ function printWarnings(config: {ignoreWarnings?: string | RegExp | Array<string 
 
 type HttpRequestConfig = {
   ignoreWarnings?: string | RegExp | Array<string | RegExp>
-  lineage?: string
 }
 
 /** @internal */
@@ -71,7 +70,6 @@ export function defineHttpRequest(
   return getIt([
     retry({shouldRetry}),
     ...envMiddleware,
-    lineage(config.lineage),
     printWarnings(config),
     jsonRequest(),
     jsonResponse(),
@@ -109,19 +107,4 @@ function shouldRetry(err: any, attempt: number, options: any) {
   if ((isSafe || isQuery) && isRetriableResponse) return true
 
   return retry.shouldRetry(err, attempt, options)
-}
-
-/**
- * This middleware will add the X-Sanity-Lineage header when it is found in the environment.
- * @returns headers middleware that will add the lineage header to requests
- */
-function lineage(defaultLineage?: string) {
-  const lineageHeaders: Record<string, unknown> = {}
-
-  if (typeof globalThis !== 'undefined' && globalThis.process?.env?.X_SANITY_LINEAGE) {
-    lineageHeaders['X-Sanity-Lineage'] = globalThis.process.env.X_SANITY_LINEAGE
-  } else if (defaultLineage) {
-    lineageHeaders['X-Sanity-Lineage'] = defaultLineage
-  }
-  return headers(lineageHeaders, {override: true})
 }
