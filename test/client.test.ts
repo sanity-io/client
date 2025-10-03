@@ -6033,4 +6033,61 @@ describe('client', async () => {
       }
     })
   })
+
+  describe.skipIf(!isNode)('lineage', () => {
+    test('adds lineage header through client constructor', async () => {
+      const client = getClient({lineage: 'my-lineage-id'})
+      nock(projectHost(), {
+        reqheaders: {
+          'x-sanity-lineage': 'my-lineage-id',
+        },
+      })
+        .get('/v1/data/query/foo?query=*&returnQuery=false')
+        .reply(200, {result: []})
+
+      await expect(client.fetch('*')).resolves.not.toThrow()
+    })
+
+    test('adds lineage header through environment variable', async () => {
+      vi.stubEnv('X_SANITY_LINEAGE', 'env-lineage-id')
+
+      const client = getClient()
+
+      const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
+      const expectedBody = {mutations: [{createOrReplace: doc}]}
+      nock(projectHost(), {
+        reqheaders: {
+          'x-sanity-lineage': 'env-lineage-id',
+        },
+      })
+        .post(
+          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
+          expectedBody,
+        )
+        .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
+
+      await expect(client.createOrReplace(doc)).resolves.not.toThrow()
+    })
+
+    test('environment variable overrides client constructor option', async () => {
+      vi.stubEnv('X_SANITY_LINEAGE', 'env-lineage-id')
+
+      const client = getClient({lineage: 'client-lineage-id'})
+
+      const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
+      const expectedBody = {mutations: [{createOrReplace: doc}]}
+      nock(projectHost(), {
+        reqheaders: {
+          'x-sanity-lineage': 'env-lineage-id',
+        },
+      })
+        .post(
+          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
+          expectedBody,
+        )
+        .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
+
+      await expect(client.createOrReplace(doc)).resolves.not.toThrow()
+    })
+  })
 })

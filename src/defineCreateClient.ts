@@ -49,7 +49,6 @@ export default function defineCreateClientExports<
   const createClient = (config: ClientConfigType) => {
     const clientRequester = defineHttpRequest(envMiddleware, {
       ignoreWarnings: config.ignoreWarnings,
-      lineage: config.lineage,
     })
     return new ClassConstructor(
       (options, requester) =>
@@ -57,6 +56,7 @@ export default function defineCreateClientExports<
           maxRedirects: 0,
           maxRetries: config.maxRetries,
           retryDelay: config.retryDelay,
+          lineage: config.lineage,
           ...options,
         } as Any),
       config,
