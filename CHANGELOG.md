@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.12.0](https://github.com/sanity-io/client/compare/v7.11.2...v7.12.0) (2025-10-03)
+
+
+### Features
+
+* add X-Sanity-Lineage header ([#1143](https://github.com/sanity-io/client/issues/1143)) ([44c3006](https://github.com/sanity-io/client/commit/44c3006a1a3325a56010687d9b2fd0b2b84d4bc6))
+
 ## [7.11.2](https://github.com/sanity-io/client/compare/v7.11.1...v7.11.2) (2025-09-15)
 
 
