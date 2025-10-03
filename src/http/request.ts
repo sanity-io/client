@@ -58,10 +58,14 @@ function printWarnings(config: {ignoreWarnings?: string | RegExp | Array<string 
   }
 }
 
+type HttpRequestConfig = {
+  ignoreWarnings?: string | RegExp | Array<string | RegExp>
+}
+
 /** @internal */
 export function defineHttpRequest(
   envMiddleware: Middlewares,
-  config: {ignoreWarnings?: string | RegExp | Array<string | RegExp>} = {},
+  config: HttpRequestConfig = {},
 ): Requester {
   return getIt([
     retry({shouldRetry}),

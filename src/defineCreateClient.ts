@@ -56,6 +56,7 @@ export default function defineCreateClientExports<
           maxRedirects: 0,
           maxRetries: config.maxRetries,
           retryDelay: config.retryDelay,
+          lineage: config.lineage,
           ...options,
         } as Any),
       config,

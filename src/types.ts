@@ -179,6 +179,10 @@ export interface ClientConfig {
    * Options for how, if enabled, Content Source Maps are encoded into query results using steganography
    */
   stega?: StegaConfig | boolean
+  /**
+   * Lineage token for recursion control
+   */
+  lineage?: string
 }
 
 /** @public */
