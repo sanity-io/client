@@ -10,10 +10,30 @@ import {
 
 describe('decideResponseProcessor', () => {
   describe('isDecideField', () => {
-    test('should identify valid decide fields', () => {
+    test('should identify valid decide raw field', () => {
+      const validField = {_type: 'sanity.decideField', default: 'default name'}
+      expect(isDecideField(validField)).toBe(true)
+    })
+    test('should identify more complex decide raw field', () => {
       const validField = {
-        default: 'default value',
-        conditions: [{audience: 'aud-a', value: 'value a'}],
+        _type: 'sanity.decideField',
+        conditions: [
+          {
+            _key: 'e9321da8ef37',
+            _type: 'condition',
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'gender',
+                targetValue: 'male',
+              },
+            ],
+            value: 'hello male',
+          },
+        ],
+        default: 'default name',
       }
       expect(isDecideField(validField)).toBe(true)
     })
@@ -33,21 +53,50 @@ describe('decideResponseProcessor', () => {
 
   describe('resolveDecideField', () => {
     const decideField: DecideField = {
+      _type: 'sanity.decideField',
       default: 'default name',
       conditions: [
-        {audience: 'aud-a', value: 'name for audience a'},
-        {audience: 'aud-b', value: 'name for audience b'},
+        {
+          _key: 'c826626167fa',
+          _type: 'condition',
+          value: 'name for audience a',
+          anyOf: [
+            {
+              _key: '5e2778824236',
+              _type: 'rule',
+              operator: 'equals',
+              property: 'audience',
+              targetValue: 'aud-a',
+            },
+          ],
+        },
+        {
+          _key: 'c826626167fa',
+          _type: 'condition',
+          value: 'name for audience b',
+          anyOf: [
+            {
+              _key: '5e2778824236',
+              _type: 'rule',
+              operator: 'equals',
+              property: 'audience',
+              targetValue: 'aud-b',
+            },
+          ],
+        },
       ],
     }
 
     test('should return matching condition value', () => {
       expect(resolveDecideField(decideField, {audience: 'aud-a'})).toBe('name for audience a')
       expect(resolveDecideField(decideField, {audience: 'aud-b'})).toBe('name for audience b')
+      expect(resolveDecideField(decideField, {audience: 'aud-c'})).toBe('default name')
     })
 
     test('should return default when no match found', () => {
       expect(resolveDecideField(decideField, {audience: 'non-existent'})).toBe('default name')
       expect(resolveDecideField(decideField, {audience: ''})).toBe('default name')
+      expect(resolveDecideField(decideField)).toBe('default name')
     })
 
     test('should return default when no parameters provided', () => {
@@ -57,28 +106,55 @@ describe('decideResponseProcessor', () => {
 
     test('should return first matching condition when multiple matches exist', () => {
       const fieldWithDuplicates: DecideField = {
+        _type: 'sanity.decideField',
         default: 'default',
         conditions: [
-          {audience: 'aud-a', value: 'first match'},
-          {audience: 'aud-a', value: 'second match'},
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: 'first match',
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'audience',
+                targetValue: 'aud-a',
+              },
+            ],
+          },
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: 'second match',
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'audience',
+                targetValue: 'aud-a',
+              },
+            ],
+          },
         ],
       }
       expect(resolveDecideField(fieldWithDuplicates, {audience: 'aud-a'})).toBe('first match')
     })
 
-    test('should support array audiences', () => {
-      expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-a']})).toBe(
-        'name for audience a',
-      )
-      expect(resolveDecideField(decideField, {audience: ['aud-b', 'aud-c']})).toBe(
-        'name for audience b',
-      )
-    })
+    // test('should support array audiences', () => {
+    //   expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-a']})).toBe(
+    //     'name for audience a',
+    //   )
+    //   expect(resolveDecideField(decideField, {audience: ['aud-b', 'aud-c']})).toBe(
+    //     'name for audience b',
+    //   )
+    // })
 
-    test('should return default when no audience in array matches', () => {
-      expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-d']})).toBe('default name')
-      expect(resolveDecideField(decideField, {audience: []})).toBe('default name')
-    })
+    // test('should return default when no audience in array matches', () => {
+    //   expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-d']})).toBe('default name')
+    //   expect(resolveDecideField(decideField, {audience: []})).toBe('default name')
+    // })
   })
 
   describe('processObjectRecursively', () => {
@@ -86,16 +162,29 @@ describe('decideResponseProcessor', () => {
       const input = {
         regularField: 'unchanged',
         decideName: {
+          _type: 'sanity.decideField',
           default: 'default name',
-          conditions: [{audience: 'aud-a', value: 'special name'}],
-        },
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'special name',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'aud-a',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+            },
+          ],
+        } satisfies DecideField,
       }
 
       const result = processObjectRecursively(input, {audience: 'aud-a'})
-      expect(result).toEqual({
-        regularField: 'unchanged',
-        decideName: 'special name',
-      })
+      expect(result).toEqual({regularField: 'unchanged', decideName: 'special name'})
     })
 
     test('should process arrays of objects', () => {
@@ -103,16 +192,48 @@ describe('decideResponseProcessor', () => {
         {
           id: 1,
           decideName: {
+            _type: 'sanity.decideField',
             default: 'default 1',
-            conditions: [{audience: 'aud-a', value: 'special 1'}],
-          },
+            conditions: [
+              {
+                _type: 'condition',
+                _key: 'c826626167fa',
+                value: 'special 1',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'aud-a',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+              },
+            ],
+          } satisfies DecideField,
         },
         {
           id: 2,
           decideName: {
-            default: 'default 2',
-            conditions: [{audience: 'aud-a', value: 'special 2'}],
-          },
+            _type: 'sanity.decideField',
+            default: 'default 1',
+            conditions: [
+              {
+                _type: 'condition',
+                _key: 'c826626167fa',
+                value: 'special 2',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'aud-a',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+              },
+            ],
+          } satisfies DecideField,
         },
       ]
 
@@ -128,33 +249,57 @@ describe('decideResponseProcessor', () => {
         author: {
           name: 'John',
           decideName: {
+            _type: 'sanity.decideField',
             default: 'default author name',
-            conditions: [{audience: 'aud-a', value: 'special author name'}],
-          },
+            conditions: [
+              {
+                _type: 'condition',
+                _key: 'c826626167fa',
+                value: 'special author name',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'aud-a',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+              },
+            ],
+          } satisfies DecideField,
         },
         posts: [
           {
             title: 'Post 1',
             decideTitle: {
+              _type: 'sanity.decideField',
               default: 'default title',
-              conditions: [{audience: 'aud-a', value: 'special title'}],
-            },
+              conditions: [
+                {
+                  _type: 'condition',
+                  _key: 'c826626167fa',
+                  value: 'special title',
+                  anyOf: [
+                    {
+                      property: 'audience',
+                      operator: 'equals',
+                      targetValue: 'aud-a',
+                      _key: 'c826626167fa',
+                      _type: 'rule',
+                    },
+                  ],
+                },
+              ],
+            } satisfies DecideField,
           },
         ],
       }
 
       const result = processObjectRecursively(input, {audience: 'aud-a'})
       expect(result).toEqual({
-        author: {
-          name: 'John',
-          decideName: 'special author name',
-        },
-        posts: [
-          {
-            title: 'Post 1',
-            decideTitle: 'special title',
-          },
-        ],
+        author: {name: 'John', decideName: 'special author name'},
+        posts: [{title: 'Post 1', decideTitle: 'special title'}],
       })
     })
 
@@ -171,9 +316,25 @@ describe('decideResponseProcessor', () => {
     test('should process valid audience parameter', () => {
       const input = {
         decideName: {
+          _type: 'sanity.decideField',
           default: 'default',
-          conditions: [{audience: 'aud-a', value: 'special'}],
-        },
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'special',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'aud-a',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+            },
+          ],
+        } satisfies DecideField,
       }
 
       const result = processDecideFields(input, {audience: 'aud-a'})
@@ -182,11 +343,35 @@ describe('decideResponseProcessor', () => {
 
     test('should resolve defaults when no audience provided', () => {
       const input = {
-        decideName: {default: 'default', conditions: [{audience: 'aud-a', value: 'special'}]},
+        decideName: {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'special',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'aud-a',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+            },
+          ],
+        },
       }
 
       expect(processDecideFields(input, {audience: ''})).toEqual({decideName: 'default'})
+      // @ts-expect-error - we want to test that the function handles this case
       expect(processDecideFields(input, {audience: []})).toEqual({decideName: 'default'})
+      // @ts-expect-error - we want to test that the function handles this case
+      expect(processDecideFields(input, {audience: null})).toEqual({decideName: 'default'})
+      // @ts-expect-error - we want to test that the function handles this case
+      expect(processDecideFields(input, {audience: true})).toEqual({decideName: 'default'})
       expect(processDecideFields(input, null as any)).toEqual({decideName: 'default'})
       expect(processDecideFields(input, undefined as any)).toEqual({decideName: 'default'})
       expect(processDecideFields(input)).toEqual({decideName: 'default'})
@@ -221,16 +406,48 @@ describe('decideResponseProcessor', () => {
       {
         _id: 'doc1',
         price: {
+          _type: 'sanity.decideField',
           default: 100,
-          conditions: [{audience: 'premium', value: 200}],
-        },
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 200,
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'premium',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+            },
+          ],
+        } satisfies DecideField,
       },
       {
         _id: 'doc2',
         price: {
+          _type: 'sanity.decideField',
           default: 150,
-          conditions: [{audience: 'premium', value: 300}],
-        },
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 300,
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'premium',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+            },
+          ],
+        } satisfies DecideField,
       },
     ]
 
@@ -244,9 +461,25 @@ describe('decideResponseProcessor', () => {
         {
           _id: 'doc1',
           title: {
+            _type: 'sanity.decideField',
             default: 'Default Title',
-            conditions: [{audience: 'premium', value: 'Premium Title'}],
-          },
+            conditions: [
+              {
+                _key: 'c826626167fa',
+                _type: 'condition',
+                value: 'Premium Title',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'premium',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+              },
+            ],
+          } satisfies DecideField,
         },
       ],
       omitted: [],
@@ -261,9 +494,25 @@ describe('decideResponseProcessor', () => {
         {
           _id: 'doc1',
           name: {
+            _type: 'sanity.decideField',
             default: 'Default Name',
-            conditions: [{audience: 'premium', value: 'Premium Name'}],
-          },
+            conditions: [
+              {
+                _key: 'c826626167fa',
+                _type: 'condition',
+                value: 'Premium Name',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'premium',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+              },
+            ],
+          } satisfies DecideField,
         },
       ],
       ms: 45,
@@ -278,9 +527,25 @@ describe('decideResponseProcessor', () => {
     const singleDocResponse = {
       _id: 'doc1',
       price: {
+        _type: 'sanity.decideField',
         default: 100,
-        conditions: [{audience: 'premium', value: 200}],
-      },
+        conditions: [
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: 200,
+            anyOf: [
+              {
+                property: 'audience',
+                operator: 'equals',
+                targetValue: 'premium',
+                _key: 'c826626167fa',
+                _type: 'rule',
+              },
+            ],
+          },
+        ],
+      } satisfies DecideField,
     }
 
     const processedSingle = processDecideFields(singleDocResponse, {audience: 'premium'}) as any
@@ -325,10 +590,7 @@ describe('decideResponseProcessor', () => {
               },
             },
             name: 'Nike',
-            slug: {
-              _type: 'slug',
-              current: 'nike',
-            },
+            slug: {_type: 'slug', current: 'nike'},
           },
           media: {
             alt: 'a pair of red and white puma shoes on a white background',
@@ -336,13 +598,7 @@ describe('decideResponseProcessor', () => {
               _ref: 'image-30b82c6709c0f21268b679126abea51953ee95e0-2000x2000-png',
               _type: 'reference',
             },
-            crop: {
-              _type: 'sanity.imageCrop',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              top: 0,
-            },
+            crop: {_type: 'sanity.imageCrop', bottom: 0, left: 0, right: 0, top: 0},
             hotspot: {
               _type: 'sanity.imageHotspot',
               height: 0.3284313725490209,
@@ -352,20 +608,26 @@ describe('decideResponseProcessor', () => {
             },
           },
           price: {
+            _type: 'sanity.decideField',
             conditions: [
               {
                 _key: 'c4bf584e7d70',
                 _type: 'condition',
-                audience: 'aud-b',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'aud-b',
+                    _key: 'c4bf584e7d70',
+                    _type: 'rule',
+                  },
+                ],
                 value: 987,
               },
             ],
             default: 12,
-          },
-          slug: {
-            _type: 'slug',
-            current: 'lunar-glide-moon-walking-sneakers',
-          },
+          } satisfies DecideField,
+          slug: {_type: 'slug', current: 'lunar-glide-moon-walking-sneakers'},
           title: 'Lunar Glide: Moon [Draft] [decide]',
         },
       ],
@@ -391,81 +653,280 @@ describe('decideResponseProcessor', () => {
       _id: 'blog-post-123',
       _type: 'blogPost',
       decideTitle: {
+        _type: 'sanity.decideField',
         default: 'Default Blog Title',
         conditions: [
-          {audience: 'premium', value: 'Premium: Advanced Blog Insights'},
-          {audience: 'basic', value: 'Basic: Blog Tips'},
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            anyOf: [
+              {
+                property: 'audience',
+                operator: 'equals',
+                targetValue: 'premium',
+                _key: 'c826626167fa',
+                _type: 'rule',
+              },
+            ],
+            value: 'Premium: Advanced Blog Insights',
+          },
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            anyOf: [
+              {
+                property: 'audience',
+                operator: 'equals',
+                targetValue: 'basic',
+                _key: 'c826626167fa',
+                _type: 'rule',
+              },
+            ],
+            value: 'Basic: Blog Tips',
+          },
         ],
-      },
+      } satisfies DecideField,
       author: {
         name: 'John Doe',
         decideBio: {
+          _type: 'sanity.decideField',
           default: 'A writer',
           conditions: [
-            {audience: 'premium', value: 'Senior Technology Writer with 10+ years experience'},
-            {audience: 'basic', value: 'Tech Writer'},
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'premium',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+              value: 'Senior Technology Writer with 10+ years experience',
+            },
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'basic',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+              value: 'Tech Writer',
+            },
           ],
-        },
+        } satisfies DecideField,
         profile: {
           decidePicture: {
+            _type: 'sanity.decideField',
             default: '/images/default-avatar.jpg',
             conditions: [
-              {audience: 'premium', value: '/images/john-professional.jpg'},
-              {audience: 'basic', value: '/images/john-casual.jpg'},
+              {
+                _key: 'c826626167fa',
+                _type: 'condition',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'premium',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+                value: '/images/john-professional.jpg',
+              },
+              {
+                _key: 'c826626167fa',
+                _type: 'condition',
+                anyOf: [
+                  {
+                    property: 'audience',
+                    operator: 'equals',
+                    targetValue: 'basic',
+                    _key: 'c826626167fa',
+                    _type: 'rule',
+                  },
+                ],
+                value: '/images/john-casual.jpg',
+              },
             ],
-          },
+          } satisfies DecideField,
           social: {
             twitter: '@johndoe',
             decideLinkedIn: {
+              _type: 'sanity.decideField',
               default: null,
-              conditions: [{audience: 'premium', value: 'https://linkedin.com/in/johndoe'}],
-            },
+              conditions: [
+                {
+                  _key: 'c826626167fa',
+                  _type: 'condition',
+                  anyOf: [
+                    {
+                      property: 'audience',
+                      operator: 'equals',
+                      targetValue: 'premium',
+                      _key: 'c826626167fa',
+                      _type: 'rule',
+                    },
+                  ],
+                  value: 'https://linkedin.com/in/johndoe',
+                },
+              ],
+            } satisfies DecideField,
           },
         },
       },
       content: {
         decideIntro: {
+          _type: 'sanity.decideField',
           default: 'Welcome to this blog post.',
           conditions: [
-            {audience: 'premium', value: 'Welcome to our premium content series.'},
-            {audience: 'basic', value: 'Welcome! Here are some basic tips.'},
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'premium',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+              value: 'Welcome to our premium content series.',
+            },
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'basic',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+              value: 'Welcome! Here are some basic tips.',
+            },
           ],
-        },
+        } satisfies DecideField,
         sections: [
           {
             title: 'Section 1',
             decideContent: {
+              _type: 'sanity.decideField',
               default: 'Basic content here.',
               conditions: [
-                {audience: 'premium', value: 'Advanced insights and detailed analysis.'},
-                {audience: 'basic', value: 'Simple overview and tips.'},
+                {
+                  _key: 'c826626167fa',
+                  _type: 'condition',
+                  anyOf: [
+                    {
+                      property: 'audience',
+                      operator: 'equals',
+                      targetValue: 'premium',
+                      _key: 'c826626167fa',
+                      _type: 'rule',
+                    },
+                  ],
+                  value: 'Advanced insights and detailed analysis.',
+                },
+                {
+                  _key: 'c826626167fa',
+                  _type: 'condition',
+                  anyOf: [
+                    {
+                      property: 'audience',
+                      operator: 'equals',
+                      targetValue: 'basic',
+                      _key: 'c826626167fa',
+                      _type: 'rule',
+                    },
+                  ],
+                  value: 'Simple overview and tips.',
+                },
               ],
-            },
+            } satisfies DecideField,
             subsections: [
               {
                 heading: 'Subsection A',
                 decideText: {
+                  _type: 'sanity.decideField',
                   default: 'Standard text',
-                  conditions: [{audience: 'premium', value: 'Detailed technical explanation'}],
-                },
+                  conditions: [
+                    {
+                      _key: 'c826626167fa',
+                      _type: 'condition',
+                      anyOf: [
+                        {
+                          property: 'audience',
+                          operator: 'equals',
+                          targetValue: 'premium',
+                          _key: 'c826626167fa',
+                          _type: 'rule',
+                        },
+                      ],
+                      value: 'Detailed technical explanation',
+                    },
+                  ],
+                } satisfies DecideField,
               },
             ],
           },
           {
             title: 'Section 2',
             decideContent: {
+              _type: 'sanity.decideField',
               default: 'More basic content.',
-              conditions: [{audience: 'premium', value: 'Expert-level strategies and methods.'}],
-            },
+              conditions: [
+                {
+                  _key: 'c826626167fa',
+                  _type: 'condition',
+                  anyOf: [
+                    {
+                      property: 'audience',
+                      operator: 'equals',
+                      targetValue: 'premium',
+                      _key: 'c826626167fa',
+                      _type: 'rule',
+                    },
+                  ],
+                  value: 'Expert-level strategies and methods.',
+                },
+              ],
+            } satisfies DecideField,
           },
         ],
       },
       metadata: {
         tags: ['tech', 'blog'],
         decidePriority: {
+          _type: 'sanity.decideField',
           default: 'normal',
-          conditions: [{audience: 'premium', value: 'high'}],
-        },
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              anyOf: [
+                {
+                  property: 'audience',
+                  operator: 'equals',
+                  targetValue: 'premium',
+                  _key: 'c826626167fa',
+                  _type: 'rule',
+                },
+              ],
+              value: 'high',
+            },
+          ],
+        } satisfies DecideField,
       },
     }
 
@@ -519,5 +980,479 @@ describe('decideResponseProcessor', () => {
     expect(resultPremium.author.profile.social.twitter).toBe(input.author.profile.social.twitter)
     expect(resultPremium.content.sections[0].title).toBe(input.content.sections[0].title)
     expect(resultPremium.metadata.tags).toEqual(input.metadata.tags)
+  })
+  describe('should resolve with multiple required conditions', () => {
+    test('should resolve with multiple required conditions', () => {
+      const field: DecideField = {
+        _type: 'sanity.decideField',
+        default: 'default',
+        conditions: [
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: 'audience a male',
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'audience',
+                targetValue: 'aud-a',
+                and: [
+                  {
+                    _key: '5e2778824236',
+                    _type: 'rule',
+                    operator: 'equals',
+                    property: 'gender',
+                    targetValue: 'male',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: 'audience a female',
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'audience',
+                targetValue: 'aud-a',
+                and: [
+                  {
+                    _key: '5e2778824236',
+                    _type: 'rule',
+                    operator: 'equals',
+                    property: 'gender',
+                    targetValue: 'female',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+      expect(resolveDecideField(field, {audience: 'aud-a'})).toBe('default')
+      expect(resolveDecideField(field, {audience: 'aud-a', gender: 'female'})).toBe('audience a female')
+      expect(resolveDecideField(field, {audience: 'aud-a', gender: 'male'})).toBe('audience a male')
+      expect(resolveDecideField(field, {audience: 'aud-a', gender: 'male', age: 30})).toBe(
+        'audience a male',
+      )
+      expect(resolveDecideField(field, {audience: 'aud-a', gender: 'female', age: 30})).toBe(
+        'audience a female',
+      )
+      expect(resolveDecideField(field, {audience: 'aud-a', age: 30})).toBe('default')
+    })
+  })
+
+  describe('should resolve every condition type and value', () => {
+    describe('string conditions', () => {
+      test('should resolve "equals" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'equals',
+                  property: 'audience',
+                  targetValue: 'aud-a',
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {audience: ''})).toBe('default')
+        expect(resolveDecideField(field, {audience: 'aud-a'})).toBe('match')
+        expect(resolveDecideField(field, {audience: 'aud-b'})).toBe('default')
+      })
+
+      test('should resolve "not-equals" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'not-equals',
+                  property: 'audience',
+                  targetValue: 'aud-a',
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {audience: 'aud-a'})).toBe('default')
+        expect(resolveDecideField(field, {audience: 'aud-b'})).toBe('match')
+        expect(resolveDecideField(field, {audience: 'aud-c'})).toBe('match')
+      })
+
+      test('should resolve "contains" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'contains',
+                  property: 'category',
+                  targetValue: 'tech',
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {category: ''})).toBe('default')
+        expect(resolveDecideField(field, {category: 'technology'})).toBe('match')
+        expect(resolveDecideField(field, {category: 'tech'})).toBe('match')
+        expect(resolveDecideField(field, {category: 'fintech'})).toBe('match')
+        expect(resolveDecideField(field, {category: 'finance'})).toBe('default')
+      })
+
+      test('should resolve "not-contains" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'not-contains',
+                  property: 'category',
+                  targetValue: 'tech',
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {category: 'technology'})).toBe('default')
+        expect(resolveDecideField(field, {category: 'tech'})).toBe('default')
+        expect(resolveDecideField(field, {category: 'fintech'})).toBe('default')
+        expect(resolveDecideField(field, {category: 'finance'})).toBe('match')
+        expect(resolveDecideField(field, {category: 'sports'})).toBe('match')
+      })
+
+      test('should resolve "is-empty" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'is-empty',
+                  property: 'name',
+                  targetValue: '',
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {name: ''})).toBe('match')
+        expect(resolveDecideField(field, {name: 'John'})).toBe('default')
+        expect(resolveDecideField(field, {name: ' '})).toBe('default')
+      })
+
+      test('should resolve "is-not-empty" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'is-not-empty',
+                  property: 'name',
+                  targetValue: '',
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {name: ''})).toBe('default')
+        expect(resolveDecideField(field, {name: 'John'})).toBe('match')
+        expect(resolveDecideField(field, {name: ' '})).toBe('match')
+      })
+    })
+
+    describe('number conditions', () => {
+      test('should resolve "equals" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'equals',
+                  property: 'age',
+                  targetValue: 25,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {age: 0})).toBe('default')
+        expect(resolveDecideField(field, {age: 25})).toBe('match')
+        expect(resolveDecideField(field, {age: 30})).toBe('default')
+      })
+
+      test('should resolve "not-equals" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'not-equals',
+                  property: 'age',
+                  targetValue: 25,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {age: 25})).toBe('default')
+        expect(resolveDecideField(field, {age: 24})).toBe('match')
+        expect(resolveDecideField(field, {age: 26})).toBe('match')
+        expect(resolveDecideField(field, {age: 0})).toBe('match')
+      })
+
+      test('should resolve ">" (greater than) operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: '>',
+                  property: 'age',
+                  targetValue: 18,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {age: 18})).toBe('default')
+        expect(resolveDecideField(field, {age: 17})).toBe('default')
+        expect(resolveDecideField(field, {age: 19})).toBe('match')
+        expect(resolveDecideField(field, {age: 25})).toBe('match')
+      })
+
+      test('should resolve "<" (less than) operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: '<',
+                  property: 'age',
+                  targetValue: 18,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {age: 18})).toBe('default')
+        expect(resolveDecideField(field, {age: 19})).toBe('default')
+        expect(resolveDecideField(field, {age: 17})).toBe('match')
+        expect(resolveDecideField(field, {age: 10})).toBe('match')
+      })
+
+      test('should resolve ">=" (greater than or equal) operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: '>=',
+                  property: 'age',
+                  targetValue: 18,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {age: 17})).toBe('default')
+        expect(resolveDecideField(field, {age: 18})).toBe('match')
+        expect(resolveDecideField(field, {age: 19})).toBe('match')
+        expect(resolveDecideField(field, {age: 25})).toBe('match')
+      })
+
+      test('should resolve "<=" (less than or equal) operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: '<=',
+                  property: 'age',
+                  targetValue: 18,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {age: 19})).toBe('default')
+        expect(resolveDecideField(field, {age: 18})).toBe('match')
+        expect(resolveDecideField(field, {age: 17})).toBe('match')
+        expect(resolveDecideField(field, {age: 10})).toBe('match')
+      })
+
+      test('should resolve "is-empty" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'is-empty',
+                  property: 'count',
+                  targetValue: 0,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {count: 0})).toBe('match')
+        expect(resolveDecideField(field, {count: 1})).toBe('default')
+        expect(resolveDecideField(field, {count: 10})).toBe('default')
+      })
+
+      test('should resolve "is-not-empty" operator', () => {
+        const field: DecideField = {
+          _type: 'sanity.decideField',
+          default: 'default',
+          conditions: [
+            {
+              _key: 'c826626167fa',
+              _type: 'condition',
+              value: 'match',
+              anyOf: [
+                {
+                  _key: '5e2778824236',
+                  _type: 'rule',
+                  operator: 'is-not-empty',
+                  property: 'count',
+                  targetValue: 0,
+                },
+              ],
+            },
+          ],
+        }
+        expect(resolveDecideField(field, undefined)).toBe('default')
+        expect(resolveDecideField(field, {})).toBe('default')
+        expect(resolveDecideField(field, {count: 0})).toBe('default')
+        expect(resolveDecideField(field, {count: 1})).toBe('match')
+        expect(resolveDecideField(field, {count: 10})).toBe('match')
+        expect(resolveDecideField(field, {count: -5})).toBe('match')
+      })
+    })
   })
 })

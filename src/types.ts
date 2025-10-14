@@ -55,27 +55,14 @@ export type ClientPerspective =
 
 /** @public */
 export interface DecideParameters {
-  audience: string | string[]
-  [key: string]: unknown
+  [key: string]: string | number
 }
 
 type ClientConfigResource =
-  | {
-      type: 'canvas'
-      id: string
-    }
-  | {
-      type: 'media-library'
-      id: string
-    }
-  | {
-      type: 'dataset'
-      id: string
-    }
-  | {
-      type: 'dashboard'
-      id: string
-    }
+  | {type: 'canvas'; id: string}
+  | {type: 'media-library'; id: string}
+  | {type: 'dataset'; id: string}
+  | {type: 'dashboard'; id: string}
 
 /** @public */
 export interface ClientConfig {
@@ -181,12 +168,7 @@ export interface ClientConfig {
   /**
    *@deprecated set `cache` and `next` options on `client.fetch` instead
    */
-  fetch?:
-    | {
-        cache?: ResponseQueryOptions['cache']
-        next?: ResponseQueryOptions['next']
-      }
-    | boolean
+  fetch?: {cache?: ResponseQueryOptions['cache']; next?: ResponseQueryOptions['next']} | boolean
   /**
    * Options for how, if enabled, Content Source Maps are encoded into query results using steganography
    */
@@ -373,14 +355,8 @@ export interface SanityImageAssetDocument extends SanityAssetDocument {
       muted?: SanityImagePalette
       vibrant?: SanityImagePalette
     }
-    image?: {
-      _type: 'sanity.imageExifTags'
-      [key: string]: Any
-    }
-    exif?: {
-      _type: 'sanity.imageExifMetadata'
-      [key: string]: Any
-    }
+    image?: {_type: 'sanity.imageExifTags'; [key: string]: Any}
+    exif?: {_type: 'sanity.imageExifMetadata'; [key: string]: Any}
   }
 }
 
@@ -394,9 +370,7 @@ export interface ErrorProps {
 }
 
 /** @public */
-export type HttpRequest = {
-  (options: RequestOptions, requester: Requester): ReturnType<Requester>
-}
+export type HttpRequest = {(options: RequestOptions, requester: Requester): ReturnType<Requester>}
 
 /** @internal */
 export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
@@ -527,16 +501,12 @@ export interface CurrentSanityUser {
 /** @public */
 export type SanityDocumentStub<T extends Record<string, Any> = Record<string, Any>> = {
   [P in keyof T]: T[P]
-} & {
-  _type: string
-}
+} & {_type: string}
 
 /** @public */
 export type IdentifiedSanityDocumentStub<T extends Record<string, Any> = Record<string, Any>> = {
   [P in keyof T]: T[P]
-} & {
-  _id: string
-} & SanityDocumentStub
+} & {_id: string} & SanityDocumentStub
 
 /** @internal */
 export type InsertPatch =
@@ -771,14 +741,8 @@ export type CreateVersionAction = {
   actionType: 'sanity.action.document.version.create'
   publishedId: string
 } & (
-  | {
-      document: IdentifiedSanityDocumentStub
-    }
-  | {
-      baseId: string
-      versionId: string
-      ifBaseRevisionId?: string
-    }
+  | {document: IdentifiedSanityDocumentStub}
+  | {baseId: string; versionId: string; ifBaseRevisionId?: string}
 )
 
 /**
@@ -1102,10 +1066,7 @@ export type MutationEvent<R extends Record<string, Any> = Record<string, Any>> =
  *
  * @public
  */
-export type ChannelErrorEvent = {
-  type: 'channelError'
-  message: string
-}
+export type ChannelErrorEvent = {type: 'channelError'; message: string}
 
 /**
  * The listener has been told to explicitly disconnect and not reconnect.
@@ -1116,28 +1077,21 @@ export type ChannelErrorEvent = {
  *
  * @public
  */
-export type DisconnectEvent = {
-  type: 'disconnect'
-  reason: string
-}
+export type DisconnectEvent = {type: 'disconnect'; reason: string}
 
 /**
  * The listener has been disconnected, and a reconnect attempt is scheduled.
  *
  * @public
  */
-export type ReconnectEvent = {
-  type: 'reconnect'
-}
+export type ReconnectEvent = {type: 'reconnect'}
 
 /**
  * The listener connection has been established
  * note: it's usually a better option to use the 'welcome' event
  * @public
  */
-export type OpenEvent = {
-  type: 'open'
-}
+export type OpenEvent = {type: 'open'}
 
 /**
  * The listener has been established, and will start receiving events.
@@ -1145,10 +1099,7 @@ export type OpenEvent = {
  *
  * @public
  */
-export type WelcomeEvent = {
-  type: 'welcome'
-  listenerName: string
-}
+export type WelcomeEvent = {type: 'welcome'; listenerName: string}
 
 /** @public */
 export type ListenEvent<R extends Record<string, Any>> =
@@ -1467,11 +1418,7 @@ export interface QueryParseError {
 
 /** @internal */
 export interface MutationErrorItem {
-  error: {
-    type: string
-    description: string
-    value?: unknown
-  }
+  error: {type: string; description: string; value?: unknown}
 }
 
 /** @internal */
@@ -1483,11 +1430,7 @@ export interface ActionError {
 
 /** @internal */
 export interface ActionErrorItem {
-  error: {
-    type: string
-    description: string
-    value?: unknown
-  }
+  error: {type: string; description: string; value?: unknown}
   index: number
 }
 
@@ -1527,9 +1470,7 @@ export interface ReleaseDocument extends SanityDocument {
   _updatedAt: string
   _rev: string
   state: ReleaseState
-  error?: {
-    message: string
-  }
+  error?: {message: string}
   finalDocumentStates?: {
     /** Document ID */
     id: string
@@ -1555,10 +1496,7 @@ export interface ReleaseDocument extends SanityDocument {
 export type EditableReleaseDocument = Omit<
   PartialExcept<ReleaseDocument, '_id'>,
   'metadata' | '_type'
-> & {
-  _id: string
-  metadata: Partial<ReleaseDocument['metadata']>
-}
+> & {_id: string; metadata: Partial<ReleaseDocument['metadata']>}
 
 /**
  * DocumentValueSource is a path to a value within a document

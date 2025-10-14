@@ -1,21 +1,84 @@
 import type {DecideParameters} from '../types'
 
+const stringOperators = [
+  'equals',
+  'not-equals',
+  'contains',
+  'not-contains',
+  'is-empty',
+  'is-not-empty',
+] as const
+
+const numberOperators = [
+  'equals',
+  'not-equals',
+  'is-empty',
+  'is-not-empty',
+  '>',
+  '<',
+  '>=',
+  '<=',
+] as const
+
 /**
- * @internal
+ * Helper functions for type conversion
  */
-export interface DecideCondition {
-  audience: string
-  value: unknown
-  [key: string]: unknown
+const toNumber = (value: string | number): number =>
+  typeof value === 'number' ? value : Number(value)
+
+const toString = (value: string | number): string =>
+  typeof value === 'string' ? value : String(value)
+
+/**
+ * Operator resolver functions
+ */
+const resolveOperator = {
+  equals: (parameterValue: string | number, targetValue: string | number) =>
+    parameterValue === targetValue,
+  'not-equals': (parameterValue: string | number, targetValue: string | number) =>
+    parameterValue !== targetValue,
+  contains: (parameterValue: string | number, targetValue: string | number) =>
+    toString(parameterValue).includes(toString(targetValue)),
+  'not-contains': (parameterValue: string | number, targetValue: string | number) =>
+    !toString(parameterValue).includes(toString(targetValue)),
+  'is-empty': (parameterValue: string | number) => !parameterValue,
+  'is-not-empty': (parameterValue: string | number) => !!parameterValue,
+  '>': (parameterValue: string | number, targetValue: string | number) =>
+    toNumber(parameterValue) > toNumber(targetValue),
+  '<': (parameterValue: string | number, targetValue: string | number) =>
+    toNumber(parameterValue) < toNumber(targetValue),
+  '>=': (parameterValue: string | number, targetValue: string | number) =>
+    toNumber(parameterValue) >= toNumber(targetValue),
+  '<=': (parameterValue: string | number, targetValue: string | number) =>
+    toNumber(parameterValue) <= toNumber(targetValue),
 }
 
 /**
  * @internal
  */
-export interface DecideField {
-  default: unknown
-  conditions: DecideCondition[]
+export interface DecideField<T = unknown> {
+  _type: 'sanity.decideField'
+  default?: T
+  conditions?: Array<{_key: string; _type: 'condition'; value?: T; anyOf?: Array<DecideRule>}>
 }
+
+type DecideRule =
+  | {
+      property: string
+      operator: (typeof stringOperators)[number]
+      targetValue: string
+      and?: DecideRule[]
+      _key: string
+      _type: 'rule'
+    }
+  | {
+      property: string
+      operator: (typeof numberOperators)[number]
+      targetValue: number
+      and?: DecideRule[]
+      _key: string
+      _type: 'rule'
+    }
 
 /**
  * Checks if a value is a decide field with the expected structure
@@ -26,11 +89,35 @@ export function isDecideField(value: unknown): value is DecideField {
     value != null &&
     typeof value === 'object' &&
     !Array.isArray(value) &&
-    'default' in value &&
-    'conditions' in value &&
-    Array.isArray((value as any).conditions)
+    '_type' in value &&
+    value._type === 'sanity.decideField'
 
   return isValid
+}
+
+/**
+ * Evaluates a single rule against the provided parameters
+ * @internal
+ */
+function evaluateRule(rule: DecideRule, decideParameters: DecideParameters): boolean {
+  const parameterValue = decideParameters[rule.property]
+  // Only string and number types are supported
+  if (typeof parameterValue !== 'string' && typeof parameterValue !== 'number') {
+    return false
+  }
+
+  // Evaluate the operator
+  const operatorPassed = resolveOperator[rule.operator](parameterValue, rule.targetValue)
+  if (!operatorPassed) {
+    return false
+  }
+
+  // If there are AND conditions, all must pass
+  if (rule.and && rule.and.length > 0) {
+    return rule.and.every((andRule) => evaluateRule(andRule, decideParameters))
+  }
+
+  return true
 }
 
 /**
@@ -41,20 +128,16 @@ export function resolveDecideField(
   field: DecideField,
   decideParameters?: DecideParameters,
 ): unknown {
-  const audience = decideParameters?.audience
-
-  // If no audience defined or empty, return default
-  if (!audience || (Array.isArray(audience) && audience.length === 0) || audience === '') {
+  if (field._type !== 'sanity.decideField') {
+    return field
+  }
+  if (!decideParameters) {
     return field.default
   }
 
-  // Find matching condition for the audience
-  const matchingCondition = field.conditions.find((condition) => {
-    const isMatch = Array.isArray(audience)
-      ? audience.includes(condition.audience)
-      : condition.audience === audience
-
-    return isMatch
+  // Find matching condition
+  const matchingCondition = field.conditions?.find((condition) => {
+    return condition.anyOf?.some((rule) => evaluateRule(rule, decideParameters))
   })
 
   // Return matching value or fall back to default
