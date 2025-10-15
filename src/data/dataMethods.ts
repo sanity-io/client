@@ -138,7 +138,7 @@ export function _fetch<R, Q>(
         ),
       )
     : $request.pipe(
-        map((res) => {
+        map((res: any) => {
           // Process decide fields on res.result (consistent with stega path)
           const processedResult = processDecideFields(res.result, options.decideParameters)
           const mappedResponse = mapResponse({...res, result: processedResult})
@@ -253,12 +253,7 @@ export function _getReleaseDocuments<R extends Record<string, Any>>(
     client,
     httpRequest,
     'query',
-    {
-      query: '*[sanity::partOfRelease($releaseId)]',
-      params: {
-        releaseId,
-      },
-    },
+    {query: '*[sanity::partOfRelease($releaseId)]', params: {releaseId}},
     opts,
   )
 }
@@ -545,11 +540,7 @@ export function _dataRequest(
       // Return a reduced subset
       const key = returnFirst ? 'documentId' : 'documentIds'
       const ids = returnFirst ? results[0] && results[0].id : results.map((mut: Any) => mut.id)
-      return {
-        transactionId: res.transactionId,
-        results: results,
-        [key]: ids,
-      }
+      return {transactionId: res.transactionId, results: results, [key]: ids}
     }),
   )
 }
@@ -671,9 +662,7 @@ export function _requestObservable<R>(
     }
   }
 
-  const finalOptions = Object.assign({}, options, {
-    url: _getUrl(client, uri, useCdn),
-  })
+  const finalOptions = Object.assign({}, options, {url: _getUrl(client, uri, useCdn)})
 
   const reqOptions = requestOptions(config, finalOptions) as RequestOptions
 
