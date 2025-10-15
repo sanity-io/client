@@ -142,6 +142,53 @@ describe('decideResponseProcessor', () => {
       expect(resolveDecideField(fieldWithDuplicates, {audience: 'aud-a'})).toBe('first match')
     })
 
+    test('should return undefined default value when condition is not met and default is undefined', () => {
+      const fieldWithDuplicates: DecideField = {
+        _type: 'sanity.decideField',
+        // default: undefined,
+        conditions: [
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: 'first match',
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'audience',
+                targetValue: 'aud-a',
+              },
+            ],
+          },
+        ],
+      }
+      expect(resolveDecideField(fieldWithDuplicates, {audience: 'aud-c'})).toBe(undefined)
+    })
+    test('should return undefined value when variant has undefined value and condition is met', () => {
+      const fieldWithDuplicates: DecideField = {
+        _type: 'sanity.decideField',
+        default: 'default',
+        conditions: [
+          {
+            _key: 'c826626167fa',
+            _type: 'condition',
+            value: undefined,
+            anyOf: [
+              {
+                _key: '5e2778824236',
+                _type: 'rule',
+                operator: 'equals',
+                property: 'audience',
+                targetValue: 'aud-a',
+              },
+            ],
+          },
+        ],
+      }
+      expect(resolveDecideField(fieldWithDuplicates, {audience: 'aud-a'})).toBe(undefined)
+    })
+
     // test('should support array audiences', () => {
     //   expect(resolveDecideField(decideField, {audience: ['aud-c', 'aud-a']})).toBe(
     //     'name for audience a',
@@ -1036,7 +1083,9 @@ describe('decideResponseProcessor', () => {
         ],
       }
       expect(resolveDecideField(field, {audience: 'aud-a'})).toBe('default')
-      expect(resolveDecideField(field, {audience: 'aud-a', gender: 'female'})).toBe('audience a female')
+      expect(resolveDecideField(field, {audience: 'aud-a', gender: 'female'})).toBe(
+        'audience a female',
+      )
       expect(resolveDecideField(field, {audience: 'aud-a', gender: 'male'})).toBe('audience a male')
       expect(resolveDecideField(field, {audience: 'aud-a', gender: 'male', age: 30})).toBe(
         'audience a male',
