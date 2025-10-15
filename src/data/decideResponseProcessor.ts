@@ -59,7 +59,7 @@ const resolveOperator = {
 export interface DecideField<T = unknown> {
   _type: 'sanity.decideField'
   default?: T
-  conditions?: Array<{_key: string; _type: 'condition'; value?: T; anyOf?: Array<DecideRule>}>
+  variants?: Array<{_key: string; _type: 'variant'; value?: T; anyOf?: Array<DecideRule>}>
 }
 
 type DecideRule =
@@ -136,8 +136,8 @@ export function resolveDecideField(
   }
 
   // Find matching condition
-  const matchingCondition = field.conditions?.find((condition) => {
-    return condition.anyOf?.some((rule) => evaluateRule(rule, decideParameters))
+  const matchingCondition = field.variants?.find((variant) => {
+    return variant.anyOf?.some((rule) => evaluateRule(rule, decideParameters))
   })
 
   // Return matching value or fall back to default

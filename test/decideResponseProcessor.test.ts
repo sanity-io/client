@@ -17,10 +17,10 @@ describe('decideResponseProcessor', () => {
     test('should identify more complex decide raw field', () => {
       const validField = {
         _type: 'sanity.decideField',
-        conditions: [
+        variants: [
           {
             _key: 'e9321da8ef37',
-            _type: 'condition',
+            _type: 'variant',
             anyOf: [
               {
                 _key: '5e2778824236',
@@ -45,9 +45,9 @@ describe('decideResponseProcessor', () => {
       expect(isDecideField(123)).toBe(false)
       expect(isDecideField([])).toBe(false)
       expect(isDecideField({})).toBe(false)
-      expect(isDecideField({default: 'test'})).toBe(false) // missing conditions
-      expect(isDecideField({conditions: []})).toBe(false) // missing default
-      expect(isDecideField({default: 'test', conditions: 'not array'})).toBe(false)
+      expect(isDecideField({default: 'test'})).toBe(false) // missing variants
+      expect(isDecideField({variants: []})).toBe(false) // missing default
+      expect(isDecideField({default: 'test', variants: 'not array'})).toBe(false)
     })
   })
 
@@ -55,10 +55,10 @@ describe('decideResponseProcessor', () => {
     const decideField: DecideField = {
       _type: 'sanity.decideField',
       default: 'default name',
-      conditions: [
+      variants: [
         {
           _key: 'c826626167fa',
-          _type: 'condition',
+          _type: 'variant',
           value: 'name for audience a',
           anyOf: [
             {
@@ -72,7 +72,7 @@ describe('decideResponseProcessor', () => {
         },
         {
           _key: 'c826626167fa',
-          _type: 'condition',
+          _type: 'variant',
           value: 'name for audience b',
           anyOf: [
             {
@@ -108,10 +108,10 @@ describe('decideResponseProcessor', () => {
       const fieldWithDuplicates: DecideField = {
         _type: 'sanity.decideField',
         default: 'default',
-        conditions: [
+        variants: [
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: 'first match',
             anyOf: [
               {
@@ -125,7 +125,7 @@ describe('decideResponseProcessor', () => {
           },
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: 'second match',
             anyOf: [
               {
@@ -146,10 +146,10 @@ describe('decideResponseProcessor', () => {
       const fieldWithDuplicates: DecideField = {
         _type: 'sanity.decideField',
         // default: undefined,
-        conditions: [
+        variants: [
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: 'first match',
             anyOf: [
               {
@@ -169,10 +169,10 @@ describe('decideResponseProcessor', () => {
       const fieldWithDuplicates: DecideField = {
         _type: 'sanity.decideField',
         default: 'default',
-        conditions: [
+        variants: [
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: undefined,
             anyOf: [
               {
@@ -211,10 +211,10 @@ describe('decideResponseProcessor', () => {
         decideName: {
           _type: 'sanity.decideField',
           default: 'default name',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'special name',
               anyOf: [
                 {
@@ -241,9 +241,9 @@ describe('decideResponseProcessor', () => {
           decideName: {
             _type: 'sanity.decideField',
             default: 'default 1',
-            conditions: [
+            variants: [
               {
-                _type: 'condition',
+                _type: 'variant',
                 _key: 'c826626167fa',
                 value: 'special 1',
                 anyOf: [
@@ -264,9 +264,9 @@ describe('decideResponseProcessor', () => {
           decideName: {
             _type: 'sanity.decideField',
             default: 'default 1',
-            conditions: [
+            variants: [
               {
-                _type: 'condition',
+                _type: 'variant',
                 _key: 'c826626167fa',
                 value: 'special 2',
                 anyOf: [
@@ -298,9 +298,9 @@ describe('decideResponseProcessor', () => {
           decideName: {
             _type: 'sanity.decideField',
             default: 'default author name',
-            conditions: [
+            variants: [
               {
-                _type: 'condition',
+                _type: 'variant',
                 _key: 'c826626167fa',
                 value: 'special author name',
                 anyOf: [
@@ -322,9 +322,9 @@ describe('decideResponseProcessor', () => {
             decideTitle: {
               _type: 'sanity.decideField',
               default: 'default title',
-              conditions: [
+              variants: [
                 {
-                  _type: 'condition',
+                  _type: 'variant',
                   _key: 'c826626167fa',
                   value: 'special title',
                   anyOf: [
@@ -365,10 +365,10 @@ describe('decideResponseProcessor', () => {
         decideName: {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'special',
               anyOf: [
                 {
@@ -393,10 +393,10 @@ describe('decideResponseProcessor', () => {
         decideName: {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'special',
               anyOf: [
                 {
@@ -430,7 +430,7 @@ describe('decideResponseProcessor', () => {
         validField: 'normal value',
         malformedDecideField: {
           default: 'default value',
-          conditions: 'this should be an array but is a string', // This will cause isDecideField to return false
+          variants: 'this should be an array but is a string', // This will cause isDecideField to return false
         },
       }
 
@@ -441,7 +441,7 @@ describe('decideResponseProcessor', () => {
         validField: 'normal value',
         malformedDecideField: {
           default: 'default value',
-          conditions: 'this should be an array but is a string',
+          variants: 'this should be an array but is a string',
         },
       })
     })
@@ -455,10 +455,10 @@ describe('decideResponseProcessor', () => {
         price: {
           _type: 'sanity.decideField',
           default: 100,
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 200,
               anyOf: [
                 {
@@ -478,10 +478,10 @@ describe('decideResponseProcessor', () => {
         price: {
           _type: 'sanity.decideField',
           default: 150,
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 300,
               anyOf: [
                 {
@@ -510,10 +510,10 @@ describe('decideResponseProcessor', () => {
           title: {
             _type: 'sanity.decideField',
             default: 'Default Title',
-            conditions: [
+            variants: [
               {
                 _key: 'c826626167fa',
-                _type: 'condition',
+                _type: 'variant',
                 value: 'Premium Title',
                 anyOf: [
                   {
@@ -543,10 +543,10 @@ describe('decideResponseProcessor', () => {
           name: {
             _type: 'sanity.decideField',
             default: 'Default Name',
-            conditions: [
+            variants: [
               {
                 _key: 'c826626167fa',
-                _type: 'condition',
+                _type: 'variant',
                 value: 'Premium Name',
                 anyOf: [
                   {
@@ -576,10 +576,10 @@ describe('decideResponseProcessor', () => {
       price: {
         _type: 'sanity.decideField',
         default: 100,
-        conditions: [
+        variants: [
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: 200,
             anyOf: [
               {
@@ -656,10 +656,10 @@ describe('decideResponseProcessor', () => {
           },
           price: {
             _type: 'sanity.decideField',
-            conditions: [
+            variants: [
               {
                 _key: 'c4bf584e7d70',
-                _type: 'condition',
+                _type: 'variant',
                 anyOf: [
                   {
                     property: 'audience',
@@ -702,10 +702,10 @@ describe('decideResponseProcessor', () => {
       decideTitle: {
         _type: 'sanity.decideField',
         default: 'Default Blog Title',
-        conditions: [
+        variants: [
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             anyOf: [
               {
                 property: 'audience',
@@ -719,7 +719,7 @@ describe('decideResponseProcessor', () => {
           },
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             anyOf: [
               {
                 property: 'audience',
@@ -738,10 +738,10 @@ describe('decideResponseProcessor', () => {
         decideBio: {
           _type: 'sanity.decideField',
           default: 'A writer',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               anyOf: [
                 {
                   property: 'audience',
@@ -755,7 +755,7 @@ describe('decideResponseProcessor', () => {
             },
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               anyOf: [
                 {
                   property: 'audience',
@@ -773,10 +773,10 @@ describe('decideResponseProcessor', () => {
           decidePicture: {
             _type: 'sanity.decideField',
             default: '/images/default-avatar.jpg',
-            conditions: [
+            variants: [
               {
                 _key: 'c826626167fa',
-                _type: 'condition',
+                _type: 'variant',
                 anyOf: [
                   {
                     property: 'audience',
@@ -790,7 +790,7 @@ describe('decideResponseProcessor', () => {
               },
               {
                 _key: 'c826626167fa',
-                _type: 'condition',
+                _type: 'variant',
                 anyOf: [
                   {
                     property: 'audience',
@@ -809,10 +809,10 @@ describe('decideResponseProcessor', () => {
             decideLinkedIn: {
               _type: 'sanity.decideField',
               default: null,
-              conditions: [
+              variants: [
                 {
                   _key: 'c826626167fa',
-                  _type: 'condition',
+                  _type: 'variant',
                   anyOf: [
                     {
                       property: 'audience',
@@ -833,10 +833,10 @@ describe('decideResponseProcessor', () => {
         decideIntro: {
           _type: 'sanity.decideField',
           default: 'Welcome to this blog post.',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               anyOf: [
                 {
                   property: 'audience',
@@ -850,7 +850,7 @@ describe('decideResponseProcessor', () => {
             },
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               anyOf: [
                 {
                   property: 'audience',
@@ -870,10 +870,10 @@ describe('decideResponseProcessor', () => {
             decideContent: {
               _type: 'sanity.decideField',
               default: 'Basic content here.',
-              conditions: [
+              variants: [
                 {
                   _key: 'c826626167fa',
-                  _type: 'condition',
+                  _type: 'variant',
                   anyOf: [
                     {
                       property: 'audience',
@@ -887,7 +887,7 @@ describe('decideResponseProcessor', () => {
                 },
                 {
                   _key: 'c826626167fa',
-                  _type: 'condition',
+                  _type: 'variant',
                   anyOf: [
                     {
                       property: 'audience',
@@ -907,10 +907,10 @@ describe('decideResponseProcessor', () => {
                 decideText: {
                   _type: 'sanity.decideField',
                   default: 'Standard text',
-                  conditions: [
+                  variants: [
                     {
                       _key: 'c826626167fa',
-                      _type: 'condition',
+                      _type: 'variant',
                       anyOf: [
                         {
                           property: 'audience',
@@ -932,10 +932,10 @@ describe('decideResponseProcessor', () => {
             decideContent: {
               _type: 'sanity.decideField',
               default: 'More basic content.',
-              conditions: [
+              variants: [
                 {
                   _key: 'c826626167fa',
-                  _type: 'condition',
+                  _type: 'variant',
                   anyOf: [
                     {
                       property: 'audience',
@@ -957,10 +957,10 @@ describe('decideResponseProcessor', () => {
         decidePriority: {
           _type: 'sanity.decideField',
           default: 'normal',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               anyOf: [
                 {
                   property: 'audience',
@@ -1028,15 +1028,15 @@ describe('decideResponseProcessor', () => {
     expect(resultPremium.content.sections[0].title).toBe(input.content.sections[0].title)
     expect(resultPremium.metadata.tags).toEqual(input.metadata.tags)
   })
-  describe('should resolve with multiple required conditions', () => {
-    test('should resolve with multiple required conditions', () => {
+  describe('should resolve with multiple required variants', () => {
+    test('should resolve with multiple required variants', () => {
       const field: DecideField = {
         _type: 'sanity.decideField',
         default: 'default',
-        conditions: [
+        variants: [
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: 'audience a male',
             anyOf: [
               {
@@ -1059,7 +1059,7 @@ describe('decideResponseProcessor', () => {
           },
           {
             _key: 'c826626167fa',
-            _type: 'condition',
+            _type: 'variant',
             value: 'audience a female',
             anyOf: [
               {
@@ -1098,15 +1098,15 @@ describe('decideResponseProcessor', () => {
   })
 
   describe('should resolve every condition type and value', () => {
-    describe('string conditions', () => {
+    describe('string variants', () => {
       test('should resolve "equals" operator', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1131,10 +1131,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1159,10 +1159,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1189,10 +1189,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1219,10 +1219,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1247,10 +1247,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1272,15 +1272,15 @@ describe('decideResponseProcessor', () => {
       })
     })
 
-    describe('number conditions', () => {
+    describe('number variants', () => {
       test('should resolve "equals" operator', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1305,10 +1305,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1334,10 +1334,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1363,10 +1363,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1392,10 +1392,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1421,10 +1421,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1450,10 +1450,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
@@ -1478,10 +1478,10 @@ describe('decideResponseProcessor', () => {
         const field: DecideField = {
           _type: 'sanity.decideField',
           default: 'default',
-          conditions: [
+          variants: [
             {
               _key: 'c826626167fa',
-              _type: 'condition',
+              _type: 'variant',
               value: 'match',
               anyOf: [
                 {
