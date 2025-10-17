@@ -21,15 +21,21 @@ describe('decideResponseProcessor', () => {
           {
             _key: 'e9321da8ef37',
             _type: 'variant',
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'gender',
-                targetValue: 'male',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'cmp',
+                  attr: 'gender',
+                  op: 'eq',
+                  value: 'male',
+                },
+              ],
+            },
             value: 'hello male',
           },
         ],
@@ -60,29 +66,41 @@ describe('decideResponseProcessor', () => {
           _key: 'c826626167fa',
           _type: 'variant',
           value: 'name for audience a',
-          anyOf: [
-            {
-              _key: '5e2778824236',
-              _type: 'rule',
-              operator: 'equals',
-              property: 'audience',
-              targetValue: 'aud-a',
-            },
-          ],
+          when: {
+            _type: 'expr',
+            _key: '5e2778824236',
+            kind: 'or',
+            exprs: [
+              {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'cmp',
+                attr: 'audience',
+                op: 'eq',
+                value: 'aud-a',
+              },
+            ],
+          },
         },
         {
           _key: 'c826626167fa',
           _type: 'variant',
           value: 'name for audience b',
-          anyOf: [
-            {
-              _key: '5e2778824236',
-              _type: 'rule',
-              operator: 'equals',
-              property: 'audience',
-              targetValue: 'aud-b',
-            },
-          ],
+          when: {
+            _type: 'expr',
+            _key: '5e2778824236',
+            kind: 'or',
+            exprs: [
+              {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'cmp',
+                attr: 'audience',
+                op: 'eq',
+                value: 'aud-b',
+              },
+            ],
+          },
         },
       ],
     }
@@ -113,29 +131,41 @@ describe('decideResponseProcessor', () => {
             _key: 'c826626167fa',
             _type: 'variant',
             value: 'first match',
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'audience',
-                targetValue: 'aud-a',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'aud-a',
+                },
+              ],
+            },
           },
           {
             _key: 'c826626167fa',
             _type: 'variant',
             value: 'second match',
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'audience',
-                targetValue: 'aud-a',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'aud-a',
+                },
+              ],
+            },
           },
         ],
       }
@@ -151,15 +181,21 @@ describe('decideResponseProcessor', () => {
             _key: 'c826626167fa',
             _type: 'variant',
             value: 'first match',
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'audience',
-                targetValue: 'aud-a',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'aud-a',
+                },
+              ],
+            },
           },
         ],
       }
@@ -174,15 +210,21 @@ describe('decideResponseProcessor', () => {
             _key: 'c826626167fa',
             _type: 'variant',
             value: undefined,
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'audience',
-                targetValue: 'aud-a',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'aud-a',
+                },
+              ],
+            },
           },
         ],
       }
@@ -216,15 +258,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'special name',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'aud-a',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'aud-a',
+                  },
+                ],
+              },
             },
           ],
         } satisfies DecideField,
@@ -246,15 +294,21 @@ describe('decideResponseProcessor', () => {
                 _type: 'variant',
                 _key: 'c826626167fa',
                 value: 'special 1',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'aud-a',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'aud-a',
+                    },
+                  ],
+                },
               },
             ],
           } satisfies DecideField,
@@ -269,15 +323,21 @@ describe('decideResponseProcessor', () => {
                 _type: 'variant',
                 _key: 'c826626167fa',
                 value: 'special 2',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'aud-a',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'aud-a',
+                    },
+                  ],
+                },
               },
             ],
           } satisfies DecideField,
@@ -303,15 +363,21 @@ describe('decideResponseProcessor', () => {
                 _type: 'variant',
                 _key: 'c826626167fa',
                 value: 'special author name',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'aud-a',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'aud-a',
+                    },
+                  ],
+                },
               },
             ],
           } satisfies DecideField,
@@ -327,15 +393,21 @@ describe('decideResponseProcessor', () => {
                   _type: 'variant',
                   _key: 'c826626167fa',
                   value: 'special title',
-                  anyOf: [
-                    {
-                      property: 'audience',
-                      operator: 'equals',
-                      targetValue: 'aud-a',
-                      _key: 'c826626167fa',
-                      _type: 'rule',
-                    },
-                  ],
+                  when: {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'or',
+                    exprs: [
+                      {
+                        _type: 'expr',
+                        _key: 'c826626167fa',
+                        kind: 'cmp',
+                        attr: 'audience',
+                        op: 'eq',
+                        value: 'aud-a',
+                      },
+                    ],
+                  },
                 },
               ],
             } satisfies DecideField,
@@ -370,15 +442,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'special',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'aud-a',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'aud-a',
+                  },
+                ],
+              },
             },
           ],
         } satisfies DecideField,
@@ -398,15 +476,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'special',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'aud-a',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'aud-a',
+                  },
+                ],
+              },
             },
           ],
         },
@@ -460,15 +544,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 200,
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'premium',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'premium',
+                  },
+                ],
+              },
             },
           ],
         } satisfies DecideField,
@@ -483,15 +573,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 300,
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'premium',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'premium',
+                  },
+                ],
+              },
             },
           ],
         } satisfies DecideField,
@@ -515,15 +611,21 @@ describe('decideResponseProcessor', () => {
                 _key: 'c826626167fa',
                 _type: 'variant',
                 value: 'Premium Title',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'premium',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'premium',
+                    },
+                  ],
+                },
               },
             ],
           } satisfies DecideField,
@@ -548,15 +650,21 @@ describe('decideResponseProcessor', () => {
                 _key: 'c826626167fa',
                 _type: 'variant',
                 value: 'Premium Name',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'premium',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'premium',
+                    },
+                  ],
+                },
               },
             ],
           } satisfies DecideField,
@@ -581,15 +689,21 @@ describe('decideResponseProcessor', () => {
             _key: 'c826626167fa',
             _type: 'variant',
             value: 200,
-            anyOf: [
-              {
-                property: 'audience',
-                operator: 'equals',
-                targetValue: 'premium',
-                _key: 'c826626167fa',
-                _type: 'rule',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: 'c826626167fa',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'premium',
+                },
+              ],
+            },
           },
         ],
       } satisfies DecideField,
@@ -660,15 +774,21 @@ describe('decideResponseProcessor', () => {
               {
                 _key: 'c4bf584e7d70',
                 _type: 'variant',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'aud-b',
-                    _key: 'c4bf584e7d70',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c4bf584e7d70',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c4bf584e7d70',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'aud-b',
+                    },
+                  ],
+                },
                 value: 987,
               },
             ],
@@ -706,29 +826,41 @@ describe('decideResponseProcessor', () => {
           {
             _key: 'c826626167fa',
             _type: 'variant',
-            anyOf: [
-              {
-                property: 'audience',
-                operator: 'equals',
-                targetValue: 'premium',
-                _key: 'c826626167fa',
-                _type: 'rule',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: 'c826626167fa',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'premium',
+                },
+              ],
+            },
             value: 'Premium: Advanced Blog Insights',
           },
           {
             _key: 'c826626167fa',
             _type: 'variant',
-            anyOf: [
-              {
-                property: 'audience',
-                operator: 'equals',
-                targetValue: 'basic',
-                _key: 'c826626167fa',
-                _type: 'rule',
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: 'c826626167fa',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'cmp',
+                  attr: 'audience',
+                  op: 'eq',
+                  value: 'basic',
+                },
+              ],
+            },
             value: 'Basic: Blog Tips',
           },
         ],
@@ -742,29 +874,41 @@ describe('decideResponseProcessor', () => {
             {
               _key: 'c826626167fa',
               _type: 'variant',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'premium',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'premium',
+                  },
+                ],
+              },
               value: 'Senior Technology Writer with 10+ years experience',
             },
             {
               _key: 'c826626167fa',
               _type: 'variant',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'basic',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'basic',
+                  },
+                ],
+              },
               value: 'Tech Writer',
             },
           ],
@@ -777,29 +921,41 @@ describe('decideResponseProcessor', () => {
               {
                 _key: 'c826626167fa',
                 _type: 'variant',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'premium',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'premium',
+                    },
+                  ],
+                },
                 value: '/images/john-professional.jpg',
               },
               {
                 _key: 'c826626167fa',
                 _type: 'variant',
-                anyOf: [
-                  {
-                    property: 'audience',
-                    operator: 'equals',
-                    targetValue: 'basic',
-                    _key: 'c826626167fa',
-                    _type: 'rule',
-                  },
-                ],
+                when: {
+                  _type: 'expr',
+                  _key: 'c826626167fa',
+                  kind: 'or',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: 'c826626167fa',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'basic',
+                    },
+                  ],
+                },
                 value: '/images/john-casual.jpg',
               },
             ],
@@ -813,15 +969,21 @@ describe('decideResponseProcessor', () => {
                 {
                   _key: 'c826626167fa',
                   _type: 'variant',
-                  anyOf: [
-                    {
-                      property: 'audience',
-                      operator: 'equals',
-                      targetValue: 'premium',
-                      _key: 'c826626167fa',
-                      _type: 'rule',
-                    },
-                  ],
+                  when: {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'or',
+                    exprs: [
+                      {
+                        _type: 'expr',
+                        _key: 'c826626167fa',
+                        kind: 'cmp',
+                        attr: 'audience',
+                        op: 'eq',
+                        value: 'premium',
+                      },
+                    ],
+                  },
                   value: 'https://linkedin.com/in/johndoe',
                 },
               ],
@@ -837,29 +999,41 @@ describe('decideResponseProcessor', () => {
             {
               _key: 'c826626167fa',
               _type: 'variant',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'premium',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'premium',
+                  },
+                ],
+              },
               value: 'Welcome to our premium content series.',
             },
             {
               _key: 'c826626167fa',
               _type: 'variant',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'basic',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'basic',
+                  },
+                ],
+              },
               value: 'Welcome! Here are some basic tips.',
             },
           ],
@@ -874,29 +1048,41 @@ describe('decideResponseProcessor', () => {
                 {
                   _key: 'c826626167fa',
                   _type: 'variant',
-                  anyOf: [
-                    {
-                      property: 'audience',
-                      operator: 'equals',
-                      targetValue: 'premium',
-                      _key: 'c826626167fa',
-                      _type: 'rule',
-                    },
-                  ],
+                  when: {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'or',
+                    exprs: [
+                      {
+                        _type: 'expr',
+                        _key: 'c826626167fa',
+                        kind: 'cmp',
+                        attr: 'audience',
+                        op: 'eq',
+                        value: 'premium',
+                      },
+                    ],
+                  },
                   value: 'Advanced insights and detailed analysis.',
                 },
                 {
                   _key: 'c826626167fa',
                   _type: 'variant',
-                  anyOf: [
-                    {
-                      property: 'audience',
-                      operator: 'equals',
-                      targetValue: 'basic',
-                      _key: 'c826626167fa',
-                      _type: 'rule',
-                    },
-                  ],
+                  when: {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'or',
+                    exprs: [
+                      {
+                        _type: 'expr',
+                        _key: 'c826626167fa',
+                        kind: 'cmp',
+                        attr: 'audience',
+                        op: 'eq',
+                        value: 'basic',
+                      },
+                    ],
+                  },
                   value: 'Simple overview and tips.',
                 },
               ],
@@ -911,15 +1097,21 @@ describe('decideResponseProcessor', () => {
                     {
                       _key: 'c826626167fa',
                       _type: 'variant',
-                      anyOf: [
-                        {
-                          property: 'audience',
-                          operator: 'equals',
-                          targetValue: 'premium',
-                          _key: 'c826626167fa',
-                          _type: 'rule',
-                        },
-                      ],
+                      when: {
+                        _type: 'expr',
+                        _key: 'c826626167fa',
+                        kind: 'or',
+                        exprs: [
+                          {
+                            _type: 'expr',
+                            _key: 'c826626167fa',
+                            kind: 'cmp',
+                            attr: 'audience',
+                            op: 'eq',
+                            value: 'premium',
+                          },
+                        ],
+                      },
                       value: 'Detailed technical explanation',
                     },
                   ],
@@ -936,15 +1128,21 @@ describe('decideResponseProcessor', () => {
                 {
                   _key: 'c826626167fa',
                   _type: 'variant',
-                  anyOf: [
-                    {
-                      property: 'audience',
-                      operator: 'equals',
-                      targetValue: 'premium',
-                      _key: 'c826626167fa',
-                      _type: 'rule',
-                    },
-                  ],
+                  when: {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'or',
+                    exprs: [
+                      {
+                        _type: 'expr',
+                        _key: 'c826626167fa',
+                        kind: 'cmp',
+                        attr: 'audience',
+                        op: 'eq',
+                        value: 'premium',
+                      },
+                    ],
+                  },
                   value: 'Expert-level strategies and methods.',
                 },
               ],
@@ -961,15 +1159,21 @@ describe('decideResponseProcessor', () => {
             {
               _key: 'c826626167fa',
               _type: 'variant',
-              anyOf: [
-                {
-                  property: 'audience',
-                  operator: 'equals',
-                  targetValue: 'premium',
-                  _key: 'c826626167fa',
-                  _type: 'rule',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: 'c826626167fa',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: 'c826626167fa',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'premium',
+                  },
+                ],
+              },
               value: 'high',
             },
           ],
@@ -1038,47 +1242,71 @@ describe('decideResponseProcessor', () => {
             _key: 'c826626167fa',
             _type: 'variant',
             value: 'audience a male',
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'audience',
-                targetValue: 'aud-a',
-                and: [
-                  {
-                    _key: '5e2778824236',
-                    _type: 'rule',
-                    operator: 'equals',
-                    property: 'gender',
-                    targetValue: 'male',
-                  },
-                ],
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'and',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: '5e2778824236',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'aud-a',
+                    },
+                    {
+                      _type: 'expr',
+                      _key: '5e2778824236',
+                      kind: 'cmp',
+                      attr: 'gender',
+                      op: 'eq',
+                      value: 'male',
+                    },
+                  ],
+                },
+              ],
+            },
           },
           {
             _key: 'c826626167fa',
             _type: 'variant',
             value: 'audience a female',
-            anyOf: [
-              {
-                _key: '5e2778824236',
-                _type: 'rule',
-                operator: 'equals',
-                property: 'audience',
-                targetValue: 'aud-a',
-                and: [
-                  {
-                    _key: '5e2778824236',
-                    _type: 'rule',
-                    operator: 'equals',
-                    property: 'gender',
-                    targetValue: 'female',
-                  },
-                ],
-              },
-            ],
+            when: {
+              _type: 'expr',
+              _key: '5e2778824236',
+              kind: 'or',
+              exprs: [
+                {
+                  _type: 'expr',
+                  _key: '5e2778824236',
+                  kind: 'and',
+                  exprs: [
+                    {
+                      _type: 'expr',
+                      _key: '5e2778824236',
+                      kind: 'cmp',
+                      attr: 'audience',
+                      op: 'eq',
+                      value: 'aud-a',
+                    },
+                    {
+                      _type: 'expr',
+                      _key: '5e2778824236',
+                      kind: 'cmp',
+                      attr: 'gender',
+                      op: 'eq',
+                      value: 'female',
+                    },
+                  ],
+                },
+              ],
+            },
           },
         ],
       }
@@ -1108,15 +1336,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'equals',
-                  property: 'audience',
-                  targetValue: 'aud-a',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'eq',
+                    value: 'aud-a',
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1136,15 +1370,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'not-equals',
-                  property: 'audience',
-                  targetValue: 'aud-a',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'audience',
+                    op: 'neq',
+                    value: 'aud-a',
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1164,15 +1404,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'contains',
-                  property: 'category',
-                  targetValue: 'tech',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'category',
+                    op: 'contains',
+                    value: 'tech',
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1194,15 +1440,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'not-contains',
-                  property: 'category',
-                  targetValue: 'tech',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'category',
+                    op: 'ncontains',
+                    value: 'tech',
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1224,15 +1476,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'is-empty',
-                  property: 'name',
-                  targetValue: '',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'name',
+                    op: 'empty',
+                    value: '',
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1252,15 +1510,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'is-not-empty',
-                  property: 'name',
-                  targetValue: '',
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'name',
+                    op: 'exists',
+                    value: '',
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1282,15 +1546,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'equals',
-                  property: 'age',
-                  targetValue: 25,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'age',
+                    op: 'eq',
+                    value: 25,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1310,15 +1580,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'not-equals',
-                  property: 'age',
-                  targetValue: 25,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'age',
+                    op: 'neq',
+                    value: 25,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1339,15 +1615,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: '>',
-                  property: 'age',
-                  targetValue: 18,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'age',
+                    op: 'gt',
+                    value: 18,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1368,15 +1650,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: '<',
-                  property: 'age',
-                  targetValue: 18,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'age',
+                    op: 'lt',
+                    value: 18,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1397,15 +1685,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: '>=',
-                  property: 'age',
-                  targetValue: 18,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'age',
+                    op: 'gte',
+                    value: 18,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1426,15 +1720,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: '<=',
-                  property: 'age',
-                  targetValue: 18,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'age',
+                    op: 'lte',
+                    value: 18,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1455,15 +1755,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'is-empty',
-                  property: 'count',
-                  targetValue: 0,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'count',
+                    op: 'empty',
+                    value: 0,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1483,15 +1789,21 @@ describe('decideResponseProcessor', () => {
               _key: 'c826626167fa',
               _type: 'variant',
               value: 'match',
-              anyOf: [
-                {
-                  _key: '5e2778824236',
-                  _type: 'rule',
-                  operator: 'is-not-empty',
-                  property: 'count',
-                  targetValue: 0,
-                },
-              ],
+              when: {
+                _type: 'expr',
+                _key: '5e2778824236',
+                kind: 'or',
+                exprs: [
+                  {
+                    _type: 'expr',
+                    _key: '5e2778824236',
+                    kind: 'cmp',
+                    attr: 'count',
+                    op: 'exists',
+                    value: 0,
+                  },
+                ],
+              },
             },
           ],
         }
@@ -1502,6 +1814,105 @@ describe('decideResponseProcessor', () => {
         expect(resolveDecideField(field, {count: 10})).toBe('match')
         expect(resolveDecideField(field, {count: -5})).toBe('match')
       })
+    })
+  })
+  describe('should resolve nested operators gracefully', () => {
+    test('should resolve nested operators in a single field', () => {
+      const field: DecideField = {
+        _type: 'sanity.decideField',
+        default: 'default',
+        variants: [
+          {
+            _key: 'a8305205-f537-4c0b-9ff2-2fee65a4ebc5',
+            _type: 'variant',
+            value: 'match',
+            when: {
+              _key: 'ec77f4c1-de7f-46a7-b120-83b2088fad5f',
+              _type: 'expr',
+              exprs: [
+                {
+                  _key: '51553a34-7448-468b-8af5-004e0a38f628',
+                  _type: 'expr',
+                  attr: 'audiences',
+                  kind: 'cmp',
+                  op: 'eq',
+                  value: 'aud-a',
+                },
+                {
+                  _key: '3030e118-5ec4-48ab-bfae-8aed6ab90b01',
+                  _type: 'expr',
+                  exprs: [
+                    {
+                      _key: '5e9bfca5-aaee-4129-a508-02a7e653d000',
+                      _type: 'expr',
+                      exprs: [
+                        {
+                          _type: 'expr',
+                          _key: 'f61c419e-6af9-4478-a6ed-538dcbba089e',
+                          kind: 'and',
+                          exprs: [
+                            {
+                              _key: 'f11219f7-1472-40c1-95c1-3da64ae5bbd5',
+                              _type: 'expr',
+                              attr: 'gender',
+                              kind: 'cmp',
+                              op: 'eq',
+                              value: 'male',
+                            },
+                            {
+                              _type: 'expr',
+                              _key: 'ecee55e7-df8f-4ad7-b0eb-f165df4e1c5b',
+                              kind: 'cmp',
+                              attr: 'age',
+                              op: 'gte',
+                              value: '35',
+                            },
+                          ],
+                        },
+                        {
+                          _key: '380bd28f-f2fa-4714-90d3-f76ba1195756',
+                          _type: 'expr',
+                          attr: 'locales',
+                          kind: 'cmp',
+                          op: 'eq',
+                          value: 'en-GB',
+                        },
+                      ],
+                      kind: 'and',
+                    },
+                    {
+                      _key: '4ac4ec21-54ae-4dd7-8e23-dd6355caa120',
+                      _type: 'expr',
+                      attr: 'audiences',
+                      kind: 'cmp',
+                      op: 'neq',
+                      value: 'aud-c',
+                    },
+                  ],
+                  kind: 'and',
+                },
+              ],
+              kind: 'or',
+            },
+          },
+        ],
+      }
+      // (audiences eq aud-a || (((gender eq male && age gte 35 ) && locales eq en-GB ) && audiences neq aud-c ) )
+      expect(resolveDecideField(field, {audiences: 'aud-a'})).toBe('match')
+      expect(
+        resolveDecideField(field, {gender: 'male', age: 35, locales: 'en-GB', audiences: 'aud-b'}),
+      ).toBe('match')
+      expect(
+        resolveDecideField(field, {gender: 'male', age: 35, locales: 'en-GB', audiences: 'aud-d'}),
+      ).toBe('match')
+      expect(
+        resolveDecideField(field, {
+          gender: 'female', // Not a match for the second condition
+          age: 35,
+          locales: 'en-GB',
+          audiences: 'aud-b',
+        }),
+      ).toBe('default')
     })
   })
 })

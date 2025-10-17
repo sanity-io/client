@@ -1,25 +1,5 @@
 import type {DecideParameters} from '../types'
 
-const stringOperators = [
-  'equals',
-  'not-equals',
-  'contains',
-  'not-contains',
-  'is-empty',
-  'is-not-empty',
-] as const
-
-const numberOperators = [
-  'equals',
-  'not-equals',
-  'is-empty',
-  'is-not-empty',
-  '>',
-  '<',
-  '>=',
-  '<=',
-] as const
-
 /**
  * Helper functions for type conversion
  */
@@ -32,53 +12,95 @@ const toString = (value: string | number): string =>
 /**
  * Operator resolver functions
  */
-const resolveOperator = {
-  equals: (parameterValue: string | number, targetValue: string | number) =>
+const resolveOperator: Record<
+  CompareOp,
+  (parameterValue: string | number, targetValue: string | number) => boolean
+> = {
+  eq: (parameterValue: string | number, targetValue: string | number) =>
     parameterValue === targetValue,
-  'not-equals': (parameterValue: string | number, targetValue: string | number) =>
+  neq: (parameterValue: string | number, targetValue: string | number) =>
     parameterValue !== targetValue,
   contains: (parameterValue: string | number, targetValue: string | number) =>
     toString(parameterValue).includes(toString(targetValue)),
-  'not-contains': (parameterValue: string | number, targetValue: string | number) =>
+  ncontains: (parameterValue: string | number, targetValue: string | number) =>
     !toString(parameterValue).includes(toString(targetValue)),
-  'is-empty': (parameterValue: string | number) => !parameterValue,
-  'is-not-empty': (parameterValue: string | number) => !!parameterValue,
-  '>': (parameterValue: string | number, targetValue: string | number) =>
-    toNumber(parameterValue) > toNumber(targetValue),
-  '<': (parameterValue: string | number, targetValue: string | number) =>
+  lt: (parameterValue: string | number, targetValue: string | number) =>
     toNumber(parameterValue) < toNumber(targetValue),
-  '>=': (parameterValue: string | number, targetValue: string | number) =>
-    toNumber(parameterValue) >= toNumber(targetValue),
-  '<=': (parameterValue: string | number, targetValue: string | number) =>
+  lte: (parameterValue: string | number, targetValue: string | number) =>
     toNumber(parameterValue) <= toNumber(targetValue),
+  gt: (parameterValue: string | number, targetValue: string | number) =>
+    toNumber(parameterValue) > toNumber(targetValue),
+  gte: (parameterValue: string | number, targetValue: string | number) =>
+    toNumber(parameterValue) >= toNumber(targetValue),
+  empty: (parameterValue: string | number) => !parameterValue,
+  exists: (parameterValue: string | number) =>
+    parameterValue !== undefined && parameterValue !== null && Boolean(parameterValue),
+  in: (parameterValue: string | number, targetValue: string | number) =>
+    Array.isArray(targetValue) && targetValue.includes(parameterValue),
+  nin: (parameterValue: string | number, targetValue: string | number) =>
+    !Array.isArray(targetValue) || !targetValue.includes(parameterValue),
 }
 
-/**
- * @internal
- */
-export interface DecideField<T = unknown> {
-  _type: 'sanity.decideField'
+export type CompareOp =
+  | 'eq'
+  | 'neq'
+  | 'in'
+  | 'nin'
+  | 'contains'
+  | 'ncontains'
+  | 'lt'
+  | 'lte'
+  | 'gt'
+  | 'gte'
+  | 'exists'
+  | 'empty'
+
+export type CmpExpr = {
+  _type: 'expr'
+  _key: string
+  kind: 'cmp'
+  attr?: string // e.g. "audience", "language", "age", "locales"
+  op?: CompareOp
+  value?: string | number | boolean | string[] | number[]
+  // optional type hints to aid validation & UI
+  type?: 'string' | 'number' | 'boolean' | 'set<string>' | 'set<number>'
+}
+
+export type AndExpr = {_type: 'expr'; _key: string; kind: 'and'; exprs: Expr[]}
+export type OrExpr = {_type: 'expr'; _key: string; kind: 'or'; exprs: Expr[]}
+export type NotExpr = {_type: 'expr'; _key: string; kind: 'not'; expr: Expr}
+// Canonical, UI-agnostic model
+export type Expr = AndExpr | OrExpr | NotExpr | CmpExpr
+
+// Helper type guards
+export function isAndExpr(expr: Expr): expr is AndExpr {
+  return expr.kind === 'and'
+}
+
+export function isOrExpr(expr: Expr): expr is OrExpr {
+  return expr.kind === 'or'
+}
+
+export function isNotExpr(expr: Expr): expr is NotExpr {
+  return expr.kind === 'not'
+}
+
+export function isCmpExpr(expr: Expr): expr is CmpExpr {
+  return expr.kind === 'cmp'
+}
+
+export type Variant<T = unknown> = {
+  _key: string
+  _type: 'variant'
+  value?: T
+  when: Expr
+}
+
+export type DecideField<T = unknown> = {
   default?: T
-  variants?: Array<{_key: string; _type: 'variant'; value?: T; anyOf?: Array<DecideRule>}>
+  _type: 'sanity.decideField'
+  variants: Variant<T>[]
 }
-
-type DecideRule =
-  | {
-      property: string
-      operator: (typeof stringOperators)[number]
-      targetValue: string
-      and?: DecideRule[]
-      _key: string
-      _type: 'rule'
-    }
-  | {
-      property: string
-      operator: (typeof numberOperators)[number]
-      targetValue: number
-      and?: DecideRule[]
-      _key: string
-      _type: 'rule'
-    }
 
 /**
  * Checks if a value is a decide field with the expected structure
@@ -96,28 +118,44 @@ export function isDecideField(value: unknown): value is DecideField {
 }
 
 /**
- * Evaluates a single rule against the provided parameters
+ * Evaluates an expression against the provided parameters
  * @internal
  */
-function evaluateRule(rule: DecideRule, decideParameters: DecideParameters): boolean {
-  const parameterValue = decideParameters[rule.property]
-  // Only string and number types are supported
-  if (typeof parameterValue !== 'string' && typeof parameterValue !== 'number') {
-    return false
+function evaluateExpr(expr: Expr, decideParameters: DecideParameters): boolean {
+  if (isAndExpr(expr)) {
+    // All expressions in AND must be true
+    return expr.exprs.every((e) => evaluateExpr(e, decideParameters))
   }
 
-  // Evaluate the operator
-  const operatorPassed = resolveOperator[rule.operator](parameterValue, rule.targetValue)
-  if (!operatorPassed) {
-    return false
+  if (isOrExpr(expr)) {
+    // At least one expression in OR must be true
+    return expr.exprs.some((e) => evaluateExpr(e, decideParameters))
   }
 
-  // If there are AND conditions, all must pass
-  if (rule.and && rule.and.length > 0) {
-    return rule.and.every((andRule) => evaluateRule(andRule, decideParameters))
+  if (isNotExpr(expr)) {
+    // Negate the result of the inner expression
+    return !evaluateExpr(expr.expr, decideParameters)
   }
 
-  return true
+  if (isCmpExpr(expr)) {
+    // Get the parameter value
+    const parameterValue = expr.attr ? decideParameters[expr.attr] : undefined
+
+    // Only string and number types are supported for comparison
+    if (typeof parameterValue !== 'string' && typeof parameterValue !== 'number') {
+      return false
+    }
+
+    // For other operators, we need both a value and an operator
+    if (!expr.op) {
+      return false
+    }
+
+    // Evaluate the operator
+    return resolveOperator[expr.op](parameterValue, expr.value as string | number)
+  }
+
+  return false
 }
 
 /**
@@ -135,13 +173,13 @@ export function resolveDecideField(
     return field.default
   }
 
-  // Find matching condition
-  const matchingCondition = field.variants?.find((variant) => {
-    return variant.anyOf?.some((rule) => evaluateRule(rule, decideParameters))
+  // Find first matching variant
+  const matchingVariant = field.variants?.find((variant) => {
+    return evaluateExpr(variant.when, decideParameters)
   })
 
   // Return matching value or fall back to default
-  return matchingCondition ? matchingCondition.value : field.default
+  return matchingVariant ? matchingVariant.value : field.default
 }
 
 /**
