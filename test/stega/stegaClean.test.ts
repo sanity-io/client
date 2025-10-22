@@ -1,5 +1,5 @@
 import {stegaClean} from '@sanity/client/stega'
-import {vercelStegaCombine} from '@vercel/stega'
+import {stegaCombine} from '../../src/stega/stega'
 import {expect, test} from 'vitest'
 
 test('it removes everything', () => {
@@ -9,12 +9,12 @@ test('it removes everything', () => {
   }
   const encoded = JSON.parse(JSON.stringify(payload))
   const editInfo = JSON.stringify({origin: 'sanity.io', href: '/studio'})
-  encoded.foo[0] = vercelStegaCombine(encoded.foo[0], editInfo)
-  encoded.foo[1] = vercelStegaCombine(encoded.foo[1], editInfo)
+  encoded.foo[0] = stegaCombine(encoded.foo[0], editInfo)
+  encoded.foo[1] = stegaCombine(encoded.foo[1], editInfo)
   encoded.multistrings = [
-    vercelStegaCombine('multi', editInfo),
-    vercelStegaCombine('stega', editInfo),
-    vercelStegaCombine('embedded', editInfo),
+    stegaCombine('multi', editInfo),
+    stegaCombine('stega', editInfo),
+    stegaCombine('embedded', editInfo),
   ].join(' ')
   expect(encoded).not.toEqual(payload)
   expect(stegaClean(encoded)).toEqual(payload)
@@ -23,7 +23,7 @@ test('it removes everything', () => {
 test('it handles strings', () => {
   const payload = 'foo'
   const editInfo = JSON.stringify({origin: 'sanity.io', href: '/studio'})
-  const encoded = vercelStegaCombine(payload, editInfo)
+  const encoded = stegaCombine(payload, editInfo)
   expect(encoded).not.toEqual(payload)
   expect(stegaClean(encoded)).toEqual(payload)
 })
