@@ -131,7 +131,7 @@ describe('ObservableSanityClient scheduledDraft()', () => {
         publishAt: TEST_PUBLISH_AT,
       })
       expect(result.subscribe).toBeDefined()
-    } catch (e) {
+    } catch {
       // Expected if the method throws during construction
     }
   })
