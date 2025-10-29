@@ -1,5 +1,5 @@
 import {getPublishedId, getVersionId} from '@sanity/client/csm'
-import {firstValueFrom, lastValueFrom, Observable} from 'rxjs'
+import {firstValueFrom, lastValueFrom, map, Observable, switchMap} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
@@ -16,6 +16,7 @@ import {
 } from './mediaLibrary/MediaLibraryVideoClient'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
 import {ObservableReleasesClient, ReleasesClient} from './releases/ReleasesClient'
+import {prepareScheduledDraft} from './releases/scheduledDraft'
 import type {
   Action,
   AllDocumentIdsMutationOptions,
@@ -941,6 +942,84 @@ export class ObservableSanityClient {
     const versionId = getVersionId(publishedId, releaseId)
 
     return dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options)
+  }
+
+  /**
+   * @public
+   *
+   * Creates a Scheduled Draft of a given draft document.
+   *
+   * @remarks
+   * * The `baseId` must be a draft document ID (e.g., `drafts.myDocument`).
+   * * If no `releaseId` is provided, one will be generated automatically.
+   * * Creates a release with `releaseType: 'scheduled'`, `cardinality: 'one'`, and `title: 'Scheduled publish'`.
+   *
+   * @category Scheduled Drafts
+   *
+   * @param params - Scheduled draft parameters:
+   *   - `releaseId` - Optional ID for the release (will be generated if not provided).
+   *   - `baseId` - The draft document ID to schedule for publication.
+   *   - `ifBaseRevisionId` - Optional revision ID to ensure the base document hasn't changed.
+   *   - `publishAt` - The ISO 8601 date/time when the draft should be published.
+   * @param options - Additional action options.
+   * @returns An observable that resolves to the transaction ID and release ID.
+   *
+   * @example Scheduling a draft for publication
+   * ```ts
+   * client.observable.scheduledDraft({
+   *   baseId: 'drafts.myDocument',
+   *   publishAt: '2024-12-25T00:00:00Z',
+   * }).pipe(
+   *   tap(({transactionId, releaseId}) => {
+   *     console.log(`Scheduled draft in release ${releaseId}`)
+   *   })
+   * ).subscribe()
+   * ```
+   */
+  scheduledDraft(
+    {
+      releaseId: providedReleaseId,
+      baseId,
+      ifBaseRevisionId,
+      publishAt,
+    }: {
+      releaseId?: string
+      baseId: string
+      ifBaseRevisionId?: string
+      publishAt: string
+    },
+    options?: BaseActionOptions,
+  ): Observable<SingleActionResult & {releaseId: string}> {
+    const {releaseId, metadata} = prepareScheduledDraft(
+      {releaseId: providedReleaseId, baseId, ifBaseRevisionId, publishAt},
+      options,
+    )
+
+    const publishedId = getPublishedId(baseId)
+
+    return this.releases
+      .create(
+        {
+          releaseId,
+          metadata: {...metadata, title: 'Scheduled publish'},
+        },
+        options,
+      )
+      .pipe(
+        switchMap(() =>
+          dataMethods._createVersionFromBase(
+            this,
+            this.#httpRequest,
+            publishedId,
+            baseId,
+            releaseId,
+            ifBaseRevisionId,
+            options,
+          ),
+        ),
+        switchMap(() => this.releases.schedule({releaseId, publishAt}, options)),
+        map((result) => ({...result, releaseId})),
+      )
   }
 
   /**
@@ -1996,6 +2075,57 @@ export class SanityClient {
 
     return lastValueFrom(
       dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options),
+    )
+  }
+
+  /**
+   * @public
+   *
+   * Creates a Scheduled Draft of a given draft document.
+   *
+   * @remarks
+   * * The `baseId` must be a draft document ID (e.g., `drafts.myDocument`).
+   * * If no `releaseId` is provided, one will be generated automatically.
+   * * Creates a release with `releaseType: 'scheduled'`, `cardinality: 'one'`, and `title: 'Scheduled publish'`.
+   *
+   * @category Scheduled Drafts
+   *
+   * @param params - Scheduled draft parameters:
+   *   - `releaseId` - Optional ID for the release (will be generated if not provided).
+   *   - `baseId` - The draft document ID to schedule for publication.
+   *   - `ifBaseRevisionId` - Optional revision ID to ensure the base document hasn't changed.
+   *   - `publishAt` - The ISO 8601 date/time when the draft should be published.
+   * @param options - Additional action options.
+   * @returns A promise that resolves to the transaction ID and release ID.
+   *
+   * @example Scheduling a draft for publication
+   * ```ts
+   * const {transactionId, releaseId} = await client.scheduledDraft({
+   *   baseId: 'drafts.myDocument',
+   *   publishAt: '2024-12-25T00:00:00Z',
+   * })
+   * console.log(`Scheduled draft in release ${releaseId}`)
+   * ```
+   */
+  scheduledDraft(
+    {
+      releaseId: providedReleaseId,
+      baseId,
+      ifBaseRevisionId,
+      publishAt,
+    }: {
+      releaseId?: string
+      baseId: string
+      ifBaseRevisionId?: string
+      publishAt: string
+    },
+    options?: BaseActionOptions,
+  ): Promise<SingleActionResult & {releaseId: string}> {
+    return lastValueFrom(
+      this.observable.scheduledDraft(
+        {releaseId: providedReleaseId, baseId, ifBaseRevisionId, publishAt},
+        options,
+      ),
     )
   }
 
