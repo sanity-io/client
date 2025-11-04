@@ -142,6 +142,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          path: .
       - run: npm run test:edge-runtime -- --retry=30
 
   browser-runtime:
@@ -158,6 +159,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          path: .
       - run: npm run test:browser
 
   deno-runtime:
@@ -174,6 +176,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          path: .
       - uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x.x
@@ -193,6 +196,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          path: .
       - uses: antongolub/action-setup-bun@f0b9f339a7ce9ba1174a58484e4dc9bbd6f7b133 # v1
       - run: npm run test:bun
 
@@ -213,6 +217,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          path: .
       - run: npm run test:node-runtimes
 
   next-runtime:
