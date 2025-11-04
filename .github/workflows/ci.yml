@@ -218,16 +218,6 @@ jobs:
         with:
           name: build-output-${{ github.run_id }}
           path: .
-      - name: Debug - Check directory structure
-        run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== List dist/ ==="
-          ls -la dist/ || echo "dist/ not found"
-          echo "=== List runtimes/node/ ==="
-          ls -la runtimes/node/ || echo "runtimes/node/ not found"
-          echo "=== Test without pipe ==="
-          cd runtimes/node && node --test --test-reporter=tap 2>&1 | head -50
       - run: npm run test:node-runtimes
 
   next-runtime:
