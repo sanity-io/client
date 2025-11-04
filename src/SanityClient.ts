@@ -601,7 +601,7 @@ export class ObservableSanityClient {
   createVersion(
     args: {
       baseId: string
-      releaseId: string
+      releaseId?: string
       publishedId: string
       ifBaseRevisionId?: string
     },
@@ -1647,7 +1647,7 @@ export class SanityClient {
     args: {
       publishedId: string
       baseId: string
-      releaseId: string
+      releaseId?: string
       ifBaseRevisionId?: string
     },
     options?: BaseActionOptions,
