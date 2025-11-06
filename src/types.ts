@@ -1152,7 +1152,8 @@ export type OpenEvent = {
 
 /**
  * The listener has been established, and will start receiving events.
- * Note that this is also emitted upon _reconnection_.
+ * Before apiVersion vTBD this is also emitted when reconnected
+ * As of apiVersion vTBD this is no longer emitted on reconnect, instead the `welcomeback` event is emitted
  *
  * @public
  */
@@ -1161,10 +1162,31 @@ export type WelcomeEvent = {
   listenerName: string
 }
 
+/**
+ * The listener has reconnected and successfully resumed from where it left off
+ *
+ * @public
+ */
+export type WelcomeBackEvent = {
+  type: 'welcomeback'
+  listenerName: string
+}
+
+/**
+ * The listener has reconnected and successfully resumed from where it left off
+ *
+ * @public
+ */
+export type ResetEvent = {
+  type: 'reset'
+}
+
 /** @public */
 export type ListenEvent<R extends Record<string, Any>> =
   | MutationEvent<R>
   | ReconnectEvent
+  | WelcomeBackEvent
+  | ResetEvent
   | WelcomeEvent
   | OpenEvent
 
@@ -1176,6 +1198,10 @@ export type ListenEventName =
   | 'welcome'
   /** The listener has been disconnected, and a reconnect attempt is scheduled */
   | 'reconnect'
+  /** The listener has reconnected and successfully resumed from where it left off */
+  | 'welcomeback'
+  /** The listener can't be resumed or otherwise need to reset its local state */
+  | 'reset'
   /**
    * The listener connection has been established
    * note: it's usually a better option to use the 'welcome' event

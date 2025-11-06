@@ -33,6 +33,8 @@ const possibleOptions = [
   'includeAllVersions',
   'visibility',
   'effectFormat',
+  // @todo: remove when dated api is ready
+  'enableResume',
   'tag',
 ]
 
