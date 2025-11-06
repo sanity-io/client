@@ -24,4 +24,5 @@ jobs:
       - name: Build package
         run: npm run build
       - name: Publish to pkg.pr.new
-        run: npx pkg-pr-new publish --compact --no-template
+        # todo: add --compact once repository field has been fixed
+        run: npx pkg-pr-new publish --no-template
