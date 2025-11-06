@@ -1173,7 +1173,7 @@ export type WelcomeBackEvent = {
 }
 
 /**
- * The listener has reconnected and successfully resumed from where it left off
+ * The listener can't be resumed or otherwise need to reset its local state
  *
  * @public
  */
