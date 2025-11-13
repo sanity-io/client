@@ -2260,11 +2260,16 @@ When you configure the client with a Media Library resource, you can use familia
 
 #### Configuration
 
+> [!NOTE]
+>
+> Requires API version `2025-03-25` or later.
+
 ```js
 import {createClient} from '@sanity/client'
 
 const client = createClient({
   token: 'valid-token',
+  apiVersion: '2025-03-25'
   useCdn: false,
   resource: {
     type: 'media-library',
