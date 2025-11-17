@@ -4,6 +4,7 @@ import {filter, map} from 'rxjs/operators'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {
   type Any,
+  type ListenEvent,
   type ListenEventName,
   type ListenOptions,
   type ListenParams,
@@ -78,7 +79,8 @@ export type ListenEventFromOptions<
 > = Opts extends ListenOptions
   ? Opts['events'] extends ListenEventName[]
     ? MapListenEventNamesToListenEvents<R, Opts['events']>
-    : MutationEvent<R>
+    : // fall back to ListenEvent if opts events is present, but we can't infer the literal event names
+      ListenEvent<R>
   : MutationEvent<R>
 
 /**

@@ -1,5 +1,6 @@
 import {
   createClient,
+  type ListenEvent,
   type MutationEvent,
   type OpenEvent,
   type ReconnectEvent,
@@ -19,6 +20,14 @@ describe('client.listen', () => {
 
     expectTypeOf(client.listen('*', {}, {events: ['welcome']})).toEqualTypeOf<
       Observable<WelcomeEvent>
+    >()
+
+    type MyDoc = {foo: 'bar'}
+    // Note – due to typescript's lack of support for partial type argument inference, TypeScript will see options
+    // here as `ListenOptions`, meaning the literal event names can no longer be inferred.
+    // see https://github.com/microsoft/TypeScript/pull/26349
+    expectTypeOf(client.listen<MyDoc>('*', {}, {events: ['welcome', 'mutation']})).toEqualTypeOf<
+      Observable<ListenEvent<MyDoc>>
     >()
 
     expectTypeOf(client.listen('*', {}, {events: []})).toEqualTypeOf<Observable<never>>()
