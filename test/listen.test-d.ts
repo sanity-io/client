@@ -21,6 +21,8 @@ describe('client.listen', () => {
       Observable<WelcomeEvent>
     >()
 
+    expectTypeOf(client.listen('*', {}, {events: []})).toEqualTypeOf<Observable<never>>()
+
     expectTypeOf(client.listen('*', {}, {events: ['welcome']})).toEqualTypeOf<
       // @ts-expect-error - Only WelcomeEvents should be emitted
       Observable<MutationEvent>
