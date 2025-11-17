@@ -1142,8 +1142,6 @@ export type WelcomeEvent = {
 /** @public */
 export type ListenEvent<R extends Record<string, Any>> =
   | MutationEvent<R>
-  | ChannelErrorEvent
-  | DisconnectEvent
   | ReconnectEvent
   | WelcomeEvent
   | OpenEvent
