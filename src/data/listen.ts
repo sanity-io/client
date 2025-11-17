@@ -4,10 +4,13 @@ import {filter, map} from 'rxjs/operators'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {
   type Any,
-  type ListenEvent,
+  type ListenEventName,
   type ListenOptions,
   type ListenParams,
   type MutationEvent,
+  type OpenEvent,
+  type ReconnectEvent,
+  type WelcomeEvent,
 } from '../types'
 import defaults from '../util/defaults'
 import {pick} from '../util/pick'
@@ -37,6 +40,48 @@ const defaultOptions = {
 }
 
 /**
+ * Maps an array of listen events names to their corresponding listen event type, e.g:
+ * ```
+ * type Test = MapListenEventNamesToListenEvents<Doc, ['welcome']>
+ *    // ^? WelcomeEvent
+ * ```
+ *
+ * @public
+ */
+export type MapListenEventNamesToListenEvents<
+  R extends Record<string, Any> = Record<string, Any>,
+  Events extends ListenEventName[] = ListenEventName[],
+> = Events extends (infer E)[]
+  ? E extends 'welcome'
+    ? WelcomeEvent
+    : E extends 'mutation'
+      ? MutationEvent<R>
+      : E extends 'reconnect'
+        ? ReconnectEvent
+        : E extends 'open'
+          ? OpenEvent
+          : never
+  : never
+
+/**
+ * Maps a ListenOptions object and returns the Listen events opted for, e.g:
+ * ```
+ * type Test = ListenEventFromOptions<Doc, {events: ['welcome', 'mutation']}>
+ *    // ^? WelcomeEvent | MutationEvent<Doc>
+ * ```
+ *
+ * @public
+ */
+export type ListenEventFromOptions<
+  R extends Record<string, Any> = Record<string, Any>,
+  Opts extends ListenOptions | undefined = undefined,
+> = Opts extends ListenOptions
+  ? Opts['events'] extends ListenEventName[]
+    ? MapListenEventNamesToListenEvents<R, Opts['events']>
+    : MutationEvent<R>
+  : MutationEvent<R>
+
+/**
  * Set up a listener that will be notified when mutations occur on documents matching the provided query/filter.
  *
  * @param query - GROQ-filter to listen to changes for
@@ -57,19 +102,25 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
  * @param options - Optional listener options
  * @public
  */
-export function _listen<R extends Record<string, Any> = Record<string, Any>>(
+export function _listen<
+  R extends Record<string, Any> = Record<string, Any>,
+  Opts extends ListenOptions = ListenOptions,
+>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: ListenParams,
-  options?: ListenOptions,
-): Observable<ListenEvent<R>>
+  options?: Opts,
+): Observable<ListenEventFromOptions<R, Opts>>
 /** @public */
-export function _listen<R extends Record<string, Any> = Record<string, Any>>(
+export function _listen<
+  R extends Record<string, Any> = Record<string, Any>,
+  Opts extends ListenOptions = ListenOptions,
+>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: ListenParams,
-  opts: ListenOptions = {},
-): Observable<MutationEvent<R> | ListenEvent<R>> {
+  opts: Opts = {} as Opts,
+): Observable<ListenEventFromOptions<R, Opts>> {
   const {url, token, withCredentials, requestTagPrefix, headers: configHeaders} = this.config()
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag
   const options = {...defaults(opts, defaultOptions), tag}
@@ -81,7 +132,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
     return throwError(() => new Error('Query too large for listener'))
   }
 
-  const listenFor = options.events ? options.events : ['mutation']
+  const listenFor = (options.events ? options.events : ['mutation']) satisfies Opts['events']
 
   const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
   if (withCredentials) {
@@ -110,12 +161,9 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   return connectEventSource(initEventSource, listenFor).pipe(
     reconnectOnConnectionFailure(),
     filter((event) => listenFor.includes(event.type)),
-    map(
-      (event) =>
-        ({
-          type: event.type,
-          ...('data' in event ? (event.data as object) : {}),
-        }) as MutationEvent<R> | ListenEvent<R>,
-    ),
-  )
+    map((event) => ({
+      type: event.type,
+      ...('data' in event ? (event.data as object) : {}),
+    })),
+  ) as Observable<ListenEventFromOptions<R, Opts>>
 }

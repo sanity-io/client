@@ -1156,6 +1156,11 @@ export type ListenEventName =
   | 'welcome'
   /** The listener has been disconnected, and a reconnect attempt is scheduled */
   | 'reconnect'
+  /**
+   * The listener connection has been established
+   * note: it's usually a better option to use the 'welcome' event
+   */
+  | 'open'
 
 /** @public */
 export type ListenParams = {[key: string]: Any}
