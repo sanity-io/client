@@ -4,6 +4,8 @@ import {
   type MutationEvent,
   type OpenEvent,
   type ReconnectEvent,
+  type ResetEvent,
+  type WelcomeBackEvent,
   type WelcomeEvent,
 } from '@sanity/client'
 import type {Observable} from 'rxjs'
@@ -31,6 +33,22 @@ describe('client.listen', () => {
     >()
 
     expectTypeOf(client.listen('*', {}, {events: []})).toEqualTypeOf<Observable<never>>()
+
+    //@ts-expect-error – welcomeback and reset requires `enableResume`
+    expectTypeOf(client.listen('*', {}, {events: ['welcomeback', 'reset']})).toEqualTypeOf<
+      Observable<ListenEvent>
+    >()
+
+    expectTypeOf(
+      client.listen('*', {}, {enableResume: true, events: ['welcome', 'mutation']}),
+    ).toEqualTypeOf<Observable<WelcomeEvent | MutationEvent>>()
+
+    const observable = client.listen(
+      '*',
+      {},
+      {enableResume: true, events: ['welcomeback', 'reset']},
+    )
+    expectTypeOf(observable).toEqualTypeOf<Observable<WelcomeBackEvent | ResetEvent>>()
 
     expectTypeOf(client.listen('*', {}, {events: ['welcome']})).toEqualTypeOf<
       // @ts-expect-error - Only WelcomeEvents should be emitted

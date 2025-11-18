@@ -1182,7 +1182,7 @@ export type ResetEvent = {
 }
 
 /** @public */
-export type ListenEvent<R extends Record<string, Any>> =
+export type ListenEvent<R extends Record<string, Any> = Record<string, Any>> =
   | MutationEvent<R>
   | ReconnectEvent
   | WelcomeBackEvent
@@ -1198,15 +1198,19 @@ export type ListenEventName =
   | 'welcome'
   /** The listener has been disconnected, and a reconnect attempt is scheduled */
   | 'reconnect'
-  /** The listener has reconnected and successfully resumed from where it left off */
-  | 'welcomeback'
-  /** The listener can't be resumed or otherwise need to reset its local state */
-  | 'reset'
   /**
    * The listener connection has been established
    * note: it's usually a better option to use the 'welcome' event
    */
   | 'open'
+
+/** @public */
+export type ResumableListenEventNames =
+  | ListenEventName
+  /** The listener has reconnected and successfully resumed from where it left off */
+  | 'welcomeback'
+  /** The listener can't be resumed or otherwise need to reset its local state */
+  | 'reset'
 
 /** @public */
 export type ListenParams = {[key: string]: Any}
@@ -1281,6 +1285,24 @@ export interface ListenOptions {
    * @defaultValue `undefined`
    */
   tag?: string
+
+  /**
+   * Resumes events upon reconnect
+   * @beta
+   * @defaultValue `false`
+   */
+  enableResume?: boolean
+}
+
+export interface ResumableListenOptions extends Omit<ListenOptions, 'events' | 'enableResume'> {
+  /**
+   * Resumes events upon reconnect
+   * @beta
+   * @defaultValue `false`
+   */
+  enableResume: true
+
+  events?: ResumableListenEventNames[]
 }
 
 /** @public */
