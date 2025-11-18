@@ -1263,7 +1263,7 @@ export interface ListenOptions {
 
   /**
    * Array of event names to include in the observable. By default, only mutation events are included.
-   *
+   * Note: `welcomeback` and `reset` events requires `enableResume: true`
    * @defaultValue `['mutation']`
    */
   events?: ListenEventName[]
@@ -1287,21 +1287,29 @@ export interface ListenOptions {
   tag?: string
 
   /**
-   * Resumes events upon reconnect
+   * If this is enabled, the client will normally resume events upon reconnect
+   * When if enabling this, you should also add the `reset` to the events array and handle the case where the backend is unable to resume.
    * @beta
    * @defaultValue `false`
    */
   enableResume?: boolean
 }
 
+/** @public */
 export interface ResumableListenOptions extends Omit<ListenOptions, 'events' | 'enableResume'> {
   /**
-   * Resumes events upon reconnect
+   * If this is enabled, the client will normally resume events upon reconnect
+   * Note that you should also subscribe to `reset`-events and handle the case where the backend is unable to resume
    * @beta
    * @defaultValue `false`
    */
   enableResume: true
 
+  /**
+   * Array of event names to include in the observable. By default, only mutation events are included.
+   *
+   * @defaultValue `['mutation']`
+   */
   events?: ResumableListenEventNames[]
 }
 
