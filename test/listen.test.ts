@@ -179,11 +179,17 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       })
 
       const events = await lastValueFrom(
-        client.listen('*', {}, {events: ['reconnect', 'mutation', 'welcome', 'welcomeback']}).pipe(
-          take(5),
-          catchError((err) => of(err)),
-          toArray(),
-        ),
+        client
+          .listen(
+            '*',
+            {},
+            {enableResume: true, events: ['reconnect', 'mutation', 'welcome', 'welcomeback']},
+          )
+          .pipe(
+            take(5),
+            catchError((err) => of(err)),
+            toArray(),
+          ),
       )
       expect(events).toEqual([
         {type: 'welcome', listenerName: 'foo1'},
@@ -217,7 +223,14 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const events = await lastValueFrom(
         client
-          .listen('*', {}, {events: ['reconnect', 'mutation', 'welcome', 'welcomeback', 'reset']})
+          .listen(
+            '*',
+            {},
+            {
+              enableResume: true,
+              events: ['reconnect', 'mutation', 'welcome', 'welcomeback', 'reset'],
+            },
+          )
           .pipe(
             take(5),
             catchError((err) => of(err)),
