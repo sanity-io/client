@@ -1198,19 +1198,15 @@ export type ListenEventName =
   | 'welcome'
   /** The listener has been disconnected, and a reconnect attempt is scheduled */
   | 'reconnect'
+  /** The listener has reconnected and successfully resumed from where it left off */
+  | 'welcomeback'
+  /** The listener can't be resumed or otherwise need to reset its local state */
+  | 'reset'
   /**
    * The listener connection has been established
    * note: it's usually a better option to use the 'welcome' event
    */
   | 'open'
-
-/** @public */
-export type ResumableListenEventNames =
-  | ListenEventName
-  /** The listener has reconnected and successfully resumed from where it left off */
-  | 'welcomeback'
-  /** The listener can't be resumed or otherwise need to reset its local state */
-  | 'reset'
 
 /** @public */
 export type ListenParams = {[key: string]: Any}
@@ -1262,9 +1258,8 @@ export interface ListenOptions {
   visibility?: 'transaction' | 'query'
 
   /**
-   * Array of event names to include in the observable. By default, only mutation events are included.
-   * Note: `welcomeback` and `reset` events requires `enableResume: true`
-   * @defaultValue `['mutation']`
+   * Array of event names to include in the observable. By default, only mutation and reset events are included.
+   * @defaultValue `['mutation', 'reset']`
    */
   events?: ListenEventName[]
 
@@ -1285,32 +1280,6 @@ export interface ListenOptions {
    * @defaultValue `undefined`
    */
   tag?: string
-
-  /**
-   * If this is enabled, the client will normally resume events upon reconnect
-   * When if enabling this, you should also add the `reset` to the events array and handle the case where the backend is unable to resume.
-   * @beta
-   * @defaultValue `false`
-   */
-  enableResume?: boolean
-}
-
-/** @public */
-export interface ResumableListenOptions extends Omit<ListenOptions, 'events' | 'enableResume'> {
-  /**
-   * If this is enabled, the client will normally resume events upon reconnect
-   * Note that you should also subscribe to `reset`-events and handle the case where the backend is unable to resume
-   * @beta
-   * @defaultValue `false`
-   */
-  enableResume: true
-
-  /**
-   * Array of event names to include in the observable. By default, only mutation events are included.
-   *
-   * @defaultValue `['mutation']`
-   */
-  events?: ResumableListenEventNames[]
 }
 
 /** @public */

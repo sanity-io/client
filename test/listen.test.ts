@@ -52,6 +52,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
           query: '*[_type == "beer" && title == $beerName]',
           $beerName: '"Headroom Double IPA"',
           includeResult: 'true',
+          enableResume: 'true',
         })
         expect(request.url, 'url should be correct').toEqual(`/v1/data/listen/prod?${searchParams}`)
 

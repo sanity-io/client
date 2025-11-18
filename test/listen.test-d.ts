@@ -14,8 +14,8 @@ import {describe, expectTypeOf, test} from 'vitest'
 describe('client.listen', () => {
   const client = createClient({})
   test('event types', async () => {
-    // mutation event is default
-    expectTypeOf(client.listen('*')).toEqualTypeOf<Observable<MutationEvent>>()
+    // mutation and reset is default
+    expectTypeOf(client.listen('*')).toEqualTypeOf<Observable<MutationEvent | ResetEvent>>()
 
     // @ts-expect-error - WelcomeEvent should not be emitted
     expectTypeOf(client.listen('*')).toEqualTypeOf<Observable<WelcomeEvent>>()
@@ -39,21 +39,23 @@ describe('client.listen', () => {
         {
           events: ['mutation', 'welcome', 'reconnect', 'welcomeback'],
           includeResult: true,
-          enableResume: true,
         },
       ),
     ).toEqualTypeOf<Observable<ListenEvent<MyDoc>>>()
 
     expectTypeOf(client.listen('*', {}, {events: []})).toEqualTypeOf<Observable<never>>()
 
-    //@ts-expect-error – welcomeback and reset requires `enableResume`
-    expectTypeOf(client.listen('*', {}, {events: ['welcomeback', 'reset']})).toEqualTypeOf<
-      Observable<ListenEvent>
+    expectTypeOf(client.listen('*', {}, {events: ['mutation', 'reset']})).toEqualTypeOf<
+      Observable<MutationEvent | ResetEvent>
     >()
 
     expectTypeOf(
-      client.listen('*', {}, {enableResume: true, events: ['welcome', 'mutation']}),
-    ).toEqualTypeOf<Observable<WelcomeEvent | MutationEvent>>()
+      client.listen(
+        '*',
+        {},
+        {enableResume: true, events: ['welcome', 'mutation', 'welcomeback', 'reset']},
+      ),
+    ).toEqualTypeOf<Observable<WelcomeEvent | MutationEvent | WelcomeBackEvent | ResetEvent>>()
 
     const observable = client.listen(
       '*',
