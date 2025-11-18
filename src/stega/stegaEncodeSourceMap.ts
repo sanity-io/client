@@ -1,4 +1,4 @@
-import {vercelStegaCombine} from '@vercel/stega'
+import {stegaCombine} from './stega'
 
 import {createEditUrl} from '../csm/createEditUrl'
 import {jsonPathToStudioPath} from '../csm/jsonPath'
@@ -90,7 +90,8 @@ export function stegaEncodeSourceMap<Result = unknown>(
       if (!baseUrl) return value
       const {_id: id, _type: type, _projectId: projectId, _dataset: dataset} = sourceDocument
 
-      return vercelStegaCombine(
+      
+      return stegaCombine(
         value,
         {
           origin: 'sanity.io',
@@ -105,7 +106,7 @@ export function stegaEncodeSourceMap<Result = unknown>(
           }),
         },
         // We use custom logic to determine if we should skip encoding
-        false,
+        true,
       )
     },
   )

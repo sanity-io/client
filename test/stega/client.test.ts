@@ -1,10 +1,10 @@
 import {type ClientConfig, type ContentSourceMap, createClient, SanityClient} from '@sanity/client'
 import {
-  vercelStegaCombine,
-  vercelStegaDecode,
-  vercelStegaDecodeAll,
-  vercelStegaSplit,
-} from '@vercel/stega'
+  stegaCombine,
+  stegaDecode,
+  stegaDecodeAll,
+  stegaSplit,
+} from '../../src/stega/stega'
 import {describe, expect, test} from 'vitest'
 
 const apiHost = 'api.sanity.url'
@@ -143,14 +143,14 @@ describe('@sanity/client/stega', async () => {
       expect(res.length, 'length should match').toBe(1)
       expect(res[0].rating, 'data should match').toBe(4)
       expect(res[0].title).not.toBe(result[0].title)
-      expect(vercelStegaSplit(res[0].title).cleaned).toBe(result[0].title)
-      expect(vercelStegaDecode(res[0].title)).toMatchInlineSnapshot(`
+      expect(stegaSplit(res[0].title).cleaned).toBe(result[0].title)
+      expect(stegaDecode(res[0].title)).toMatchInlineSnapshot(`
         {
           "href": "/studio/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title&perspective=published",
           "origin": "sanity.io",
         }
       `)
-      expect(vercelStegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
+      expect(stegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
         [
           {
             "href": "/studio/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title&perspective=published",
@@ -172,7 +172,7 @@ describe('@sanity/client/stega', async () => {
         .reply(200, {ms: 123, result, resultSourceMap})
 
       const res = await getClient({stega: {enabled: true, studioUrl: '/studio'}}).fetch(query, {
-        id: vercelStegaCombine(params.id, JSON.stringify({origin: 'sanity.io', href: '/studio'})),
+        id: stegaCombine(params.id, JSON.stringify({origin: 'sanity.io', href: '/studio'})),
       })
       expect(res.length, 'length should match').toBe(1)
     })
@@ -189,7 +189,7 @@ describe('@sanity/client/stega', async () => {
       const res = await getClient({stega: {studioUrl}}).fetch(query, params, {
         stega: true,
       })
-      expect(vercelStegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
+      expect(stegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
         [
           {
             "href": "/studio/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fstudio&id=njgNkngskjg&type=beer&path=title&perspective=published",
@@ -211,7 +211,7 @@ describe('@sanity/client/stega', async () => {
       const res = await getClient({stega: {studioUrl, enabled: true}}).fetch(query, params, {
         stega: false,
       })
-      expect(vercelStegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot('undefined')
+      expect(stegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot([])
     })
 
     test('the stega option merges in defaults', async () => {
@@ -226,7 +226,7 @@ describe('@sanity/client/stega', async () => {
           studioUrl: '/admin',
         },
       })
-      expect(vercelStegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
+      expect(stegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`
         [
           {
             "href": "/admin/intent/edit/mode=presentation;id=njgNkngskjg;type=beer;path=title?baseUrl=%2Fadmin&id=njgNkngskjg&type=beer&path=title&perspective=published",
