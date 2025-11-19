@@ -118,7 +118,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
  */
 export function _listen<
   R extends Record<string, Any> = Record<string, Any>,
-  Opts extends ListenOptions | ResumableListenOptions = ListenOptions,
+  Opts extends ListenOptions | ResumableListenOptions = ListenOptions | ResumableListenOptions,
 >(
   this: SanityClient | ObservableSanityClient,
   query: string,
@@ -128,7 +128,7 @@ export function _listen<
 /** @public */
 export function _listen<
   R extends Record<string, Any> = Record<string, Any>,
-  Opts extends ListenOptions = ListenOptions,
+  Opts extends ListenOptions | ResumableListenOptions = ListenOptions | ResumableListenOptions,
 >(
   this: SanityClient | ObservableSanityClient,
   query: string,
