@@ -32,6 +32,18 @@ describe('client.listen', () => {
       Observable<ListenEvent<MyDoc>>
     >()
 
+    expectTypeOf(
+      client.listen<MyDoc>(
+        '*[_type=="match" && !completed]',
+        {},
+        {
+          events: ['mutation', 'welcome', 'reconnect', 'welcomeback'],
+          includeResult: true,
+          enableResume: true,
+        },
+      ),
+    ).toEqualTypeOf<Observable<ListenEvent<MyDoc>>>()
+
     expectTypeOf(client.listen('*', {}, {events: []})).toEqualTypeOf<Observable<never>>()
 
     //@ts-expect-error – welcomeback and reset requires `enableResume`
