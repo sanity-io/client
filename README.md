@@ -1646,7 +1646,7 @@ Create a new release.
 ```js
 client
   .action({
-    actionType: 'sanity.action.releases.create',
+    actionType: 'sanity.action.release.create',
     releaseId: 'new-bikes-release',
     metadata: {
       title: 'New bikes',
