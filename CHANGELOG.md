@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.13.1](https://github.com/sanity-io/client/compare/v7.13.0...v7.13.1) (2025-11-26)
+
+
+### Bug Fixes
+
+* **perf:** improving stega encoding ([#1149](https://github.com/sanity-io/client/issues/1149)) ([7165b6e](https://github.com/sanity-io/client/commit/7165b6ea2f0f58292c0208a468c42c06c55a82ea))
+
 ## [7.13.0](https://github.com/sanity-io/client/compare/v7.12.1...v7.13.0) (2025-11-18)
 
 
