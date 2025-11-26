@@ -52,6 +52,32 @@ export function jsonPath(path: ContentSourceMapParsedPath): ContentSourceMapPath
     })
     .join('')}`
 }
+/**
+ * @internal
+ */
+export function jsonPathArray(path: ContentSourceMapParsedPath): string[] {
+  return path.map((segment) => {
+    if (typeof segment === 'string') {
+      const escapedKey = segment.replace(/[\f\n\r\t'\\]/g, (match) => {
+        return ESCAPE[match]
+      })
+      return `['${escapedKey}']`
+    }
+
+    if (typeof segment === 'number') {
+      return `[${segment}]`
+    }
+
+    if (segment._key !== '') {
+      const escapedKey = segment._key.replace(/['\\]/g, (match) => {
+        return ESCAPE[match]
+      })
+      return `[?(@._key=='${escapedKey}')]`
+    }
+
+    return `[${segment._index}]`
+  })
+}
 
 /**
  * @internal

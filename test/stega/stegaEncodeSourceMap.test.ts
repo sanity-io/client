@@ -1,6 +1,6 @@
-import {vercelStegaDecodeAll} from '@vercel/stega'
 import {expect, test, vi} from 'vitest'
 
+import {stegaDecodeAll} from '../../src/stega/stega'
 import {stegaEncodeSourceMap} from '../../src/stega/stegaEncodeSourceMap'
 import type {ContentSourceMap, Logger} from '../../src/stega/types'
 
@@ -530,7 +530,7 @@ test.each(cases)('resolveEditUrl $studioUrl', ({studioUrl}) => {
     logger,
   })
   expect(
-    vercelStegaDecodeAll(JSON.stringify(encoded)).map(
+    stegaDecodeAll(JSON.stringify(encoded)).map(
       ({href}: any) => decodeURIComponent(href).split('?')[0],
     ),
   ).toMatchSnapshot('decode all')
@@ -614,7 +614,7 @@ test('GraphQL API', () => {
     logger,
   })
   expect(
-    vercelStegaDecodeAll(JSON.stringify(encoded)).map(
+    stegaDecodeAll(JSON.stringify(encoded)).map(
       ({href}: any) => decodeURIComponent(href).split('?')[0],
     ),
   ).toMatchSnapshot('decode all')

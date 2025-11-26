@@ -1,4 +1,4 @@
-import {jsonPath, jsonPathToMappingPath} from './jsonPath'
+import {jsonPath, jsonPathArray, jsonPathToMappingPath} from './jsonPath'
 import type {ContentSourceMap, ContentSourceMapMapping, ContentSourceMapParsedPath} from './types'
 
 /**
@@ -27,15 +27,15 @@ export function resolveMapping(
     }
   }
 
-  const mappings = Object.entries(csm.mappings)
-    .filter(([key]) => resultMappingPath.startsWith(key))
-    .sort(([key1], [key2]) => key2.length - key1.length)
-
-  if (mappings.length == 0) {
-    return undefined
+  const resultMappingPathArray = jsonPathArray(jsonPathToMappingPath(resultPath))
+  for (let i = resultMappingPathArray.length - 1; i > 0; i--) {
+    const key = `$${resultMappingPathArray.slice(0, i).join('')}`
+    const mappingFound = csm.mappings[key]
+    if (mappingFound) {
+      const pathSuffix = resultMappingPath.substring(key.length)
+      return {mapping: mappingFound, matchedPath: key, pathSuffix}
+    }
   }
 
-  const [matchedPath, mapping] = mappings[0]
-  const pathSuffix = resultMappingPath.substring(matchedPath.length)
-  return {mapping, matchedPath, pathSuffix}
+  return undefined
 }
