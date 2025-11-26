@@ -207,7 +207,7 @@ describe('@sanity/client/stega', async () => {
       const res = await getClient({stega: {studioUrl, enabled: true}}).fetch(query, params, {
         stega: false,
       })
-      expect(stegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot([])
+      expect(stegaDecodeAll(JSON.stringify(res))).toMatchInlineSnapshot(`[]`)
     })
 
     test('the stega option merges in defaults', async () => {
