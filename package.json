@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "7.12.0",
+  "version": "7.13.0",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "sanity",
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/sanity-io/client.git"
+    "url": "git+https://github.com/sanity-io/client.git"
   },
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
@@ -116,7 +116,7 @@
     "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
     "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
     "test:next": "npm test -- --config ./vitest.next.config.ts",
-    "test:node-runtimes": "(cd runtimes/node && node --test | npx faucet)"
+    "test:node-runtimes": "(cd runtimes/node && node --test)"
   },
   "browserslist": "extends @sanity/browserslist-config",
   "prettier": {
@@ -156,7 +156,6 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-tsdoc": "^0.4.0",
     "eslint-plugin-unused-imports": "^4.1.4",
-    "faucet": "^0.0.4",
     "globals": "^16.0.0",
     "happy-dom": "^12.10.3",
     "json-diff": "^1.0.6",
@@ -164,6 +163,7 @@
     "msw": "^2.7.3",
     "next": "^15.3.0",
     "nock": "^13.5.6",
+    "pkg-pr-new": "^0.0.60",
     "prettier": "^3.5.3",
     "prettier-plugin-packagejson": "^2.5.10",
     "rimraf": "^5.0.7",

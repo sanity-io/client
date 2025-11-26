@@ -5,6 +5,20 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.13.0](https://github.com/sanity-io/client/compare/v7.12.1...v7.13.0) (2025-11-18)
+
+
+### Features
+
+* **listen:** return event type based on options.events ([#1159](https://github.com/sanity-io/client/issues/1159)) ([a0303f7](https://github.com/sanity-io/client/commit/a0303f78ca821b0ece081bb85ba88872d5fb2b41))
+
+## [7.12.1](https://github.com/sanity-io/client/compare/v7.12.0...v7.12.1) (2025-11-04)
+
+
+### Bug Fixes
+
+* make releaseId optional in createVersion method ([#1151](https://github.com/sanity-io/client/issues/1151)) ([660464b](https://github.com/sanity-io/client/commit/660464b526ba57ae8d527503baba34c23ee75307))
+
 ## [7.12.0](https://github.com/sanity-io/client/compare/v7.11.2...v7.12.0) (2025-10-03)
 
 

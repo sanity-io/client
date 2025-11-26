@@ -2936,7 +2936,7 @@ describe('client', async () => {
             transactionId: 'abc123',
           })
 
-        const res = await getClient().createVersion({baseId, publishedId} as any)
+        const res = await getClient().createVersion({baseId, publishedId})
         expect(res.transactionId).toEqual('abc123')
       })
 
