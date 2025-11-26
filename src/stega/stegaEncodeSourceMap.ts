@@ -1,11 +1,10 @@
-import {stegaCombine} from './stega'
-
 import {createEditUrl} from '../csm/createEditUrl'
 import {jsonPathToStudioPath} from '../csm/jsonPath'
 import {resolveStudioBaseRoute} from '../csm/resolveEditInfo'
 import {reKeySegment, toString as studioPathToString} from '../csm/studioPath'
 import {encodeIntoResult} from './encodeIntoResult'
 import {filterDefault} from './filterDefault'
+import {stegaCombine} from './stega'
 import {
   type ContentSourceMap,
   type ContentSourceMapParsedPath,
@@ -90,7 +89,6 @@ export function stegaEncodeSourceMap<Result = unknown>(
       if (!baseUrl) return value
       const {_id: id, _type: type, _projectId: projectId, _dataset: dataset} = sourceDocument
 
-      
       return stegaCombine(
         value,
         {

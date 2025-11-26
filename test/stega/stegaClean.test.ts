@@ -1,6 +1,7 @@
 import {stegaClean} from '@sanity/client/stega'
-import {stegaCombine} from '../../src/stega/stega'
 import {expect, test} from 'vitest'
+
+import {stegaCombine} from '../../src/stega/stega'
 
 test('it removes everything', () => {
   const payload = {

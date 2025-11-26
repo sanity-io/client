@@ -1,11 +1,7 @@
 import {type ClientConfig, type ContentSourceMap, createClient, SanityClient} from '@sanity/client'
-import {
-  stegaCombine,
-  stegaDecode,
-  stegaDecodeAll,
-  stegaSplit,
-} from '../../src/stega/stega'
 import {describe, expect, test} from 'vitest'
+
+import {stegaCombine, stegaDecode, stegaDecodeAll, stegaSplit} from '../../src/stega/stega'
 
 const apiHost = 'api.sanity.url'
 const defaultProjectId = 'bf1942'

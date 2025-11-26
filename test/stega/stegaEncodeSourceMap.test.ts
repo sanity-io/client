@@ -1,6 +1,6 @@
-import {stegaDecodeAll} from '../../src/stega/stega'
 import {expect, test, vi} from 'vitest'
 
+import {stegaDecodeAll} from '../../src/stega/stega'
 import {stegaEncodeSourceMap} from '../../src/stega/stegaEncodeSourceMap'
 import type {ContentSourceMap, Logger} from '../../src/stega/types'
 

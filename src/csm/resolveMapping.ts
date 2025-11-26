@@ -28,14 +28,14 @@ export function resolveMapping(
   }
 
   const resultMappingPathArray = jsonPathArray(jsonPathToMappingPath(resultPath))
-  for(let i = resultMappingPathArray.length -1; i > 0;i--){
-    const key = `$${resultMappingPathArray.slice(0,i).join('')}`
-    const mappingFound = csm.mappings[key];
-      if(mappingFound){
-        const pathSuffix = resultMappingPath.substring(key.length)
-        return {mapping: mappingFound, matchedPath:key, pathSuffix}
-      }
+  for (let i = resultMappingPathArray.length - 1; i > 0; i--) {
+    const key = `$${resultMappingPathArray.slice(0, i).join('')}`
+    const mappingFound = csm.mappings[key]
+    if (mappingFound) {
+      const pathSuffix = resultMappingPath.substring(key.length)
+      return {mapping: mappingFound, matchedPath: key, pathSuffix}
+    }
   }
-  
+
   return undefined
 }

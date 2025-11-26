@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ---------- CONSTANTS ----------
 const ZERO_WIDTHS = [
   8203, // U+200B ZERO WIDTH SPACE
@@ -31,9 +32,9 @@ export function stegaEncode(data: any) {
   const json = typeof data === 'string' ? data : JSON.stringify(data)
   // On nodejs we could use Buffer instead (it is faster) but we need to identify if we are running on node
   const bytes = new TextEncoder().encode(json)
-  // Using a string and concatenating the result as we are looping is faster 
+  // Using a string and concatenating the result as we are looping is faster
   // than creating an array and merging at the end
-  let out = '' 
+  let out = ''
   for (let i = 0; i < bytes.length; i++) {
     const b = bytes[i]
     out +=
@@ -111,7 +112,6 @@ function decodeLegacy(chars: string, single = false) {
 
 // ---------- UTILITIES ----------
 export function stegaCombine(visible: any, metadata: any, skip: 'auto' | boolean = 'auto') {
-  
   if (skip === true || (skip === 'auto' && !isDateLike(visible) && !isUrlLike(visible))) {
     return `${visible}${stegaEncode(metadata)}`
   }
@@ -148,11 +148,10 @@ function isDateLike(t: any) {
 }
 
 export function stegaDecodeAll(data: string): string[] {
-  let e = data.match(STEGA_REGEX)
-  if (!!e) return e.map((r) => stegaDecode(r)).flat()
+  const e = data.match(STEGA_REGEX)
+  if (e) return e.map((r) => stegaDecode(r)).flat()
   return []
 }
-
 
 export default {
   stegaEncode,
