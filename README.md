@@ -1336,7 +1336,7 @@ const client = createClient({
 1. Create a new release
 
 ```js
-const {releaseId} = await client.release.create({
+const {releaseId} = await client.releases.create({
   metadata: {
     title: 'New bike drop'
     releaseType: 'scheduled'
