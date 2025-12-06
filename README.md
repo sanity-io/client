@@ -2284,9 +2284,14 @@ The Media Library provides centralized asset management for your organization. S
 
 #### Getting video playback information
 
+> [!NOTE]
+>
+> Requires API version `2025-03-25` or later.
+
 ```js
 const client = createClient({
   token: 'valid-token',
+  apiVersion: '2025-03-25'
   useCdn: false,
   '~experimental_resource': {
     type: 'media-library',
