@@ -69,6 +69,16 @@ export class ObservableAssetsClient {
   ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
+
+  /**
+   * Delete an asset document
+   *
+   * @param assetType - Asset type (file/image)
+   * @param id - Asset document ID to delete
+   */
+  delete(assetType: 'file' | 'image', id: string): Observable<void> {
+    return _delete(this.#client, this.#httpRequest, assetType, id)
+  }
 }
 
 /** @internal */
@@ -133,6 +143,16 @@ export class AssetsClient {
       ),
     )
   }
+
+  /**
+   * Delete an asset document
+   *
+   * @param assetType - Asset type (file/image)
+   * @param id - Asset document ID to delete
+   */
+  delete(assetType: 'file' | 'image', id: string): Promise<void> {
+    return lastValueFrom(_delete(this.#client.observable, this.#httpRequest, assetType, id))
+  }
 }
 
 function _upload(
@@ -180,9 +200,10 @@ function _upload(
 
 function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image' | 'file'): string {
   const assetTypeEndpoint = assetType === 'image' ? 'images' : 'files'
+  const resource = config.resource || config['~experimental_resource']
 
-  if (config['~experimental_resource']) {
-    const {type, id} = config['~experimental_resource']
+  if (resource) {
+    const {type, id} = resource
     switch (type) {
       case 'dataset': {
         throw new Error(
@@ -206,6 +227,66 @@ function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image'
 
   const dataset = validators.hasDataset(config)
   return `assets/${assetTypeEndpoint}/${dataset}`
+}
+
+function _delete(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  assetType: 'image' | 'file',
+  id: string,
+): Observable<void> {
+  validators.validateAssetType(assetType)
+
+  if (!id || typeof id !== 'string') {
+    throw new Error('Asset delete requires a valid document ID')
+  }
+
+  const config = client.config()
+  const uri = buildAssetDeleteUrl(config, assetType, id)
+
+  return _requestObservable<void>(client, httpRequest, {
+    method: 'DELETE',
+    uri,
+  }).pipe(
+    filter((event: Any) => event.type === 'response'),
+    map(() => undefined),
+  )
+}
+
+function buildAssetDeleteUrl(
+  config: InitializedClientConfig,
+  assetType: 'image' | 'file',
+  id: string,
+): string {
+  const assetTypeEndpoint = assetType === 'image' ? 'images' : 'files'
+  const resource = config.resource || config['~experimental_resource']
+
+  if (resource) {
+    const {type, id: resourceId} = resource
+    switch (type) {
+      case 'dataset': {
+        throw new Error(
+          'Assets are not supported for dataset resources, yet. Configure the client with `{projectId: <projectId>, dataset: <datasetId>}` instead.',
+        )
+      }
+      case 'canvas': {
+        return `/canvases/${resourceId}/assets/${assetTypeEndpoint}/${id}`
+      }
+      case 'media-library': {
+        // Media Library uses a different endpoint structure for delete
+        return `/media-libraries/${resourceId}/assets/${id}`
+      }
+      case 'dashboard': {
+        return `/dashboards/${resourceId}/assets/${assetTypeEndpoint}/${id}`
+      }
+      default:
+        // @ts-expect-error - handle all supported resource types
+        throw new Error(`Unsupported resource type: ${type.toString()}`)
+    }
+  }
+
+  const dataset = validators.hasDataset(config)
+  return `assets/${assetTypeEndpoint}/${dataset}/${id}`
 }
 
 function optionsFromFile(opts: Record<string, Any>, file: Any) {

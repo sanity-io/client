@@ -6032,6 +6032,75 @@ describe('client', async () => {
         expectTypeOf(signedResult.animated.token).toBeString()
       }
     })
+
+    test('supports new `resource` configuration property', () => {
+      const clientWithNewConfig = getClient({
+        resource: {type: 'media-library', id: mediaLibraryId},
+      })
+      expect(clientWithNewConfig.getDataUrl('query')).toBe(
+        `/media-libraries/${mediaLibraryId}/query`,
+      )
+    })
+
+    test('maintains backwards compatibility with `~experimental_resource`', () => {
+      const clientWithOldConfig = getClient({
+        '~experimental_resource': {type: 'media-library', id: mediaLibraryId},
+      })
+      expect(clientWithOldConfig.getDataUrl('query')).toBe(
+        `/media-libraries/${mediaLibraryId}/query`,
+      )
+    })
+
+    test('prefers `resource` over `~experimental_resource` when both are set', () => {
+      const preferredId = 'ml-preferred'
+      const deprecatedId = 'ml-deprecated'
+      const clientWithBoth = getClient({
+        resource: {type: 'media-library', id: preferredId},
+        '~experimental_resource': {type: 'media-library', id: deprecatedId},
+      })
+      expect(clientWithBoth.getDataUrl('query')).toBe(`/media-libraries/${preferredId}/query`)
+    })
+
+    test.skipIf(isEdge)('assets.delete() works with media library resource', async () => {
+      const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
+      const assetId = 'image-abc123def'
+
+      nock(globalApiHost)
+        .delete(`/v1/media-libraries/${mediaLibraryId}/assets/${assetId}`)
+        .reply(204)
+
+      await expect(client.assets.delete('image', assetId)).resolves.not.toThrow()
+    })
+
+    test.skipIf(isEdge)('assets.upload() works with new resource config', async () => {
+      const fixturePath = fixture('horsehead-nebula.jpg')
+      const isImage = (body: any) =>
+        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+
+      nock(globalApiHost)
+        .post(`/v1/media-libraries/${mediaLibraryId}/upload`, isImage)
+        .reply(201, {document: {url: 'https://some.asset.url', _id: 'image-123'}})
+
+      const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
+      const body = fs.readFileSync(fixturePath)
+      await expect(client.assets.upload('image', body)).resolves.toMatchObject({
+        url: 'https://some.asset.url',
+      })
+    })
+
+    test.skipIf(isEdge)('fetch() works with resource config', async () => {
+      const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
+
+      nock(globalApiHost)
+        .get(`/v1/media-libraries/${mediaLibraryId}/query?query=%2A&returnQuery=false`)
+        .reply(200, {
+          result: [{_id: 'asset-123', _type: 'sanity.asset'}],
+          ms: 100,
+        })
+
+      const result = await client.fetch('*')
+      expect(result).toEqual([{_id: 'asset-123', _type: 'sanity.asset'}])
+    })
   })
 
   describe.skipIf(!isNode)('lineage', () => {

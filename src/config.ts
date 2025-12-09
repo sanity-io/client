@@ -11,6 +11,14 @@ export const defaultConfig = {
   stega: {enabled: false},
 } satisfies ClientConfig
 
+/**
+ * Get the resource configuration, preferring the new `resource` property over the deprecated `~experimental_resource`
+ * @internal
+ */
+export function getResourceConfig(config: InitializedClientConfig) {
+  return config.resource || config['~experimental_resource']
+}
+
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 const isLocal = (host: string) => LOCALHOSTS.indexOf(host) !== -1
 
@@ -63,7 +71,15 @@ export const initConfig = (
     ...defaultConfig,
     ...specifiedConfig,
   } as InitializedClientConfig
-  const projectBased = newConfig.useProjectHostname && !newConfig['~experimental_resource']
+
+  // Normalize resource configuration - prefer `resource` over deprecated `~experimental_resource`
+  if (newConfig['~experimental_resource'] && !newConfig.resource) {
+    warnings.printDeprecatedResourceConfigWarning()
+    newConfig.resource = newConfig['~experimental_resource']
+  }
+
+  const resourceConfig = getResourceConfig(newConfig)
+  const projectBased = newConfig.useProjectHostname && !resourceConfig
 
   if (typeof Promise === 'undefined') {
     const helpUrl = generateHelpUrl('js-client-promise-polyfill')
@@ -74,7 +90,7 @@ export const initConfig = (
     throw new Error('Configuration must contain `projectId`')
   }
 
-  if (newConfig['~experimental_resource']) {
+  if (resourceConfig) {
     validate.resourceConfig(newConfig)
   }
 

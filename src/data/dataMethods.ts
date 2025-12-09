@@ -559,9 +559,14 @@ export function _create<R extends Record<string, Any>>(
   return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
-const hasDataConfig = (client: Client) =>
-  (client.config().dataset !== undefined && client.config().projectId !== undefined) ||
-  client.config()['~experimental_resource'] !== undefined
+const hasDataConfig = (client: Client) => {
+  const config = client.config()
+  return (
+    (config.dataset !== undefined && config.projectId !== undefined) ||
+    config.resource !== undefined ||
+    config['~experimental_resource'] !== undefined
+  )
+}
 
 const isQuery = (client: Client, uri: string) =>
   hasDataConfig(client) && uri.startsWith(_getDataUrl(client, 'query'))
@@ -690,7 +695,8 @@ export function _request<R>(client: Client, httpRequest: HttpRequest, options: A
  */
 export function _getDataUrl(client: Client, operation: string, path?: string): string {
   const config = client.config()
-  if (config['~experimental_resource']) {
+  const resource = config.resource || config['~experimental_resource']
+  if (resource) {
     validators.resourceConfig(config)
     const resourceBase = resourceDataBase(config)
     const uri = path !== undefined ? `${operation}/${path}` : operation
@@ -759,10 +765,11 @@ function _createAbortError(signal?: AbortSignal) {
 }
 
 const resourceDataBase = (config: InitializedClientConfig): string => {
-  if (!config['~experimental_resource']) {
+  const resource = config.resource || config['~experimental_resource']
+  if (!resource) {
     throw new Error('`resource` must be provided to perform resource queries')
   }
-  const {type, id} = config['~experimental_resource']
+  const {type, id} = resource
 
   switch (type) {
     case 'dataset': {
