@@ -2324,7 +2324,7 @@ const recentAssets = await client.fetch(
 Use `client.assets.upload()` to upload assets to your Media Library:
 
 ```js
-import fs from 'fs'
+import fs from 'node:fs'
 
 // Upload an image
 const imageAsset = await client.assets.upload(
