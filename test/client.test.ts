@@ -6135,7 +6135,7 @@ describe('client', async () => {
       expect(config['~experimental_resource']).toEqual({type: 'media-library', id: 'test-id'})
     })
 
-    test('throws error when Media Library ID is invalid in fetch', async () => {
+    test.skipIf(isEdge)('throws error when Media Library ID is invalid in fetch', async () => {
       const clientWithInvalidId = getClient({
         resource: {type: 'media-library', id: 'invalid-id'},
       })
