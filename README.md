@@ -2280,7 +2280,7 @@ const result = await client.agent.action.patch({
 
 The Media Library provides centralized asset management for your organization. Store, organize, and manage digital assets across multiple applications and datasets.
 
-When you configure the client with a Media Library resource, you can use familiar methods like `fetch()`, `assets.upload()`, and `assets.delete()` to work with your media library.
+When you configure the client with a Media Library resource, you can use familiar methods like `fetch()` and `assets.upload()` to work with your media library.
 
 👉 Read more about [Media Library in Sanity](https://www.sanity.io/docs/media-library)
 
