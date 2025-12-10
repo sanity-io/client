@@ -5,6 +5,15 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.13.2](https://github.com/sanity-io/client/compare/v7.13.1...v7.13.2) (2025-12-10)
+
+
+### Bug Fixes
+
+* **csm:** resolve root path mappings ([#1172](https://github.com/sanity-io/client/issues/1172)) ([f81b777](https://github.com/sanity-io/client/commit/f81b777f11a2a2f5c35cc91be01b2195babc74c8))
+* **deps:** update dependency get-it to ^8.7.0 ([#1169](https://github.com/sanity-io/client/issues/1169)) ([ad1b878](https://github.com/sanity-io/client/commit/ad1b878f2982a2ef0725e1ee9fe2b82f7d4b79d5))
+* **docs:** fix incorrect releases method name in readme ([#1162](https://github.com/sanity-io/client/issues/1162)) ([29e8e90](https://github.com/sanity-io/client/commit/29e8e90c71038d9dcd443d0a3aa82a9a518ee68f))
+
 ## [7.13.1](https://github.com/sanity-io/client/compare/v7.13.0...v7.13.1) (2025-11-26)
 
 
