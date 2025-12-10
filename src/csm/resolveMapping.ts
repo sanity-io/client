@@ -28,7 +28,7 @@ export function resolveMapping(
   }
 
   const resultMappingPathArray = jsonPathArray(jsonPathToMappingPath(resultPath))
-  for (let i = resultMappingPathArray.length - 1; i > 0; i--) {
+  for (let i = resultMappingPathArray.length - 1; i >= 0; i--) {
     const key = `$${resultMappingPathArray.slice(0, i).join('')}`
     const mappingFound = csm.mappings[key]
     if (mappingFound) {

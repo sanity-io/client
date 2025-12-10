@@ -246,6 +246,252 @@ const encodeTestCases: {
       ],
     },
   },
+  {
+    name: 'resolves root only mapping',
+    queryResult: {
+      result: [
+        {
+          _id: 'foo',
+          this: 'that',
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: 'foo',
+            _type: 'bar',
+          },
+        ],
+        paths: ['$'],
+        mappings: {
+          $: {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+    },
+    expected: {
+      encoderCalls: 2,
+      encoderArgs: [
+        [
+          {
+            sourcePath: [0, '_id'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: [0, '_id'],
+            value: 'foo',
+          },
+        ],
+        [
+          {
+            sourcePath: [0, 'this'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: [0, 'this'],
+            value: 'that',
+          },
+        ],
+      ],
+    },
+  },
+  {
+    name: 'single result resolves root only mapping',
+    queryResult: {
+      result: {
+        _id: 'foo',
+        this: 'that',
+      },
+      resultSourceMap: {
+        documents: [
+          {
+            _id: 'foo',
+            _type: 'bar',
+          },
+        ],
+        paths: ['$'],
+        mappings: {
+          $: {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+    },
+    expected: {
+      encoderCalls: 2,
+      encoderArgs: [
+        [
+          {
+            sourcePath: ['_id'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: ['_id'],
+            value: 'foo',
+          },
+        ],
+        [
+          {
+            sourcePath: ['this'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: ['this'],
+            value: 'that',
+          },
+        ],
+      ],
+    },
+  },
+  {
+    name: 'resolves mixture of root and non-root mappings',
+    queryResult: {
+      result: [
+        {
+          _id: 'foo',
+          this: 'that',
+          projected: {
+            fred: 'yolo',
+          },
+        },
+      ],
+      resultSourceMap: {
+        documents: [
+          {
+            _id: 'foo',
+            _type: 'bar',
+          },
+        ],
+        paths: ["$['_id']", "$['this']", "$['nested']"],
+        mappings: {
+          "$[0]['_id']": {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['this']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$[0]['projected']": {
+            source: {
+              document: 0,
+              path: 2,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+    },
+    expected: {
+      encoderCalls: 3,
+      encoderArgs: [
+        [
+          {
+            sourcePath: ['_id'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: [0, '_id'],
+            value: 'foo',
+          },
+        ],
+        [
+          {
+            sourcePath: ['this'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: [0, 'this'],
+            value: 'that',
+          },
+        ],
+        [
+          {
+            sourcePath: ['nested', 'fred'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: [0, 'projected', 'fred'],
+            value: 'yolo',
+          },
+        ],
+      ],
+    },
+  },
+  {
+    name: 'single result resolves mixture of root and non-root mappings',
+    queryResult: {
+      result: {
+        _id: 'foo',
+        this: 'that',
+        projected: {
+          fred: 'yolo',
+        },
+      },
+      resultSourceMap: {
+        documents: [
+          {
+            _id: 'foo',
+            _type: 'bar',
+          },
+        ],
+        paths: ['$', "$['nested']"],
+        mappings: {
+          $: {
+            source: {
+              document: 0,
+              path: 0,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+          "$['projected']": {
+            source: {
+              document: 0,
+              path: 1,
+              type: 'documentValue',
+            },
+            type: 'value',
+          },
+        },
+      },
+    },
+    expected: {
+      encoderCalls: 3,
+      encoderArgs: [
+        [
+          {
+            sourcePath: ['_id'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: ['_id'],
+            value: 'foo',
+          },
+        ],
+        [
+          {
+            sourcePath: ['this'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: ['this'],
+            value: 'that',
+          },
+        ],
+        [
+          {
+            sourcePath: ['nested', 'fred'],
+            sourceDocument: {_id: 'foo', _type: 'bar'},
+            resultPath: ['projected', 'fred'],
+            value: 'yolo',
+          },
+        ],
+      ],
+    },
+  },
 ]
 
 test.each(encodeTestCases)('encode $name', ({queryResult, expected}) => {
