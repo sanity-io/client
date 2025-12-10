@@ -286,8 +286,9 @@ function buildAssetDeleteUrl(
         return `/canvases/${resourceId}/assets/${assetTypeEndpoint}/${id}`
       }
       case 'media-library': {
-        // Media Library uses a different endpoint structure for delete
-        return `/media-libraries/${resourceId}/assets/${id}`
+        throw new Error(
+          'Media Library does not support assets.delete(). Use client.delete(assetId) or client.transaction().delete(assetId).commit() instead.',
+        )
       }
       case 'dashboard': {
         return `/dashboards/${resourceId}/assets/${assetTypeEndpoint}/${id}`

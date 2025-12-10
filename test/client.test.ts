@@ -6061,15 +6061,33 @@ describe('client', async () => {
       expect(clientWithBoth.getDataUrl('query')).toBe(`/media-libraries/${preferredId}/query`)
     })
 
-    test.skipIf(isEdge)('assets.delete() works with media library resource', async () => {
+    test('assets.delete() throws error for media library (use mutations instead)', async () => {
       const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
-      const assetId = 'image-abc123def'
+      const assetId = '36fOGtOJOadpl4F9xpksb9uKjYp'
+
+      // Media Library should throw an error directing users to use mutations instead
+      await expect(async () => {
+        await client.assets.delete('file', assetId)
+      }).rejects.toThrow('Media Library does not support assets.delete()')
+    })
+
+    test.skipIf(isEdge)('can delete media library assets using mutations', async () => {
+      const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
+      const assetId = '36fOGtOJOadpl4F9xpksb9uKjYp'
+      const expectedBody = {mutations: [{delete: {id: assetId}}]}
 
       nock(globalApiHost)
-        .delete(`/v1/media-libraries/${mediaLibraryId}/assets/${assetId}`)
-        .reply(204)
+        .post(
+          `/v1/media-libraries/${mediaLibraryId}/mutate?returnIds=true&returnDocuments=true&visibility=sync`,
+          expectedBody,
+        )
+        .reply(200, {
+          transactionId: 'abc123',
+          results: [{id: assetId, operation: 'delete'}],
+        })
 
-      await expect(client.assets.delete('image', assetId)).resolves.not.toThrow()
+      // The correct way to delete Media Library assets is using mutations
+      await expect(client.delete(assetId)).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('assets.upload() works with new resource config', async () => {

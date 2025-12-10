@@ -2348,12 +2348,21 @@ const videoAsset = await client.assets.upload(
 
 #### Deleting assets
 
-Use `client.assets.delete()` to remove assets from your Media Library:
+Media Library uses the mutation API for deletions (not `client.assets.delete()`):
 
 ```js
-// Delete an asset by ID
-await client.assets.delete('image', 'image-abc123def-1920x1080-jpg')
+// Delete a single asset
+await client.delete('36fOGtOJOadpl4F9xpksb9uKjYp')
+
+// Delete both the asset and its draft (recommended)
+await client
+  .transaction()
+  .delete('36fOGtOJOadpl4F9xpksb9uKjYp')
+  .delete('drafts.36fOGtOJOadpl4F9xpksb9uKjYp')
+  .commit()
 ```
+
+> **Note:** Unlike Content Lake, Media Library uses the standard mutation API for deletions, not the `assets.delete()` method.
 
 #### Getting video playback information
 
