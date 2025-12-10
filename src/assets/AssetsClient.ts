@@ -173,15 +173,28 @@ function _upload(
   const config = client.config()
   const options = optionsFromFile(opts, body)
   const {tag, label, title, description, creditLine, filename, source} = options
-  const query: Any = {
-    label,
-    title,
-    description,
-    filename,
-    meta,
-    creditLine,
-  }
-  if (source) {
+  const resource = config.resource || config['~experimental_resource']
+  const isMediaLibrary = resource?.type === 'media-library'
+
+  // Media Library has a simpler upload API with fewer supported parameters
+  const query: Any = isMediaLibrary
+    ? {
+        // Media Library only supports basic parameters
+        title,
+        filename,
+      }
+    : {
+        // Content Lake supports full set of parameters
+        label,
+        title,
+        description,
+        filename,
+        meta,
+        creditLine,
+      }
+
+  // Source parameters are only for Content Lake
+  if (source && !isMediaLibrary) {
     query.sourceId = source.id
     query.sourceName = source.name
     query.sourceUrl = source.url

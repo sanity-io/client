@@ -6093,7 +6093,6 @@ describe('client', async () => {
       const uploadOptions = {
         filename: 'custom-filename.jpg',
         title: 'Custom Title',
-        description: 'Custom Description',
         contentType: 'image/jpeg',
       }
 
@@ -6102,7 +6101,7 @@ describe('client', async () => {
         .query({
           filename: 'custom-filename.jpg',
           title: 'Custom Title',
-          description: 'Custom Description',
+          // Note: Media Library only supports title and filename, not description/label/etc
         })
         .reply(201, {
           document: {
