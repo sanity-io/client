@@ -2299,7 +2299,6 @@ const client = createClient({
 })
 ```
 
-> **Note:** The `~experimental_resource` configuration property has been renamed to `resource`. The old name is still supported for backwards compatibility but will be removed in a future version.
 
 #### Querying assets
 
