@@ -563,8 +563,7 @@ const hasDataConfig = (client: Client) => {
   const config = client.config()
   return (
     (config.dataset !== undefined && config.projectId !== undefined) ||
-    config.resource !== undefined ||
-    config['~experimental_resource'] !== undefined
+    config.resource !== undefined
   )
 }
 
@@ -695,7 +694,7 @@ export function _request<R>(client: Client, httpRequest: HttpRequest, options: A
  */
 export function _getDataUrl(client: Client, operation: string, path?: string): string {
   const config = client.config()
-  const resource = config.resource || config['~experimental_resource']
+  const resource = config.resource
   if (resource) {
     validators.resourceConfig(config)
     const resourceBase = resourceDataBase(config)
@@ -765,7 +764,7 @@ function _createAbortError(signal?: AbortSignal) {
 }
 
 const resourceDataBase = (config: InitializedClientConfig): string => {
-  const resource = config.resource || config['~experimental_resource']
+  const resource = config.resource
   if (!resource) {
     throw new Error('`resource` must be provided to perform resource queries')
   }
