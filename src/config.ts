@@ -11,14 +11,6 @@ export const defaultConfig = {
   stega: {enabled: false},
 } satisfies ClientConfig
 
-/**
- * Get the resource configuration, preferring the new `resource` property over the deprecated `~experimental_resource`
- * @internal
- */
-export function getResourceConfig(config: InitializedClientConfig) {
-  return config.resource || config['~experimental_resource']
-}
-
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 const isLocal = (host: string) => LOCALHOSTS.indexOf(host) !== -1
 
@@ -78,7 +70,7 @@ export const initConfig = (
     newConfig.resource = newConfig['~experimental_resource']
   }
 
-  const resourceConfig = getResourceConfig(newConfig)
+  const resourceConfig = newConfig.resource
   const projectBased = newConfig.useProjectHostname && !resourceConfig
 
   if (typeof Promise === 'undefined') {

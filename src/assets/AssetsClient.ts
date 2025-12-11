@@ -153,7 +153,7 @@ function _upload(
   const config = client.config()
   const options = optionsFromFile(opts, body)
   const {tag, label, title, description, creditLine, filename, source} = options
-  const resource = config.resource || config['~experimental_resource']
+  const resource = config.resource
   const isMediaLibrary = resource?.type === 'media-library'
 
   // Media Library has a simpler upload API with fewer supported parameters
@@ -193,7 +193,7 @@ function _upload(
 
 function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image' | 'file'): string {
   const assetTypeEndpoint = assetType === 'image' ? 'images' : 'files'
-  const resource = config.resource || config['~experimental_resource']
+  const resource = config.resource
 
   if (resource) {
     const {type, id} = resource
