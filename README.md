@@ -2278,22 +2278,84 @@ const result = await client.agent.action.patch({
 
 ### Media Library API
 
-The Media Library provides centralized asset management for your organization. Store, organize, and manage digital assets across multiple applications and datasets with programmatic access through the `client.mediaLibrary` interface.
+The Media Library provides centralized asset management for your organization. Store, organize, and manage digital assets across multiple applications and datasets.
+
+When you configure the client with a Media Library resource, you can use familiar methods like `fetch()` and `assets.upload()` to work with your media library.
 
 👉 Read more about [Media Library in Sanity](https://www.sanity.io/docs/media-library)
 
-#### Getting video playback information
+#### Configuration
 
 ```js
+import {createClient} from '@sanity/client'
+
 const client = createClient({
   token: 'valid-token',
   useCdn: false,
-  '~experimental_resource': {
+  resource: {
     type: 'media-library',
-    id: 'mediaLibraryId',
+    id: 'your-media-library-id',
   },
 })
+```
 
+#### Querying assets
+
+Use `client.fetch()` to query assets in your Media Library using GROQ:
+
+```js
+// Query all assets
+const assets = await client.fetch('*[_type == "sanity.asset"]')
+
+// Query video assets
+const videos = await client.fetch('*[assetType == "sanity.videoAsset"]')
+
+// Query with filters
+const recentAssets = await client.fetch('*[_type == "sanity.asset" && _createdAt > $date]', {
+  date: '2025-01-01',
+})
+```
+
+#### Uploading assets
+
+Use `client.assets.upload()` to upload assets to your Media Library:
+
+```js
+import fs from 'node:fs'
+
+// Upload an image
+const imageAsset = await client.assets.upload('image', fs.createReadStream('photo.jpg'), {
+  filename: 'photo.jpg',
+  title: 'My Photo',
+})
+
+// Upload a video
+const videoAsset = await client.assets.upload('file', fs.createReadStream('video.mp4'), {
+  filename: 'video.mp4',
+})
+```
+
+#### Deleting assets
+
+Media Library uses the mutation API for deletions:
+
+```js
+// Delete a single asset
+await client.delete('36fOGtOJOadpl4F9xpksb9uKjYp')
+
+// Delete both the asset and its draft (recommended)
+await client
+  .transaction()
+  .delete('36fOGtOJOadpl4F9xpksb9uKjYp')
+  .delete('drafts.36fOGtOJOadpl4F9xpksb9uKjYp')
+  .commit()
+```
+
+#### Getting video playback information
+
+For video assets, use the specialized `getPlaybackInfo()` method to retrieve streaming URLs:
+
+```js
 // Basic usage with video asset ID
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
   'video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',

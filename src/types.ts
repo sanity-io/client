@@ -79,7 +79,27 @@ export interface ClientConfig {
   useCdn?: boolean
   token?: string
 
-  /** @internal */
+  /**
+   * Configure the client to work with a specific Sanity resource (Media Library, Canvas, etc.)
+   * @remarks
+   * This allows the client to interact with resources beyond traditional project datasets.
+   * When configured, methods like `fetch()`, `assets.upload()`, and mutations will operate on the specified resource.
+   * @example
+   * ```ts
+   * createClient({
+   *   resource: {
+   *     type: 'media-library',
+   *     id: 'your-media-library-id'
+   *   }
+   * })
+   * ```
+   */
+  resource?: ClientConfigResource
+
+  /**
+   * @deprecated Use `resource` instead
+   * @internal
+   */
   '~experimental_resource'?: ClientConfigResource
 
   /**

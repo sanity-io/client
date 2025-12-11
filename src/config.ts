@@ -63,7 +63,15 @@ export const initConfig = (
     ...defaultConfig,
     ...specifiedConfig,
   } as InitializedClientConfig
-  const projectBased = newConfig.useProjectHostname && !newConfig['~experimental_resource']
+
+  // Normalize resource configuration - prefer `resource` over deprecated `~experimental_resource`
+  if (newConfig['~experimental_resource'] && !newConfig.resource) {
+    warnings.printDeprecatedResourceConfigWarning()
+    newConfig.resource = newConfig['~experimental_resource']
+  }
+
+  const resourceConfig = newConfig.resource
+  const projectBased = newConfig.useProjectHostname && !resourceConfig
 
   if (typeof Promise === 'undefined') {
     const helpUrl = generateHelpUrl('js-client-promise-polyfill')
@@ -74,7 +82,7 @@ export const initConfig = (
     throw new Error('Configuration must contain `projectId`')
   }
 
-  if (newConfig['~experimental_resource']) {
+  if (resourceConfig) {
     validate.resourceConfig(newConfig)
   }
 

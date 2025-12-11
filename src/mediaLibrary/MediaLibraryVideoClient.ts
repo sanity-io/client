@@ -29,7 +29,9 @@ export class ObservableMediaLibraryVideoClient {
     assetIdentifier: MediaLibraryAssetInstanceIdentifier,
     options: MediaLibraryPlaybackInfoOptions = {},
   ): Observable<VideoPlaybackInfo> {
-    const configMediaLibraryId = this.#client.config()['~experimental_resource']?.id
+    const config = this.#client.config()
+    const resource = config.resource || config['~experimental_resource']
+    const configMediaLibraryId = resource?.id
 
     const {instanceId, libraryId} = parseAssetInstanceId(assetIdentifier)
     const effectiveLibraryId = libraryId || configMediaLibraryId
