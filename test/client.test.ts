@@ -6061,16 +6061,6 @@ describe('client', async () => {
       expect(clientWithBoth.getDataUrl('query')).toBe(`/media-libraries/${preferredId}/query`)
     })
 
-    test('assets.delete() throws error for media library (use mutations instead)', async () => {
-      const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
-      const assetId = '36fOGtOJOadpl4F9xpksb9uKjYp'
-
-      // Media Library should throw an error directing users to use mutations instead
-      await expect(async () => {
-        await client.assets.delete('file', assetId)
-      }).rejects.toThrow('Media Library does not support assets.delete()')
-    })
-
     test.skipIf(isEdge)('can delete media library assets using mutations', async () => {
       const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
       const assetId = '36fOGtOJOadpl4F9xpksb9uKjYp'

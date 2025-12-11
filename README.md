@@ -2299,7 +2299,6 @@ const client = createClient({
 })
 ```
 
-
 #### Querying assets
 
 Use `client.fetch()` to query assets in your Media Library using GROQ:
@@ -2312,10 +2311,9 @@ const assets = await client.fetch('*[_type == "sanity.asset"]')
 const videos = await client.fetch('*[assetType == "sanity.videoAsset"]')
 
 // Query with filters
-const recentAssets = await client.fetch(
-  '*[_type == "sanity.asset" && _createdAt > $date]',
-  {date: '2025-01-01'},
-)
+const recentAssets = await client.fetch('*[_type == "sanity.asset" && _createdAt > $date]', {
+  date: '2025-01-01',
+})
 ```
 
 #### Uploading assets
@@ -2326,28 +2324,20 @@ Use `client.assets.upload()` to upload assets to your Media Library:
 import fs from 'node:fs'
 
 // Upload an image
-const imageAsset = await client.assets.upload(
-  'image',
-  fs.createReadStream('photo.jpg'),
-  {
-    filename: 'photo.jpg',
-    title: 'My Photo',
-  },
-)
+const imageAsset = await client.assets.upload('image', fs.createReadStream('photo.jpg'), {
+  filename: 'photo.jpg',
+  title: 'My Photo',
+})
 
 // Upload a video
-const videoAsset = await client.assets.upload(
-  'file',
-  fs.createReadStream('video.mp4'),
-  {
-    filename: 'video.mp4',
-  },
-)
+const videoAsset = await client.assets.upload('file', fs.createReadStream('video.mp4'), {
+  filename: 'video.mp4',
+})
 ```
 
 #### Deleting assets
 
-Media Library uses the mutation API for deletions (not `client.assets.delete()`):
+Media Library uses the mutation API for deletions:
 
 ```js
 // Delete a single asset
@@ -2360,8 +2350,6 @@ await client
   .delete('drafts.36fOGtOJOadpl4F9xpksb9uKjYp')
   .commit()
 ```
-
-> **Note:** Unlike Content Lake, Media Library uses the standard mutation API for deletions, not the `assets.delete()` method.
 
 #### Getting video playback information
 
