@@ -100,10 +100,11 @@ export const requestTag = (tag: string) => {
 }
 
 export const resourceConfig = (config: InitializedClientConfig): void => {
-  if (!config['~experimental_resource']) {
+  const resource = config.resource || config['~experimental_resource']
+  if (!resource) {
     throw new Error('`resource` must be provided to perform resource queries')
   }
-  const {type, id} = config['~experimental_resource']
+  const {type, id} = resource
 
   switch (type) {
     case 'dataset': {
@@ -125,7 +126,8 @@ export const resourceConfig = (config: InitializedClientConfig): void => {
 }
 
 export const resourceGuard = (service: string, config: InitializedClientConfig): void => {
-  if (config['~experimental_resource']) {
+  const resource = config.resource || config['~experimental_resource']
+  if (resource) {
     throw new Error(`\`${service}\` does not support resource-based operations`)
   }
 }

@@ -50,3 +50,8 @@ export const printNoDefaultExport = createWarningPrinter([
 export const printCreateVersionWithBaseIdWarning = createWarningPrinter([
   'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `releaseId` instead.',
 ])
+
+export const printDeprecatedResourceConfigWarning = createWarningPrinter([
+  'The `~experimental_resource` configuration property has been renamed to `resource`.',
+  'Please update your client configuration to use `resource` instead. Support for `~experimental_resource` will be removed in a future version.',
+])
