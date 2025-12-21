@@ -82,11 +82,23 @@ export const validateInsert = (at: string, selector: string, items: Any[]) => {
 }
 
 export const hasDataset = (config: InitializedClientConfig): string => {
-  if (!config.dataset) {
-    throw new Error('`dataset` must be provided to perform queries')
+  // Check if dataset is directly on the config
+  if (config.dataset) {
+    return config.dataset
   }
 
-  return config.dataset || ''
+  // Check if dataset is in resource configuration
+  // Note: ~experimental_resource is normalized to resource during client initialization
+  const resource = config.resource
+  if (resource && resource.type === 'dataset') {
+    const segments = resource.id.split('.')
+    if (segments.length !== 2) {
+      throw new Error('Dataset resource ID must be in the format "project.dataset"')
+    }
+    return segments[1]
+  }
+
+  throw new Error('`dataset` must be provided to perform queries')
 }
 
 export const requestTag = (tag: string) => {
@@ -100,7 +112,8 @@ export const requestTag = (tag: string) => {
 }
 
 export const resourceConfig = (config: InitializedClientConfig): void => {
-  const resource = config.resource || config['~experimental_resource']
+  // Note: ~experimental_resource is normalized to resource during client initialization
+  const resource = config.resource
   if (!resource) {
     throw new Error('`resource` must be provided to perform resource queries')
   }
@@ -126,7 +139,8 @@ export const resourceConfig = (config: InitializedClientConfig): void => {
 }
 
 export const resourceGuard = (service: string, config: InitializedClientConfig): void => {
-  const resource = config.resource || config['~experimental_resource']
+  // Note: ~experimental_resource is normalized to resource during client initialization
+  const resource = config.resource
   if (resource) {
     throw new Error(`\`${service}\` does not support resource-based operations`)
   }
