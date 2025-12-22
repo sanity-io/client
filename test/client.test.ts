@@ -653,7 +653,9 @@ describe('client', async () => {
           ].join('\n')
 
           nock(`https://${apiHost}`)
-            .get('/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
+            .get(
+              '/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true&enableResume=true',
+            )
             .reply(200, response, {
               'cache-control': 'no-cache',
               'content-type': 'text/event-stream; charset=utf-8',
@@ -665,7 +667,7 @@ describe('client', async () => {
               'foo.bar',
             ),
           )
-          expect(evt.result).toEqual(doc)
+          expect(evt.type === 'mutation' && evt.result).toEqual(doc)
         },
       )
     })
@@ -3665,7 +3667,7 @@ describe('client', async () => {
       ].join('\n')
 
       nock(projectHost())
-        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true&enableResume=true')
         .reply(200, response, {
           'cache-control': 'no-cache',
           'content-type': 'text/event-stream; charset=utf-8',
@@ -3673,7 +3675,7 @@ describe('client', async () => {
         })
 
       const evt = await firstValueFrom(getClient().listen('foo.bar'))
-      expect(evt.result).toEqual(doc)
+      expect(evt.type === 'mutation' && evt.result).toEqual(doc)
     })
 
     test('listeners connect to listen endpoint with request tag, emits events', async () => {
@@ -3695,7 +3697,7 @@ describe('client', async () => {
 
       nock(projectHost())
         .get(
-          '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
+          '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true&enableResume=true',
         )
         .reply(200, response, {
           'cache-control': 'no-cache',
@@ -3728,7 +3730,7 @@ describe('client', async () => {
 
       nock(projectHost())
         .get(
-          '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
+          '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true&enableResume=true',
         )
         .reply(200, response, {
           'cache-control': 'no-cache',
@@ -3762,7 +3764,7 @@ describe('client', async () => {
 
       let didRequest = false
       nock(projectHost())
-        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true&enableResume=true')
         .reply(() => {
           didRequest = true
           return [200, response]
@@ -3789,7 +3791,7 @@ describe('client', async () => {
 
       let requestCount = 0
       nock(projectHost())
-        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true&enableResume=true')
         .twice()
         .reply(() => {
           requestCount++
