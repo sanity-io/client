@@ -159,6 +159,95 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
+    test('forwards welcome and welcomeback events if opted for', async () => {
+      expect.assertions(2)
+
+      let attempt = 0
+      const {server, client} = await testSse(({channel, request}) => {
+        attempt++
+        if (attempt === 1) {
+          channel!.send({event: 'welcome', data: {listenerName: 'foo1'}})
+          channel!.send({event: 'mutation', id: '123', data: {foo: 'bar'}})
+          channel!.close()
+        }
+        if (attempt === 2) {
+          expect(request.headers['last-event-id'], 'should send last-event-id').toBe('123')
+          channel!.send({event: 'welcomeback', data: {listenerName: 'foo2'}})
+          channel!.send({event: 'mutation', id: '345', data: {bar: 'baz'}})
+          process.nextTick(() => channel!.close())
+        }
+      })
+
+      const events = await lastValueFrom(
+        client
+          .listen(
+            '*',
+            {},
+            {enableResume: true, events: ['reconnect', 'mutation', 'welcome', 'welcomeback']},
+          )
+          .pipe(
+            take(5),
+            catchError((err) => of(err)),
+            toArray(),
+          ),
+      )
+      expect(events).toEqual([
+        {type: 'welcome', listenerName: 'foo1'},
+        {type: 'mutation', foo: 'bar'},
+        {type: 'reconnect'},
+        {type: 'welcomeback', listenerName: 'foo2'},
+        {type: 'mutation', bar: 'baz'},
+      ])
+
+      server.close()
+    })
+
+    test('forwards reset events if opted for', async () => {
+      expect.assertions(2)
+
+      let attempt = 0
+      const {server, client} = await testSse(({channel, request}) => {
+        attempt++
+        if (attempt === 1) {
+          channel!.send({event: 'welcome', data: {listenerName: 'foo1'}})
+          channel!.send({event: 'mutation', id: '123', data: {foo: 'bar'}})
+          channel!.close()
+        }
+        if (attempt === 2) {
+          expect(request.headers['last-event-id'], 'should send last-event-id').toBe('123')
+          channel!.send({event: 'reset'})
+          channel!.send({event: 'mutation', id: '345', data: {bar: 'baz'}})
+          process.nextTick(() => channel!.close())
+        }
+      })
+
+      const events = await lastValueFrom(
+        client
+          .listen(
+            '*',
+            {},
+            {
+              enableResume: true,
+              events: ['reconnect', 'mutation', 'welcome', 'welcomeback', 'reset'],
+            },
+          )
+          .pipe(
+            take(5),
+            catchError((err) => of(err)),
+            toArray(),
+          ),
+      )
+      expect(events).toEqual([
+        {type: 'welcome', listenerName: 'foo1'},
+        {type: 'mutation', foo: 'bar'},
+        {type: 'reconnect'},
+        {type: 'reset'},
+        {type: 'mutation', bar: 'baz'},
+      ])
+
+      server.close()
+    })
+
     test('emits channel errors', async () => {
       expect.assertions(1)
 
