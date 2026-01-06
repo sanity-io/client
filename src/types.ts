@@ -370,7 +370,7 @@ export interface SanityImageAssetDocument extends SanityAssetDocument {
     isOpaque: boolean
     lqip?: string
     blurHash?: string
-    thumbhash?: string
+    thumbHash?: string
     dimensions: {
       _type: 'sanity.imageDimensions'
       aspectRatio: number
