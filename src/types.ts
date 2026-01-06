@@ -245,6 +245,7 @@ export type AssetMetadataType =
   | 'palette'
   | 'lqip'
   | 'blurhash'
+  | 'thumbhash'
   | 'none'
 
 /** @public */
@@ -369,6 +370,7 @@ export interface SanityImageAssetDocument extends SanityAssetDocument {
     isOpaque: boolean
     lqip?: string
     blurHash?: string
+    thumbHash?: string
     dimensions: {
       _type: 'sanity.imageDimensions'
       aspectRatio: number
