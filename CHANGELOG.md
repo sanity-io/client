@@ -5,6 +5,19 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.14.0](https://github.com/sanity-io/client/compare/v7.13.2...v7.14.0) (2026-01-06)
+
+
+### Features
+
+* **media-library:** add thumbhash support to AssetMetadataType ([223fdbc](https://github.com/sanity-io/client/commit/223fdbc364f4931d08df34866a55539649ad6905))
+* **media-library:** improve Media Library API support ([#1171](https://github.com/sanity-io/client/issues/1171)) ([df82583](https://github.com/sanity-io/client/commit/df82583b7735d0785045d83c07b467055efb35e2))
+
+
+### Bug Fixes
+
+* **types:** thumbhash -&gt; thumbHash ([223fdbc](https://github.com/sanity-io/client/commit/223fdbc364f4931d08df34866a55539649ad6905))
+
 ## [7.13.2](https://github.com/sanity-io/client/compare/v7.13.1...v7.13.2) (2025-12-10)
 
 
