@@ -83,6 +83,8 @@
   "scripts": {
     "build": "pkg build --strict && pkg --strict",
     "coverage": "vitest run --coverage",
+    "docs:build": "typedoc",
+    "docs:clean": "npx rimraf docs",
     "lint": "oxlint",
     "prepublishOnly": "pnpm run build",
     "release": "changeset publish",
@@ -124,6 +126,8 @@
     "oxlint": "^1.78.0",
     "oxlint-tsgolint": "^7.0.2001",
     "pkg-pr-new": "^0.0.86",
+    "typedoc": "^0.28.16",
+    "typedoc-plugin-missing-exports": "^4.1.2",
     "typescript": "7.0.2",
     "vitest": "^4.1.10"
   },
