@@ -425,5 +425,108 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       global.fetch = restoreFetch
     })
+
+    test('works with global API endpoints', async () => {
+      expect.assertions(12)
+
+      const eventData = {
+        tags: ['tag1', 'tag2'],
+      }
+
+      const testRequestUrl = async ({
+        resource,
+        resourceUrl,
+      }: {
+        resource: ClientConfig['resource']
+        resourceUrl: string
+      }) => {
+        const {server, client} = await testSse(
+          ({request, channel}) => {
+            // Verify the URL path is constructed correctly with resource-based url
+            expect(
+              request.url,
+              `url should include correct resource-based path for ${resource?.type}`,
+            ).toEqual(resourceUrl)
+            // Verify the request method is GET (EventSource uses GET)
+            expect(request.method, 'request method should be GET').toBe('GET')
+
+            channel!.send({id: '123', data: eventData})
+            process.nextTick(() => channel!.close())
+          },
+          {resource},
+        )
+
+        // Verify the request works and returns expected data
+        const message = await firstValueFrom(client.live.events())
+        expect(message, 'event data should be correct').toEqual({
+          ...eventData,
+          id: '123',
+          type: 'message',
+        })
+
+        server.close()
+      }
+
+      await testRequestUrl({
+        resource: {type: 'dataset', id: 'test-project.prod'},
+        resourceUrl: '/vX/projects/test-project/datasets/prod/live/events',
+      })
+
+      await testRequestUrl({
+        resource: {type: 'media-library', id: 'test-media-library'},
+        resourceUrl: '/vX/media-libraries/test-media-library/live/events',
+      })
+
+      await testRequestUrl({
+        resource: {type: 'canvas', id: 'test-canvas'},
+        resourceUrl: '/vX/canvases/test-canvas/live/events',
+      })
+
+      await testRequestUrl({
+        resource: {type: 'dashboard', id: 'test-dashboard'},
+        resourceUrl: '/vX/dashboards/test-dashboard/live/events',
+      })
+    })
+
+    test('creates request with correct query parameters when using resources', async () => {
+      expect.assertions(4)
+
+      const eventData = {
+        tags: ['tag1'],
+      }
+
+      const {server, client} = await testSse(
+        ({request, channel}) => {
+          // Verify the URL includes resource-based path
+          expect(request.url, 'url should include resource-based path').toContain(
+            '/vX/projects/test-project/datasets/prod/live/events',
+          )
+          // Verify includeDrafts parameter is set
+          expect(request.url, 'url should include includeDrafts parameter').toContain(
+            'includeDrafts=true',
+          )
+          // Verify tag parameter is set with requestTagPrefix
+          expect(request.url, 'url should include tag parameter').toContain('tag=test.prefix')
+
+          channel!.send({id: '123', data: eventData})
+          process.nextTick(() => channel!.close())
+        },
+        {
+          projectId: 'test-project',
+          token: 'test-token',
+          requestTagPrefix: 'test',
+          resource: {type: 'dataset', id: 'test-project.prod'},
+        },
+      )
+
+      const message = await firstValueFrom(client.live.events({includeDrafts: true, tag: 'prefix'}))
+      expect(message, 'event data should be correct').toEqual({
+        ...eventData,
+        id: '123',
+        type: 'message',
+      })
+
+      server.close()
+    })
   },
 )
