@@ -3,6 +3,7 @@
 
 # Compiled files
 dist
+docs
 
 # Intermediate build artifacts (e.g. the pruned Context spec)
 .tmp
