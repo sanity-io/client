@@ -18,7 +18,6 @@
   "excludeReferences": true,
   "includeVersion": true,
   "readme": "./README.md",
-  // "plugin": ["typedoc-plugin-missing-exports"],
   "validation": {
     "notDocumented": false,
     "invalidLink": true,
