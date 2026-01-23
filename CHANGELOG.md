@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.14.1](https://github.com/sanity-io/client/compare/v7.14.0...v7.14.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* remove resource guard from live client ([#1141](https://github.com/sanity-io/client/issues/1141)) ([9b84983](https://github.com/sanity-io/client/commit/9b84983476b80c30ea9874b4124b81b0dce153b3))
+
 ## [7.14.0](https://github.com/sanity-io/client/compare/v7.13.2...v7.14.0) (2026-01-06)
 
 
