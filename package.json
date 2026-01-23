@@ -173,7 +173,6 @@
     "sse-channel": "^4.0.0",
     "terser": "^5.39.0",
     "typedoc": "^0.28.16",
-    "typedoc-plugin-missing-exports": "^4.1.2",
     "typescript": "5.8.3",
     "vitest": "3.1.1"
   },
