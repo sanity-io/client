@@ -35,6 +35,7 @@ export class LiveClient {
   events({
     includeDrafts = false,
     tag: _tag,
+    waitFor,
   }: {
     includeDrafts?: boolean
     /**
@@ -43,6 +44,11 @@ export class LiveClient {
      * @defaultValue `undefined`
      */
     tag?: string
+    /**
+     * When set to `'revalidation'`, events are received after being processed by your Sanity Function.
+     * When omitted, events are received immediately.
+     */
+    waitFor?: 'revalidation'
   } = {}): Observable<LiveEvent> {
     const {
       projectId,
@@ -73,6 +79,9 @@ export class LiveClient {
     }
     if (includeDrafts) {
       url.searchParams.set('includeDrafts', 'true')
+    }
+    if (waitFor) {
+      url.searchParams.set('revalidated', 'true')
     }
     const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
     if (includeDrafts && withCredentials) {
