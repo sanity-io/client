@@ -68,6 +68,7 @@ export async function updateDocumentTitle(_id, title) {
     - [Edge Runtime](#edge-runtime)
     - [Browser ESM CDN](#browser-esm-cdn)
     - [UMD](#umd)
+    - [Custom API endpoint](#custom-api-endpoint)
   - [Specifying API version](#specifying-api-version)
   - [Request tags](#request-tags)
   - [Performing queries](#performing-queries)
@@ -478,6 +479,43 @@ The `require-unpkg` library lets you consume `npm` packages from `unpkg.com` sim
     $('#results').text(`Number of documents: ${data}`)
   })()
 </script>
+```
+
+#### Custom API endpoint
+
+If you need to route Sanity API requests through a custom proxy or gateway, you can use the `apiHost` option with a `{projectId}` placeholder:
+
+```js
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'production',
+  apiVersion: '2025-01-01',
+  apiHost: 'https://my-proxy.example.com/sanity/{projectId}',
+})
+
+// Requests will be sent to:
+// https://my-proxy.example.com/sanity/your-project-id/v2025-01-01/data/query/production
+```
+
+**Benefits of using a template:**
+
+- **Path-based routing** — The project ID is embedded in the URL path, making it easy for proxies to route requests
+- **No CORS preflight** — Unlike the `useProjectHostname: false` approach which sends the project ID via the `X-Sanity-Project-ID` header, templates avoid triggering CORS preflight requests
+- **Simple proxy configuration** — No need for DNS wildcards or subdomain routing
+
+**Supported placeholders:**
+
+- `{projectId}` — Replaced with your configured project ID
+
+The placeholder can appear anywhere in the URL and multiple times if needed:
+
+```js
+// These are all valid:
+apiHost: 'https://proxy.example.com/{projectId}'
+apiHost: 'https://proxy.example.com/api/{projectId}/sanity'
+apiHost: 'https://{projectId}.proxy.example.com/{projectId}'
 ```
 
 ### Specifying API version

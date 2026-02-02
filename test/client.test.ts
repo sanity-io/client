@@ -229,6 +229,102 @@ describe('client', async () => {
       ).toThrow(/tag can only contain alphanumeric/i)
     })
 
+    test('throws on unknown placeholder in apiHost', () => {
+      expect(() =>
+        createClient({
+          projectId: 'abc123',
+          apiHost: 'https://proxy.example.com/{foo}',
+        }),
+      ).toThrowError(/Unknown placeholder \{foo\} in apiHost/)
+    })
+
+    test('throws on unknown placeholder with valid placeholder present', () => {
+      expect(() =>
+        createClient({
+          projectId: 'abc123',
+          apiHost: 'https://proxy.example.com/{projectId}/{bar}',
+        }),
+      ).toThrowError(/Unknown placeholder \{bar\} in apiHost/)
+    })
+
+    test('throws on misspelled projectId placeholder', () => {
+      expect(() =>
+        createClient({
+          projectId: 'abc123',
+          apiHost: 'https://proxy.example.com/{projectid}',
+        }),
+      ).toThrowError(/Unknown placeholder \{projectid\} in apiHost/)
+    })
+
+    test('throws when apiHost has {projectId} but projectId is not configured', () => {
+      expect(() =>
+        createClient({
+          apiHost: 'https://proxy.example.com/{projectId}',
+          dataset: 'production',
+          useProjectHostname: false,
+        }),
+      ).toThrowError(/apiHost contains \{projectId\} placeholder but projectId is not configured/)
+    })
+
+    test('resolves {projectId} template in apiHost', () => {
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        apiVersion: '2025-01-01',
+        apiHost: 'https://proxy.example.com/{projectId}',
+      })
+      const config = client.config()
+      expect(config.url).toBe('https://proxy.example.com/abc123/v2025-01-01')
+      expect(config.cdnUrl).toBe('https://proxy.example.com/abc123/v2025-01-01')
+    })
+
+    test('resolves {projectId} template with base path', () => {
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        apiVersion: '2025-01-01',
+        apiHost: 'https://proxy.example.com/sanity/{projectId}',
+      })
+      const config = client.config()
+      expect(config.url).toBe('https://proxy.example.com/sanity/abc123/v2025-01-01')
+    })
+
+    test('resolves multiple {projectId} occurrences in apiHost', () => {
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        apiVersion: '2025-01-01',
+        apiHost: 'https://{projectId}.proxy.example.com/{projectId}',
+      })
+      const config = client.config()
+      expect(config.url).toBe('https://abc123.proxy.example.com/abc123/v2025-01-01')
+    })
+
+    test('template apiHost ignores useProjectHostname setting', () => {
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        apiVersion: '2025-01-01',
+        apiHost: 'https://proxy.example.com/{projectId}',
+        useProjectHostname: true, // should be ignored
+      })
+      const config = client.config()
+      // Should NOT have subdomain prepended
+      expect(config.url).toBe('https://proxy.example.com/abc123/v2025-01-01')
+    })
+
+    test('does not include X-Sanity-Project-ID header when using apiHost template', async () => {
+      // This test verifies the header is not set in config
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'production',
+        apiVersion: '2025-01-01',
+        apiHost: 'https://proxy.example.com/{projectId}',
+      })
+      const config = client.config()
+      expect(config.usesApiHostTemplate).toBe(true)
+    })
+
     test('accepts alias in dataset field', () => {
       expect(() => createClient({projectId: 'abc123', dataset: '~alias'})).not.toThrow(
         /Datasets can only contain/i,

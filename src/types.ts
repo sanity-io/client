@@ -109,6 +109,18 @@ export interface ClientConfig {
    * @defaultValue 'published'
    */
   perspective?: ClientPerspective
+  /**
+   * The API host to use. Defaults to `https://api.sanity.io`.
+   *
+   * Supports `{projectId}` placeholder for custom proxy routing:
+   * ```ts
+   * apiHost: 'https://my-proxy.example.com/{projectId}'
+   * // Results in: https://my-proxy.example.com/abc123/v2025-01-01/...
+   * ```
+   *
+   * When using a template, the `X-Sanity-Project-ID` header is not sent,
+   * avoiding CORS preflight requests.
+   */
   apiHost?: string
 
   /**
@@ -225,6 +237,11 @@ export interface InitializedClientConfig extends ClientConfig {
    * @deprecated Internal, don't use
    */
   cdnUrl: string
+  /**
+   * @internal
+   * Whether the apiHost was configured with a template placeholder
+   */
+  usesApiHostTemplate: boolean
   /**
    * The fully initialized stega config, can be used to check if stega is enabled
    */

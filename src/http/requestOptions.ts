@@ -16,7 +16,12 @@ export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOp
     headers.Authorization = `Bearer ${token}`
   }
 
-  if (!overrides.useGlobalApi && !config.useProjectHostname && config.projectId) {
+  if (
+    !overrides.useGlobalApi &&
+    !config.useProjectHostname &&
+    !config.usesApiHostTemplate &&
+    config.projectId
+  ) {
     headers[projectHeader] = config.projectId
   }
 

@@ -14,6 +14,42 @@ export const defaultConfig = {
 const LOCALHOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 const isLocal = (host: string) => LOCALHOSTS.indexOf(host) !== -1
 
+const PLACEHOLDER_PATTERN = /\{([^}]+)\}/g
+const SUPPORTED_PLACEHOLDERS = ['projectId'] as const
+
+function validateAndResolveApiHostTemplate(
+  apiHost: string,
+  projectId: string | undefined,
+): {resolvedHost: string; usesTemplate: boolean} {
+  const placeholders = [...apiHost.matchAll(PLACEHOLDER_PATTERN)]
+
+  if (placeholders.length === 0) {
+    return {resolvedHost: apiHost, usesTemplate: false}
+  }
+
+  // Validate all placeholders are supported
+  for (const [, name] of placeholders) {
+    if (!SUPPORTED_PLACEHOLDERS.includes(name as (typeof SUPPORTED_PLACEHOLDERS)[number])) {
+      throw new Error(
+        `Unknown placeholder {${name}} in apiHost. Supported placeholders: {${SUPPORTED_PLACEHOLDERS.join('}, {')}}`,
+      )
+    }
+  }
+
+  // Check projectId is provided if template uses it
+  if (apiHost.includes('{projectId}')) {
+    if (!projectId) {
+      throw new Error('apiHost contains {projectId} placeholder but projectId is not configured')
+    }
+    return {
+      resolvedHost: apiHost.replaceAll('{projectId}', projectId),
+      usesTemplate: true,
+    }
+  }
+
+  return {resolvedHost: apiHost, usesTemplate: false}
+}
+
 function validateApiVersion(apiVersion: string) {
   if (apiVersion === '1' || apiVersion === 'X') {
     return
@@ -158,17 +194,31 @@ export const initConfig = (
 
   validateApiVersion(newConfig.apiVersion)
 
-  const hostParts = newConfig.apiHost.split('://', 2)
-  const protocol = hostParts[0]
-  const host = hostParts[1]
-  const cdnHost = newConfig.isDefaultApi ? defaultCdnHost : host
+  // Handle apiHost template resolution
+  const {resolvedHost, usesTemplate} = validateAndResolveApiHostTemplate(
+    newConfig.apiHost,
+    newConfig.projectId,
+  )
+  newConfig.usesApiHostTemplate = usesTemplate
 
-  if (projectBased) {
-    newConfig.url = `${protocol}://${newConfig.projectId}.${host}/v${newConfig.apiVersion}`
-    newConfig.cdnUrl = `${protocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
-  } else {
-    newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}`
+  if (usesTemplate) {
+    // Template mode: use resolved host directly, no subdomain or header
+    newConfig.url = `${resolvedHost}/v${newConfig.apiVersion}`
     newConfig.cdnUrl = newConfig.url
+  } else {
+    // Original behavior
+    const hostParts = newConfig.apiHost.split('://', 2)
+    const protocol = hostParts[0]
+    const host = hostParts[1]
+    const cdnHost = newConfig.isDefaultApi ? defaultCdnHost : host
+
+    if (projectBased) {
+      newConfig.url = `${protocol}://${newConfig.projectId}.${host}/v${newConfig.apiVersion}`
+      newConfig.cdnUrl = `${protocol}://${newConfig.projectId}.${cdnHost}/v${newConfig.apiVersion}`
+    } else {
+      newConfig.url = `${newConfig.apiHost}/v${newConfig.apiVersion}`
+      newConfig.cdnUrl = newConfig.url
+    }
   }
 
   return newConfig
