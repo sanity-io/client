@@ -1,6 +1,6 @@
 import {readFileSync} from 'node:fs'
 import {createServer, type IncomingMessage, type Server} from 'node:http'
-import type {AddressInfo, Socket} from 'node:net'
+import {type AddressInfo, type Socket} from 'node:net'
 import {join as joinPath} from 'node:path'
 import {TLSSocket} from 'node:tls'
 
@@ -307,6 +307,71 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
         expect(tunneledRequests.length).toBe(1)
         expect(tunneledRequests[0].headers['x-sanity-project-id']).toBe('abc123')
+      })
+
+      test('uses HTTPS_PROXY environment variable automatically', async () => {
+        const originalHttpsProxy = process.env.HTTPS_PROXY
+        process.env.HTTPS_PROXY = `http://127.0.0.1:${proxyPort}`
+
+        try {
+          const client = createClient({
+            projectId: 'abc123',
+            dataset: 'production',
+            apiVersion: '2021-06-07',
+            useCdn: false,
+            // No explicit proxy option - should use env var
+          })
+
+          await client.fetch('*[_type == "post"]')
+
+          expect(connectRequests.length).toBe(1)
+          expect(connectRequests[0].url).toBe('abc123.api.sanity.io:443')
+        } finally {
+          if (originalHttpsProxy === undefined) {
+            delete process.env.HTTPS_PROXY
+          } else {
+            process.env.HTTPS_PROXY = originalHttpsProxy
+          }
+        }
+      })
+
+      test('NO_PROXY environment variable bypasses proxy for matching hosts', async () => {
+        const originalHttpsProxy = process.env.HTTPS_PROXY
+        const originalNoProxy = process.env.NO_PROXY
+        process.env.HTTPS_PROXY = `http://127.0.0.1:${proxyPort}`
+        process.env.NO_PROXY = 'api.sanity.io'
+
+        try {
+          const client = createClient({
+            projectId: 'abc123',
+            dataset: 'production',
+            apiVersion: '2021-06-07',
+            useCdn: false,
+            useProjectHostname: false, // Use api.sanity.io which is in NO_PROXY
+          })
+
+          // This should NOT go through proxy due to NO_PROXY, so it will fail
+          // to connect (no real server). We catch the error and verify no proxy was used.
+          try {
+            await client.users.getById('me')
+          } catch {
+            // Expected - no real server at api.sanity.io
+          }
+
+          // Verify no requests went through the proxy
+          expect(connectRequests.length).toBe(0)
+        } finally {
+          if (originalHttpsProxy === undefined) {
+            delete process.env.HTTPS_PROXY
+          } else {
+            process.env.HTTPS_PROXY = originalHttpsProxy
+          }
+          if (originalNoProxy === undefined) {
+            delete process.env.NO_PROXY
+          } else {
+            process.env.NO_PROXY = originalNoProxy
+          }
+        }
       })
     })
   },
