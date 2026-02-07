@@ -20,7 +20,10 @@ export class ObservableDatasetsClient {
    * @param name - Name of the dataset to create
    * @param options - Options for the dataset
    */
-  create(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse> {
+  create(
+    name: string,
+    options?: {aclMode?: DatasetAclMode; description?: string},
+  ): Observable<DatasetResponse> {
     return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options)
   }
 
@@ -30,7 +33,10 @@ export class ObservableDatasetsClient {
    * @param name - Name of the dataset to edit
    * @param options - New options for the dataset
    */
-  edit(name: string, options?: {aclMode?: DatasetAclMode}): Observable<DatasetResponse> {
+  edit(
+    name: string,
+    options?: {aclMode?: DatasetAclMode; description?: string},
+  ): Observable<DatasetResponse> {
     return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options)
   }
 
@@ -77,7 +83,10 @@ export class DatasetsClient {
    * @param name - Name of the dataset to create
    * @param options - Options for the dataset
    */
-  create(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
+  create(
+    name: string,
+    options?: {aclMode?: DatasetAclMode; description?: string},
+  ): Promise<DatasetResponse> {
     validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options),
@@ -90,7 +99,10 @@ export class DatasetsClient {
    * @param name - Name of the dataset to edit
    * @param options - New options for the dataset
    */
-  edit(name: string, options?: {aclMode?: DatasetAclMode}): Promise<DatasetResponse> {
+  edit(
+    name: string,
+    options?: {aclMode?: DatasetAclMode; description?: string},
+  ): Promise<DatasetResponse> {
     validate.resourceGuard('dataset', this.#client.config())
     return lastValueFrom(
       _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options),
@@ -130,7 +142,7 @@ function _modify<R = unknown>(
   httpRequest: HttpRequest,
   method: 'DELETE' | 'PATCH' | 'PUT',
   name: string,
-  options?: {aclMode?: DatasetAclMode},
+  options?: {aclMode?: DatasetAclMode; description?: string},
 ) {
   validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
