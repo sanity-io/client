@@ -11,6 +11,8 @@ import {
   type MutationEvent,
   type OpenEvent,
   type ReconnectEvent,
+  type ResetEvent,
+  type WelcomeBackEvent,
   type WelcomeEvent,
 } from '../types'
 import defaults from '../util/defaults'
@@ -59,9 +61,13 @@ export type MapListenEventNamesToListenEvents<
       ? MutationEvent<R>
       : E extends 'reconnect'
         ? ReconnectEvent
-        : E extends 'open'
-          ? OpenEvent
-          : never
+        : E extends 'welcomeback'
+          ? WelcomeBackEvent
+          : E extends 'reset'
+            ? ResetEvent
+            : E extends 'open'
+              ? OpenEvent
+              : never
   : never
 
 /**
@@ -81,7 +87,7 @@ export type ListenEventFromOptions<
     ? MapListenEventNamesToListenEvents<R, Opts['events']>
     : // fall back to ListenEvent if opts events is present, but we can't infer the literal event names
       ListenEvent<R>
-  : MutationEvent<R>
+  : MutationEvent<R> | ResetEvent
 
 /**
  * Set up a listener that will be notified when mutations occur on documents matching the provided query/filter.
@@ -95,7 +101,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
   this: SanityClient | ObservableSanityClient,
   query: string,
   params?: ListenParams,
-): Observable<MutationEvent<R>>
+): Observable<MutationEvent<R> | ResetEvent>
 /**
  * Set up a listener that will be notified when mutations occur on documents matching the provided query/filter.
  *
@@ -127,14 +133,16 @@ export function _listen<
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag
   const options = {...defaults(opts, defaultOptions), tag}
   const listenOpts = pick(options, possibleOptions)
-  const qs = encodeQueryString({query, params, options: {tag, ...listenOpts}})
+  const qs = encodeQueryString({query, params, options: {tag, ...listenOpts, enableResume: true}})
 
   const uri = `${url}${_getDataUrl(this, 'listen', qs)}`
   if (uri.length > MAX_URL_LENGTH) {
     return throwError(() => new Error('Query too large for listener'))
   }
 
-  const listenFor = (options.events ? options.events : ['mutation']) satisfies Opts['events']
+  const listenFor = (
+    options.events ? options.events : ['mutation', 'reset']
+  ) satisfies Opts['events']
 
   const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
   if (withCredentials) {
