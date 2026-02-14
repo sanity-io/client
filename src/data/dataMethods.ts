@@ -598,6 +598,11 @@ export function _requestObservable<R>(
   httpRequest: HttpRequest,
   options: RequestObservableOptions,
 ): Observable<HttpRequestEvent<R>> {
+  // Capture the call-site stack trace here, where the caller's code is still
+  // on the synchronous call stack, and pass it through to get-it so errors
+  // include the originating call site rather than just internal plumbing.
+  const callSiteStack = new Error().stack
+
   const uri = options.url || (options.uri as string)
   const config = client.config()
 
@@ -667,6 +672,7 @@ export function _requestObservable<R>(
     config,
     Object.assign({}, options, {
       url: _getUrl(client, uri, useCdn),
+      callSiteStack,
     }),
   ) as RequestOptions
 
