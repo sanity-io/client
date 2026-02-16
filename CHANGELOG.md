@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.15.0](https://github.com/sanity-io/client/compare/v7.14.1...v7.15.0) (2026-02-16)
+
+
+### Features
+
+* add support for resuming listener events ([#1154](https://github.com/sanity-io/client/issues/1154)) ([18a5daa](https://github.com/sanity-io/client/commit/18a5daab7de4f58dcd297cec174e0bc53acd923c))
+
 ## [7.14.1](https://github.com/sanity-io/client/compare/v7.14.0...v7.14.1) (2026-01-22)
 
 
