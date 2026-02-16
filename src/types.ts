@@ -1151,9 +1151,14 @@ export type OpenEvent = {
 }
 
 /**
- * The listener has been established, and will start receiving events.
- * Before apiVersion vTBD this is also emitted when reconnected
- * As of apiVersion vTBD this is no longer emitted on reconnect, instead the `welcomeback` event is emitted
+ * Emitted when the listener connection has been successfully established
+ * and is ready to receive events.
+ *
+ * If the listener was created with `enableResume: true` and resume support
+ * is available, the `welcome` event will only be emitted on the initial
+ * connection. On subsequent reconnects, a `welcomeback` event will be
+ * emitted instead, followed by any events that were missed while the
+ * connection was disconnected.
  *
  * @public
  */
@@ -1163,7 +1168,16 @@ export type WelcomeEvent = {
 }
 
 /**
- * The listener has reconnected and successfully resumed from where it left off
+ * Emitted when the listener reconnects and successfully resumes from
+ * its previous position.
+ *
+ * Even if the listener is created with `enableResume: true`, resume support
+ * may not be available. In that case, a reconnect will emit `welcome`
+ * instead of `welcomeback`.
+ *
+ * If resumability is unavailable, even listeners created with `enableResume: true` may still
+ * emit `welcome` when reconnected. Subscribers should therefore treat `welcome` after a reconnect
+ * the same way they would otherwise treat a `reset` event.
  *
  * @public
  */
@@ -1174,6 +1188,10 @@ export type WelcomeBackEvent = {
 
 /**
  * The listener can't be resumed or otherwise need to reset its local state
+ *
+ * If resumability is unavailable, even listeners created with `enableResume: true` may still
+ * emit `welcome` when reconnected. Subscribers should therefore treat `welcome` after a reconnect
+ * the same way they would otherwise treat a `reset` event.
  *
  * @public
  */
