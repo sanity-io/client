@@ -1151,8 +1151,14 @@ export type OpenEvent = {
 }
 
 /**
- * The listener has been established, and will start receiving events.
- * Note that this is also emitted upon _reconnection_.
+ * Emitted when the listener connection has been successfully established
+ * and is ready to receive events.
+ *
+ * If the listener was created with `enableResume: true` and resume support
+ * is available, the `welcome` event will only be emitted on the initial
+ * connection. On subsequent reconnects, a `welcomeback` event will be
+ * emitted instead, followed by any events that were missed while the
+ * connection was disconnected.
  *
  * @public
  */
@@ -1161,10 +1167,44 @@ export type WelcomeEvent = {
   listenerName: string
 }
 
+/**
+ * Emitted when the listener reconnects and successfully resumes from
+ * its previous position.
+ *
+ * Even if the listener is created with `enableResume: true`, resume support
+ * may not be available. In that case, a reconnect will emit `welcome`
+ * instead of `welcomeback`.
+ *
+ * If resumability is unavailable, even listeners created with `enableResume: true` may still
+ * emit `welcome` when reconnected. Subscribers should therefore treat `welcome` after a reconnect
+ * the same way they would otherwise treat a `reset` event.
+ *
+ * @public
+ */
+export type WelcomeBackEvent = {
+  type: 'welcomeback'
+  listenerName: string
+}
+
+/**
+ * The listener can't be resumed or otherwise need to reset its local state
+ *
+ * If resumability is unavailable, even listeners created with `enableResume: true` may still
+ * emit `welcome` when reconnected. Subscribers should therefore treat `welcome` after a reconnect
+ * the same way they would otherwise treat a `reset` event.
+ *
+ * @public
+ */
+export type ResetEvent = {
+  type: 'reset'
+}
+
 /** @public */
-export type ListenEvent<R extends Record<string, Any>> =
+export type ListenEvent<R extends Record<string, Any> = Record<string, Any>> =
   | MutationEvent<R>
   | ReconnectEvent
+  | WelcomeBackEvent
+  | ResetEvent
   | WelcomeEvent
   | OpenEvent
 
@@ -1181,6 +1221,14 @@ export type ListenEventName =
    * note: it's usually a better option to use the 'welcome' event
    */
   | 'open'
+
+/** @public */
+export type ResumableListenEventNames =
+  | ListenEventName
+  /** The listener has reconnected and successfully resumed from where it left off */
+  | 'welcomeback'
+  /** The listener can't be resumed or otherwise need to reset its local state */
+  | 'reset'
 
 /** @public */
 export type ListenParams = {[key: string]: Any}
@@ -1233,7 +1281,7 @@ export interface ListenOptions {
 
   /**
    * Array of event names to include in the observable. By default, only mutation events are included.
-   *
+   * Note: `welcomeback` and `reset` events requires `enableResume: true`
    * @defaultValue `['mutation']`
    */
   events?: ListenEventName[]
@@ -1255,6 +1303,32 @@ export interface ListenOptions {
    * @defaultValue `undefined`
    */
   tag?: string
+
+  /**
+   * If this is enabled, the client will normally resume events upon reconnect
+   * When if enabling this, you should also add the `reset` to the events array and handle the case where the backend is unable to resume.
+   * @beta
+   * @defaultValue `false`
+   */
+  enableResume?: boolean
+}
+
+/** @public */
+export interface ResumableListenOptions extends Omit<ListenOptions, 'events' | 'enableResume'> {
+  /**
+   * If this is enabled, the client will normally resume events upon reconnect
+   * Note that you should also subscribe to `reset`-events and handle the case where the backend is unable to resume
+   * @beta
+   * @defaultValue `false`
+   */
+  enableResume: true
+
+  /**
+   * Array of event names to include in the observable. By default, only mutation events are included.
+   *
+   * @defaultValue `['mutation']`
+   */
+  events?: ResumableListenEventNames[]
 }
 
 /** @public */

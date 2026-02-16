@@ -11,6 +11,10 @@ import {
   type MutationEvent,
   type OpenEvent,
   type ReconnectEvent,
+  type ResetEvent,
+  type ResumableListenEventNames,
+  type ResumableListenOptions,
+  type WelcomeBackEvent,
   type WelcomeEvent,
 } from '../types'
 import defaults from '../util/defaults'
@@ -33,6 +37,7 @@ const possibleOptions = [
   'includeAllVersions',
   'visibility',
   'effectFormat',
+  'enableResume',
   'tag',
 ]
 
@@ -51,7 +56,10 @@ const defaultOptions = {
  */
 export type MapListenEventNamesToListenEvents<
   R extends Record<string, Any> = Record<string, Any>,
-  Events extends ListenEventName[] = ListenEventName[],
+  Events extends (ResumableListenEventNames | ListenEventName)[] = (
+    | ResumableListenEventNames
+    | ListenEventName
+  )[],
 > = Events extends (infer E)[]
   ? E extends 'welcome'
     ? WelcomeEvent
@@ -59,9 +67,13 @@ export type MapListenEventNamesToListenEvents<
       ? MutationEvent<R>
       : E extends 'reconnect'
         ? ReconnectEvent
-        : E extends 'open'
-          ? OpenEvent
-          : never
+        : E extends 'welcomeback'
+          ? WelcomeBackEvent
+          : E extends 'reset'
+            ? ResetEvent
+            : E extends 'open'
+              ? OpenEvent
+              : never
   : never
 
 /**
@@ -75,9 +87,9 @@ export type MapListenEventNamesToListenEvents<
  */
 export type ListenEventFromOptions<
   R extends Record<string, Any> = Record<string, Any>,
-  Opts extends ListenOptions | undefined = undefined,
-> = Opts extends ListenOptions
-  ? Opts['events'] extends ListenEventName[]
+  Opts extends ListenOptions | ResumableListenOptions | undefined = undefined,
+> = Opts extends ListenOptions | ResumableListenOptions
+  ? Opts['events'] extends (ResumableListenEventNames | ListenEventName)[]
     ? MapListenEventNamesToListenEvents<R, Opts['events']>
     : // fall back to ListenEvent if opts events is present, but we can't infer the literal event names
       ListenEvent<R>
@@ -106,7 +118,7 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
  */
 export function _listen<
   R extends Record<string, Any> = Record<string, Any>,
-  Opts extends ListenOptions = ListenOptions,
+  Opts extends ListenOptions | ResumableListenOptions = ListenOptions | ResumableListenOptions,
 >(
   this: SanityClient | ObservableSanityClient,
   query: string,
@@ -116,7 +128,7 @@ export function _listen<
 /** @public */
 export function _listen<
   R extends Record<string, Any> = Record<string, Any>,
-  Opts extends ListenOptions = ListenOptions,
+  Opts extends ListenOptions | ResumableListenOptions = ListenOptions | ResumableListenOptions,
 >(
   this: SanityClient | ObservableSanityClient,
   query: string,
