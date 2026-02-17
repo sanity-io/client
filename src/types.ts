@@ -1951,6 +1951,46 @@ export interface VideoPlaybackInfoItemSigned extends VideoPlaybackInfoItemPublic
 export type VideoPlaybackInfoItem = VideoPlaybackInfoItemPublic | VideoPlaybackInfoItemSigned
 
 /** @public */
+export interface VideoRenditionInfoPublic {
+  /** URL to the MP4 rendition (redirects to CDN) */
+  url: string
+  /** Resolution identifier, e.g. "1080p", "480p", "270p" */
+  resolution: string
+}
+
+/** @public */
+export interface VideoRenditionInfoSigned extends VideoRenditionInfoPublic {
+  /** Authentication token for signed playback */
+  token: string
+  /** Token expiration time in ISO 8601 format */
+  expiresAt: string
+}
+
+/** @public */
+export type VideoRenditionInfo = VideoRenditionInfoPublic | VideoRenditionInfoSigned
+
+/** @public */
+export interface VideoSubtitleInfoPublic {
+  /** Subtitle track identifier */
+  trackId: string
+  /** ISO 639-1 language code */
+  languageCode: string
+  /** URL to the subtitle file */
+  url: string
+}
+
+/** @public */
+export interface VideoSubtitleInfoSigned extends VideoSubtitleInfoPublic {
+  /** Authentication token for signed playback */
+  token: string
+  /** Token expiration time in ISO 8601 format */
+  expiresAt: string
+}
+
+/** @public */
+export type VideoSubtitleInfo = VideoSubtitleInfoPublic | VideoSubtitleInfoSigned
+
+/** @public */
 export interface VideoPlaybackInfo<T extends VideoPlaybackInfoItem = VideoPlaybackInfoItem> {
   id: string
   thumbnail: T
@@ -1959,6 +1999,8 @@ export interface VideoPlaybackInfo<T extends VideoPlaybackInfoItem = VideoPlayba
   stream: T
   duration: number
   aspectRatio: number
+  renditions?: VideoRenditionInfo[]
+  subtitles?: VideoSubtitleInfo[]
 }
 
 /** @public */
