@@ -145,6 +145,7 @@ export async function updateDocumentTitle(_id, title) {
   - [Media Library API](#media-library-api)
     - [Getting video playback information](#getting-video-playback-information)
     - [Working with signed playback information](#working-with-signed-playback-information)
+    - [Downloading MP4 renditions](#downloading-mp4-renditions)
 - [License](#license)
 - [From `v5`](#from-v5)
   - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
@@ -2390,7 +2391,12 @@ The response contains playback URLs and metadata:
   animated: { url: "https://image.m.sanity-cdn.com/..." },
   storyboard: { url: "https://storyboard.m.sanity-cdn.com/..." },
   duration: 120.5,
-  aspectRatio: 1.77
+  aspectRatio: 1.77,
+  renditions: [
+    { url: "https://apicdn.sanity.io/.../renditions/capped-1080p.mp4", resolution: "1080p" },
+    { url: "https://apicdn.sanity.io/.../renditions/capped-480p.mp4", resolution: "480p" },
+    { url: "https://apicdn.sanity.io/.../renditions/low.mp4", resolution: "270p" }
+  ]
 }
 
 // Signed playback response (when video requires authentication)
@@ -2413,7 +2419,21 @@ The response contains playback URLs and metadata:
     token: "eyJ0a2VuIjoiU3Rvcnlib2FyZFRva2VuLTc4..."
   },
   duration: 120.5,
-  aspectRatio: 1.77
+  aspectRatio: 1.77,
+  renditions: [
+    {
+      url: "https://apicdn.sanity.io/.../renditions/capped-1080p.mp4",
+      resolution: "1080p",
+      token: "eyJhbGciOiJSUzI1NiIs...",
+      expiresAt: "2026-02-17T21:00:00Z"
+    },
+    {
+      url: "https://apicdn.sanity.io/.../renditions/capped-480p.mp4",
+      resolution: "480p",
+      token: "eyJhbGciOiJSUzI1NiIs...",
+      expiresAt: "2026-02-17T21:00:00Z"
+    }
+  ]
 }
 ```
 
@@ -2442,6 +2462,27 @@ if (isSignedPlaybackInfo(playbackInfo)) {
   // The tokens authenticate access to the video resources
 }
 ```
+
+#### Downloading MP4 renditions
+
+Videos may include downloadable MP4 renditions at fixed resolutions. These are available via the `renditions` array in the playback info response:
+
+```js
+const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
+  'video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
+)
+
+if (playbackInfo.renditions?.length) {
+  // Find a specific resolution
+  const hd = playbackInfo.renditions.find((r) => r.resolution === '1080p')
+  if (hd) {
+    // The URL redirects to the CDN — use it directly for downloads
+    const response = await fetch(hd.url)
+  }
+}
+```
+
+Available resolutions depend on the source video but typically include `1080p`, `480p`, and `270p`.
 
 ## License
 
