@@ -9,6 +9,7 @@
   ],
   "entryPointStrategy": "expand",
   "json": "./docs/client-typedoc-output.json",
+  "html": "./docs/html",
   "pretty": true,
   "tsconfig": "./tsconfig.json",
   "excludePrivate": true,
