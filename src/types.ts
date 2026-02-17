@@ -464,6 +464,33 @@ export type AuthProviderResponse = {providers: AuthProvider[]}
 export type DatasetAclMode = 'public' | 'private' | 'custom'
 
 /** @public */
+export type DatasetCreateOptions = {
+  aclMode?: DatasetAclMode
+  embeddings?: {
+    enabled: boolean
+    projection?: string
+  }
+}
+
+/** @public */
+export type DatasetEditOptions = {
+  aclMode?: DatasetAclMode
+}
+
+/** @public */
+export type EmbeddingsSettings = {
+  enabled: boolean
+  projection?: string
+  status: string
+}
+
+/** @public */
+export type EmbeddingsSettingsBody = {
+  enabled: boolean
+  projection?: string
+}
+
+/** @public */
 export type DatasetResponse = {datasetName: string; aclMode: DatasetAclMode}
 /** @public */
 export type DatasetsResponse = {

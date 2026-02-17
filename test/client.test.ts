@@ -13,6 +13,7 @@ import {
   type DeleteAction,
   type DiscardAction,
   type EditAction,
+  type EmbeddingsSettings,
   type FilteredResponseQueryOptions,
   Patch,
   type PublishAction,
@@ -925,6 +926,94 @@ describe('client', async () => {
       await expect(client.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
 
       expect(scope.isDone()).toBe(true) // all expectations satisfied
+    })
+
+    test.skipIf(isEdge)('can create dataset with embeddings config', async () => {
+      const scope = nock(projectHost())
+        .put('/v1/datasets/bar', {aclMode: 'public', embeddings: {enabled: true}})
+        .reply(200, {datasetName: 'bar', aclMode: 'public'})
+
+      await expect(
+        dsClient.datasets.create('bar', {
+          aclMode: 'public',
+          embeddings: {enabled: true},
+        }),
+      ).resolves.toEqual({datasetName: 'bar', aclMode: 'public'})
+
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test.skipIf(isEdge)('can get embeddings settings', async () => {
+      const settings: EmbeddingsSettings = {
+        enabled: true,
+        projection: 'myProjection',
+        status: 'active',
+      }
+      const scope = nock(projectHost())
+        .get('/v1/datasets/foo/settings/embeddings')
+        .reply(200, settings)
+
+      await expect(dsClient.datasets.getEmbeddingsSettings('foo')).resolves.toEqual(settings)
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test.skipIf(isEdge)('can get embeddings settings with useProjectHostname=false', async () => {
+      nock.cleanAll()
+      const settings: EmbeddingsSettings = {
+        enabled: false,
+        status: 'inactive',
+      }
+      const scope = nock(`https://${apiHost}`)
+        .get(`/v1/projects/${defaultProjectId}/datasets/foo/settings/embeddings`)
+        .reply(200, settings)
+
+      const client = getClient({useProjectHostname: false})
+      await expect(client.datasets.getEmbeddingsSettings('foo')).resolves.toEqual(settings)
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test.skipIf(isEdge)('can edit embeddings settings', async () => {
+      const scope = nock(projectHost())
+        .put('/v1/datasets/foo/settings/embeddings', {
+          enabled: true,
+          projection: 'myProjection',
+        })
+        .reply(200)
+
+      await expect(
+        dsClient.datasets.editEmbeddingsSettings('foo', {
+          enabled: true,
+          projection: 'myProjection',
+        }),
+      ).resolves.not.toThrow()
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test.skipIf(isEdge)('can edit embeddings settings with useProjectHostname=false', async () => {
+      nock.cleanAll()
+      const scope = nock(`https://${apiHost}`)
+        .put(`/v1/projects/${defaultProjectId}/datasets/foo/settings/embeddings`, {
+          enabled: false,
+        })
+        .reply(200)
+
+      const client = getClient({useProjectHostname: false})
+      await expect(
+        client.datasets.editEmbeddingsSettings('foo', {enabled: false}),
+      ).resolves.not.toThrow()
+      expect(scope.isDone()).toBe(true)
+    })
+
+    test('throws when trying to get embeddings settings with invalid dataset name', () => {
+      expect(() => dsClient.datasets.getEmbeddingsSettings('*foo*')).toThrow(
+        /Datasets can only contain/i,
+      )
+    })
+
+    test('throws when trying to edit embeddings settings with invalid dataset name', () => {
+      expect(() => dsClient.datasets.editEmbeddingsSettings('*foo*', {enabled: true})).toThrow(
+        /Datasets can only contain/i,
+      )
     })
   })
 
