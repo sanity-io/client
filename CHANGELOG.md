@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.16.0](https://github.com/sanity-io/client/compare/v7.15.0...v7.16.0) (2026-02-20)
+
+
+### Features
+
+* **dataset:** added embeddings configuration options ([d4cca13](https://github.com/sanity-io/client/commit/d4cca13c0bda83ea4672c6de76d6639ef7162774))
+
 ## [7.15.0](https://github.com/sanity-io/client/compare/v7.14.1...v7.15.0) (2026-02-16)
 
 
