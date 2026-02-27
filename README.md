@@ -188,7 +188,7 @@ pnpm install @sanity/client
 
 `const client = createClient(options)`
 
-Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. [We encourage setting `useCdn` to either `true` or `false`.](https://www.sanity.io/help/js-client-cdn-configuration) The default is `true`. If you're not sure which option to choose we recommend starting with `true` and revise later if you find that you require uncached content. [Our awesome Slack community can help guide you on how to avoid stale data tailored to your tech stack and architecture.](https://slack.sanity.io/)
+Initializes a new Sanity Client. Required options are `projectId`, `dataset`, and `apiVersion`. [We encourage setting `useCdn` to either `true` or `false`.](https://www.sanity.io/help/js-client-cdn-configuration) The default is `true`. If you're not sure which option to choose we recommend starting with `true` and revise later if you find that you require uncached content. [Our awesome Discord community can help guide you on how to avoid stale data tailored to your tech stack and architecture.](https://snty.link/community)
 
 #### [ESM](https://hacks.mozilla.org/2018/03/es-modules-a-cartoon-deep-dive/)
 
