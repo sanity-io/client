@@ -60,7 +60,7 @@ jobs:
           node-version: lts/*
       - run: npm ci
       - run: npm run coverage
-      - uses: davelosert/vitest-coverage-report-action@7bf7d3c1b17a0e27c7e0d14190fb39168584bed2 # v2
+      - uses: davelosert/vitest-coverage-report-action@2500dafcee7dd64f85ab689c0b83798a8359770e # v2
         if: always()
 
   test:
@@ -176,7 +176,7 @@ jobs:
           name: build-output-${{ github.run_id }}
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x.x
+          deno-version: 1.46.3
       - run: npm run test:deno
 
   bun-runtime:
