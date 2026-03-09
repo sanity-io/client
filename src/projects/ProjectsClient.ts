@@ -19,15 +19,22 @@ export class ObservableProjectsClient {
    * @param options - Options for the list request
    *   - `includeMembers` - Whether to include members in the response (default: true)
    *   - `organizationId` - ID of the organization to fetch projects for
+   *   - `onlyExplicitMembership` - Only include projects where the user has explicit membership (default: false)
    */
-  list(options?: {includeMembers?: true; organizationId?: string}): Observable<SanityProject[]>
+  list(options?: {
+    includeMembers?: true
+    organizationId?: string
+    onlyExplicitMembership?: boolean
+  }): Observable<SanityProject[]>
   list(options?: {
     includeMembers?: false
     organizationId?: string
+    onlyExplicitMembership?: boolean
   }): Observable<Omit<SanityProject, 'members'>[]>
   list(options?: {
     includeMembers?: boolean
     organizationId?: string
+    onlyExplicitMembership?: boolean
   }): Observable<SanityProject[] | Omit<SanityProject, 'members'>[]> {
     const query: Record<string, string> = {}
     const uri = '/projects'
@@ -36,6 +43,9 @@ export class ObservableProjectsClient {
     }
     if (options?.organizationId) {
       query.organizationId = options.organizationId
+    }
+    if (options?.onlyExplicitMembership === true) {
+      query.onlyExplicitMembership = 'true'
     }
 
     return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query})
@@ -66,15 +76,22 @@ export class ProjectsClient {
    * @param options - Options for the list request
    *   - `includeMembers` - Whether to include members in the response (default: true)
    *   - `organizationId` - ID of the organization to fetch projects for
+   *   - `onlyExplicitMembership` - Only include projects where the user has explicit membership (default: false)
    */
-  list(options?: {includeMembers?: true; organizationId?: string}): Promise<SanityProject[]>
+  list(options?: {
+    includeMembers?: true
+    organizationId?: string
+    onlyExplicitMembership?: boolean
+  }): Promise<SanityProject[]>
   list(options?: {
     includeMembers?: false
     organizationId?: string
+    onlyExplicitMembership?: boolean
   }): Promise<Omit<SanityProject, 'members'>[]>
   list(options?: {
     includeMembers?: boolean
     organizationId?: string
+    onlyExplicitMembership?: boolean
   }): Promise<SanityProject[] | Omit<SanityProject, 'members'>[]> {
     const query: Record<string, string> = {}
     const uri = '/projects'
@@ -83,6 +100,9 @@ export class ProjectsClient {
     }
     if (options?.organizationId) {
       query.organizationId = options.organizationId
+    }
+    if (options?.onlyExplicitMembership === true) {
+      query.onlyExplicitMembership = 'true'
     }
     return lastValueFrom(_request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query}))
   }
