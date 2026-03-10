@@ -2004,3 +2004,44 @@ export interface VideoPlaybackTokens {
 
 /** @public */
 export type MediaLibraryAssetInstanceIdentifier = string | SanityReference
+
+export type PlainConfig = {
+  token?: string
+}
+
+/**
+ * A document source represents something you can query for documents.
+ */
+export type DocumentSource<Results extends DocumentSourceResults = DocumentSourceResults> = {
+  resource: [string] | [string, string]
+
+  [__results]?: Results
+}
+
+/**
+ * A base type for the results of working with a resource.
+ * You can declare your own interfaces which extends this type.
+ *
+ * @example
+ * interface MyResults extends DocumentSourceResults {}
+ */
+export type DocumentSourceResults = {
+  document?: {_id: string; _type: string} & Record<string, unknown>
+  queries?: Record<string, unknown>
+}
+
+export type QueryFromResults<
+  Results extends DocumentSourceResults,
+  Query extends string,
+> = NonNullable<Results['queries']>[Query]
+
+export type DocumentFromResults<Results extends DocumentSourceResults> = NonNullable<
+  Results['document']
+>
+
+declare const __results: unique symbol
+
+/**
+ * The interface which is used by `dataset` if it's not configured against a specific result.
+ */
+export interface DefaultDocumentSourceResults extends DocumentSourceResults {}
