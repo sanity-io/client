@@ -6,6 +6,8 @@ import type {
   VideoPlaybackTokens,
 } from './types'
 
+export type {VideoRenditionInfo, VideoRenditionInfoPublic, VideoRenditionInfoSigned} from './types'
+
 /**
  * Check if a playback info item (stream/thumbnail/etc) has a signed token
  * @internal
