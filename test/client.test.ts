@@ -726,6 +726,42 @@ describe('client', async () => {
       expect(projects[0].id, 'should have project id').toBe('foo')
     })
 
+    test('can request list of projects with only explicit membership', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects?onlyExplicitMembership=true')
+        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      const projects = await client.projects.list({onlyExplicitMembership: true})
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+    })
+
+    test('does not include onlyExplicitMembership param when false', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects')
+        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      const projects = await client.projects.list({onlyExplicitMembership: false})
+      expect(projects.length, 'should have two projects').toBe(2)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+    })
+
+    test('can combine onlyExplicitMembership with other options', async () => {
+      nock(`https://${apiHost}`)
+        .get('/v1/projects?organizationId=org_123&onlyExplicitMembership=true')
+        .reply(200, [{id: 'foo'}])
+
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+      const projects = await client.projects.list({
+        organizationId: 'org_123',
+        onlyExplicitMembership: true,
+      })
+      expect(projects.length, 'should have one project').toBe(1)
+      expect(projects[0].id, 'should have project id').toBe('foo')
+    })
+
     test('can request list of projects, ignoring non-false `includeMembers` option', async () => {
       nock(`https://${apiHost}`)
         .get('/v1/projects')
