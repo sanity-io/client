@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.17.0](https://github.com/sanity-io/client/compare/v7.16.0...v7.17.0) (2026-03-10)
+
+
+### Features
+
+* **projects:** add `onlyExplicitMembership` option to `projects.list()` ([#1200](https://github.com/sanity-io/client/issues/1200)) ([96619c5](https://github.com/sanity-io/client/commit/96619c5cf3046babd3894cf0b6dc7fc5e384b7df))
+
 ## [7.16.0](https://github.com/sanity-io/client/compare/v7.15.0...v7.16.0) (2026-02-20)
 
 
