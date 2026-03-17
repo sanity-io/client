@@ -2004,6 +2004,8 @@ export interface VideoSubtitleInfoPublic {
   languageCode: string
   /** URL to the subtitle file */
   url: string
+  /** Whether this track contains closed captions */
+  closedCaptions: boolean
 }
 
 /** @public */
