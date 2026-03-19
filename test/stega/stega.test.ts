@@ -6,7 +6,7 @@ test('it handles trailing zero-width space characters', () => {
   const editInfo = JSON.stringify({origin: 'sanity.io', href: '/studio'})
   const encoded = vercelStegaCombine(payload, editInfo)
   expect(encoded).not.toEqual(payload)
-  const decoded = vercelStegaDecode(encoded) as {origin: string; href: string}
+  const decoded = JSON.parse(vercelStegaDecode(encoded)!) as {origin: string; href: string}
   expect(decoded.origin).toEqual('sanity.io')
   expect(decoded.href).toEqual('/studio')
 })
