@@ -5,6 +5,18 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.18.0](https://github.com/sanity-io/client/compare/v7.17.0...v7.18.0) (2026-03-19)
+
+
+### Features
+
+* **types:** add VideoRenditionInfo types with typed resolution ([#1186](https://github.com/sanity-io/client/issues/1186)) ([6d9e85e](https://github.com/sanity-io/client/commit/6d9e85ec702da7b510ad61c5fcde510ba4214bed))
+
+
+### Bug Fixes
+
+* **stega:** allow zero-width space characters in content ([#1204](https://github.com/sanity-io/client/issues/1204)) ([3dcfca9](https://github.com/sanity-io/client/commit/3dcfca939484ac5af7cd498e75368c460a5d2ffb))
+
 ## [7.17.0](https://github.com/sanity-io/client/compare/v7.16.0...v7.17.0) (2026-03-10)
 
 
