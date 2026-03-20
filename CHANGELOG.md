@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.20.0](https://github.com/sanity-io/client/compare/v7.19.0...v7.20.0) (2026-03-20)
+
+
+### Features
+
+* add more query options to listing projects ([#1205](https://github.com/sanity-io/client/issues/1205)) ([e193fcb](https://github.com/sanity-io/client/commit/e193fcb6e7537727824bfcf2e851aba674071498))
+
 ## [7.19.0](https://github.com/sanity-io/client/compare/v7.18.0...v7.19.0) (2026-03-20)
 
 
