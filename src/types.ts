@@ -529,6 +529,7 @@ export interface SanityProject {
   pendingInvites?: number
   maxRetentionDays?: number
   members: SanityProjectMember[]
+  features: string[]
   metadata: {
     cliInitializedAt?: string
     color?: string
