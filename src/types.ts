@@ -1997,11 +1997,37 @@ export interface VideoRenditionInfoSigned extends VideoRenditionInfoPublic {
 export type VideoRenditionInfo = VideoRenditionInfoPublic | VideoRenditionInfoSigned
 
 /** @public */
+export interface VideoSubtitleInfoPublic {
+  /** Subtitle track identifier */
+  trackId: string
+  /** ISO 639-1 language code */
+  languageCode: string
+  /** URL to the subtitle file */
+  url: string
+  /** Whether this track contains closed captions */
+  closedCaptions: boolean
+}
+
+/** @public */
+export interface VideoSubtitleInfoSigned extends VideoSubtitleInfoPublic {
+  /** Authentication token for signed playback */
+  token: string
+  /** Token expiration time in ISO 8601 format */
+  expiresAt: string
+}
+
+/** @public */
+export type VideoSubtitleInfo = VideoSubtitleInfoPublic | VideoSubtitleInfoSigned
+
+/** @public */
 export interface VideoPlaybackInfo<
   T extends VideoPlaybackInfoItem = VideoPlaybackInfoItem,
   R extends VideoRenditionInfo = T extends VideoPlaybackInfoItemSigned
     ? VideoRenditionInfoSigned
     : VideoRenditionInfo,
+  S extends VideoSubtitleInfo = T extends VideoPlaybackInfoItemSigned
+    ? VideoSubtitleInfoSigned
+    : VideoSubtitleInfo,
 > {
   id: string
   thumbnail: T
@@ -2011,6 +2037,7 @@ export interface VideoPlaybackInfo<
   duration: number
   aspectRatio: number
   renditions?: R[]
+  subtitles?: S[]
 }
 
 /** @public */
