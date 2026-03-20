@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.19.0](https://github.com/sanity-io/client/compare/v7.18.0...v7.19.0) (2026-03-20)
+
+
+### Features
+
+* **types:** add VideoSubtitleInfo types to playback info ([#1191](https://github.com/sanity-io/client/issues/1191)) ([7c55974](https://github.com/sanity-io/client/commit/7c5597462e750c305694e0f04c2007a12b3fbb1b))
+
 ## [7.18.0](https://github.com/sanity-io/client/compare/v7.17.0...v7.18.0) (2026-03-19)
 
 
