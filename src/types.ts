@@ -442,7 +442,7 @@ export type HttpRequest = {
  * A function that intercepts HTTP requests made by the client.
  *
  * Receives the resolved request options and a `defaultRequester` function that
- * executes the request through the normal get-it pipeline.
+ * executes the request through the normal pipeline.
  *
  * The consumer can:
  * - Modify request options before calling `defaultRequester`
