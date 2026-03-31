@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import type {Requester} from 'get-it'
+import type {Observable} from 'rxjs'
 
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
@@ -203,6 +204,31 @@ export interface ClientConfig {
    * Lineage token for recursion control
    */
   lineage?: string
+
+  /**
+   * A custom request handler that intercepts all HTTP requests made by the client.
+   *
+   * Useful for logging, adding custom headers, refreshing auth tokens, rate limiting, etc.
+   *
+   * When using `withConfig()`, the new `requestHandler` **replaces** the previous one (it does not
+   * wrap it). To compose handlers, you can chain them manually:
+   *
+   * ```ts
+   * const parent = createClient({...config, requestHandler: handlerA})
+   * const child = parent.withConfig({
+   *   requestHandler: (req, defaultRequester) =>
+   *     handlerB(req, (opts) => handlerA(opts, defaultRequester)),
+   * })
+   * ```
+   *
+   * Setting `requestHandler` to `undefined` via `withConfig()` removes the handler.
+   *
+   * Note: This only applies to HTTP requests. Real-time listener connections
+   * (`client.listen()`) use EventSource and are not intercepted by this handler.
+   *
+   * @see {@link RequestHandler}
+   */
+  requestHandler?: RequestHandler
 }
 
 /** @public */
@@ -411,6 +437,60 @@ export interface ErrorProps {
 export type HttpRequest = {
   (options: RequestOptions, requester: Requester): ReturnType<Requester>
 }
+
+/**
+ * A function that intercepts HTTP requests made by the client.
+ *
+ * Receives the resolved request options and a `defaultRequester` function that
+ * executes the request through the normal get-it pipeline.
+ *
+ * The consumer can:
+ * - Modify request options before calling `defaultRequester`
+ * - Transform the response stream (e.g. via `pipe`)
+ * - Skip `defaultRequester` entirely and return a custom Observable
+ *
+ * When set via `withConfig()`, the new handler **replaces** (not wraps) the previous one.
+ *
+ * Note: This only applies to HTTP requests. Real-time listener connections
+ * (`client.listen()`) use EventSource and are not intercepted by this handler.
+ *
+ * @example Add a custom header to every request
+ * ```ts
+ * const client = createClient({
+ *   projectId: 'my-project',
+ *   dataset: 'production',
+ *   requestHandler: (request, defaultRequester) => {
+ *     return defaultRequester({...request, headers: {...request.headers, 'X-Custom': 'value'}})
+ *   },
+ * })
+ * ```
+ *
+ * @example Log requests and responses
+ * ```ts
+ * import {tap} from 'rxjs'
+ *
+ * const client = createClient({
+ *   projectId: 'my-project',
+ *   dataset: 'production',
+ *   requestHandler: (request, defaultRequester) => {
+ *     console.log('Request:', request.method, request.url)
+ *     return defaultRequester(request).pipe(
+ *       tap((event) => {
+ *         if (event.type === 'response') {
+ *           console.log('Response:', event.statusCode)
+ *         }
+ *       }),
+ *     )
+ *   },
+ * })
+ * ```
+ *
+ * @public
+ */
+export type RequestHandler = (
+  request: RequestOptions & {url: string},
+  defaultRequester: (options: RequestOptions & {url: string}) => Observable<HttpRequestEvent>,
+) => Observable<HttpRequestEvent>
 
 /** @internal */
 export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
