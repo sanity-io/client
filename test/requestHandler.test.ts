@@ -1,4 +1,9 @@
-import {createClient, type RequestHandler, type RequestOptions, type SanityClient} from '@sanity/client'
+import {
+  createClient,
+  type RequestHandler,
+  type RequestOptions,
+  type SanityClient,
+} from '@sanity/client'
 import {firstValueFrom, map, of as observableOf} from 'rxjs'
 import {describe, expect, test, vi} from 'vitest'
 
