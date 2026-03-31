@@ -1,4 +1,4 @@
-import {createClient, type RequestHandler, type RequestOptions} from '@sanity/client'
+import {createClient, type RequestHandler, type RequestOptions, type SanityClient} from '@sanity/client'
 import {firstValueFrom, map, of as observableOf} from 'rxjs'
 import {describe, expect, test, vi} from 'vitest'
 
@@ -199,4 +199,37 @@ describe('requestHandler', async () => {
     expect(result).toMatchObject({pong: true})
     expect(onRequest).toHaveBeenCalledTimes(1)
   })
+
+  test.skipIf(isEdge)(
+    'handler receives a client without requestHandler for side requests',
+    async () => {
+      // First request returns 401, side request refreshes token, retry succeeds
+      nock(projectHost()).get('/v1/ping').reply(401, {error: 'Unauthorized'})
+      nock(projectHost()).get('/v1/auth/refresh').reply(200, {token: 'new-token'})
+      nock(projectHost()).get('/v1/ping').reply(200, {pong: true})
+
+      let bareClient: SanityClient | undefined
+      const handler: RequestHandler = (request, defaultRequester, client) => {
+        bareClient = client
+        return defaultRequester(request)
+      }
+
+      const client = createClient({...clientConfig, requestHandler: handler})
+
+      // The first request will fail with 401, but we just want to verify the bare client works
+      try {
+        await client.request({uri: '/ping'})
+      } catch {
+        // expected 401
+      }
+
+      // Verify the bare client is a SanityClient without the handler
+      expect(bareClient).toBeDefined()
+      expect(bareClient!.config().requestHandler).toBeUndefined()
+
+      // Verify the bare client can make requests (no handler interception)
+      const refreshResult = await bareClient!.request({uri: '/auth/refresh'})
+      expect(refreshResult).toMatchObject({token: 'new-token'})
+    },
+  )
 })

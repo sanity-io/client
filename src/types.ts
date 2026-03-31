@@ -4,6 +4,7 @@
 import type {Requester} from 'get-it'
 import type {Observable} from 'rxjs'
 
+import type {SanityClient} from './SanityClient'
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
 /**
@@ -441,18 +442,25 @@ export type HttpRequest = {
 /**
  * A function that intercepts HTTP requests made by the client.
  *
- * Receives the resolved request options and a `defaultRequester` function that
- * executes the request through the normal pipeline.
+ * Receives the resolved request options, a `defaultRequester` function that
+ * executes the request through the normal pipeline, and a `client` instance
+ * without a `requestHandler` (to avoid recursive interception).
  *
  * The consumer can:
  * - Modify request options before calling `defaultRequester`
  * - Transform the response stream (e.g. via `pipe`)
  * - Skip `defaultRequester` entirely and return a custom Observable
+ * - Use `client` to make additional requests (e.g. refresh an auth token on 401)
  *
  * When set via `withConfig()`, the new handler **replaces** (not wraps) the previous one.
  *
  * Note: This only applies to HTTP requests. Real-time listener connections
  * (`client.listen()`) use EventSource and are not intercepted by this handler.
+ *
+ * @param request - The resolved request options including `url`
+ * @param defaultRequester - Executes the request through the normal pipeline
+ * @param client - A client instance with the same configuration but without a `requestHandler`,
+ *   useful for making side requests (e.g. token refresh) without triggering the handler recursively
  *
  * @example Add a custom header to every request
  * ```ts
@@ -490,6 +498,7 @@ export type HttpRequest = {
 export type RequestHandler = (
   request: RequestOptions & {url: string},
   defaultRequester: (options: RequestOptions & {url: string}) => Observable<HttpRequestEvent>,
+  client: SanityClient,
 ) => Observable<HttpRequestEvent>
 
 /** @internal */

@@ -103,10 +103,17 @@ export class ObservableSanityClient {
     const requestHandler = config.requestHandler
 
     this.#httpRequest = requestHandler
-      ? (options, requester) => {
-          const opts = options as RequestOptions & {url: string}
-          return requestHandler(opts, (o) => httpRequest(o, requester))
-        }
+      ? (() => {
+          let bareClient: SanityClient | undefined
+          const wrapped: HttpRequest = (options, requester) => {
+            const opts = options as RequestOptions & {url: string}
+            if (!bareClient) {
+              bareClient = new SanityClient(httpRequest, {...config, requestHandler: undefined})
+            }
+            return requestHandler(opts, (o) => httpRequest(o, requester), bareClient)
+          }
+          return wrapped
+        })()
       : httpRequest
 
     this.assets = new ObservableAssetsClient(this, this.#httpRequest)
@@ -1152,10 +1159,17 @@ export class SanityClient {
     this.#originalHttpRequest = httpRequest
     const requestHandler = config.requestHandler
     this.#httpRequest = requestHandler
-      ? (options, requester) => {
-          const opts = options as RequestOptions & {url: string}
-          return requestHandler(opts, (o) => httpRequest(o, requester))
-        }
+      ? (() => {
+          let bareClient: SanityClient | undefined
+          const wrapped: HttpRequest = (options, requester) => {
+            const opts = options as RequestOptions & {url: string}
+            if (!bareClient) {
+              bareClient = new SanityClient(httpRequest, {...config, requestHandler: undefined})
+            }
+            return requestHandler(opts, (o) => httpRequest(o, requester), bareClient)
+          }
+          return wrapped
+        })()
       : httpRequest
 
     this.assets = new AssetsClient(this, this.#httpRequest)
