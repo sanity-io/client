@@ -43,6 +43,7 @@ import type {
   RawQuerylessQueryResponse,
   RawQueryResponse,
   RawRequestOptions,
+  RequestOptions,
   SanityDocument,
   SanityDocumentStub,
   SingleActionResult,
@@ -87,6 +88,7 @@ export class ObservableSanityClient {
    * Private properties
    */
   #clientConfig: InitializedClientConfig
+  #originalHttpRequest: HttpRequest
   #httpRequest: HttpRequest
 
   /**
@@ -97,7 +99,22 @@ export class ObservableSanityClient {
   constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
     this.config(config)
 
-    this.#httpRequest = httpRequest
+    this.#originalHttpRequest = httpRequest
+    const requestHandler = config.requestHandler
+
+    this.#httpRequest = requestHandler
+      ? (() => {
+          let bareClient: SanityClient | undefined
+          const wrapped: HttpRequest = (options, requester) => {
+            const opts = options as RequestOptions & {url: string}
+            if (!bareClient) {
+              bareClient = new SanityClient(httpRequest, {...config, requestHandler: undefined})
+            }
+            return requestHandler(opts, (o) => httpRequest(o, requester), bareClient)
+          }
+          return wrapped
+        })()
+      : httpRequest
 
     this.assets = new ObservableAssetsClient(this, this.#httpRequest)
     this.datasets = new ObservableDatasetsClient(this, this.#httpRequest)
@@ -117,7 +134,7 @@ export class ObservableSanityClient {
    * Clone the client - returns a new instance
    */
   clone(): ObservableSanityClient {
-    return new ObservableSanityClient(this.#httpRequest, this.config())
+    return new ObservableSanityClient(this.#originalHttpRequest, this.config())
   }
 
   /**
@@ -150,7 +167,7 @@ export class ObservableSanityClient {
    */
   withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClient {
     const thisConfig = this.config()
-    return new ObservableSanityClient(this.#httpRequest, {
+    return new ObservableSanityClient(this.#originalHttpRequest, {
       ...thisConfig,
       ...newConfig,
       stega: {
@@ -1128,6 +1145,7 @@ export class SanityClient {
    * Private properties
    */
   #clientConfig: InitializedClientConfig
+  #originalHttpRequest: HttpRequest
   #httpRequest: HttpRequest
 
   /**
@@ -1138,7 +1156,21 @@ export class SanityClient {
   constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
     this.config(config)
 
-    this.#httpRequest = httpRequest
+    this.#originalHttpRequest = httpRequest
+    const requestHandler = config.requestHandler
+    this.#httpRequest = requestHandler
+      ? (() => {
+          let bareClient: SanityClient | undefined
+          const wrapped: HttpRequest = (options, requester) => {
+            const opts = options as RequestOptions & {url: string}
+            if (!bareClient) {
+              bareClient = new SanityClient(httpRequest, {...config, requestHandler: undefined})
+            }
+            return requestHandler(opts, (o) => httpRequest(o, requester), bareClient)
+          }
+          return wrapped
+        })()
+      : httpRequest
 
     this.assets = new AssetsClient(this, this.#httpRequest)
     this.datasets = new DatasetsClient(this, this.#httpRequest)
@@ -1160,7 +1192,7 @@ export class SanityClient {
    * Clone the client - returns a new instance
    */
   clone(): SanityClient {
-    return new SanityClient(this.#httpRequest, this.config())
+    return new SanityClient(this.#originalHttpRequest, this.config())
   }
 
   /**
@@ -1197,7 +1229,7 @@ export class SanityClient {
    */
   withConfig(newConfig?: Partial<ClientConfig>): SanityClient {
     const thisConfig = this.config()
-    return new SanityClient(this.#httpRequest, {
+    return new SanityClient(this.#originalHttpRequest, {
       ...thisConfig,
       ...newConfig,
       stega: {
