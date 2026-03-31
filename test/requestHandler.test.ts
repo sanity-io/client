@@ -188,6 +188,7 @@ describe('requestHandler', async () => {
 
     const onRequest = vi.fn()
     const handler: RequestHandler = (request, defaultRequester) => {
+      onRequest()
       return defaultRequester(request)
     }
 
