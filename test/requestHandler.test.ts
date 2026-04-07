@@ -46,7 +46,7 @@ describe('requestHandler', async () => {
       })
     }
 
-    const client = createClient({...clientConfig, requestHandler: handler})
+    const client = createClient({...clientConfig, _requestHandler: handler})
     const result = await client.request({uri: '/ping'})
 
     expect(result).toMatchObject({pong: true})
@@ -62,7 +62,7 @@ describe('requestHandler', async () => {
       return defaultRequester(request)
     }
 
-    const client = createClient({...clientConfig, requestHandler: handler})
+    const client = createClient({...clientConfig, _requestHandler: handler})
     const result = await client.request({uri: '/ping'})
 
     expect(result).toMatchObject({pong: true})
@@ -88,7 +88,7 @@ describe('requestHandler', async () => {
       )
     }
 
-    const client = createClient({...clientConfig, requestHandler: handler})
+    const client = createClient({...clientConfig, _requestHandler: handler})
     const result = await client.request({uri: '/ping'})
 
     expect(result).toMatchObject({value: 42, injected: true})
@@ -108,7 +108,7 @@ describe('requestHandler', async () => {
       })
     }
 
-    const client = createClient({...clientConfig, requestHandler: handler})
+    const client = createClient({...clientConfig, _requestHandler: handler})
     const result = await client.request({uri: '/ping'})
 
     expect(result).toMatchObject({custom: true})
@@ -124,7 +124,7 @@ describe('requestHandler', async () => {
       return defaultRequester(request)
     }
 
-    const client = createClient({...clientConfig, requestHandler: handler})
+    const client = createClient({...clientConfig, _requestHandler: handler})
     const newClient = client.withConfig({dataset: 'bar'})
 
     // The handler should still be called even though we used withConfig
@@ -145,7 +145,7 @@ describe('requestHandler', async () => {
 
     const client = createClient({
       ...clientConfig,
-      requestHandler: handler,
+      _requestHandler: handler,
     })
     await client.request({uri: '/ping'})
 
@@ -165,12 +165,12 @@ describe('requestHandler', async () => {
       defaultRequester(request),
     )
 
-    const client = createClient({...clientConfig, requestHandler: originalHandler})
+    const client = createClient({...clientConfig, _requestHandler: originalHandler})
     await client.request({uri: '/ping'})
     expect(originalHandler).toHaveBeenCalledTimes(1)
     expect(overrideHandler).toHaveBeenCalledTimes(0)
 
-    const newClient = client.withConfig({requestHandler: overrideHandler})
+    const newClient = client.withConfig({_requestHandler: overrideHandler})
     await newClient.request({uri: '/ping'})
     expect(originalHandler).toHaveBeenCalledTimes(1) // not called again
     expect(overrideHandler).toHaveBeenCalledTimes(1)
@@ -181,8 +181,8 @@ describe('requestHandler', async () => {
 
     const handler = vi.fn<RequestHandler>((request, defaultRequester) => defaultRequester(request))
 
-    const client = createClient({...clientConfig, requestHandler: handler})
-    const newClient = client.withConfig({requestHandler: undefined})
+    const client = createClient({...clientConfig, _requestHandler: handler})
+    const newClient = client.withConfig({_requestHandler: undefined})
     await newClient.request({uri: '/ping'})
 
     expect(handler).not.toHaveBeenCalled()
@@ -197,7 +197,7 @@ describe('requestHandler', async () => {
       return defaultRequester(request)
     }
 
-    const client = createClient({...clientConfig, requestHandler: handler})
+    const client = createClient({...clientConfig, _requestHandler: handler})
 
     const result = await firstValueFrom(client.observable.request({uri: '/ping'}))
 
@@ -219,7 +219,7 @@ describe('requestHandler', async () => {
         return defaultRequester(request)
       }
 
-      const client = createClient({...clientConfig, requestHandler: handler})
+      const client = createClient({...clientConfig, _requestHandler: handler})
 
       // The first request will fail with 401, but we just want to verify the bare client works
       try {
@@ -230,7 +230,7 @@ describe('requestHandler', async () => {
 
       // Verify the bare client is a SanityClient without the handler
       expect(bareClient).toBeDefined()
-      expect(bareClient!.config().requestHandler).toBeUndefined()
+      expect(bareClient!.config()._requestHandler).toBeUndefined()
 
       // Verify the bare client can make requests (no handler interception)
       const refreshResult = await bareClient!.request({uri: '/auth/refresh'})

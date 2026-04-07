@@ -211,25 +211,27 @@ export interface ClientConfig {
    *
    * Useful for logging, adding custom headers, refreshing auth tokens, rate limiting, etc.
    *
-   * When using `withConfig()`, the new `requestHandler` **replaces** the previous one (it does not
+   * When using `withConfig()`, the new handler **replaces** the previous one (it does not
    * wrap it). To compose handlers, you can chain them manually:
    *
    * ```ts
-   * const parent = createClient({...config, requestHandler: handlerA})
+   * const parent = createClient({...config, _requestHandler: handlerA})
    * const child = parent.withConfig({
-   *   requestHandler: (req, defaultRequester) =>
+   *   _requestHandler: (req, defaultRequester) =>
    *     handlerB(req, (opts) => handlerA(opts, defaultRequester)),
    * })
    * ```
    *
-   * Setting `requestHandler` to `undefined` via `withConfig()` removes the handler.
+   * Setting `_requestHandler` to `undefined` via `withConfig()` removes the handler.
    *
    * Note: This only applies to HTTP requests. Real-time listener connections
    * (`client.listen()`) use EventSource and are not intercepted by this handler.
    *
+   * @internal
+   * @deprecated Don't use outside of Sanity internals
    * @see {@link RequestHandler}
    */
-  requestHandler?: RequestHandler
+  _requestHandler?: RequestHandler
 }
 
 /** @public */
@@ -444,7 +446,7 @@ export type HttpRequest = {
  *
  * Receives the resolved request options, a `defaultRequester` function that
  * executes the request through the normal pipeline, and a `client` instance
- * without a `requestHandler` (to avoid recursive interception).
+ * without a `_requestHandler` (to avoid recursive interception).
  *
  * The consumer can:
  * - Modify request options before calling `defaultRequester`
@@ -459,41 +461,11 @@ export type HttpRequest = {
  *
  * @param request - The resolved request options including `url`
  * @param defaultRequester - Executes the request through the normal pipeline
- * @param client - A client instance with the same configuration but without a `requestHandler`,
+ * @param client - A client instance with the same configuration but without a `_requestHandler`,
  *   useful for making side requests (e.g. token refresh) without triggering the handler recursively
  *
- * @example Add a custom header to every request
- * ```ts
- * const client = createClient({
- *   projectId: 'my-project',
- *   dataset: 'production',
- *   requestHandler: (request, defaultRequester) => {
- *     return defaultRequester({...request, headers: {...request.headers, 'X-Custom': 'value'}})
- *   },
- * })
- * ```
- *
- * @example Log requests and responses
- * ```ts
- * import {tap} from 'rxjs'
- *
- * const client = createClient({
- *   projectId: 'my-project',
- *   dataset: 'production',
- *   requestHandler: (request, defaultRequester) => {
- *     console.log('Request:', request.method, request.url)
- *     return defaultRequester(request).pipe(
- *       tap((event) => {
- *         if (event.type === 'response') {
- *           console.log('Response:', event.statusCode)
- *         }
- *       }),
- *     )
- *   },
- * })
- * ```
- *
- * @public
+ * @internal
+ * @deprecated Don't use outside of Sanity internals
  */
 export type RequestHandler = (
   request: RequestOptions & {url: string},

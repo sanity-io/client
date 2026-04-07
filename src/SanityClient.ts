@@ -100,7 +100,7 @@ export class ObservableSanityClient {
     this.config(config)
 
     this.#originalHttpRequest = httpRequest
-    const requestHandler = config.requestHandler
+    const requestHandler = config._requestHandler
 
     this.#httpRequest = requestHandler
       ? (() => {
@@ -108,7 +108,7 @@ export class ObservableSanityClient {
           const wrapped: HttpRequest = (options, requester) => {
             const opts = options as RequestOptions & {url: string}
             if (!bareClient) {
-              bareClient = new SanityClient(httpRequest, {...config, requestHandler: undefined})
+              bareClient = new SanityClient(httpRequest, {...config, _requestHandler: undefined})
             }
             return requestHandler(opts, (o) => httpRequest(o, requester), bareClient)
           }
@@ -1157,14 +1157,14 @@ export class SanityClient {
     this.config(config)
 
     this.#originalHttpRequest = httpRequest
-    const requestHandler = config.requestHandler
+    const requestHandler = config._requestHandler
     this.#httpRequest = requestHandler
       ? (() => {
           let bareClient: SanityClient | undefined
           const wrapped: HttpRequest = (options, requester) => {
             const opts = options as RequestOptions & {url: string}
             if (!bareClient) {
-              bareClient = new SanityClient(httpRequest, {...config, requestHandler: undefined})
+              bareClient = new SanityClient(httpRequest, {...config, _requestHandler: undefined})
             }
             return requestHandler(opts, (o) => httpRequest(o, requester), bareClient)
           }
