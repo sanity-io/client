@@ -2,7 +2,9 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 import type {Requester} from 'get-it'
+import type {Observable} from 'rxjs'
 
+import type {SanityClient} from './SanityClient'
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
 /**
@@ -203,6 +205,33 @@ export interface ClientConfig {
    * Lineage token for recursion control
    */
   lineage?: string
+
+  /**
+   * A custom request handler that intercepts all HTTP requests made by the client.
+   *
+   * Useful for logging, adding custom headers, refreshing auth tokens, rate limiting, etc.
+   *
+   * When using `withConfig()`, the new handler **replaces** the previous one (it does not
+   * wrap it). To compose handlers, you can chain them manually:
+   *
+   * ```ts
+   * const parent = createClient({...config, _requestHandler: handlerA})
+   * const child = parent.withConfig({
+   *   _requestHandler: (req, defaultRequester) =>
+   *     handlerB(req, (opts) => handlerA(opts, defaultRequester)),
+   * })
+   * ```
+   *
+   * Setting `_requestHandler` to `undefined` via `withConfig()` removes the handler.
+   *
+   * Note: This only applies to HTTP requests. Real-time listener connections
+   * (`client.listen()`) use EventSource and are not intercepted by this handler.
+   *
+   * @internal
+   * @deprecated Don't use outside of Sanity internals
+   * @see {@link RequestHandler}
+   */
+  _requestHandler?: RequestHandler
 }
 
 /** @public */
@@ -411,6 +440,38 @@ export interface ErrorProps {
 export type HttpRequest = {
   (options: RequestOptions, requester: Requester): ReturnType<Requester>
 }
+
+/**
+ * A function that intercepts HTTP requests made by the client.
+ *
+ * Receives the resolved request options, a `defaultRequester` function that
+ * executes the request through the normal pipeline, and a `client` instance
+ * without a `_requestHandler` (to avoid recursive interception).
+ *
+ * The consumer can:
+ * - Modify request options before calling `defaultRequester`
+ * - Transform the response stream (e.g. via `pipe`)
+ * - Skip `defaultRequester` entirely and return a custom Observable
+ * - Use `client` to make additional requests (e.g. refresh an auth token on 401)
+ *
+ * When set via `withConfig()`, the new handler **replaces** (not wraps) the previous one.
+ *
+ * Note: This only applies to HTTP requests. Real-time listener connections
+ * (`client.listen()`) use EventSource and are not intercepted by this handler.
+ *
+ * @param request - The resolved request options including `url`
+ * @param defaultRequester - Executes the request through the normal pipeline
+ * @param client - A client instance with the same configuration but without a `_requestHandler`,
+ *   useful for making side requests (e.g. token refresh) without triggering the handler recursively
+ *
+ * @internal
+ * @deprecated Don't use outside of Sanity internals
+ */
+export type RequestHandler = (
+  request: RequestOptions & {url: string},
+  defaultRequester: (options: RequestOptions & {url: string}) => Observable<HttpRequestEvent>,
+  client: SanityClient,
+) => Observable<HttpRequestEvent>
 
 /** @internal */
 export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
