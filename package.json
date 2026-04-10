@@ -130,7 +130,7 @@
   },
   "dependencies": {
     "@sanity/eventsource": "^5.0.2",
-    "get-it": "^8.7.0",
+    "get-it": "^8.7.2",
     "nanoid": "^3.3.11",
     "rxjs": "^7.0.0"
   },
