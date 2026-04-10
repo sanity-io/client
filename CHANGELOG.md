@@ -5,6 +5,19 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.21.0](https://github.com/sanity-io/client/compare/v7.20.0...v7.21.0) (2026-04-10)
+
+
+### Features
+
+* **live:** add waitFor option to defer events until Sanity Function processing ([#1209](https://github.com/sanity-io/client/issues/1209)) ([3251113](https://github.com/sanity-io/client/commit/325111324605b99b9f8da62b21b645bf78b102a1))
+* support intercepting requests via internal requestHandler config ([#1208](https://github.com/sanity-io/client/issues/1208)) ([4d794f6](https://github.com/sanity-io/client/commit/4d794f6625ce996fab9136313db83d99ed5484ff))
+
+
+### Bug Fixes
+
+* **deps:** update get-it to v8.7.2 ([#1211](https://github.com/sanity-io/client/issues/1211)) ([ad4fa50](https://github.com/sanity-io/client/commit/ad4fa50f4145477d0d07e551df61f0b4bc7bdad6))
+
 ## [7.20.0](https://github.com/sanity-io/client/compare/v7.19.0...v7.20.0) (2026-03-20)
 
 
