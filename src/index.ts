@@ -22,3 +22,7 @@ export const createClient = exp.createClient
  */
 const deprecatedCreateClient = defineDeprecatedCreateClient(createClient)
 export default deprecatedCreateClient
+
+export {dataset, type Dataset} from './resources/dataset'
+export {mediaLibrary, type MediaLibrary} from './resources/mediaLibrary'
+export {users, type Users} from './resources/users'
