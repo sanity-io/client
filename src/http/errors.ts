@@ -64,6 +64,7 @@ export class ClientError extends Error {
   response: ErrorProps['response']
   statusCode: ErrorProps['statusCode'] = 400
   responseBody: ErrorProps['responseBody']
+  traceId: ErrorProps['traceId']
   details: ErrorProps['details']
 
   constructor(res: Any, context?: HttpContext) {
@@ -78,6 +79,7 @@ export class ServerError extends Error {
   response: ErrorProps['response']
   statusCode: ErrorProps['statusCode'] = 500
   responseBody: ErrorProps['responseBody']
+  traceId: ErrorProps['traceId']
   details: ErrorProps['details']
 
   constructor(res: Any) {
@@ -93,6 +95,7 @@ function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
     response: res,
     statusCode: res.statusCode,
     responseBody: stringifyBody(body, res),
+    traceId: traceId(res),
     message: '',
     details: undefined as Any,
   }
@@ -213,6 +216,23 @@ function httpErrorMessage(res: Any, body: unknown) {
   const details = typeof body === 'string' ? ` (${sliceWithEllipsis(body, 100)})` : ''
   const statusMessage = res.statusMessage ? ` ${res.statusMessage}` : ''
   return `${res.method}-request to ${res.url} resulted in HTTP ${res.statusCode}${statusMessage}${details}`
+}
+
+/**
+ * Extract the traceId from the traceparent header on the response.
+ *
+ * The traceparent is on the format [version]-[traceId]-[parentId]-[traceFlags], but
+ * when debugging end-user issues it's the traceId we need to be able to get hold of
+ * the relevant traces.
+ *
+ * @see https://www.w3.org/TR/trace-context/
+ * @returns The traceId for HTTP response
+ */
+function traceId(res: Any): string | undefined {
+  const traceparent = res?.headers?.['traceparent']
+  if (!traceparent) return
+
+  return traceparent.split('-')[1]
 }
 
 function stringifyBody(body: Any, res: Any) {

@@ -433,6 +433,7 @@ export interface ErrorProps {
   response: Any
   statusCode: number
   responseBody: Any
+  traceId?: string
   details: Any
 }
 

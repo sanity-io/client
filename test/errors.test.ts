@@ -206,6 +206,48 @@ describe('http errors', async () => {
   })
 })
 
+describe('traceId', () => {
+  const baseRes = {
+    statusCode: 400,
+    body: 'Bad Request',
+    url: 'https://api.sanity.io/v1/data/query',
+    method: 'GET',
+  }
+
+  test('extracts traceId from traceparent header', () => {
+    const err = new ClientError({
+      ...baseRes,
+      headers: {traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'},
+    })
+    expect(err).toHaveProperty('traceId', '0af7651916cd43dd8448eb211c80319c')
+  })
+
+  test('traceId is undefined when traceparent header is missing', () => {
+    const err = new ClientError({
+      ...baseRes,
+      headers: {},
+    })
+    expect(err).toHaveProperty('traceId', undefined)
+  })
+
+  test('traceId is undefined when no headers are set', () => {
+    const err = new ClientError({
+      ...baseRes,
+      headers: {'content-type': 'text/plain'},
+    })
+    expect(err).toHaveProperty('traceId', undefined)
+  })
+
+  test('extracts traceId on ServerError', () => {
+    const err = new ServerError({
+      ...baseRes,
+      statusCode: 500,
+      headers: {traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'},
+    })
+    expect(err).toHaveProperty('traceId', '4bf92f3577b34da6a3ce929d0e0e4736')
+  })
+})
+
 describe('isHttpError', () => {
   const res = {headers: {}, body: '', url: 'https://api.sanity.io/v1/data/query', method: 'GET'}
   const clientErr = new ClientError({statusCode: 400, ...res}) satisfies HttpError
