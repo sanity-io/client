@@ -95,14 +95,14 @@ function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
     response: res,
     statusCode: res.statusCode,
     responseBody: stringifyBody(body, res),
-    traceId: traceId(res),
+    traceId: extractTraceId(res),
     message: '',
     details: undefined as Any,
   }
 
   // Fall back early if we didn't get a JSON object returned as expected
   if (!isRecord(body)) {
-    props.message = httpErrorMessage(res, body)
+    props.message = `${httpErrorMessage(res, body)}${formatTraceId(props.traceId)}`
     return props
   }
 
@@ -110,18 +110,18 @@ function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
 
   // API/Boom style errors ({statusCode, error, message})
   if (typeof error === 'string' && typeof body.message === 'string') {
-    props.message = `${error} - ${body.message}`
+    props.message = `${error} - ${body.message}${formatTraceId(props.traceId)}`
     return props
   }
 
   // Content Lake errors with a `error` prop being an object
   if (typeof error !== 'object' || error === null) {
     if (typeof error === 'string') {
-      props.message = error
+      props.message = `${error}${formatTraceId(props.traceId)}`
     } else if (typeof body.message === 'string') {
-      props.message = body.message
+      props.message = `${body.message}${formatTraceId(props.traceId)}`
     } else {
-      props.message = httpErrorMessage(res, body)
+      props.message = `${httpErrorMessage(res, body)}${formatTraceId(props.traceId)}`
     }
     return props
   }
@@ -137,7 +137,7 @@ function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
     if (allItems.length > MAX_ITEMS_IN_ERROR_MESSAGE) {
       itemsStr += `\n...and ${allItems.length - MAX_ITEMS_IN_ERROR_MESSAGE} more`
     }
-    props.message = `${error.description}${itemsStr}`
+    props.message = `${error.description}${formatTraceId(props.traceId)}${itemsStr}`
     props.details = body.error
     return props
   }
@@ -145,20 +145,20 @@ function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
   // Query parse errors
   if (isQueryParseError(error)) {
     const tag = context?.options?.query?.tag
-    props.message = formatQueryParseError(error, tag)
+    props.message = formatQueryParseError(error, tag, props.traceId)
     props.details = body.error
     return props
   }
 
   if ('description' in error && typeof error.description === 'string') {
     // Query/database errors ({error: {description, other, arb, props}})
-    props.message = error.description
+    props.message = `${error.description}${formatTraceId(props.traceId)}`
     props.details = error
     return props
   }
 
   // Other, more arbitrary errors
-  props.message = httpErrorMessage(res, body)
+  props.message = `${httpErrorMessage(res, body)}${formatTraceId(props.traceId)}`
   return props
 }
 
@@ -199,17 +199,22 @@ export function isQueryParseError(error: object): error is QueryParseError {
  * @returns A formatted error message string.
  * @public
  */
-export function formatQueryParseError(error: QueryParseError, tag?: string | null) {
+export function formatQueryParseError(
+  error: QueryParseError,
+  tag?: string | null,
+  traceId?: string,
+) {
   const {query, start, end, description} = error
+  const withTraceId = traceId ? `\nTraceId: ${traceId}` : ''
 
   if (!query || typeof start === 'undefined') {
-    return `GROQ query parse error: ${description}`
+    return `GROQ query parse error: ${description}${withTraceId}`
   }
 
   const withTag = tag ? `\n\nTag: ${tag}` : ''
   const framed = codeFrame(query, {start, end}, description)
 
-  return `GROQ query parse error:\n${framed}${withTag}`
+  return `GROQ query parse error:\n${framed}${withTag}${withTraceId}`
 }
 
 function httpErrorMessage(res: Any, body: unknown) {
@@ -228,7 +233,7 @@ function httpErrorMessage(res: Any, body: unknown) {
  * @see https://www.w3.org/TR/trace-context/
  * @returns The traceId for HTTP response
  */
-function traceId(res: Any): string | undefined {
+function extractTraceId(res: Any): string | undefined {
   const traceparent = res?.headers?.['traceparent']
   if (!traceparent) return
 
@@ -239,6 +244,10 @@ function stringifyBody(body: Any, res: Any) {
   const contentType = (res.headers['content-type'] || '').toLowerCase()
   const isJson = contentType.indexOf('application/json') !== -1
   return isJson ? JSON.stringify(body, null, 2) : body
+}
+
+function formatTraceId(traceId: string | undefined): string {
+  return traceId ? ` (traceId: ${traceId})` : ''
 }
 
 function sliceWithEllipsis(str: string, max: number) {
