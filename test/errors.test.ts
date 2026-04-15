@@ -206,6 +206,148 @@ describe('http errors', async () => {
   })
 })
 
+describe('traceId', () => {
+  const baseRes = {
+    statusCode: 400,
+    body: 'Bad Request',
+    url: 'https://api.sanity.io/v1/data/query',
+    method: 'GET',
+  }
+
+  test('extracts traceId from traceparent header', () => {
+    const err = new ClientError({
+      ...baseRes,
+      headers: {traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'},
+    })
+    expect(err).toHaveProperty('traceId', '0af7651916cd43dd8448eb211c80319c')
+  })
+
+  test('traceId is undefined when traceparent header is missing', () => {
+    const err = new ClientError({
+      ...baseRes,
+      headers: {},
+    })
+    expect(err).toHaveProperty('traceId', undefined)
+  })
+
+  test('traceId is undefined when no headers are set', () => {
+    const err = new ClientError({
+      ...baseRes,
+      headers: {'content-type': 'text/plain'},
+    })
+    expect(err).toHaveProperty('traceId', undefined)
+  })
+
+  test('extracts traceId on ServerError', () => {
+    const err = new ServerError({
+      ...baseRes,
+      statusCode: 500,
+      headers: {traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'},
+    })
+    expect(err).toHaveProperty('traceId', '4bf92f3577b34da6a3ce929d0e0e4736')
+  })
+})
+
+describe('traceId in error messages', () => {
+  const traceId = '0af7651916cd43dd8448eb211c80319c'
+  const headers = {traceparent: `00-${traceId}-b7ad6b7169203331-01`}
+  const headersNoTrace = {}
+
+  test('includes traceId in non-JSON body errors', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: 'Bad Request',
+      url: 'https://api.sanity.io/v1/data/query',
+      method: 'GET',
+      headers,
+    })
+    expect(err.message).toContain(`(traceId: ${traceId})`)
+  })
+
+  test('includes traceId in API/Boom style errors', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: {statusCode: 400, error: 'Bad Request', message: 'Invalid parameters'},
+      url: 'https://api.sanity.io/v1/data/query',
+      method: 'GET',
+      headers: {...headers, 'content-type': 'application/json'},
+    })
+    expect(err.message).toBe(`Bad Request - Invalid parameters (traceId: ${traceId})`)
+  })
+
+  test('includes traceId in mutation errors', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: {
+        error: {
+          type: 'mutationError',
+          description: 'Mutation failed',
+          items: [{error: {description: 'Document not found'}}],
+        },
+      },
+      url: 'https://api.sanity.io/v1/data/mutate',
+      method: 'POST',
+      headers: {...headers, 'content-type': 'application/json'},
+    })
+    expect(err.message).toBe(`Mutation failed (traceId: ${traceId}):\n- Document not found`)
+  })
+
+  test('includes traceId in query parse errors', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: {
+        error: {
+          type: 'queryParseError',
+          query: '*[_type == "event]',
+          description: 'unexpected token',
+          start: 11,
+          end: 18,
+        },
+      },
+      url: 'https://api.sanity.io/v1/data/query',
+      method: 'GET',
+      headers: {...headers, 'content-type': 'application/json'},
+    })
+    expect(err.message).toContain('GROQ query parse error:')
+    expect(err.message).toContain(`TraceId: ${traceId}`)
+  })
+
+  test('includes traceId in generic description errors', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: {
+        error: {description: 'Something went wrong'},
+      },
+      url: 'https://api.sanity.io/v1/data/query',
+      method: 'GET',
+      headers: {...headers, 'content-type': 'application/json'},
+    })
+    expect(err.message).toBe(`Something went wrong (traceId: ${traceId})`)
+  })
+
+  test('includes traceId in fallback errors', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: {error: {unexpected: 'shape'}},
+      url: 'https://api.sanity.io/v1/data/query',
+      method: 'GET',
+      headers: {...headers, 'content-type': 'application/json'},
+    })
+    expect(err.message).toContain(`(traceId: ${traceId})`)
+  })
+
+  test('omits traceId from message when traceparent header is missing', () => {
+    const err = new ClientError({
+      statusCode: 400,
+      body: {statusCode: 400, error: 'Bad Request', message: 'Invalid parameters'},
+      url: 'https://api.sanity.io/v1/data/query',
+      method: 'GET',
+      headers: {...headersNoTrace, 'content-type': 'application/json'},
+    })
+    expect(err.message).toBe('Bad Request - Invalid parameters')
+  })
+})
+
 describe('isHttpError', () => {
   const res = {headers: {}, body: '', url: 'https://api.sanity.io/v1/data/query', method: 'GET'}
   const clientErr = new ClientError({statusCode: 400, ...res}) satisfies HttpError
