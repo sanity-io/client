@@ -265,6 +265,7 @@ export class ObservableSanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions: true
+      excludeContent?: boolean
     },
   ): Observable<SanityDocument<R>[]>
   /**
@@ -280,6 +281,7 @@ export class ObservableSanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: false
+      excludeContent?: boolean
     },
   ): Observable<SanityDocument<R> | undefined>
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
@@ -289,6 +291,7 @@ export class ObservableSanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: boolean
+      excludeContent?: boolean
     },
   ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
     // Implementation needs to handle union type safely
@@ -303,6 +306,7 @@ export class ObservableSanityClient {
       signal: options?.signal,
       tag: options?.tag,
       releaseId: options?.releaseId,
+      excludeContent: options?.excludeContent,
       ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
     }
     return dataMethods._getDocument<R>(this, this.#httpRequest, id, opts)
@@ -319,7 +323,7 @@ export class ObservableSanityClient {
    */
   getDocuments<R extends Record<string, Any> = Record<string, Any>>(
     ids: string[],
-    options?: {tag?: string},
+    options?: {tag?: string; excludeContent?: boolean},
   ): Observable<(SanityDocument<R> | null)[]> {
     return dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options)
   }
@@ -1329,6 +1333,7 @@ export class SanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions: true
+      excludeContent?: boolean
     },
   ): Promise<SanityDocument<R>[]>
   /**
@@ -1344,6 +1349,7 @@ export class SanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: false
+      excludeContent?: boolean
     },
   ): Promise<SanityDocument<R> | undefined>
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
@@ -1353,6 +1359,7 @@ export class SanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: boolean
+      excludeContent?: boolean
     },
   ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
     // Implementation needs to handle union type safely
@@ -1369,6 +1376,7 @@ export class SanityClient {
       signal: options?.signal,
       tag: options?.tag,
       releaseId: options?.releaseId,
+      excludeContent: options?.excludeContent,
       ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
     }
     return lastValueFrom(dataMethods._getDocument<R>(this, this.#httpRequest, id, opts))
@@ -1385,7 +1393,7 @@ export class SanityClient {
    */
   getDocuments<R extends Record<string, Any> = Record<string, Any>>(
     ids: string[],
-    options?: {signal?: AbortSignal; tag?: string},
+    options?: {signal?: AbortSignal; tag?: string; excludeContent?: boolean},
   ): Promise<(SanityDocument<R> | null)[]> {
     return lastValueFrom(dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options))
   }

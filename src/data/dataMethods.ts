@@ -141,21 +141,39 @@ export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
-  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions: true},
+  opts: {
+    signal?: AbortSignal
+    tag?: string
+    releaseId?: string
+    includeAllVersions: true
+    excludeContent?: boolean
+  },
 ): Observable<SanityDocument<R>[]>
 /** @internal */
 export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
-  opts?: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: false},
+  opts?: {
+    signal?: AbortSignal
+    tag?: string
+    releaseId?: string
+    includeAllVersions?: false
+    excludeContent?: boolean
+  },
 ): Observable<SanityDocument<R> | undefined>
 /** @internal */
 export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
-  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
+  opts: {
+    signal?: AbortSignal
+    tag?: string
+    releaseId?: string
+    includeAllVersions?: boolean
+    excludeContent?: boolean
+  } = {},
 ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
   const getDocId = () => {
     if (!opts.releaseId) {
@@ -183,15 +201,20 @@ export function _getDocument<R extends Record<string, Any>>(
   }
   const docId = getDocId()
 
+  const query: Record<string, boolean> = {}
+  if (opts.includeAllVersions !== undefined) {
+    query.includeAllVersions = opts.includeAllVersions
+  }
+  if (opts.excludeContent !== undefined) {
+    query.excludeContent = opts.excludeContent
+  }
+
   const options = {
     uri: _getDataUrl(client, 'doc', docId),
     json: true,
     tag: opts.tag,
     signal: opts.signal,
-    query:
-      opts.includeAllVersions !== undefined
-        ? {includeAllVersions: opts.includeAllVersions}
-        : undefined,
+    query: Object.keys(query).length > 0 ? query : undefined,
   }
   return _requestObservable<SanityDocument<R> | undefined | SanityDocument<R>[]>(
     client,
@@ -214,13 +237,14 @@ export function _getDocuments<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   ids: string[],
-  opts: {signal?: AbortSignal; tag?: string} = {},
+  opts: {signal?: AbortSignal; tag?: string; excludeContent?: boolean} = {},
 ): Observable<(SanityDocument<R> | null)[]> {
   const options = {
     uri: _getDataUrl(client, 'doc', ids.join(',')),
     json: true,
     tag: opts.tag,
     signal: opts.signal,
+    query: opts.excludeContent !== undefined ? {excludeContent: opts.excludeContent} : undefined,
   }
   return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
     filter(isResponse),
