@@ -355,6 +355,18 @@ export interface SanityReference {
   _ref: string
 }
 
+/**
+ * Describes a document that was omitted from a multi-document response.
+ * `existence` means the document does not exist; `permission` means the
+ * caller is not allowed to read it.
+ *
+ * @public
+ */
+export interface OmittedDocument {
+  id: string
+  reason: 'existence' | 'permission'
+}
+
 /** @internal */
 export type SanityDocument<T extends Record<string, Any> = Record<string, Any>> = {
   [P in keyof T]: T[P]

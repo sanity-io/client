@@ -26,6 +26,7 @@ import type {
   MultipleMutationResult,
   Mutation,
   MutationSelection,
+  OmittedDocument,
   QueryOptions,
   RawQueryResponse,
   ReplaceVersionAction,
@@ -137,6 +138,19 @@ export function _fetch<R, Q>(
 }
 
 /** @internal */
+export function _getDocument(
+  client: Client,
+  httpRequest: HttpRequest,
+  id: string,
+  opts: {
+    signal?: AbortSignal
+    tag?: string
+    releaseId?: string
+    includeAllVersions?: false
+    excludeContent: true
+  },
+): Observable<string | null>
+/** @internal */
 export function _getDocument<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
@@ -146,7 +160,7 @@ export function _getDocument<R extends Record<string, Any>>(
     tag?: string
     releaseId?: string
     includeAllVersions: true
-    excludeContent?: boolean
+    excludeContent?: false
   },
 ): Observable<SanityDocument<R>[]>
 /** @internal */
@@ -159,7 +173,7 @@ export function _getDocument<R extends Record<string, Any>>(
     tag?: string
     releaseId?: string
     includeAllVersions?: false
-    excludeContent?: boolean
+    excludeContent?: false
   },
 ): Observable<SanityDocument<R> | undefined>
 /** @internal */
@@ -174,7 +188,7 @@ export function _getDocument<R extends Record<string, Any>>(
     includeAllVersions?: boolean
     excludeContent?: boolean
   } = {},
-): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+): Observable<SanityDocument<R> | undefined | SanityDocument<R>[] | string | null> {
   const getDocId = () => {
     if (!opts.releaseId) {
       return id
@@ -222,7 +236,13 @@ export function _getDocument<R extends Record<string, Any>>(
     options,
   ).pipe(
     filter(isResponse),
-    map((event) => {
+    map((event: Any) => {
+      if (opts.excludeContent) {
+        const omitted = new Set(
+          (event.body.omitted || []).map((entry: OmittedDocument) => entry.id),
+        )
+        return omitted.has(docId) ? null : docId
+      }
       const documents = event.body.documents
       if (!documents) {
         return opts.includeAllVersions ? [] : undefined
@@ -233,12 +253,26 @@ export function _getDocument<R extends Record<string, Any>>(
 }
 
 /** @internal */
+export function _getDocuments(
+  client: Client,
+  httpRequest: HttpRequest,
+  ids: string[],
+  opts: {signal?: AbortSignal; tag?: string; excludeContent: true},
+): Observable<(string | null)[]>
+/** @internal */
+export function _getDocuments<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  ids: string[],
+  opts?: {signal?: AbortSignal; tag?: string; excludeContent?: false},
+): Observable<(SanityDocument<R> | null)[]>
+/** @internal */
 export function _getDocuments<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string; excludeContent?: boolean} = {},
-): Observable<(SanityDocument<R> | null)[]> {
+): Observable<(SanityDocument<R> | null)[] | (string | null)[]> {
   const options = {
     uri: _getDataUrl(client, 'doc', ids.join(',')),
     json: true,
@@ -249,6 +283,12 @@ export function _getDocuments<R extends Record<string, Any>>(
   return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
     filter(isResponse),
     map((event: Any) => {
+      if (opts.excludeContent) {
+        const omitted = new Set(
+          (event.body.omitted || []).map((entry: OmittedDocument) => entry.id),
+        )
+        return ids.map((id) => (omitted.has(id) ? null : id))
+      }
       const indexed = indexBy(event.body.documents || [], (doc: Any) => doc._id)
       return ids.map((id) => indexed[id] || null)
     }),
