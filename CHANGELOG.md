@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.22.0](https://github.com/sanity-io/client/compare/v7.21.0...v7.22.0) (2026-04-24)
+
+
+### Features
+
+* **error:** expose trace id from backend responses ([#1212](https://github.com/sanity-io/client/issues/1212)) ([47fa1fe](https://github.com/sanity-io/client/commit/47fa1feefbfc86672cda0148431a9efe0a69af92))
+
 ## [7.21.0](https://github.com/sanity-io/client/compare/v7.20.0...v7.21.0) (2026-04-10)
 
 
