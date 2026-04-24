@@ -34,6 +34,14 @@ const createMockResponse = (documents: SanityDocument[]) =>
     body: {documents},
   })
 
+const createMockExcludeContentResponse = (
+  omitted: {id: string; reason: 'existence' | 'permission'}[],
+) =>
+  of({
+    type: 'response',
+    body: {documents: null, omitted},
+  })
+
 const createMockQueryResponse = <T>(result: T) =>
   of({
     type: 'response',
@@ -344,6 +352,113 @@ describe('dataMethods', async () => {
         expect(document).toBeUndefined()
       })
     })
+
+    test('excludeContent=true passes query and returns the id when accessible', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockExcludeContentResponse([]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({excludeContent: true})
+        expect(result).toBe(docId)
+      })
+    })
+
+    test('excludeContent=true returns null when the id is omitted for existence', () => {
+      mockHttpRequest.mockReturnValueOnce(
+        createMockExcludeContentResponse([{id: docId, reason: 'existence'}]),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toBeNull()
+      })
+    })
+
+    test('excludeContent=true returns null when the id is omitted for permission', () => {
+      mockHttpRequest.mockReturnValueOnce(
+        createMockExcludeContentResponse([{id: docId, reason: 'permission'}]),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toBeNull()
+      })
+    })
+
+    test('excludeContent=true with releaseId rewrites the id to a version id and returns it when accessible', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockExcludeContentResponse([]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: true,
+        releaseId,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].uri).toEqual(
+          `/data/doc/foo/versions.${releaseId}.${docId}`,
+        )
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({excludeContent: true})
+        expect(result).toBe(versionId)
+      })
+    })
+
+    test('excludeContent=true with releaseId returns null when the version id is omitted', () => {
+      mockHttpRequest.mockReturnValueOnce(
+        createMockExcludeContentResponse([{id: versionId, reason: 'existence'}]),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: true,
+        releaseId,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toBeNull()
+      })
+    })
+
+    test('excludeContent=true treats missing omitted field as accessible', () => {
+      mockHttpRequest.mockReturnValueOnce(of({type: 'response', body: {documents: null}}))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toBe(docId)
+      })
+    })
+
+    test('passes excludeContent=false option to request query', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+        excludeContent: false,
+      })
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({excludeContent: false})
+      })
+    })
   })
 
   describe('_getDocuments', () => {
@@ -423,6 +538,133 @@ describe('dataMethods', async () => {
         expect(mockHttpRequest.mock.calls[0][0].uri).toEqual(
           `/data/doc/foo/versions.${releaseId}.doc1,versions.${releaseId}.doc2,versions.${releaseId}.doc3`,
         )
+      })
+    })
+
+    test('passes excludeContent=true option to request query', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse([]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({excludeContent: true})
+      })
+    })
+
+    test('passes excludeContent=false option to request query', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse(mockDocs))
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: false,
+      })
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toEqual({excludeContent: false})
+      })
+    })
+
+    test('does not add query when excludeContent is omitted', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockResponse(mockDocs))
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {})
+
+      return assertObservable(observable, () => {
+        expect(mockHttpRequest).toHaveBeenCalledTimes(1)
+        expect(mockHttpRequest.mock.calls[0][0].query).toBeUndefined()
+      })
+    })
+
+    test('excludeContent=true returns all ids when none are omitted', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockExcludeContentResponse([]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toEqual(docIds)
+      })
+    })
+
+    test('excludeContent=true returns null for ids omitted due to existence', () => {
+      mockHttpRequest.mockReturnValueOnce(
+        createMockExcludeContentResponse([{id: 'doc2', reason: 'existence'}]),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toEqual(['doc1', null, 'doc3'])
+      })
+    })
+
+    test('excludeContent=true returns null for ids omitted due to permission', () => {
+      mockHttpRequest.mockReturnValueOnce(
+        createMockExcludeContentResponse([{id: 'doc2', reason: 'permission'}]),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toEqual(['doc1', null, 'doc3'])
+      })
+    })
+
+    test('excludeContent=true returns null for ids omitted for any reason, preserving input order', () => {
+      mockHttpRequest.mockReturnValueOnce(
+        createMockExcludeContentResponse([
+          {id: 'doc1', reason: 'permission'},
+          {id: 'doc2', reason: 'existence'},
+        ]),
+      )
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toEqual([null, null, 'doc3'])
+      })
+    })
+
+    test('excludeContent=true treats missing omitted field as "none omitted"', () => {
+      mockHttpRequest.mockReturnValueOnce(of({type: 'response', body: {documents: null}}))
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds, {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toEqual(docIds)
+      })
+    })
+
+    test('excludeContent=true with empty ids returns an empty array', () => {
+      mockHttpRequest.mockReturnValueOnce(createMockExcludeContentResponse([]))
+
+      const client = getClient()
+      const observable = dataMethods._getDocuments(client, mockHttpRequest, [], {
+        excludeContent: true,
+      })
+
+      return assertObservable(observable, (result) => {
+        expect(result).toEqual([])
       })
     })
   })

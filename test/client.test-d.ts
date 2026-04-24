@@ -5,7 +5,9 @@ import {
   type QueryParams,
   type QueryWithoutParams,
   type RawQueryResponse,
+  type SanityDocument,
 } from '@sanity/client'
+import type {Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
 describe('client.fetch', () => {
@@ -348,5 +350,71 @@ describe('client.fetch', () => {
         {next: {revalidate: false, tags: ['post']}},
       ),
     ).toMatchTypeOf<any>()
+  })
+})
+
+describe('client.getDocument', () => {
+  const client = createClient({})
+
+  test('excludeContent: true narrows the return to string | null', async () => {
+    expectTypeOf(await client.getDocument('abc', {excludeContent: true})).toEqualTypeOf<
+      string | null
+    >()
+  })
+
+  test('excludeContent: false keeps the document return type', async () => {
+    expectTypeOf(await client.getDocument('abc', {excludeContent: false})).toEqualTypeOf<
+      SanityDocument | undefined
+    >()
+  })
+
+  test('omitted excludeContent keeps the document return type', async () => {
+    expectTypeOf(await client.getDocument('abc')).toEqualTypeOf<SanityDocument | undefined>()
+  })
+
+  test('includeAllVersions: true returns an array of documents', async () => {
+    expectTypeOf(await client.getDocument('abc', {includeAllVersions: true})).toEqualTypeOf<
+      SanityDocument[]
+    >()
+  })
+
+  test('excludeContent: true with includeAllVersions: true should not compile', async () => {
+    await client.getDocument('abc', {
+      includeAllVersions: true,
+      // @ts-expect-error -- excludeContent: true is mutually exclusive with includeAllVersions: true
+      excludeContent: true,
+    })
+  })
+
+  test('observable.getDocument with excludeContent: true returns Observable<string | null>', () => {
+    expectTypeOf(client.observable.getDocument('abc', {excludeContent: true})).toEqualTypeOf<
+      Observable<string | null>
+    >()
+  })
+})
+
+describe('client.getDocuments', () => {
+  const client = createClient({})
+
+  test('excludeContent: true narrows the return to (string | null)[]', async () => {
+    expectTypeOf(await client.getDocuments(['abc'], {excludeContent: true})).toEqualTypeOf<
+      (string | null)[]
+    >()
+  })
+
+  test('excludeContent: false keeps the documents return type', async () => {
+    expectTypeOf(await client.getDocuments(['abc'], {excludeContent: false})).toEqualTypeOf<
+      (SanityDocument | null)[]
+    >()
+  })
+
+  test('omitted options keeps the documents return type', async () => {
+    expectTypeOf(await client.getDocuments(['abc'])).toEqualTypeOf<(SanityDocument | null)[]>()
+  })
+
+  test('observable.getDocuments with excludeContent: true returns Observable<(string | null)[]>', () => {
+    expectTypeOf(client.observable.getDocuments(['abc'], {excludeContent: true})).toEqualTypeOf<
+      Observable<(string | null)[]>
+    >()
   })
 })

@@ -1792,6 +1792,146 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)(
+      'getDocument with excludeContent returns the id when the document is accessible',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123?excludeContent=true')
+          .reply(200, {ms: 1, documents: null, omitted: []})
+
+        const response = await getClient().getDocument('abc123', {excludeContent: true})
+        expect(response).toBe('abc123')
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'getDocument with excludeContent returns null when the document is omitted',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123?excludeContent=true')
+          .reply(200, {
+            ms: 1,
+            documents: null,
+            omitted: [{id: 'abc123', reason: 'permission'}],
+          })
+
+        const response = await getClient().getDocument('abc123', {excludeContent: true})
+        expect(response).toBeNull()
+      },
+    )
+
+    test.skipIf(isEdge)('getDocument with excludeContent forwards tag and releaseId', async () => {
+      const releaseId = 'release456'
+      const versionId = `versions.${releaseId}.abc123`
+      nock(projectHost())
+        .get(`/v1/data/doc/foo/${versionId}?tag=some.tag&excludeContent=true`)
+        .reply(200, {ms: 1, documents: null, omitted: []})
+
+      const response = await getClient().getDocument('abc123', {
+        excludeContent: true,
+        releaseId,
+        tag: 'some.tag',
+      })
+      expect(response).toBe(versionId)
+    })
+
+    test.skipIf(isEdge)(
+      'getDocuments with excludeContent returns the ids when all are accessible',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321?excludeContent=true')
+          .reply(200, {ms: 1, documents: null, omitted: []})
+
+        const response = await getClient().getDocuments(['abc123', 'abc321'], {
+          excludeContent: true,
+        })
+        expect(response).toEqual(['abc123', 'abc321'])
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'getDocuments with excludeContent returns null for omitted ids in input order',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321,abc456?excludeContent=true')
+          .reply(200, {
+            ms: 1,
+            documents: null,
+            omitted: [
+              {id: 'abc123', reason: 'existence'},
+              {id: 'abc456', reason: 'permission'},
+            ],
+          })
+
+        const response = await getClient().getDocuments(['abc123', 'abc321', 'abc456'], {
+          excludeContent: true,
+        })
+        expect(response).toEqual([null, 'abc321', null])
+      },
+    )
+
+    test.skipIf(isEdge)('getDocuments with excludeContent forwards tag', async () => {
+      nock(projectHost())
+        .get('/v1/data/doc/foo/abc123?tag=mood.docs&excludeContent=true')
+        .reply(200, {ms: 1, documents: null, omitted: []})
+
+      const response = await getClient().getDocuments(['abc123'], {
+        excludeContent: true,
+        tag: 'mood.docs',
+      })
+      expect(response).toEqual(['abc123'])
+    })
+
+    test.skipIf(isEdge)(
+      'observable.getDocument with excludeContent returns the id when accessible',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123?excludeContent=true')
+          .reply(200, {ms: 1, documents: null, omitted: []})
+
+        const response = await lastValueFrom(
+          getClient().observable.getDocument('abc123', {excludeContent: true}),
+        )
+        expect(response).toBe('abc123')
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'observable.getDocument with excludeContent returns null when omitted',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123?excludeContent=true')
+          .reply(200, {
+            ms: 1,
+            documents: null,
+            omitted: [{id: 'abc123', reason: 'existence'}],
+          })
+
+        const response = await lastValueFrom(
+          getClient().observable.getDocument('abc123', {excludeContent: true}),
+        )
+        expect(response).toBeNull()
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'observable.getDocuments with excludeContent returns null for omitted ids',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321?excludeContent=true')
+          .reply(200, {
+            ms: 1,
+            documents: null,
+            omitted: [{id: 'abc321', reason: 'permission'}],
+          })
+
+        const response = await lastValueFrom(
+          getClient().observable.getDocuments(['abc123', 'abc321'], {excludeContent: true}),
+        )
+        expect(response).toEqual(['abc123', null])
+      },
+    )
+
+    test.skipIf(isEdge)(
       'gives http statuscode as error if no body is present on errors',
       async () => {
         expect.assertions(2)

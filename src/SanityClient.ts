@@ -253,6 +253,24 @@ export class ObservableSanityClient {
   }
 
   /**
+   * Check whether a single document is accessible without fetching content.
+   * Returns the resolved document id if accessible, or `null` if the document
+   * is missing or permission-denied.
+   *
+   * @param id - Document ID to check
+   * @param options - Request options (must include `excludeContent: true`)
+   */
+  getDocument(
+    id: string,
+    options: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: false
+      excludeContent: true
+    },
+  ): Observable<string | null>
+  /**
    * Fetch a single document with the given ID.
    *
    * @param id - Document ID to fetch
@@ -265,6 +283,7 @@ export class ObservableSanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions: true
+      excludeContent?: false
     },
   ): Observable<SanityDocument<R>[]>
   /**
@@ -280,6 +299,7 @@ export class ObservableSanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: false
+      excludeContent?: false
     },
   ): Observable<SanityDocument<R> | undefined>
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
@@ -289,12 +309,23 @@ export class ObservableSanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: boolean
+      excludeContent?: boolean
     },
-  ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+  ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[] | string | null> {
+    if (options?.excludeContent) {
+      return dataMethods._getDocument(this, this.#httpRequest, id, {
+        signal: options.signal,
+        tag: options.tag,
+        releaseId: options.releaseId,
+        excludeContent: true,
+      })
+    }
     // Implementation needs to handle union type safely
     if (options?.includeAllVersions === true) {
       return dataMethods._getDocument<R>(this, this.#httpRequest, id, {
-        ...options,
+        signal: options.signal,
+        tag: options.tag,
+        releaseId: options.releaseId,
         includeAllVersions: true,
       })
     }
@@ -309,6 +340,19 @@ export class ObservableSanityClient {
   }
 
   /**
+   * Check which of the given ids are accessible without fetching content.
+   * Returns an array matching the input order, with the id for each accessible
+   * document and `null` for ids the caller cannot read (either missing or
+   * permission-denied).
+   *
+   * @param ids - Document IDs to check
+   * @param options - Request options (must include `excludeContent: true`)
+   */
+  getDocuments(
+    ids: string[],
+    options: {tag?: string; excludeContent: true},
+  ): Observable<(string | null)[]>
+  /**
    * Fetch multiple documents in one request.
    * Should be used sparingly - performing a query is usually a better option.
    * The order/position of documents is preserved based on the original array of IDs.
@@ -319,9 +363,19 @@ export class ObservableSanityClient {
    */
   getDocuments<R extends Record<string, Any> = Record<string, Any>>(
     ids: string[],
-    options?: {tag?: string},
-  ): Observable<(SanityDocument<R> | null)[]> {
-    return dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options)
+    options?: {tag?: string; excludeContent?: false},
+  ): Observable<(SanityDocument<R> | null)[]>
+  getDocuments<R extends Record<string, Any> = Record<string, Any>>(
+    ids: string[],
+    options?: {tag?: string; excludeContent?: boolean},
+  ): Observable<(SanityDocument<R> | null)[] | (string | null)[]> {
+    if (options?.excludeContent) {
+      return dataMethods._getDocuments(this, this.#httpRequest, ids, {
+        tag: options.tag,
+        excludeContent: true,
+      })
+    }
+    return dataMethods._getDocuments<R>(this, this.#httpRequest, ids, {tag: options?.tag})
   }
 
   /**
@@ -1317,6 +1371,24 @@ export class SanityClient {
   }
 
   /**
+   * Check whether a single document is accessible without fetching content.
+   * Returns the resolved document id if accessible, or `null` if the document
+   * is missing or permission-denied.
+   *
+   * @param id - Document ID to check
+   * @param options - Request options (must include `excludeContent: true`)
+   */
+  getDocument(
+    id: string,
+    options: {
+      signal?: AbortSignal
+      tag?: string
+      releaseId?: string
+      includeAllVersions?: false
+      excludeContent: true
+    },
+  ): Promise<string | null>
+  /**
    * Fetch a single document with the given ID.
    *
    * @param id - Document ID to fetch
@@ -1329,6 +1401,7 @@ export class SanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions: true
+      excludeContent?: false
     },
   ): Promise<SanityDocument<R>[]>
   /**
@@ -1344,6 +1417,7 @@ export class SanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: false
+      excludeContent?: false
     },
   ): Promise<SanityDocument<R> | undefined>
   getDocument<R extends Record<string, Any> = Record<string, Any>>(
@@ -1353,13 +1427,26 @@ export class SanityClient {
       tag?: string
       releaseId?: string
       includeAllVersions?: boolean
+      excludeContent?: boolean
     },
-  ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+  ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[] | string | null> {
+    if (options?.excludeContent) {
+      return lastValueFrom(
+        dataMethods._getDocument(this, this.#httpRequest, id, {
+          signal: options.signal,
+          tag: options.tag,
+          releaseId: options.releaseId,
+          excludeContent: true,
+        }),
+      )
+    }
     // Implementation needs to handle union type safely
     if (options?.includeAllVersions === true) {
       return lastValueFrom(
         dataMethods._getDocument<R>(this, this.#httpRequest, id, {
-          ...options,
+          signal: options.signal,
+          tag: options.tag,
+          releaseId: options.releaseId,
           includeAllVersions: true,
         }),
       )
@@ -1375,6 +1462,19 @@ export class SanityClient {
   }
 
   /**
+   * Check which of the given ids are accessible without fetching content.
+   * Returns an array matching the input order, with the id for each accessible
+   * document and `null` for ids the caller cannot read (either missing or
+   * permission-denied).
+   *
+   * @param ids - Document IDs to check
+   * @param options - Request options (must include `excludeContent: true`)
+   */
+  getDocuments(
+    ids: string[],
+    options: {signal?: AbortSignal; tag?: string; excludeContent: true},
+  ): Promise<(string | null)[]>
+  /**
    * Fetch multiple documents in one request.
    * Should be used sparingly - performing a query is usually a better option.
    * The order/position of documents is preserved based on the original array of IDs.
@@ -1385,9 +1485,27 @@ export class SanityClient {
    */
   getDocuments<R extends Record<string, Any> = Record<string, Any>>(
     ids: string[],
-    options?: {signal?: AbortSignal; tag?: string},
-  ): Promise<(SanityDocument<R> | null)[]> {
-    return lastValueFrom(dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options))
+    options?: {signal?: AbortSignal; tag?: string; excludeContent?: false},
+  ): Promise<(SanityDocument<R> | null)[]>
+  getDocuments<R extends Record<string, Any> = Record<string, Any>>(
+    ids: string[],
+    options?: {signal?: AbortSignal; tag?: string; excludeContent?: boolean},
+  ): Promise<(SanityDocument<R> | null)[] | (string | null)[]> {
+    if (options?.excludeContent) {
+      return lastValueFrom(
+        dataMethods._getDocuments(this, this.#httpRequest, ids, {
+          signal: options.signal,
+          tag: options.tag,
+          excludeContent: true,
+        }),
+      )
+    }
+    return lastValueFrom(
+      dataMethods._getDocuments<R>(this, this.#httpRequest, ids, {
+        signal: options?.signal,
+        tag: options?.tag,
+      }),
+    )
   }
 
   /**
