@@ -1792,6 +1792,173 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)(
+      'documentsExists returns set with all ids when none are omitted',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321')
+          .query({excludeContent: 'true'})
+          .reply(200, {ms: 123, omitted: []})
+
+        const existing = await getClient().documentsExists(['abc123', 'abc321'])
+        expect(existing).toBeInstanceOf(Set)
+        expect(existing.has('abc123')).toBe(true)
+        expect(existing.has('abc321')).toBe(true)
+        expect(existing.size).toBe(2)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'documentsExists excludes ids omitted with reason "existence"',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321,abc456')
+          .query({excludeContent: 'true'})
+          .reply(200, {
+            ms: 123,
+            omitted: [
+              {id: 'abc321', reason: 'existence'},
+              {id: 'abc456', reason: 'existence'},
+            ],
+          })
+
+        const existing = await getClient().documentsExists(['abc123', 'abc321', 'abc456'])
+        expect(existing.has('abc123')).toBe(true)
+        expect(existing.has('abc321')).toBe(false)
+        expect(existing.has('abc456')).toBe(false)
+        expect(existing.size).toBe(1)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'documentsExists keeps ids omitted with reason other than "existence"',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321')
+          .query({excludeContent: 'true'})
+          .reply(200, {
+            ms: 123,
+            omitted: [{id: 'abc321', reason: 'permissions'}],
+          })
+
+        const existing = await getClient().documentsExists(['abc123', 'abc321'])
+        expect(existing.has('abc123')).toBe(true)
+        expect(existing.has('abc321')).toBe(true)
+        expect(existing.size).toBe(2)
+      },
+    )
+
+    test.skipIf(isEdge)('documentsExists forwards the tag option', async () => {
+      nock(projectHost())
+        .get('/v1/data/doc/foo/abc123')
+        .query({excludeContent: 'true', tag: 'check.exists'})
+        .reply(200, {ms: 123, omitted: []})
+
+      const existing = await getClient().documentsExists(['abc123'], {tag: 'check.exists'})
+      expect(existing.has('abc123')).toBe(true)
+    })
+
+    test.skipIf(isEdge)(
+      'documentsExists returns empty set for empty ids without making a request',
+      async () => {
+        const existing = await getClient().documentsExists([])
+        expect(existing).toBeInstanceOf(Set)
+        expect(existing.size).toBe(0)
+      },
+    )
+
+    test.skipIf(isEdge)('documentsExists works with a single id', async () => {
+      nock(projectHost())
+        .get('/v1/data/doc/foo/abc123')
+        .query({excludeContent: 'true'})
+        .reply(200, {ms: 123, omitted: []})
+
+      const existing = await getClient().documentsExists(['abc123'])
+      expect(existing).toBeInstanceOf(Set)
+      expect(existing.size).toBe(1)
+      expect(existing.has('abc123')).toBe(true)
+    })
+
+    test.skipIf(isEdge)('documentsExists rejects on http error responses', async () => {
+      nock(projectHost())
+        .get('/v1/data/doc/foo/abc123')
+        .query({excludeContent: 'true'})
+        .reply(500, {error: 'Internal Server Error'})
+
+      await expect(getClient().documentsExists(['abc123'])).rejects.toThrow(/Internal Server Error/)
+    })
+
+    test.skipIf(isEdge)('documentsExists rejects on http error', async () => {
+      expect.assertions(2)
+
+      nock(projectHost()).get('/v1/data/doc/foo/abc123').query({excludeContent: 'true'}).reply(500)
+
+      try {
+        await getClient().documentsExists(['abc123'])
+      } catch (err: any) {
+        expect(err).toBeInstanceOf(Error)
+        expect(err.message).toContain('HTTP 500')
+      }
+    })
+
+    test.skipIf(isEdge)(
+      'documentsExists treats missing omitted field as all ids existing',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/abc123,abc321')
+          .query({excludeContent: 'true'})
+          .reply(200, {ms: 123})
+
+        const existing = await getClient().documentsExists(['abc123', 'abc321'])
+        expect(existing.size).toBe(2)
+        expect(existing.has('abc123')).toBe(true)
+        expect(existing.has('abc321')).toBe(true)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'documentsExists percent-encodes ids so delimiter chars are preserved',
+      async () => {
+        nock(projectHost())
+          .get('/v1/data/doc/foo/weird%2Cid,normal')
+          .query({excludeContent: 'true'})
+          .reply(200, {ms: 123, omitted: []})
+
+        const existing = await getClient().documentsExists(['weird,id', 'normal'])
+        expect(existing.size).toBe(2)
+        expect(existing.has('weird,id')).toBe(true)
+        expect(existing.has('normal')).toBe(true)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'documentsExists batches large id arrays into requests of at most 100 ids',
+      async () => {
+        const ids = Array.from({length: 150}, (_, i) => `id${i + 1}`)
+        const firstBatch = ids.slice(0, 100)
+        const secondBatch = ids.slice(100)
+
+        nock(projectHost())
+          .get(`/v1/data/doc/foo/${firstBatch.join(',')}`)
+          .query({excludeContent: 'true'})
+          .reply(200, {ms: 1, omitted: [{id: 'id5', reason: 'existence'}]})
+
+        nock(projectHost())
+          .get(`/v1/data/doc/foo/${secondBatch.join(',')}`)
+          .query({excludeContent: 'true'})
+          .reply(200, {ms: 1, omitted: [{id: 'id105', reason: 'existence'}]})
+
+        const existing = await getClient().documentsExists(ids)
+        expect(existing.size).toBe(148)
+        expect(existing.has('id5')).toBe(false)
+        expect(existing.has('id105')).toBe(false)
+        expect(existing.has('id1')).toBe(true)
+        expect(existing.has('id100')).toBe(true)
+        expect(existing.has('id101')).toBe(true)
+        expect(existing.has('id150')).toBe(true)
+      },
+    )
+
+    test.skipIf(isEdge)(
       'gives http statuscode as error if no body is present on errors',
       async () => {
         expect.assertions(2)
