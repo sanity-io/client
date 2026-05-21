@@ -19,7 +19,6 @@ import type {
   ReleaseDocument,
   ReleaseType,
   RequestOptions,
-  ResponseEvent,
   ScheduleReleaseAction,
   SingleActionResult,
   UnarchiveReleaseAction,
@@ -27,7 +26,7 @@ import type {
 } from '../src/types'
 import * as createVersionIdModule from '../src/util/createVersionId'
 
-type MockResponseEvent = Partial<ResponseEvent>
+type MockResponseBody = Record<string, unknown>
 
 vi.mock('../src/util/createVersionId', () => ({
   generateReleaseId: vi.fn().mockReturnValue('generatedReleaseId'),
@@ -47,11 +46,8 @@ const TEST_TXN_ID = 'txn123'
 
 const mockHttpSuccess = (httpRequest: ReturnType<typeof vi.fn>, transactionId: string) => {
   httpRequest.mockImplementationOnce(() => ({
-    subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-      subscriber.next?.({
-        type: 'response',
-        body: {transactionId},
-      })
+    subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+      subscriber.next?.({transactionId})
       subscriber.complete?.()
       return {unsubscribe: () => {}}
     },
@@ -64,7 +60,7 @@ const mockHttpError = (
   details?: ApiError,
 ) => {
   httpRequest.mockImplementationOnce(() => ({
-    subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+    subscribe: (subscriber: Subscriber<MockResponseBody>) => {
       const error = new Error(errorMessage)
       Object.defineProperty(error, 'details', {value: details})
       subscriber.error?.(error)
@@ -78,11 +74,8 @@ const mockHttpDocumentResponse = (
   document: Partial<ReleaseDocument>,
 ) => {
   httpRequest.mockImplementationOnce(() => ({
-    subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-      subscriber.next?.({
-        type: 'response',
-        body: {documents: [document]},
-      })
+    subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+      subscriber.next?.({documents: [document]})
       subscriber.complete?.()
       return {unsubscribe: () => {}}
     },
@@ -132,8 +125,8 @@ const createTestActionMethod = (httpRequest: ReturnType<typeof vi.fn>) => {
 }
 
 const httpRequest = vi.fn().mockImplementation(() => ({
-  subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-    subscriber.next?.({type: 'response', body: {}})
+  subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+    subscriber.next?.({})
     subscriber.complete?.()
     return {unsubscribe: () => {}}
   },
@@ -203,8 +196,8 @@ describe('ReleasesClient', () => {
         })
 
       httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {documents: []}})
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({documents: []})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -226,8 +219,8 @@ describe('ReleasesClient', () => {
       }
 
       httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {documents: []}})
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({documents: []})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -497,8 +490,8 @@ describe('ReleasesClient', () => {
       ]
 
       httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {result: documents}})
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({result: documents})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -522,8 +515,8 @@ describe('ReleasesClient', () => {
       }
 
       httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {result: []}})
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({result: []})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -579,13 +572,13 @@ describe('ReleasesClient', () => {
 
       httpRequest
         .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+          subscribe: (subscriber: Subscriber<MockResponseBody>) => {
             if (subscriber.error) subscriber.error(validationError)
             return {unsubscribe: () => {}}
           },
         }))
         .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+          subscribe: (subscriber: Subscriber<MockResponseBody>) => {
             if (subscriber.error) subscriber.error(validationError)
             return {unsubscribe: () => {}}
           },
@@ -606,13 +599,13 @@ describe('ReleasesClient', () => {
 
       httpRequest
         .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+          subscribe: (subscriber: Subscriber<MockResponseBody>) => {
             if (subscriber.error) subscriber.error(timeoutError)
             return {unsubscribe: () => {}}
           },
         }))
         .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+          subscribe: (subscriber: Subscriber<MockResponseBody>) => {
             if (subscriber.error) subscriber.error(timeoutError)
             return {unsubscribe: () => {}}
           },
@@ -632,7 +625,7 @@ describe('ReleasesClient', () => {
       abortError.name = 'AbortError'
 
       httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
           if (subscriber.error) subscriber.error(abortError)
           return {unsubscribe: () => {}}
         },
@@ -664,8 +657,8 @@ describe('ObservableReleasesClient', () => {
     })
 
     observableHttpRequest = vi.fn().mockImplementation(() => ({
-      subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-        subscriber.next?.({type: 'response', body: {}})
+      subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+        subscriber.next?.({})
         subscriber.complete?.()
         return {unsubscribe: () => {}}
       },
@@ -706,11 +699,8 @@ describe('ObservableReleasesClient', () => {
       }
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {documents: [releaseDocument]},
-          })
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({documents: [releaseDocument]})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -731,11 +721,8 @@ describe('ObservableReleasesClient', () => {
       }
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({transactionId: TEST_TXN_ID})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -757,11 +744,8 @@ describe('ObservableReleasesClient', () => {
       }
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({transactionId: TEST_TXN_ID})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -789,11 +773,8 @@ describe('ObservableReleasesClient', () => {
       }
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({transactionId: TEST_TXN_ID})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -824,14 +805,11 @@ describe('ObservableReleasesClient', () => {
         action.releaseId = 'generatedReleaseId'
 
         return {
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+          subscribe: (subscriber: Subscriber<MockResponseBody>) => {
             subscriber.next?.({
-              type: 'response',
-              body: {
-                transactionId: TEST_TXN_ID,
-                releaseId: 'generatedReleaseId',
-                metadata,
-              },
+              transactionId: TEST_TXN_ID,
+              releaseId: 'generatedReleaseId',
+              metadata,
             })
             subscriber.complete?.()
             return {unsubscribe: () => {}}
@@ -854,11 +832,8 @@ describe('ObservableReleasesClient', () => {
       vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({transactionId: TEST_TXN_ID})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -895,11 +870,8 @@ describe('ObservableReleasesClient', () => {
       }
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: options.transactionId},
-          })
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({transactionId: options.transactionId})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -981,8 +953,8 @@ describe('ObservableReleasesClient', () => {
       ]
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {result: documents}})
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
+          subscriber.next?.({result: documents})
           subscriber.complete?.()
           return {unsubscribe: () => {}}
         },
@@ -1034,7 +1006,7 @@ describe('ObservableReleasesClient', () => {
       const unsubscribeSpy = vi.fn()
 
       observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
+        subscribe: (subscriber: Subscriber<MockResponseBody>) => {
           if (subscriber.error) subscriber.error(new Error('Server error'))
           return {unsubscribe: unsubscribeSpy}
         },

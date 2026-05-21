@@ -453,9 +453,17 @@ export interface ErrorProps {
   details: Any
 }
 
-/** @public */
+/**
+ * The internal HTTP request abstraction used by the client. Resolves to the
+ * parsed response body — middleware-level transport details (status codes,
+ * headers, progress events) are not exposed.
+ *
+ * The body is typed as `unknown`; consumers narrow at their own boundary.
+ *
+ * @public
+ */
 export type HttpRequest = {
-  (options: RequestOptions, requester: Requester): ReturnType<Requester>
+  (options: RequestOptions, requester: Requester): Observable<unknown>
 }
 
 /**
@@ -473,11 +481,12 @@ export type HttpRequest = {
  *
  * When set via `withConfig()`, the new handler **replaces** (not wraps) the previous one.
  *
- * Note: This only applies to HTTP requests. Real-time listener connections
- * (`client.listen()`) use EventSource and are not intercepted by this handler.
+ * Note: This only applies to HTTP requests handled through the regular pipeline.
+ * Real-time listener connections (`client.listen()`) and asset uploads
+ * (`client.assets.upload()`) bypass this handler.
  *
  * @param request - The resolved request options including `url`
- * @param defaultRequester - Executes the request through the normal pipeline
+ * @param defaultRequester - Executes the request through the normal pipeline, resolving to the response body
  * @param client - A client instance with the same configuration but without a `_requestHandler`,
  *   useful for making side requests (e.g. token refresh) without triggering the handler recursively
  *
@@ -486,9 +495,9 @@ export type HttpRequest = {
  */
 export type RequestHandler = (
   request: RequestOptions & {url: string},
-  defaultRequester: (options: RequestOptions & {url: string}) => Observable<HttpRequestEvent>,
+  defaultRequester: (options: RequestOptions & {url: string}) => Observable<unknown>,
   client: SanityClient,
-) => Observable<HttpRequestEvent>
+) => Observable<unknown>
 
 /** @internal */
 export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
@@ -509,7 +518,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
 }
 
 /** @public */
-export interface ProgressEvent {
+export interface UploadProgressEvent {
   type: 'progress'
   stage: 'upload' | 'download'
   percent: number
@@ -519,18 +528,20 @@ export interface ProgressEvent {
 }
 
 /** @public */
-export interface ResponseEvent<T = unknown> {
+export interface UploadResponseEvent<T = unknown> {
   type: 'response'
   body: T
-  url: string
-  method: string
-  statusCode: number
-  statusMessage?: string
-  headers: Record<string, string>
 }
 
-/** @public */
-export type HttpRequestEvent<T = unknown> = ResponseEvent<T> | ProgressEvent
+/**
+ * Events emitted by `client.assets.upload()` when called via the observable
+ * API. Progress events are best-effort — they're only emitted when the
+ * environment supports tracking upload/download bytes (e.g. browsers via
+ * `XMLHttpRequest`). Other runtimes only emit the terminal `response` event.
+ *
+ * @public
+ */
+export type UploadEvent<T = unknown> = UploadResponseEvent<T> | UploadProgressEvent
 
 /** @internal */
 export interface AuthProvider {

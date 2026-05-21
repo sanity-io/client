@@ -18,7 +18,6 @@ import type {
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
-  HttpRequestEvent,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
   InitializedStegaConfig,
@@ -35,6 +34,7 @@ import type {
   SingleActionResult,
   SingleMutationResult,
   UnpublishVersionAction,
+  UploadEvent,
 } from '../types'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
@@ -65,9 +65,6 @@ const getMutationQuery = (options: BaseMutationOptions = {}) => {
     skipCrossDatasetReferenceValidation: options.skipCrossDatasetReferenceValidation,
   }
 }
-
-const isResponse = (event: Any) => event.type === 'response'
-const getBody = (event: Any) => event.body
 
 const indexBy = (docs: Any[], attr: Any) =>
   docs.reduce((indexed, doc) => {
@@ -193,14 +190,9 @@ export function _getDocument<R extends Record<string, Any>>(
         ? {includeAllVersions: opts.includeAllVersions}
         : undefined,
   }
-  return _requestObservable<SanityDocument<R> | undefined | SanityDocument<R>[]>(
-    client,
-    httpRequest,
-    options,
-  ).pipe(
-    filter(isResponse),
-    map((event) => {
-      const documents = event.body.documents
+  return _requestObservable<{documents?: SanityDocument<R>[]}>(client, httpRequest, options).pipe(
+    map((body) => {
+      const documents = body.documents
       if (!documents) {
         return opts.includeAllVersions ? [] : undefined
       }
@@ -222,10 +214,9 @@ export function _getDocuments<R extends Record<string, Any>>(
     tag: opts.tag,
     signal: opts.signal,
   }
-  return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
-    filter(isResponse),
-    map((event: Any) => {
-      const indexed = indexBy(event.body.documents || [], (doc: Any) => doc._id)
+  return _requestObservable<{documents?: SanityDocument<R>[]}>(client, httpRequest, options).pipe(
+    map((body) => {
+      const indexed = indexBy(body.documents || [], (doc: Any) => doc._id)
       return ids.map((id) => indexed[id] || null)
     }),
   )
@@ -561,9 +552,7 @@ export function _dataRequest(
   }
 
   return _requestObservable(client, httpRequest, reqOptions).pipe(
-    filter(isResponse),
-    map(getBody),
-    map((res) => {
+    map((res: Any) => {
       if (!isMutation) {
         return res
       }
@@ -637,18 +626,15 @@ const isData = (client: Client, uri: string) =>
   isHistory(client, uri)
 
 /**
+ * Build the final request options (URL, headers, query params, etc.) used by
+ * both the regular request pipeline and the asset upload path.
+ *
  * @internal
  */
-export function _requestObservable<R>(
+function _prepareRequest(
   client: Client,
-  httpRequest: HttpRequest,
   options: RequestObservableOptions,
-): Observable<HttpRequestEvent<R>> {
-  // Capture the call-site error here, where the caller's code is still
-  // on the synchronous call stack, and pass it through to get-it so errors
-  // include the originating call site rather than just internal plumbing.
-  const callSiteStack = new Error()
-
+): RequestOptions & {url: string} {
   const uri = options.url || (options.uri as string)
   const config = client.config()
 
@@ -744,31 +730,83 @@ export function _requestObservable<R>(
     }
   }
 
-  const reqOptions = requestOptions(
+  return requestOptions(
     config,
     Object.assign({}, options, {
       url: _getUrl(client, uri, useCdn),
-      callSiteStack,
     }),
-  ) as RequestOptions
+  ) as RequestOptions & {url: string}
+}
 
-  const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
-    httpRequest(reqOptions, config.requester!).subscribe(subscriber),
+/**
+ * Execute an HTTP request through the regular pipeline and resolve to the
+ * parsed response body.
+ *
+ * @internal
+ */
+export function _requestObservable<R>(
+  client: Client,
+  httpRequest: HttpRequest,
+  options: RequestObservableOptions,
+): Observable<R> {
+  const reqOptions = _prepareRequest(client, options)
+  const request = new Observable<R>((subscriber) =>
+    httpRequest(reqOptions, client.config().requester!).subscribe({
+      next: (body) => subscriber.next(body as R),
+      error: (err) => subscriber.error(err),
+      complete: () => subscriber.complete(),
+    }),
   )
-
   return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
 }
 
 /**
+ * Execute an HTTP request through the regular pipeline, returning an
+ * Observable that emits the parsed response body once and completes.
+ *
+ * Alias for {@link _requestObservable} kept for clarity at call sites that
+ * expect a single-value Observable.
+ *
  * @internal
  */
 export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Observable<R> {
-  const observable = _requestObservable<R>(client, httpRequest, options).pipe(
-    filter((event: Any) => event.type === 'response'),
-    map((event: Any) => event.body),
-  )
+  return _requestObservable<R>(client, httpRequest, options)
+}
 
-  return observable
+/**
+ * Execute an asset upload through the underlying requester directly,
+ * exposing the full upload event stream (progress + response).
+ *
+ * Bypasses the body-only `HttpRequest` boundary so progress events from the
+ * transport layer can surface to consumers. Asset uploads are not routed
+ * through `_requestHandler`.
+ *
+ * @internal
+ */
+export function _uploadObservable<T>(
+  client: Client,
+  options: RequestObservableOptions,
+): Observable<UploadEvent<T>> {
+  const reqOptions = _prepareRequest(client, options)
+  const requester = client.config().requester!
+  const request = new Observable<Any>((subscriber) =>
+    requester(reqOptions).subscribe(subscriber),
+  ).pipe(
+    filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
+    map((event: Any): UploadEvent<T> =>
+      event.type === 'progress'
+        ? {
+            type: 'progress',
+            stage: event.stage,
+            percent: event.percent,
+            total: event.total,
+            loaded: event.loaded,
+            lengthComputable: event.lengthComputable,
+          }
+        : {type: 'response', body: event.body as T},
+    ),
+  )
+  return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
 }
 
 /**
