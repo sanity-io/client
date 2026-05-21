@@ -1,4 +1,6 @@
 import type {Middlewares} from 'get-it'
+import type {Observable} from 'rxjs'
+import {filter, map} from 'rxjs/operators'
 
 import {defineHttpRequest} from './http/request'
 import type {Any, ClientConfig, HttpRequest} from './types'
@@ -50,17 +52,23 @@ export default function defineCreateClientExports<
     const clientRequester = defineHttpRequest(envMiddleware, {
       ignoreWarnings: config.ignoreWarnings,
     })
-    return new ClassConstructor(
-      (options, requester) =>
-        (requester || clientRequester)({
-          maxRedirects: 0,
-          maxRetries: config.maxRetries,
-          retryDelay: config.retryDelay,
-          lineage: config.lineage,
-          ...options,
-        } as Any),
-      config,
-    )
+    const httpRequest: HttpRequest = (options, requester) => {
+      const stream: Observable<Any> = (requester || clientRequester)({
+        maxRedirects: 0,
+        maxRetries: config.maxRetries,
+        retryDelay: config.retryDelay,
+        lineage: config.lineage,
+        ...options,
+      } as Any)
+      return stream.pipe(
+        filter((event: Any) => event?.type === 'response'),
+        map((event: Any) => event.body as unknown),
+      )
+    }
+    // Ensure `config.requester` is always populated so internal paths
+    // (e.g. the asset upload event stream) can reach the underlying transport.
+    const resolvedConfig = {...config, requester: config.requester ?? clientRequester}
+    return new ClassConstructor(httpRequest, resolvedConfig)
   }
 
   return {requester: defaultRequester, createClient}

@@ -28,17 +28,9 @@ const {createClient}: typeof import('../src') = await import(
 
 const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
 
-const createMockResponse = (documents: SanityDocument[]) =>
-  of({
-    type: 'response',
-    body: {documents},
-  })
+const createMockResponse = (documents: SanityDocument[]) => of({documents})
 
-const createMockQueryResponse = <T>(result: T) =>
-  of({
-    type: 'response',
-    body: {result},
-  })
+const createMockQueryResponse = <T>(result: T) => of({result})
 
 type ClientLike = {
   config(): InitializedClientConfig | ClientConfig
@@ -512,12 +504,7 @@ describe('dataMethods', async () => {
         versionId: `versions.${releaseId}.${publishedId}`,
       }
 
-      mockHttpRequest.mockReturnValueOnce(
-        of({
-          type: 'response',
-          body: {transactionId: 'abc123'},
-        }),
-      )
+      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -552,12 +539,7 @@ describe('dataMethods', async () => {
         ifBaseRevisionId,
       }
 
-      mockHttpRequest.mockReturnValueOnce(
-        of({
-          type: 'response',
-          body: {transactionId: 'abc123'},
-        }),
-      )
+      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -587,12 +569,7 @@ describe('dataMethods', async () => {
       }
       const releaseId = 'release789'
 
-      mockHttpRequest.mockReturnValueOnce(
-        of({
-          type: 'response',
-          body: {transactionId: 'abc123'},
-        }),
-      )
+      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -647,12 +624,7 @@ describe('dataMethods', async () => {
         versionId: `drafts.${publishedId}`,
       }
 
-      mockHttpRequest.mockReturnValueOnce(
-        of({
-          type: 'response',
-          body: {transactionId: 'abc123'},
-        }),
-      )
+      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(

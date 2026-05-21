@@ -79,12 +79,9 @@ describe('requestHandler', async () => {
 
     const handler: RequestHandler = (request, defaultRequester) => {
       return defaultRequester(request).pipe(
-        map((event) => {
-          if (event.type === 'response') {
-            return {...event, body: {...(event.body as any), injected: true}}
-          }
-          return event
-        }),
+        map((body) =>
+          body && typeof body === 'object' ? {...(body as Record<string, unknown>), injected: true} : body,
+        ),
       )
     }
 
@@ -97,15 +94,7 @@ describe('requestHandler', async () => {
   test.skipIf(isEdge)('can short-circuit and skip defaultRequester', async () => {
     // No nock setup — the default requester should never be called
     const handler: RequestHandler = () => {
-      return observableOf({
-        type: 'response' as const,
-        body: {custom: true},
-        url: 'https://example.com',
-        method: 'GET',
-        statusCode: 200,
-        statusMessage: 'OK',
-        headers: {},
-      })
+      return observableOf({custom: true})
     }
 
     const client = createClient({...clientConfig, _requestHandler: handler})

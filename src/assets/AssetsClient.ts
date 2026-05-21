@@ -1,18 +1,18 @@
 import {lastValueFrom, type Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
-import {_requestObservable} from '../data/dataMethods'
+import {_uploadObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
   HttpRequest,
-  HttpRequestEvent,
   InitializedClientConfig,
-  ResponseEvent,
   SanityAssetDocument,
   SanityImageAssetDocument,
   UploadBody,
   UploadClientConfig,
+  UploadEvent,
+  UploadResponseEvent,
 } from '../types'
 import * as validators from '../validators'
 
@@ -36,7 +36,7 @@ export class ObservableAssetsClient {
     assetType: 'file',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityAssetDocument}>>
 
   /**
    * Uploads an image asset to the configured dataset
@@ -49,7 +49,7 @@ export class ObservableAssetsClient {
     assetType: 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityImageAssetDocument}>>
   /**
    * Uploads a file or an image asset to the configured dataset
    *
@@ -61,12 +61,12 @@ export class ObservableAssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
 }
@@ -121,27 +121,24 @@ export class AssetsClient {
     body: UploadBody,
     options?: UploadClientConfig,
   ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
-    const observable = _upload(this.#client, this.#httpRequest, assetType, body, options)
+    type Doc = {document: SanityAssetDocument | SanityImageAssetDocument}
+    const observable = _upload<Doc>(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
-        filter((event: Any) => event.type === 'response'),
-        map(
-          (event) =>
-            (event as ResponseEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>)
-              .body.document,
-        ),
+        filter((event): event is UploadResponseEvent<Doc> => event.type === 'response'),
+        map((event) => event.body.document),
       ),
     )
   }
 }
 
-function _upload(
+function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>(
   client: SanityClient | ObservableSanityClient,
-  httpRequest: HttpRequest,
+  _httpRequest: HttpRequest,
   assetType: 'image' | 'file',
   body: UploadBody,
   opts: UploadClientConfig = {},
-): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+): Observable<UploadEvent<T>> {
   validators.validateAssetType(assetType)
 
   // If an empty array is given, explicitly set `none` to override API defaults
@@ -180,7 +177,7 @@ function _upload(
     query.sourceUrl = source.url
   }
 
-  return _requestObservable(client, httpRequest, {
+  return _uploadObservable<T>(client, {
     tag,
     method: 'POST',
     timeout: options.timeout || 0,
