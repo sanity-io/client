@@ -1,7 +1,8 @@
-import {lastValueFrom, type Observable} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
+import {defer, lastValueFrom, type Observable} from 'rxjs'
+import {filter, map, mergeAll} from 'rxjs/operators'
 
-import {_uploadObservable} from '../data/dataMethods'
+import {_getUrl, _uploadObservable} from '../data/dataMethods'
+import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
@@ -177,15 +178,60 @@ function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>
     query.sourceUrl = source.url
   }
 
-  return _uploadObservable<T>(client, {
+  const headers: Record<string, string> = options.contentType
+    ? {'Content-Type': options.contentType}
+    : {}
+  const baseRequest = {
     tag,
     method: 'POST',
     timeout: options.timeout || 0,
     uri: buildAssetUploadUrl(config, assetType),
-    headers: options.contentType ? {'Content-Type': options.contentType} : {},
+    headers,
     query,
     body,
-  })
+  }
+
+  // In browsers, run uploads through `XMLHttpRequest` so we can surface
+  // per-chunk upload progress events — fetch (and therefore get-it v9) has no
+  // equivalent hook. Outside the browser (Node, edge runtimes), we fall back
+  // to the regular fetch-based path which only emits the terminal `response`
+  // event.
+  if (typeof XMLHttpRequest !== 'undefined') {
+    return defer(async () => {
+      const {uploadWithProgress} = await import('../http/browserUpload')
+      const reqOpts = requestOptions(config, {
+        ...baseRequest,
+        url: _getUrl(client, baseRequest.uri, false),
+      })
+      const finalUrl = appendQuery(reqOpts.url as string, query)
+      return uploadWithProgress<T>({
+        url: finalUrl,
+        method: 'POST',
+        headers: (reqOpts.headers ?? {}) as Record<string, string>,
+        body,
+        withCredentials: reqOpts.credentials === 'include' || Boolean(reqOpts.withCredentials),
+      })
+    }).pipe(mergeAll())
+  }
+
+  return _uploadObservable<T>(client, baseRequest)
+}
+
+function appendQuery(url: string, query: Record<string, unknown>): string {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== undefined && item !== null) params.append(key, `${item}`)
+      }
+    } else {
+      params.append(key, `${value}`)
+    }
+  }
+  const qs = params.toString()
+  if (!qs) return url
+  return url + (url.includes('?') ? '&' : '?') + qs
 }
 
 function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image' | 'file'): string {
