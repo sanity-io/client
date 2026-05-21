@@ -3,17 +3,21 @@ import {jsonRequest, jsonResponse, observable, progress, retry} from 'get-it/mid
 import {Observable} from 'rxjs'
 
 import type {Any} from '../types'
-import {ClientError, ServerError} from './errors'
+import {ClientError, httpResponseFromGetIt, ServerError} from './errors'
 
 const httpError = {
   onResponse: (res: Any, context: HttpContext) => {
-    if (res.statusCode >= 500) {
-      throw new ServerError(res)
-    } else if (res.statusCode >= 400) {
-      throw new ClientError(res, context)
-    }
+    if (res.statusCode < 400) return res
 
-    return res
+    const canonical = httpResponseFromGetIt(res)
+    const tag = typeof context?.options?.query?.tag === 'string'
+      ? context.options.query.tag
+      : undefined
+
+    if (canonical.statusCode >= 500) {
+      throw new ServerError(canonical)
+    }
+    throw new ClientError(canonical, tag)
   },
 }
 
