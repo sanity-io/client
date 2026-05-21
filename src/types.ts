@@ -1,11 +1,21 @@
 // deno-lint-ignore-file no-empty-interface
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
-import type {Requester} from 'get-it'
 import type {Observable} from 'rxjs'
 
+import type {LegacyRequester} from './http/request'
 import type {SanityClient} from './SanityClient'
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
+
+// Re-export under the historical public name for backwards-compatibility with
+// consumers that imported `Requester` from `@sanity/client`.
+/**
+ * Low-level requester returned by `defineHttpRequest`. Internal — used by the
+ * `client.config().requester` field and the `requester` named export.
+ *
+ * @internal
+ */
+type Requester = LegacyRequester
 
 /**
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future

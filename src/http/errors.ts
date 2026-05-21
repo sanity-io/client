@@ -26,19 +26,39 @@ export interface CanonicalHttpResponse {
 }
 
 /**
- * Adapter for responses from get-it v8's multi-event observable pipeline.
+ * Adapter for buffered responses from get-it v9 (`BufferedResponse`-shaped).
+ *
+ * The URL and method aren't on the response itself in v9, so the request
+ * options must be passed alongside.
  *
  * @internal
  */
-export function httpResponseFromGetIt(res: Any): CanonicalHttpResponse {
+export function httpResponseFromFetch(
+  res: {
+    status: number
+    statusText: string
+    headers: Headers
+    body: unknown
+  },
+  reqUrl: string,
+  reqMethod: string,
+): CanonicalHttpResponse {
   return {
-    statusCode: res.statusCode,
-    statusMessage: res.statusMessage ?? null,
-    headers: res.headers ?? {},
+    statusCode: res.status,
+    statusMessage: res.statusText || null,
+    headers: headersToRecord(res.headers),
     body: res.body,
-    url: res.url,
-    method: res.method,
+    url: reqUrl,
+    method: reqMethod,
   }
+}
+
+function headersToRecord(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    out[key] = value
+  })
+  return out
 }
 
 /**

@@ -1,10 +1,17 @@
-import type {RequestOptions} from 'get-it'
-
 import type {Any} from '../types'
 
 const projectHeader = 'X-Sanity-Project-ID'
 
-export function requestOptions(config: Any, overrides: Any = {}): Omit<RequestOptions, 'url'> {
+/**
+ * Build the per-request options object passed down to the HTTP layer.
+ *
+ * Returns the legacy "get-it v8 + sanity client" shape (incl. `withCredentials`,
+ * `proxy`, `json`); the request layer adapter translates that into the actual
+ * fetch options for get-it v9.
+ *
+ * @internal
+ */
+export function requestOptions(config: Any, overrides: Any = {}): Any {
   const headers: Any = {}
 
   if (config.headers) {

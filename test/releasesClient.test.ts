@@ -1,5 +1,5 @@
 import {createClient} from '@sanity/client'
-import nock from 'nock'
+import nock from './helpers/nockShim'
 import {firstValueFrom, Observable, Subscriber} from 'rxjs'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

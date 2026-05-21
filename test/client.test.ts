@@ -46,11 +46,11 @@ const fixture = (name: string) => path.join(__dirname, 'fixtures', name)
 describe('client', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
   const isNode = !isEdge && typeof document === 'undefined'
-  let nock: typeof import('nock') = (() => {
+  let nock: typeof import('./helpers/nockShim').default = (() => {
     throw new Error('Not supported in EdgeRuntime')
   }) as any
   if (!isEdge) {
-    const _nock = await import('nock')
+    const _nock = await import('./helpers/nockShim')
     nock = _nock.default
   }
 
@@ -255,23 +255,18 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('observable requests are lazy', async () => {
       expect.assertions(2)
+      const {getActiveMock} = await import('./helpers/nockShim')
 
-      let didRequest = false
-      nock(projectHost())
-        .get('/v1/ping')
-        .reply(() => {
-          didRequest = true
-          return [200, {pong: true}]
-        })
+      nock(projectHost()).get('/v1/ping').reply(200, {pong: true})
 
       const req = getClient().observable.request({uri: '/ping'})
       await new Promise((resolve) => setTimeout(resolve, 1))
 
       await new Promise<void>((resolve, reject) => {
-        expect(didRequest).toBe(false)
+        expect(getActiveMock().getRequests().length).toBe(0)
         req.subscribe({
           next: () => {
-            expect(didRequest).toBe(true)
+            expect(getActiveMock().getRequests().length).toBe(1)
           },
           error: reject,
           complete: resolve,
@@ -281,26 +276,20 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('observable requests are cold', async () => {
       expect.assertions(3)
+      const {getActiveMock} = await import('./helpers/nockShim')
 
-      let requestCount = 0
-      nock(projectHost())
-        .get('/v1/ping')
-        .twice()
-        .reply(() => {
-          requestCount++
-          return [200, {pong: true}]
-        })
+      nock(projectHost()).get('/v1/ping').twice().reply(200, {pong: true})
 
       const req = getClient().observable.request({uri: '/ping'})
 
       await new Promise<void>((resolve, reject) => {
-        expect(requestCount).toBe(0)
+        expect(getActiveMock().getRequests().length).toBe(0)
         req.subscribe({
           next: () => {
-            expect(requestCount).toBe(1)
+            expect(getActiveMock().getRequests().length).toBe(1)
             req.subscribe({
               next: () => {
-                expect(requestCount).toBe(2)
+                expect(getActiveMock().getRequests().length).toBe(2)
               },
               error: reject,
               complete: resolve,
@@ -640,6 +629,10 @@ describe('client', async () => {
         async () => {
           expect.assertions(1)
 
+          // EventSource uses `node:http` directly, which our shim can't
+          // intercept. Use real nock for SSE.
+          const {default: realNock} = await import('nock')
+
           const response = [
             ':',
             '',
@@ -653,7 +646,7 @@ describe('client', async () => {
             'data: {"reason":"forcefully closed"}',
           ].join('\n')
 
-          nock(`https://${apiHost}`)
+          realNock(`https://${apiHost}`)
             .get('/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
             .reply(200, response, {
               'cache-control': 'no-cache',
@@ -2100,7 +2093,7 @@ describe('client', async () => {
           await getClient().getDocument('abc123')
         } catch (err: any) {
           expect(err, 'should be error').toBeInstanceOf(Error)
-          expect(err.message).toContain('HTTP 400 (Some string short enough to inline fully)')
+          expect(err.message).toContain('HTTP 400 Bad Request (Some string short enough to inline fully)')
         }
       },
     )
@@ -2122,7 +2115,7 @@ describe('client', async () => {
         } catch (err: any) {
           expect(err, 'should be error').toBeInstanceOf(Error)
           expect(err.message).toContain(
-            'HTTP 400 (Some long string that should be capped at 100 characters because it seems odd to have the entire str…)',
+            'HTTP 400 Bad Request (Some long string that should be capped at 100 characters because it seems odd to have the entire str…)',
           )
         }
       },
@@ -4049,9 +4042,10 @@ describe('client', async () => {
     })
   })
 
-  // nock doesn't support mocking `fetch` yet, which is used by event-source-polyfill, and thus we have to skip for now when `isNode` is false
-  // https://github.com/nock/nock/issues/2183
-  describe.skipIf(isEdge || !isNode)('LISTENERS', () => {
+  // EventSource uses `node:http` under the hood, which our shim can't
+  // intercept. Use real nock for the listener tests instead.
+  describe.skipIf(isEdge || !isNode)('LISTENERS', async () => {
+    const {default: nock} = await import('nock')
     test('listeners connect to listen endpoint, emits events', async () => {
       expect.assertions(1)
 
@@ -4308,9 +4302,10 @@ describe('client', async () => {
       expect(document.url).toEqual('https://some.asset.url')
     })
 
-    test('uploads images with progress events', async () => {
-      // The amount of assertions can vary depending on the OS and CI
-      expect.hasAssertions()
+    test('uploads images without progress events in Node', async () => {
+      // get-it v9 / fetch has no per-chunk progress hook, so Node uploads
+      // only ever emit the terminal `response` event. Browsers get progress
+      // events via a separate XHR-based code path (see `browserUpload`).
       const fixturePath = fixture('horsehead-nebula.jpg')
       const isImage = (body: any) =>
         Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
@@ -4323,12 +4318,8 @@ describe('client', async () => {
         .observable.assets.upload('image', fs.createReadStream(fixturePath))
         .pipe(filter((event) => event.type === 'progress'))
 
-      // note: the number of events emitted and their properties depends on
-      // the size of the file being uploaded and how the runtime will chunk them
       const events = await lastValueFrom(uploadProgress.pipe(toArray()))
-      events.forEach((event) => {
-        expect(event.type, 'progress').toEqual('progress')
-      })
+      expect(events).toEqual([])
     })
 
     test('uploads images with custom label', async () => {

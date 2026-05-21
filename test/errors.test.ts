@@ -107,11 +107,11 @@ describe('groq errors', () => {
 
 describe('http errors', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  let nock: typeof import('nock') = (() => {
+  let nock: typeof import('./helpers/nockShim').default = (() => {
     throw new Error('Not supported in EdgeRuntime')
   }) as any
   if (!isEdge) {
-    const _nock = await import('nock')
+    const _nock = await import('./helpers/nockShim')
     nock = _nock.default
   }
 
@@ -129,7 +129,7 @@ describe('http errors', async () => {
     expect(err).toBeInstanceOf(Error)
     expect(err).toBeInstanceOf(ServerError)
     expect(err.constructor.name).toBe('ServerError')
-    expect(err.message).toContain('503 (Service Unavailable)')
+    expect(err.message).toContain('HTTP 503 Service Unavailable')
     expect(err).toHaveProperty('statusCode', 503)
 
     expect(isHttpError(err)).toBe(true)
@@ -174,7 +174,7 @@ describe('http errors', async () => {
     expect(err).toBeInstanceOf(Error)
     expect(err).toBeInstanceOf(ClientError)
     expect(err.constructor.name).toBe('ClientError')
-    expect(err.message).toContain('400 (Bad Request)')
+    expect(err.message).toContain('HTTP 400 Bad Request')
     expect(err).toHaveProperty('statusCode', 400)
 
     expect(isHttpError(err)).toBe(true)
