@@ -29,12 +29,10 @@
       "source": "./src/index.ts",
       "browser": {
         "source": "./src/index.browser.ts",
-        "import": "./dist/index.browser.js",
-        "require": "./dist/index.browser.cjs"
+        "import": "./dist/index.browser.js"
       },
       "react-native": {
-        "import": "./dist/index.browser.js",
-        "require": "./dist/index.browser.cjs"
+        "import": "./dist/index.browser.js"
       },
       "sanity-function": "./dist/index.browser.js",
       "react-server": "./dist/index.browser.js",
@@ -44,39 +42,33 @@
       "edge-light": "./dist/index.browser.js",
       "worker": "./dist/index.browser.js",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./csm": {
       "source": "./src/csm/index.ts",
       "import": "./dist/csm.js",
-      "require": "./dist/csm.cjs",
       "default": "./dist/csm.js"
     },
     "./stega": {
       "source": "./src/stega/index.ts",
       "browser": {
         "source": "./src/stega/index.ts",
-        "import": "./dist/stega.browser.js",
-        "require": "./dist/stega.browser.cjs"
+        "import": "./dist/stega.browser.js"
       },
       "import": "./dist/stega.js",
-      "require": "./dist/stega.cjs",
       "default": "./dist/stega.js"
     },
     "./media-library": {
       "source": "./src/media-library.ts",
       "import": "./dist/media-library.js",
-      "require": "./dist/media-library.cjs",
       "default": "./dist/media-library.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "unpkg": "umd/sanityClient.min.js",
   "module": "./dist/index.js",
   "browser": {
-    "./dist/index.cjs": "./dist/index.browser.cjs",
     "./dist/index.js": "./dist/index.browser.js"
   },
   "types": "./dist/index.d.ts",
@@ -102,7 +94,6 @@
     "benchmark": "npm test -- bench",
     "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
-    "check-esm-compatibility": "node scripts/check-esm-compatibility.mjs",
     "clean": "npx rimraf dist coverage umd/*.js",
     "coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
