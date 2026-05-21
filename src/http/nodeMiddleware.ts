@@ -9,6 +9,12 @@ import type {EnvironmentOptions, LegacyMiddleware} from './request'
 
 const log = createDebugLogger('sanity:client')
 
+function isNodeReadableStream(value: unknown): value is Readable {
+  if (typeof value !== 'object' || value === null) return false
+  if (!('pipe' in value)) return false
+  return typeof value.pipe === 'function'
+}
+
 // One undici-backed fetch per (proxy URL) so callers don't pay the cost of
 // rebuilding a dispatcher on every request when they use the same proxy.
 const proxyFetchCache = new Map<string, ReturnType<typeof createNodeFetch>>()
@@ -40,15 +46,13 @@ const middleware: LegacyMiddleware[] = [
   },
 
   // Asset uploads can pass a Node.js Readable stream (from
-  // `fs.createReadStream(...)`) as the body. get-it v9's body type guard only
-  // accepts Web streams, so we project Node streams here. undici's fetch
-  // accepts Web streams natively.
+  // `fs.createReadStream(...)`) as the body. The HTTP transport's body type
+  // guard only accepts Web streams, so we project Node streams here —
+  // undici's fetch accepts Web streams natively.
   {
     beforeRequest(opts) {
-      const body = opts.body
-      if (!body || typeof (body as {pipe?: unknown}).pipe !== 'function') return opts
-      if (typeof Readable.toWeb !== 'function') return opts
-      return {...opts, body: Readable.toWeb(body as Readable)}
+      if (!isNodeReadableStream(opts.body)) return opts
+      return {...opts, body: Readable.toWeb(opts.body)}
     },
   },
 

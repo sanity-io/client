@@ -168,6 +168,6 @@
   },
   "packageManager": "npm@11.4.1",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   }
 }
