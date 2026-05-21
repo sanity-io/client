@@ -59,17 +59,6 @@ const middleware: LegacyMiddleware[] = [
     if (typeof proxy !== 'string' || opts.fetch) return next(opts)
     return next({...opts, fetch: getProxyFetch(proxy)})
   },
-
-  // Test-only escape hatch: if a global mock fetch has been registered
-  // (typically by `test/helpers/setupMockFetch.ts`), route requests through
-  // it. Lets the test suite swap out the underlying transport without each
-  // test having to thread `fetch: ...` into every `createClient` call.
-  async (opts, next) => {
-    const globalFetch = (globalThis as {__sanityTestFetch?: typeof opts.fetch})
-      .__sanityTestFetch
-    if (typeof globalFetch !== 'function' || opts.fetch) return next(opts)
-    return next({...opts, fetch: globalFetch})
-  },
 ]
 
 /**
