@@ -5,7 +5,7 @@ import {
   vercelStegaDecodeAll,
   vercelStegaSplit,
 } from '@vercel/stega'
-import {describe, expect, test} from 'vitest'
+import {beforeEach, describe, expect, test} from 'vitest'
 
 const apiHost = 'api.sanity.url'
 const defaultProjectId = 'bf1942'
@@ -20,11 +20,11 @@ const clientConfig = {
 
 describe('@sanity/client/stega', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  let nock: typeof import('nock') = (() => {
+  let nock: typeof import('../helpers/nockShim').default = (() => {
     throw new Error('Not supported in EdgeRuntime')
   }) as any
   if (!isEdge) {
-    const _nock = await import('nock')
+    const _nock = await import('../helpers/nockShim')
     nock = _nock.default
   }
 
@@ -263,11 +263,16 @@ describe('@sanity/client', () => {
   })
   describe.skipIf(typeof EdgeRuntime === 'string')('client.fetch', async () => {
     const client = createClient(clientConfig)
-    const nock = (await import('nock')).default
+    const nock = (await import('../helpers/nockShim')).default
 
-    nock(projectHost())
-      .get(`/v1/data/query/foo?query=*`)
-      .reply(200, {ms: 123, query: '*', result: []})
+    // Mock fetch handlers must be registered after the per-test setup has
+    // installed an active mock, so register inside beforeEach rather than at
+    // describe-block setup time.
+    beforeEach(() => {
+      nock(projectHost())
+        .get(`/v1/data/query/foo?query=*`)
+        .reply(200, {ms: 123, query: '*', result: []})
+    })
 
     test('allows passing stega: undefined', async () => {
       await expect(

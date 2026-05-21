@@ -21,23 +21,16 @@ const clientConfig = {
 
 describe('requestHandler', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  let nock: typeof import('nock') = (() => {
+  let nock: typeof import('./helpers/nockShim').default = (() => {
     throw new Error('Not supported in EdgeRuntime')
   }) as any
   if (!isEdge) {
-    const _nock = await import('nock')
+    const _nock = await import('./helpers/nockShim')
     nock = _nock.default
   }
 
   test.skipIf(isEdge)('can add a custom header to every request', async () => {
-    let receivedHeaders: Record<string, string> = {}
-
-    nock(projectHost())
-      .get('/v1/ping')
-      .reply(function () {
-        receivedHeaders = this.req.headers as any
-        return [200, {pong: true}]
-      })
+    nock(projectHost()).get('/v1/ping').reply(200, {pong: true})
 
     const handler: RequestHandler = (request, defaultRequester) => {
       return defaultRequester({
@@ -50,7 +43,9 @@ describe('requestHandler', async () => {
     const result = await client.request({uri: '/ping'})
 
     expect(result).toMatchObject({pong: true})
-    expect(receivedHeaders['x-custom-header']).toBe('custom-value')
+    const {getActiveMock} = await import('./helpers/nockShim')
+    const requests = getActiveMock().getRequests()
+    expect(requests[0].headers.get('x-custom-header')).toBe('custom-value')
   })
 
   test.skipIf(isEdge)('can pass through as a no-op wrapper', async () => {

@@ -51,7 +51,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('warns if server sends warning back', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -64,7 +64,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('only warns once', async () => {
     expect.assertions(2)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -87,7 +87,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using string pattern', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -106,7 +106,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using regex pattern', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -125,7 +125,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using array of patterns', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -144,7 +144,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('shows warnings when ignoreWarnings does not match', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
 
     nock('https://abc123.api.sanity.io')
       .get('/v1/users/me')
@@ -163,7 +163,7 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using exported constant', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('nock')
+    const {default: nock} = await import('./helpers/nockShim')
     const {EXPERIMENTAL_API_WARNING} = await import('../src/types')
 
     nock('https://abc123.api.sanity.io')
