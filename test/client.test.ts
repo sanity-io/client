@@ -629,10 +629,6 @@ describe('client', async () => {
         async () => {
           expect.assertions(1)
 
-          // EventSource uses `node:http` directly, which our shim can't
-          // intercept. Use real nock for SSE.
-          const {default: realNock} = await import('nock')
-
           const response = [
             ':',
             '',
@@ -646,7 +642,7 @@ describe('client', async () => {
             'data: {"reason":"forcefully closed"}',
           ].join('\n')
 
-          realNock(`https://${apiHost}`)
+          nock(`https://${apiHost}`)
             .get('/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
             .reply(200, response, {
               'cache-control': 'no-cache',
@@ -4044,10 +4040,7 @@ describe('client', async () => {
     })
   })
 
-  // EventSource uses `node:http` under the hood, which our shim can't
-  // intercept. Use real nock for the listener tests instead.
-  describe.skipIf(isEdge || !isNode)('LISTENERS', async () => {
-    const {default: realNock} = await import('nock')
+  describe.skipIf(isEdge || !isNode)('LISTENERS', () => {
     test('listeners connect to listen endpoint, emits events', async () => {
       expect.assertions(1)
 
@@ -4065,7 +4058,7 @@ describe('client', async () => {
         'data: {"reason":"forcefully closed"}',
       ].join('\n')
 
-      realNock(projectHost())
+      nock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
         .reply(200, response, {
           'cache-control': 'no-cache',
@@ -4094,7 +4087,7 @@ describe('client', async () => {
         'data: {"reason":"forcefully closed"}',
       ].join('\n')
 
-      realNock(projectHost())
+      nock(projectHost())
         .get(
           '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
@@ -4127,7 +4120,7 @@ describe('client', async () => {
         'data: {"reason":"forcefully closed"}',
       ].join('\n')
 
-      realNock(projectHost())
+      nock(projectHost())
         .get(
           '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
@@ -4150,6 +4143,7 @@ describe('client', async () => {
 
     test('listeners requests are lazy', async () => {
       expect.assertions(2)
+      const {getActiveMock} = await import('./helpers/nockShim')
 
       const response = [
         ':',
@@ -4161,23 +4155,20 @@ describe('client', async () => {
         `data: ${JSON.stringify({})}`,
       ].join('\n')
 
-      let didRequest = false
-      realNock(projectHost())
+      nock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
-        .reply(() => {
-          didRequest = true
-          return [200, response]
-        })
+        .reply(200, response, {'content-type': 'text/event-stream; charset=utf-8'})
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
       await new Promise((resolve) => setTimeout(resolve, 10))
 
-      expect(didRequest).toBe(false)
+      expect(getActiveMock().getRequests().length).toBe(0)
       await firstValueFrom(req)
-      expect(didRequest).toBe(true)
+      expect(getActiveMock().getRequests().length).toBe(1)
     })
 
     test('listener requests are cold', async () => {
       expect.assertions(3)
+      const {getActiveMock} = await import('./helpers/nockShim')
 
       const response = [
         ':',
@@ -4188,22 +4179,18 @@ describe('client', async () => {
         ':',
       ].join('\n')
 
-      let requestCount = 0
-      realNock(projectHost())
+      nock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
         .twice()
-        .reply(() => {
-          requestCount++
-          return [200, response]
-        })
+        .reply(200, response, {'content-type': 'text/event-stream; charset=utf-8'})
 
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
 
-      expect(requestCount).toBe(0)
+      expect(getActiveMock().getRequests().length).toBe(0)
       await firstValueFrom(req)
-      expect(requestCount).toBe(1)
+      expect(getActiveMock().getRequests().length).toBe(1)
       await firstValueFrom(req)
-      expect(requestCount).toBe(2)
+      expect(getActiveMock().getRequests().length).toBe(2)
     })
   })
 

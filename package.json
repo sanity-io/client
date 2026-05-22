@@ -120,8 +120,8 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@sanity/eventsource": "^5.0.4",
     "debug": "^4.4.0",
+    "eventsource": "^4.1.0",
     "get-it": "9.0.0-alpha.10",
     "nanoid": "^3.3.11",
     "rxjs": "^7.0.0"

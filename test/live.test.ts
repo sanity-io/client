@@ -25,6 +25,9 @@ const getClient = (options: ClientConfig & {port: number}) =>
   })
 
 const testSse = async (onRequest: OnRequest, options: ClientConfig = {}) => {
+  // These tests talk to a real local SSE server, so the EventSource fetch
+  // needs to bypass the global mock fetch installed by the test setup.
+  delete (globalThis as {__sanityTestFetch?: unknown}).__sanityTestFetch
   const server = await createSseServer(onRequest)
   const client = getClient({port: (server!.address() as AddressInfo).port, ...options})
   return {server, client}
@@ -200,7 +203,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('handles CORS errors', async () => {
       expect.assertions(3)
 
-      const {default: nock} = await import('nock')
+      const {default: nock} = await import('./helpers/nockShim')
 
       // Mock /check/cors via msw (it's hit through `fetch`, which msw intercepts).
       // Use distinct projectIds so the cors-check URL differs between the two clients.
@@ -255,7 +258,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('handles non-CORS reconnect errors correctly', async () => {
       expect.assertions(1)
 
-      const {default: nock} = await import('nock')
+      const {default: nock} = await import('./helpers/nockShim')
 
       server.use(
         http.get('https://abc123.api.sanity.io/vX/check/cors', () =>
@@ -555,21 +558,13 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('passes custom headers from client configuration', async () => {
       expect.assertions(1)
 
-      const {default: nock} = await import('nock')
+      const {default: nock, getActiveMock} = await import('./helpers/nockShim')
 
-      // Intercept the EventSource GET and assert the custom header explicitly
       nock('https://abc123.api.sanity.io')
         .get('/vX/data/live/events/headers')
-        .reply(function () {
-          expect(this.req.headers['x-custom-header']).toBe('custom-value')
-          return [
-            200,
-            ['event: welcome', 'data: {}', '', '.', ''].join('\n'),
-            {
-              'Access-Control-Allow-Origin': '*',
-              'Content-Type': 'text/event-stream',
-            },
-          ]
+        .reply(200, ['event: welcome', 'data: {}', '', '.', ''].join('\n'), {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/event-stream',
         })
 
       const client = createClient({
@@ -581,39 +576,59 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       })
 
       await firstValueFrom(client.live.events(), {defaultValue: null})
+
+      const requests = getActiveMock().getRequests()
+      expect(requests[0].headers.get('x-custom-header')).toBe('custom-value')
     })
 
     test('deduplicates EventSource instances for same URL and options', async () => {
       expect.assertions(5)
-      let instanceCount = 0
 
-      const {default: nock} = await import('nock')
+      const restoreFetch = global.fetch
 
-      // The EventSource can't be intercepted by msw, so we use nock
+      global.fetch = async (info, init) => {
+        const response = await restoreFetch(info, init)
+        if (!response.headers.has('access-control-allow-origin')) {
+          throw new Error('CORS preflight request failed')
+        }
+        return response
+      }
+
+      const {default: nock, getActiveMock} = await import('./helpers/nockShim')
+
+      // The OPTIONS request is done with `global.fetch`, and so nock can't intercept it.
+      server.use(
+        http.options(
+          'https://abc123.api.sanity.io/v2021-03-26/data/live/events/dedupe',
+          () =>
+            new HttpResponse(null, {
+              status: 204,
+              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
+            }),
+        ),
+      )
+
       nock('https://abc123.api.sanity.io')
         .get('/v2021-03-26/data/live/events/dedupe')
-        .reply(() => {
-          instanceCount++
-          return [
-            200,
-            [
-              'id: NjA5MDk3MTQ0fFduQzE3KzVTTTBv',
-              'event: welcome',
-              'data: {}',
-              '',
-              '.',
-              'id: NjI0MTk4MzExfHFkS2twak9CcjRF',
-              'event: message',
-              'data: {"tags": []}',
-              '',
-              '.',
-            ].join('\n'),
-            {
-              'Access-Control-Allow-Origin': '*',
-              'Content-Type': 'text/event-stream',
-            },
-          ]
-        })
+        .reply(
+          200,
+          [
+            'id: NjA5MDk3MTQ0fFduQzE3KzVTTTBv',
+            'event: welcome',
+            'data: {}',
+            '',
+            '.',
+            'id: NjI0MTk4MzExfHFkS2twak9CcjRF',
+            'event: message',
+            'data: {"tags": []}',
+            '',
+            '.',
+          ].join('\n'),
+          {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'text/event-stream',
+          },
+        )
 
       const client = createClient({
         projectId: 'abc123',
@@ -630,11 +645,16 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const [msg1a, msg1b, msg2a, msg2b] = await Promise.all([first1, first2, last1, last2])
 
-      expect(instanceCount, 'should create only one EventSource instance').toBe(1)
+      expect(
+        getActiveMock().getRequests().length,
+        'should create only one EventSource instance',
+      ).toBe(1)
       expect(msg1a).toEqual(msg1b)
       expect(msg2a).toEqual(msg2b)
       expect(msg1a).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
       expect(msg2a).toEqual({id: 'NjI0MTk4MzExfHFkS2twak9CcjRF', type: 'message', tags: []})
+
+      global.fetch = restoreFetch
     })
 
     test('works with global API endpoints', async () => {

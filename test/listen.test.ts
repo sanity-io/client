@@ -2,9 +2,15 @@ import type {AddressInfo} from 'node:net'
 
 import {type ClientConfig, ConnectionFailedError, createClient} from '@sanity/client'
 import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
-import {describe, expect, test, vitest} from 'vitest'
+import {beforeEach, describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
+
+// These tests talk to a real local SSE server, so they need the real
+// `fetch` rather than the global mock fetch the setup file installs.
+beforeEach(() => {
+  delete (globalThis as {__sanityTestFetch?: unknown}).__sanityTestFetch
+})
 
 const getClient = (options: ClientConfig & {port: number}) =>
   createClient({

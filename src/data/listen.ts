@@ -1,4 +1,5 @@
-import {Observable, of, throwError} from 'rxjs'
+import {EventSource} from 'eventsource'
+import {Observable, throwError} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
@@ -22,8 +23,8 @@ import {pick} from '../util/pick'
 import {_getDataUrl} from './dataMethods'
 import {encodeQueryString} from './encodeQueryString'
 import {connectEventSource} from './eventsource'
-import {eventSourcePolyfill} from './eventsourcePolyfill'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
+import {resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 // Limit is 16K for a _request_, eg including headers. Have to account for an
 // unknown range of headers, but an average EventSource request from Chrome seems
@@ -135,7 +136,8 @@ export function _listen<
   params?: ListenParams,
   opts: Opts = {} as Opts,
 ): Observable<ListenEventFromOptions<R, Opts>> {
-  const {url, token, withCredentials, requestTagPrefix, headers: configHeaders} = this.config()
+  const config = this.config()
+  const {url, token, withCredentials, requestTagPrefix, headers: configHeaders} = config
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag
   const options = {...defaults(opts, defaultOptions), tag}
   const listenOpts = pick(options, possibleOptions)
@@ -148,29 +150,21 @@ export function _listen<
 
   const listenFor = (options.events ? options.events : ['mutation']) satisfies Opts['events']
 
-  const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
-  if (withCredentials) {
-    esOptions.withCredentials = true
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
   }
-
-  if (token || configHeaders) {
-    esOptions.headers = {}
-
-    if (token) {
-      esOptions.headers.Authorization = `Bearer ${token}`
-    }
-
-    if (configHeaders) {
-      Object.assign(esOptions.headers, configHeaders)
-    }
+  if (configHeaders) {
+    Object.assign(headers, configHeaders)
   }
 
   const initEventSource = () =>
-    // use polyfill if there is no global EventSource or if we need to set headers
-    (typeof EventSource === 'undefined' || esOptions.headers
-      ? eventSourcePolyfill
-      : of(EventSource)
-    ).pipe(map((EventSource) => new EventSource(uri, esOptions)))
+    new EventSource(uri, {
+      fetch: resolveEventSourceFetch(config, {
+        headers: Object.keys(headers).length ? headers : undefined,
+        withCredentials,
+      }),
+    })
 
   return connectEventSource(initEventSource, listenFor).pipe(
     reconnectOnConnectionFailure(),
