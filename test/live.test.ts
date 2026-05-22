@@ -7,6 +7,7 @@ import {
   CorsOriginError,
   createClient,
 } from '@sanity/client'
+import {encode} from 'eventsource-encoder'
 import {http, HttpResponse} from 'msw'
 import {setupServer} from 'msw/node'
 import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
@@ -223,7 +224,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       nock('https://cors.api.sanity.io')
         .get('/vX/data/live/events/prod')
-        .reply(200, ['event: welcome', 'data: {}', '', '.', ''].join('\n'), {
+        .reply(200, encode({event: 'welcome', data: '{}'}), {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'text/event-stream',
         })
@@ -562,7 +563,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       nock('https://abc123.api.sanity.io')
         .get('/vX/data/live/events/headers')
-        .reply(200, ['event: welcome', 'data: {}', '', '.', ''].join('\n'), {
+        .reply(200, encode({event: 'welcome', data: '{}'}), {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'text/event-stream',
         })
@@ -612,18 +613,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         .get('/v2021-03-26/data/live/events/dedupe')
         .reply(
           200,
-          [
-            'id: NjA5MDk3MTQ0fFduQzE3KzVTTTBv',
-            'event: welcome',
-            'data: {}',
-            '',
-            '.',
-            'id: NjI0MTk4MzExfHFkS2twak9CcjRF',
-            'event: message',
-            'data: {"tags": []}',
-            '',
-            '.',
-          ].join('\n'),
+          encode({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', event: 'welcome', data: '{}'}) +
+            encode({
+              id: 'NjI0MTk4MzExfHFkS2twak9CcjRF',
+              event: 'message',
+              data: '{"tags": []}',
+            }),
           {
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'text/event-stream',
