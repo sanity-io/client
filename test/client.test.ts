@@ -24,6 +24,7 @@ import {
   type UnpublishAction,
   type VideoPlaybackInfoSigned,
 } from '@sanity/client'
+import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, of as observableOf, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'
 import {describe, expect, expectTypeOf, test, vi} from 'vitest'
@@ -629,18 +630,13 @@ describe('client', async () => {
         async () => {
           expect.assertions(1)
 
-          const response = [
-            ':',
-            '',
-            'event: welcome',
-            'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-            '',
-            'event: mutation',
-            `data: ${JSON.stringify({result: doc})}`,
-            '',
-            'event: disconnect',
-            'data: {"reason":"forcefully closed"}',
-          ].join('\n')
+          const response =
+            encode({
+              event: 'welcome',
+              data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'}),
+            }) +
+            encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
+            encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
           nock(`https://${apiHost}`)
             .get('/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
@@ -4045,18 +4041,10 @@ describe('client', async () => {
       expect.assertions(1)
 
       const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-      const response = [
-        ':',
-        '',
-        'event: welcome',
-        'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-        '',
-        'event: mutation',
-        `data: ${JSON.stringify({result: doc})}`,
-        '',
-        'event: disconnect',
-        'data: {"reason":"forcefully closed"}',
-      ].join('\n')
+      const response =
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
+        encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
+        encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
       nock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
@@ -4074,18 +4062,10 @@ describe('client', async () => {
       expect.assertions(1)
 
       const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-      const response = [
-        ':',
-        '',
-        'event: welcome',
-        'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-        '',
-        'event: mutation',
-        `data: ${JSON.stringify({result: doc})}`,
-        '',
-        'event: disconnect',
-        'data: {"reason":"forcefully closed"}',
-      ].join('\n')
+      const response =
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
+        encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
+        encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
       nock(projectHost())
         .get(
@@ -4107,18 +4087,10 @@ describe('client', async () => {
       expect.assertions(1)
 
       const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-      const response = [
-        ':',
-        '',
-        'event: welcome',
-        'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-        '',
-        'event: mutation',
-        `data: ${JSON.stringify({result: doc})}`,
-        '',
-        'event: disconnect',
-        'data: {"reason":"forcefully closed"}',
-      ].join('\n')
+      const response =
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
+        encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
+        encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
       nock(projectHost())
         .get(
@@ -4145,15 +4117,9 @@ describe('client', async () => {
       expect.assertions(2)
       const {getActiveMock} = await import('./helpers/nockShim')
 
-      const response = [
-        ':',
-        '',
-        'event: welcome',
-        'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-        '',
-        'event: mutation',
-        `data: ${JSON.stringify({})}`,
-      ].join('\n')
+      const response =
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
+        encode({event: 'mutation', data: '{}'})
 
       nock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
@@ -4170,14 +4136,10 @@ describe('client', async () => {
       expect.assertions(3)
       const {getActiveMock} = await import('./helpers/nockShim')
 
-      const response = [
-        ':',
-        '',
-        'event: welcome',
-        'data: {"listenerName":"LGFXwOqrf1GHawAjZRnhd6"}',
-        '',
-        ':',
-      ].join('\n')
+      const response = encode({
+        event: 'welcome',
+        data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'}),
+      })
 
       nock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
