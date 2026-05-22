@@ -214,6 +214,15 @@ export interface ClientConfig {
   requester?: Requester
 
   /**
+   * Set internally by the environment-specific entry point so the EventSource
+   * fetch helper can build a proxy-aware fetch without itself importing
+   * `get-it/node` (which would pull `undici` into the browser bundle).
+   *
+   * @internal
+   */
+  resolveProxyFetch?: (proxyUrl: string) => typeof fetch
+
+  /**
    * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
    */
   resultSourceMap?: boolean | 'withKeyArraySelector'

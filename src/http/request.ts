@@ -106,6 +106,15 @@ export interface EnvironmentOptions {
   fetch?: FetchRequestOptions['fetch']
   headers?: Record<string, string>
   middleware: LegacyMiddleware[]
+  /**
+   * Resolves a proxy-configured fetch for a given proxy URL. Only the Node
+   * environment supplies this; the browser environment leaves it unset.
+   *
+   * Looked up via the env rather than imported directly so that the Node-only
+   * `get-it/node` (which transitively pulls in `undici`) never ends up in the
+   * browser/UMD bundle, even via rollup's inlined dynamic imports.
+   */
+  resolveProxyFetch?: (proxyUrl: string) => typeof fetch
 }
 
 async function executeRequest(
