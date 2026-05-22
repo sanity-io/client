@@ -246,11 +246,7 @@ function adaptQuery(query: Any): FetchRequestOptions['query'] {
   return params
 }
 
-function legacyShouldRetry(
-  err: unknown,
-  attempt: number,
-  options: FetchRequestOptions,
-): boolean {
+function legacyShouldRetry(err: unknown, attempt: number, options: FetchRequestOptions): boolean {
   // Allow opting out of retries via meta
   if (options.meta && (options.meta as Any).maxRetries === 0) return false
 

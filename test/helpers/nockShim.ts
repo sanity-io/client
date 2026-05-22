@@ -186,11 +186,7 @@ function buildScope(host: string): NockInterceptor {
       const finalState = flush(() => {})
       const mock = getActiveMock()
       const scope = mock.scope(host)
-      registerErrorHandler(
-        scope,
-        finalState,
-        typeof error === 'string' ? new Error(error) : error,
-      )
+      registerErrorHandler(scope, finalState, typeof error === 'string' ? new Error(error) : error)
       return interceptor
     },
     isDone() {
@@ -265,11 +261,7 @@ function registerHandler(scope: MockScope, state: InterceptorState, replyFn: Rep
   register({status, body, headers})
 }
 
-function registerErrorHandler(
-  scope: MockScope,
-  state: InterceptorState,
-  error: Error,
-): void {
+function registerErrorHandler(scope: MockScope, state: InterceptorState, error: Error): void {
   const {pathWithoutQuery, queryFromPath} = splitQuery(state.path)
   const matchQuery = mergeQueries(queryFromPath, state.query)
   const matchOptions: Parameters<MockScope['on']>[2] = {}
@@ -344,10 +336,7 @@ function splitQuery(rawPath: string): {
 function mergeQueries(
   fromPath: Record<string, string> | undefined,
   fromOption: Record<string, string | number | boolean> | true | undefined,
-):
-  | {asymmetricMatch(actual: unknown): boolean}
-  | Record<string, string>
-  | undefined {
+): {asymmetricMatch(actual: unknown): boolean} | Record<string, string> | undefined {
   if (fromOption === true) {
     // nock's `.query(true)` matches any query — get-it/mock matches strictly,
     // so we drop the constraint here.
@@ -450,10 +439,7 @@ export function installMock(): MockFetch {
           init?.signal?.addEventListener('abort', () => {
             clearTimeout(timer)
             reject(
-              new DOMException(
-                init.signal?.reason ?? 'The operation was aborted.',
-                'AbortError',
-              ),
+              new DOMException(init.signal?.reason ?? 'The operation was aborted.', 'AbortError'),
             )
           })
         })

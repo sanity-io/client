@@ -2093,7 +2093,9 @@ describe('client', async () => {
           await getClient().getDocument('abc123')
         } catch (err: any) {
           expect(err, 'should be error').toBeInstanceOf(Error)
-          expect(err.message).toContain('HTTP 400 Bad Request (Some string short enough to inline fully)')
+          expect(err.message).toContain(
+            'HTTP 400 Bad Request (Some string short enough to inline fully)',
+          )
         }
       },
     )

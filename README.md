@@ -2513,8 +2513,9 @@ Before:
 
 ```ts
 client.observable.assets.upload('image', file).pipe(
-  filter((event): event is ResponseEvent<{document: SanityImageAssetDocument}> =>
-    event.type === 'response',
+  filter(
+    (event): event is ResponseEvent<{document: SanityImageAssetDocument}> =>
+      event.type === 'response',
   ),
   map((event) => event.body.document),
 )
@@ -2524,8 +2525,9 @@ After:
 
 ```ts
 client.observable.assets.upload('image', file).pipe(
-  filter((event): event is UploadResponseEvent<{document: SanityImageAssetDocument}> =>
-    event.type === 'response',
+  filter(
+    (event): event is UploadResponseEvent<{document: SanityImageAssetDocument}> =>
+      event.type === 'response',
   ),
   map((event) => event.body.document),
 )
@@ -2594,7 +2596,6 @@ Previously `ENOTFOUND` (DNS resolution failure) was considered fatal; it's
 now treated as a transient network error on idempotent methods (`GET`,
 `HEAD`) and retried with the standard exponential backoff. Pass
 `maxRetries: 0` if you want the old "fail fast" behaviour.
-
 
 ## From `v5`
 

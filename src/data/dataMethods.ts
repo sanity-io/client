@@ -793,17 +793,18 @@ export function _uploadObservable<T>(
     requester(reqOptions).subscribe(subscriber),
   ).pipe(
     filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
-    map((event: Any): UploadEvent<T> =>
-      event.type === 'progress'
-        ? {
-            type: 'progress',
-            stage: event.stage,
-            percent: event.percent,
-            total: event.total,
-            loaded: event.loaded,
-            lengthComputable: event.lengthComputable,
-          }
-        : {type: 'response', body: event.body as T},
+    map(
+      (event: Any): UploadEvent<T> =>
+        event.type === 'progress'
+          ? {
+              type: 'progress',
+              stage: event.stage,
+              percent: event.percent,
+              total: event.total,
+              loaded: event.loaded,
+              lengthComputable: event.lengthComputable,
+            }
+          : {type: 'response', body: event.body as T},
     ),
   )
   return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
