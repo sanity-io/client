@@ -1,5 +1,4 @@
 import {createClient} from '@sanity/client'
-import nock from './helpers/nockShim'
 import {firstValueFrom, Observable, Subscriber} from 'rxjs'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -25,6 +24,7 @@ import type {
   UnscheduleReleaseAction,
 } from '../src/types'
 import * as createVersionIdModule from '../src/util/createVersionId'
+import nock from './helpers/nockShim'
 
 type MockResponseBody = Record<string, unknown>
 

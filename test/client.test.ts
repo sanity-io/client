@@ -4047,7 +4047,7 @@ describe('client', async () => {
   // EventSource uses `node:http` under the hood, which our shim can't
   // intercept. Use real nock for the listener tests instead.
   describe.skipIf(isEdge || !isNode)('LISTENERS', async () => {
-    const {default: nock} = await import('nock')
+    const {default: realNock} = await import('nock')
     test('listeners connect to listen endpoint, emits events', async () => {
       expect.assertions(1)
 
@@ -4065,7 +4065,7 @@ describe('client', async () => {
         'data: {"reason":"forcefully closed"}',
       ].join('\n')
 
-      nock(projectHost())
+      realNock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
         .reply(200, response, {
           'cache-control': 'no-cache',
@@ -4094,7 +4094,7 @@ describe('client', async () => {
         'data: {"reason":"forcefully closed"}',
       ].join('\n')
 
-      nock(projectHost())
+      realNock(projectHost())
         .get(
           '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
@@ -4127,7 +4127,7 @@ describe('client', async () => {
         'data: {"reason":"forcefully closed"}',
       ].join('\n')
 
-      nock(projectHost())
+      realNock(projectHost())
         .get(
           '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
@@ -4162,7 +4162,7 @@ describe('client', async () => {
       ].join('\n')
 
       let didRequest = false
-      nock(projectHost())
+      realNock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
         .reply(() => {
           didRequest = true
@@ -4189,7 +4189,7 @@ describe('client', async () => {
       ].join('\n')
 
       let requestCount = 0
-      nock(projectHost())
+      realNock(projectHost())
         .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
         .twice()
         .reply(() => {
