@@ -75,7 +75,9 @@ describe('requestHandler', async () => {
     const handler: RequestHandler = (request, defaultRequester) => {
       return defaultRequester(request).pipe(
         map((body) =>
-          body && typeof body === 'object' ? {...(body as Record<string, unknown>), injected: true} : body,
+          body && typeof body === 'object'
+            ? {...(body as Record<string, unknown>), injected: true}
+            : body,
         ),
       )
     }
