@@ -3,19 +3,22 @@
 
 import type {Observable} from 'rxjs'
 
-import type {LegacyRequester} from './http/request'
 import type {SanityClient} from './SanityClient'
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
-// Re-export under the historical public name for backwards-compatibility with
-// consumers that imported `Requester` from `@sanity/client`.
 /**
- * Low-level requester returned by `defineHttpRequest`. Internal — used by the
- * `client.config().requester` field and the `requester` named export.
+ * Low-level requester returned by `defineHttpRequest`. Surfaces as
+ * `client.config().requester` and as the named `requester` export.
  *
- * @internal
+ * Defined locally rather than imported from `http/request` so api-extractor
+ * inlines it into the bundled `.d.ts` instead of emitting a relative import
+ * that doesn't survive into `dist/` ([#1290][]).
+ *
+ * [#1290]: https://github.com/sanity-io/client/issues/1290
+ *
+ * @public
  */
-type Requester = LegacyRequester
+export type Requester = (options: Any) => Observable<unknown>
 
 /**
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future

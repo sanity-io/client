@@ -134,7 +134,7 @@
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@sanity/client-latest": "npm:@sanity/client@latest",
-    "@sanity/pkg-utils": "^7.2.2",
+    "@sanity/pkg-utils": "^10.5.0",
     "@types/debug": "^4.1.12",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.9.0",
