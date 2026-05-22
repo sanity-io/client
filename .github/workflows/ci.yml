@@ -29,7 +29,12 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm ci
-      - run: npx ls-engines
+      # `--mode ideal` reads engines requirements from package.json instead of
+      # walking the installed node_modules tree. The installed tree includes
+      # every transitive of every dev dep regardless of `--dev=false`, which
+      # surfaces engines conflicts from dev-only deps (e.g. msw → @inquirer/*)
+      # that don't actually constrain published consumers.
+      - run: npx ls-engines --mode ideal
       - run: npm run prepublishOnly
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
@@ -92,7 +97,12 @@ jobs:
           cache: npm
           node-version: ${{ matrix.node }}
       - run: npm install
-      - run: npx ls-engines
+      # `--mode ideal` reads engines requirements from package.json instead of
+      # walking the installed node_modules tree. The installed tree includes
+      # every transitive of every dev dep regardless of `--dev=false`, which
+      # surfaces engines conflicts from dev-only deps (e.g. msw → @inquirer/*)
+      # that don't actually constrain published consumers.
+      - run: npx ls-engines --mode ideal
       - run: npm test
 
   prod-deps:
