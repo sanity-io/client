@@ -85,9 +85,7 @@ function buildScope(host: string): NockInterceptor {
   // whatever body they were given is treated as "match any body".
   let anyBody = false
 
-  const flush = (
-    handle: (def: {status: number; body?: unknown; headers?: Record<string, string>}) => void,
-  ): InterceptorState => {
+  const flush = (): InterceptorState => {
     if (!state) {
       throw new Error('reply() called before a method was set on the nock scope')
     }
@@ -170,7 +168,7 @@ function buildScope(host: string): NockInterceptor {
       return interceptor
     },
     reply(statusOrFn: number | ReplyFn, body?: ResponseBody, headers?: Record<string, string>) {
-      const finalState = flush(() => {})
+      const finalState = flush()
       const mock = getActiveMock()
       const scope = mock.scope(host)
       registerHandler(
@@ -183,7 +181,7 @@ function buildScope(host: string): NockInterceptor {
       return interceptor
     },
     replyWithError(error) {
-      const finalState = flush(() => {})
+      const finalState = flush()
       const mock = getActiveMock()
       const scope = mock.scope(host)
       registerErrorHandler(scope, finalState, typeof error === 'string' ? new Error(error) : error)
@@ -273,13 +271,10 @@ function registerErrorHandler(scope: MockScope, state: InterceptorState, error: 
   const handler = scope.on(state.method, pathWithoutQuery, matchOptions)
 
   // get-it/mock has no built-in "throw a network error" response, so we
-  // register a response that we then post-process in a wrapping fetch.
-  // Simpler: respond with a sentinel status that the shim's fetch wrapper
-  // recognises and translates into a thrown error. But we don't have a
-  // wrapper here, so for now we register a TypeError-throwing response by
-  // exploiting that an unmatched body is still consumed.
-  // TODO: switch to a proper transport-error mechanism once exposed by
-  // get-it/mock.
+  // mark the registered response with a sentinel status + header that the
+  // wrapped mock fetch (in `installMock`) translates into a thrown
+  // TypeError on the way out. Worth revisiting if get-it/mock ever adds a
+  // first-class transport-error mechanism.
   const def = {
     status: 599,
     headers: {'x-shim-error': encodeURIComponent(error.message)},
