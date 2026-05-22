@@ -27,6 +27,17 @@ function getProxyFetch(proxyUrl: string): ReturnType<typeof createNodeFetch> {
   return fetch
 }
 
+/**
+ * Exposed via `EnvironmentOptions.resolveProxyFetch` so the env-agnostic
+ * EventSource fetch resolver can reach a proxy-aware fetch without itself
+ * importing `get-it/node` — keeps `undici` out of the browser bundle.
+ *
+ * @internal
+ */
+function resolveProxyFetch(proxyUrl: string): typeof fetch {
+  return getProxyFetch(proxyUrl) as unknown as typeof fetch
+}
+
 const middleware: LegacyMiddleware[] = [
   debug({log: (message, ...args) => log(message, ...args), verbose: true}),
 
@@ -79,6 +90,7 @@ const middleware: LegacyMiddleware[] = [
 const environment: EnvironmentOptions = {
   headers: {'User-Agent': `${name} ${version}`},
   middleware,
+  resolveProxyFetch,
 }
 
 export default environment
