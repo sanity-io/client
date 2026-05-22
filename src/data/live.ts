@@ -1,4 +1,5 @@
 import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
+import {EventSource} from 'eventsource'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
@@ -15,8 +16,8 @@ import type {
 import {shareReplayLatest} from '../util/shareReplayLatest'
 import {_getDataUrl} from './dataMethods'
 import {connectEventSource} from './eventsource'
-import {eventSourcePolyfill} from './eventsourcePolyfill'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
+import {resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
 
@@ -50,6 +51,7 @@ export class LiveClient {
      */
     waitFor?: 'function'
   } = {}): Observable<LiveEvent> {
+    const config = this.#client.config()
     const {
       projectId,
       apiVersion: _apiVersion,
@@ -57,7 +59,7 @@ export class LiveClient {
       withCredentials,
       requestTagPrefix,
       headers: configHeaders,
-    } = this.#client.config()
+    } = config
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
       throw new Error(
@@ -83,36 +85,29 @@ export class LiveClient {
     if (waitFor) {
       url.searchParams.set('waitFor', waitFor)
     }
-    const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
-    if (includeDrafts && withCredentials) {
-      esOptions.withCredentials = true
+    const eventSourceHeaders: Record<string, string> = {}
+    if (includeDrafts && token) {
+      eventSourceHeaders.Authorization = `Bearer ${token}`
     }
-
-    if ((includeDrafts && token) || configHeaders) {
-      esOptions.headers = {}
-
-      if (includeDrafts && token) {
-        esOptions.headers.Authorization = `Bearer ${token}`
-      }
-
-      if (configHeaders) {
-        Object.assign(esOptions.headers, configHeaders)
-      }
+    if (configHeaders) {
+      Object.assign(eventSourceHeaders, configHeaders)
     }
+    const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
-    const key = `${url.href}::${JSON.stringify(esOptions)}`
-    const existing = eventsCache.get(key)
+    const cacheKey = `${url.href}::${JSON.stringify({headers: eventSourceHeaders, withCredentials: eventSourceWithCredentials})}`
+    const existing = eventsCache.get(cacheKey)
 
     if (existing) {
       return existing
     }
 
     const initEventSource = () =>
-      // use polyfill if there is no global EventSource or if we need to set headers
-      (typeof EventSource === 'undefined' || esOptions.headers
-        ? eventSourcePolyfill
-        : of(EventSource)
-      ).pipe(map((EventSource) => new EventSource(url.href, esOptions)))
+      new EventSource(url.href, {
+        fetch: resolveEventSourceFetch(config, {
+          headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
+          withCredentials: eventSourceWithCredentials,
+        }),
+      })
 
     const events = connectEventSource(initEventSource, [
       'message',
@@ -125,7 +120,7 @@ export class LiveClient {
     const checkCors = checkCorsObservable(
       new URL(this.#client.getUrl('/check/cors', false)),
       projectId,
-      esOptions.withCredentials === true,
+      eventSourceWithCredentials,
     )
 
     const observable = events
@@ -162,12 +157,12 @@ export class LiveClient {
         }),
       )
       .pipe(
-        finalize(() => eventsCache.delete(key)),
+        finalize(() => eventsCache.delete(cacheKey)),
         shareReplayLatest({
           predicate: (event) => event.type === 'welcome',
         }),
       )
-    eventsCache.set(key, observable)
+    eventsCache.set(cacheKey, observable)
     return observable
   }
 }
