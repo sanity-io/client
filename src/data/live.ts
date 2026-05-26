@@ -122,16 +122,9 @@ export class LiveClient {
       'goaway',
     ])
 
-    const checkCors = fetchObservable(url, {
-      method: 'OPTIONS',
-      mode: 'cors',
-      credentials: esOptions.withCredentials ? 'include' : 'omit',
-      headers: esOptions.headers,
-    }).pipe(
-      catchError(() => {
-        // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
-        throw new CorsOriginError({projectId: projectId!})
-      }),
+    const checkCors = checkCorsObservable(
+      new URL(this.#client.getUrl('/check/cors', false)),
+      projectId!,
     )
 
     const observable = events
@@ -172,21 +165,47 @@ export class LiveClient {
   }
 }
 
-function fetchObservable(url: URL, init: RequestInit) {
-  return new Observable((observer) => {
+/**
+ * Probes the `/check/cors` endpoint to verify whether the current
+ * origin is allowed by the project's CORS configuration. The endpoint responds
+ * with `{result: {allowed: boolean, withCredentials: boolean}}`; we only inspect
+ * `result.allowed` (the live events API does not require credentials).
+ *
+ * - Emits `true` and completes when the server reports `allowed: true` (or
+ *   returns an unrecognised shape).
+ * - Emits `true` and completes when the request itself fails (network error,
+ *   non-2xx status, malformed JSON, etc.) so callers don't misreport unrelated
+ *   failures as CORS errors.
+ * - Errors with `CorsOriginError` only when the server explicitly reports
+ *   `allowed: false`.
+ */
+function checkCorsObservable(url: URL, projectId: string): Observable<true> {
+  return new Observable<true>((observer) => {
     const controller = new AbortController()
     const signal = controller.signal
-    fetch(url, {...init, signal: controller.signal}).then(
-      (response) => {
-        observer.next(response)
-        observer.complete()
-      },
-      (err) => {
-        if (!signal.aborted) {
-          observer.error(err)
+    fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      signal,
+    })
+      .then((response) => response.json() as Promise<{result?: {allowed?: boolean}}>)
+      .then((body) => {
+        if (body?.result?.allowed === false) {
+          throw new CorsOriginError({projectId})
         }
-      },
-    )
+        observer.next(true)
+        observer.complete()
+      })
+      .catch((err) => {
+        if (signal.aborted) return
+        if (err instanceof CorsOriginError) {
+          observer.error(err)
+          return
+        }
+        observer.next(true)
+        observer.complete()
+      })
     return () => controller.abort()
   })
 }
