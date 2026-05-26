@@ -1,4 +1,4 @@
-import {catchError, mergeMap, Observable, of} from 'rxjs'
+import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
@@ -122,16 +122,9 @@ export class LiveClient {
       'goaway',
     ])
 
-    const checkCors = fetchObservable(url, {
-      method: 'OPTIONS',
-      mode: 'cors',
-      credentials: esOptions.withCredentials ? 'include' : 'omit',
-      headers: esOptions.headers,
-    }).pipe(
-      catchError(() => {
-        // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
-        throw new CorsOriginError({projectId: projectId!})
-      }),
+    const checkCors = checkCorsObservable(
+      new URL(this.#client.getUrl('/check/cors', false)),
+      projectId!,
     )
 
     const observable = events
@@ -145,6 +138,12 @@ export class LiveClient {
           return of(event)
         }),
         catchError((err) => {
+          // If a prior `reconnect` already ran the CORS probe and produced a
+          // `CorsOriginError`, just rethrow it instead of calling `/check/cors`
+          // a second time only to get the same answer.
+          if (err instanceof CorsOriginError) {
+            return throwError(() => err)
+          }
           return checkCors.pipe(
             mergeMap(() => {
               // rethrow the original error if checkCors passed
@@ -172,21 +171,62 @@ export class LiveClient {
   }
 }
 
-function fetchObservable(url: URL, init: RequestInit) {
-  return new Observable((observer) => {
+/**
+ * Probes the `/check/cors` endpoint to confirm whether the current origin is
+ * allowed by the project's CORS configuration. EventSource failures are opaque,
+ * so we use this side-channel purely to tell "the server actively rejected our
+ * origin" apart from every other class of failure.
+ *
+ * Errors with `CorsOriginError` only when `/check/cors` responds with
+ * `result.allowed === false`. Every other outcome is intentionally treated as
+ * "we don't know": the observable emits a single `void` value and then
+ * completes, so downstream `mergeMap(() => ...)` consumers can continue. No
+ * error is surfaced for any of these cases:
+ *
+ * - `allowed: true` or an unrecognised body shape: the server did not confirm
+ *   a CORS rejection.
+ * - Non-2xx HTTP response from `/check/cors`: same - no signal either way, and
+ *   a 5xx on the probe shouldn't poison the EventSource's original error.
+ * - `fetch` / network / JSON parse failures: indistinguishable from ordinary
+ *   connectivity hiccups (offline, DNS, certs, transient outages). Reporting
+ *   those as CORS errors is exactly the false-positive class this helper
+ *   exists to prevent.
+ * - The subscription was aborted: nothing to emit and nothing to complete.
+ *
+ * In all of those cases the caller's original underlying error from the
+ * EventSource is allowed to propagate unchanged.
+ */
+function checkCorsObservable(url: URL, projectId: string): Observable<void> {
+  return new Observable<void>((observer) => {
     const controller = new AbortController()
-    const signal = controller.signal
-    fetch(url, {...init, signal: controller.signal}).then(
-      (response) => {
-        observer.next(response)
-        observer.complete()
-      },
-      (err) => {
-        if (!signal.aborted) {
-          observer.error(err)
+    const {signal} = controller
+    fetch(url, {method: 'GET', mode: 'cors', credentials: 'omit', signal})
+      .then((response) => {
+        // Aborted or non-2xx: not a confirmed CORS rejection. Fall through with
+        // an undefined body so the next step takes the silent-completion path.
+        if (signal.aborted || !response.ok) return
+        return response.json() as Promise<{result?: {allowed?: boolean}}>
+      })
+      .then((body) => {
+        if (signal.aborted) return
+        if (body?.result?.allowed === false) {
+          observer.error(new CorsOriginError({projectId}))
+          return
         }
-      },
-    )
+        // Anything other than an explicit `allowed: false` is treated as
+        // "not a confirmed CORS rejection" - let the caller's original error
+        // surface instead.
+        observer.next()
+        observer.complete()
+      })
+      // Fetch/network/JSON parse errors are intentionally ignored - see the
+      // helper's docblock for the rationale. We still need to settle the
+      // observer so downstream `mergeMap(checkCors, ...)` consumers can proceed.
+      .catch(() => {
+        if (signal.aborted || observer.closed) return
+        observer.next()
+        observer.complete()
+      })
     return () => controller.abort()
   })
 }
