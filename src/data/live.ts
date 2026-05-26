@@ -122,14 +122,25 @@ export class LiveClient {
       'goaway',
     ])
 
-    const checkCors = fetchObservable(url, {
-      method: 'OPTIONS',
+    const corsCheckUrl = new URL(this.#client.getUrl('/check/cors', false))
+
+    const checkCors = fetchObservable(corsCheckUrl, {
+      method: 'GET',
       mode: 'cors',
       credentials: esOptions.withCredentials ? 'include' : 'omit',
       headers: esOptions.headers,
     }).pipe(
-      catchError(() => {
-        // If the request fails, then we assume it was due to CORS, and we rethrow a special error that allows special handling in userland
+      mergeMap(async (response) => {
+        const body = (await response.json()) as {result: {allowed: boolean}}
+        if (!body.result.allowed) {
+          throw new CorsOriginError({projectId: projectId!})
+        }
+      }),
+      catchError((err) => {
+        if (err instanceof CorsOriginError) {
+          throw err
+        }
+        // If the /check/cors request itself fails, assume CORS is the issue
         throw new CorsOriginError({projectId: projectId!})
       }),
     )
@@ -145,9 +156,12 @@ export class LiveClient {
           return of(event)
         }),
         catchError((err) => {
+          if (err instanceof CorsOriginError) {
+            throw err
+          }
           return checkCors.pipe(
             mergeMap(() => {
-              // rethrow the original error if checkCors passed
+              // rethrow the original error if checkCors passed (not a CORS issue)
               throw err
             }),
           )
@@ -172,8 +186,8 @@ export class LiveClient {
   }
 }
 
-function fetchObservable(url: URL, init: RequestInit) {
-  return new Observable((observer) => {
+function fetchObservable(url: URL, init: RequestInit): Observable<Response> {
+  return new Observable<Response>((observer) => {
     const controller = new AbortController()
     const signal = controller.signal
     fetch(url, {...init, signal: controller.signal}).then(

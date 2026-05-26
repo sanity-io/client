@@ -19,8 +19,12 @@ const getClient = (options: ClientConfig & {port: number}) =>
     ...options,
   })
 
-const testSse = async (onRequest: OnRequest, options: ClientConfig = {}) => {
-  const server = await createSseServer(onRequest)
+const testSse = async (
+  onRequest: OnRequest,
+  options: ClientConfig = {},
+  serverOptions?: {corsAllowed?: boolean},
+) => {
+  const server = await createSseServer(onRequest, serverOptions)
   const client = getClient({port: (server!.address() as AddressInfo).port, ...options})
   return {server, client}
 }
@@ -29,13 +33,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
   '.live.events()',
   () => {
     const server = setupServer(
-      http.options(
-        '/vX/data/live/events/prod',
+      http.get(
+        /\/vX\/check\/cors/,
         () =>
-          new HttpResponse(null, {
-            status: 204,
-            headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
-          }),
+          HttpResponse.json({result: {allowed: true, withCredentials: false}}),
       ),
     )
 
@@ -203,41 +204,22 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
     test('handles CORS errors', async () => {
       expect.assertions(3)
-      const restoreFetch = global.fetch
-
-      global.fetch = async (info, init) => {
-        const response = await restoreFetch(info, init)
-        if (!response.headers.has('access-control-allow-origin')) {
-          throw new Error('CORS preflight request failed')
-        }
-        return response
-      }
 
       const {default: nock} = await import('nock')
 
-      // The OPTIONS request is done with `global.fetch`, and so nock can't intercept it.
+      // Mock /check/cors to return allowed: false for no-cors dataset
       server.use(
-        http.options(
-          'https://abc123.api.sanity.io/vX/data/live/events/no-cors',
-          () => new HttpResponse(null, {status: 204, headers: {'Content-Length': '0'}}),
-        ),
-        http.options(
-          'https://abc123.api.sanity.io/vX/data/live/events/cors',
+        http.get(
+          'https://abc123.api.sanity.io/vX/check/cors',
           () =>
-            new HttpResponse(null, {
-              status: 204,
-              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
-            }),
+            HttpResponse.json({result: {allowed: false, withCredentials: false}}),
         ),
       )
 
       // The EventSource can't be intercepted by msw, so we use nock
       nock('https://abc123.api.sanity.io')
-        .get('/vX/data/live/events/cors')
-        .reply(200, ['event: welcome', 'data: {}', '', '.', ''].join('\n'), {
-          'Access-Control-Allow-Origin': '*',
-          'Content-Type': 'text/event-stream',
-        })
+        .get('/vX/data/live/events/no-cors')
+        .reply(500, 'Internal Server Error')
 
       const client = createClient({
         projectId: 'abc123',
@@ -252,10 +234,25 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         `"The current origin is not allowed to connect to the Live Content API. Change your configuration here: https://sanity.io/manage/project/abc123/api"`,
       )
 
+      // Now mock /check/cors to return allowed: true for cors dataset
+      server.use(
+        http.get(
+          'https://abc123.api.sanity.io/vX/check/cors',
+          () =>
+            HttpResponse.json({result: {allowed: true, withCredentials: false}}),
+        ),
+      )
+
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/cors')
+        .reply(200, ['event: welcome', 'data: {}', '', '.', ''].join('\n'), {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/event-stream',
+        })
+
       const client2 = client.withConfig({dataset: 'cors'})
       const event = await firstValueFrom(client2.live.events().pipe(catchError((err) => of(err))))
       expect(event.type).toBe('welcome')
-      global.fetch = restoreFetch
     })
 
     test('handles non-CORS reconnect errors correctly', async () => {
@@ -263,14 +260,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const {default: nock} = await import('nock')
 
+      // Mock /check/cors to return allowed: true (not a CORS issue)
       server.use(
-        http.options(
-          'https://abc123.api.sanity.io/vX/data/live/events/error-dataset',
+        http.get(
+          'https://abc123.api.sanity.io/vX/check/cors',
           () =>
-            new HttpResponse(null, {
-              status: 204,
-              headers: {'Access-Control-Allow-Origin': '*', 'Content-Length': '0'},
-            }),
+            HttpResponse.json({result: {allowed: true, withCredentials: false}}),
         ),
       )
 

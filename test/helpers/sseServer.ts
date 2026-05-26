@@ -8,9 +8,22 @@ export type OnRequest = (options: {
   response: http.ServerResponse
 }) => void
 
-export const createSseServer = (onRequest: OnRequest): Promise<http.Server> =>
+export const createSseServer = (
+  onRequest: OnRequest,
+  options?: {corsAllowed?: boolean},
+): Promise<http.Server> =>
   new Promise((resolve, reject) => {
+    const corsAllowed = options?.corsAllowed ?? true
     const server = http.createServer((request, response) => {
+      // Handle /check/cors requests
+      if (request?.url?.indexOf('/check/cors') !== -1) {
+        response.writeHead(200, {'Content-Type': 'application/json'})
+        response.end(
+          JSON.stringify({result: {allowed: corsAllowed, withCredentials: false}}),
+        )
+        return
+      }
+
       let channel
       if (
         request?.url?.indexOf('/v1/data/listen/') === 0 ||
