@@ -5056,14 +5056,18 @@ describe('client', async () => {
 
     // Don't rely on this unless you're working at Sanity Inc ;)
     test('can use alternative http requester', async () => {
-      const requester = () =>
-        observableOf({
+      let callSiteStack: unknown
+      const requester = (options: {callSiteStack?: unknown}) => {
+        callSiteStack = options.callSiteStack
+        return observableOf({
           type: 'response',
           body: {documents: [{foo: 'bar'}]},
         })
+      }
 
       const res = await getClient({requester} as any).getDocument('foo.bar')
       expect(res!.foo).toEqual('bar')
+      expect(callSiteStack).toBeInstanceOf(Error)
     })
 
     test('ClientError includes message in stack', () => {
