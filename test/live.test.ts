@@ -364,6 +364,84 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(checkCorsHits).toBeGreaterThan(0)
     })
 
+    test('reports CorsOriginError when EventSource needs credentials but /check/cors reports withCredentials: false', async () => {
+      // Regression for the principal-engineer feedback: an origin can be
+      // allow-listed without credentials, in which case `allowed: true` alone
+      // doesn't guarantee the credentialed EventSource request will succeed.
+      // We must treat `withCredentials: false` as a CORS rejection when the
+      // caller subscribed with credentials, and surface a deep-link that
+      // pre-selects "Allow credentials" in the management form.
+      expect.assertions(3)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.get('https://abc123.api.sanity.io/vX/check/cors', () =>
+          HttpResponse.json({result: {allowed: true, withCredentials: false}}),
+        ),
+      )
+
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/creds-not-allowed?includeDrafts=true')
+        .reply(403, '')
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'creds-not-allowed',
+        useCdn: false,
+        apiVersion: 'X',
+        withCredentials: true,
+        // `withCredentials` alone doesn't activate `esOptions.withCredentials` -
+        // the implementation only sets it when `includeDrafts: true` is also
+        // passed at call time.
+      })
+
+      // `CorsOriginError.addOriginUrl` is only constructed when `location` is
+      // available (i.e. in browser-ish environments). Stub it here so we can
+      // assert the `credentials=` query param ends up on the deep-link.
+      vitest.stubGlobal('location', {origin: 'https://example.com'})
+      try {
+        const error = (await firstValueFrom(
+          client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+        )) as CorsOriginError
+        expect(error).toBeInstanceOf(CorsOriginError)
+        expect(error.addOriginUrl?.searchParams.get('credentials')).toBe('')
+        expect(error.addOriginUrl?.searchParams.get('origin')).toBe('https://example.com')
+      } finally {
+        vitest.unstubAllGlobals()
+      }
+    })
+
+    test('does not report CorsOriginError when /check/cors reports allowed: true, withCredentials: true and the EventSource needs credentials', async () => {
+      expect.assertions(2)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.get('https://abc123.api.sanity.io/vX/check/cors', () =>
+          HttpResponse.json({result: {allowed: true, withCredentials: true}}),
+        ),
+      )
+
+      nock('https://abc123.api.sanity.io')
+        .get('/vX/data/live/events/creds-ok?includeDrafts=true')
+        .reply(500, 'Internal Server Error')
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'creds-ok',
+        useCdn: false,
+        apiVersion: 'X',
+        withCredentials: true,
+      })
+
+      const event = await firstValueFrom(
+        client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+      )
+      expect(event).not.toBeInstanceOf(CorsOriginError)
+      expect(event.type).toBe('reconnect')
+    })
+
     test('can immediately unsubscribe, does not connect to server', async () => {
       const onMessage = vitest.fn()
       const onError = vitest.fn()

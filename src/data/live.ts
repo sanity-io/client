@@ -124,7 +124,8 @@ export class LiveClient {
 
     const checkCors = checkCorsObservable(
       new URL(this.#client.getUrl('/check/cors', false)),
-      projectId!,
+      projectId,
+      esOptions.withCredentials === true,
     )
 
     const observable = events
@@ -177,14 +178,25 @@ export class LiveClient {
  * so we use this side-channel purely to tell "the server actively rejected our
  * origin" apart from every other class of failure.
  *
- * Errors with `CorsOriginError` only when `/check/cors` responds with
- * `result.allowed === false`. Every other outcome is intentionally treated as
- * "we don't know": the observable emits a single `void` value and then
- * completes, so downstream `mergeMap(() => ...)` consumers can continue. No
- * error is surfaced for any of these cases:
+ * Errors with `CorsOriginError` when either:
  *
- * - `allowed: true` or an unrecognised body shape: the server did not confirm
- *   a CORS rejection.
+ * - `requireCredentials` is `true` (the EventSource was about to send
+ *   credentials) and `/check/cors` reports `result.withCredentials === false`.
+ *   The credentialed request would fail due to a missing
+ *   `access-control-allow-credentials` header. The resulting error carries
+ *   `credentials: true` so its `addOriginUrl` deep-link pre-selects the
+ *   "Allow credentials" toggle in the Sanity management form.
+ * - `/check/cors` reports `result.allowed === false` (origin is not on the
+ *   project's CORS allow-list). The error carries `credentials: requireCredentials`
+ *   so the deep-link still pre-selects credentials when the caller needed them.
+ *
+ * Every other outcome is intentionally treated as "we don't know": the
+ * observable emits a single `void` value and then completes, so downstream
+ * `mergeMap(() => ...)` consumers can continue. No error is surfaced for any
+ * of these cases:
+ *
+ * - `allowed: true` (with credentials satisfied if required) or an
+ *   unrecognised body shape: the server did not confirm a CORS rejection.
  * - Non-2xx HTTP response from `/check/cors`: same - no signal either way, and
  *   a 5xx on the probe shouldn't poison the EventSource's original error.
  * - `fetch` / network / JSON parse failures: indistinguishable from ordinary
@@ -196,7 +208,11 @@ export class LiveClient {
  * In all of those cases the caller's original underlying error from the
  * EventSource is allowed to propagate unchanged.
  */
-function checkCorsObservable(url: URL, projectId: string): Observable<void> {
+function checkCorsObservable(
+  url: URL,
+  projectId: string | undefined,
+  requireCredentials: boolean,
+): Observable<void> {
   return new Observable<void>((observer) => {
     const controller = new AbortController()
     const {signal} = controller
@@ -205,17 +221,32 @@ function checkCorsObservable(url: URL, projectId: string): Observable<void> {
         // Aborted or non-2xx: not a confirmed CORS rejection. Fall through with
         // an undefined body so the next step takes the silent-completion path.
         if (signal.aborted || !response.ok) return
-        return response.json() as Promise<{result?: {allowed?: boolean}}>
+        return response.json() as Promise<{
+          result?: {allowed?: boolean; withCredentials?: boolean}
+        }>
       })
       .then((body) => {
         if (signal.aborted) return
-        if (body?.result?.allowed === false) {
-          observer.error(new CorsOriginError({projectId}))
+        // Check the credentialed case first: if the EventSource was about to
+        // send credentials but the project's CORS config doesn't permit them,
+        // the credentialed request would fail with a missing
+        // `access-control-allow-credentials` header. Surface this as a CORS
+        // rejection with `credentials: true` so the deep-link pre-selects the
+        // "Allow credentials" toggle.
+        if (requireCredentials && body?.result?.withCredentials === false) {
+          observer.error(new CorsOriginError({projectId, credentials: true}))
           return
         }
-        // Anything other than an explicit `allowed: false` is treated as
-        // "not a confirmed CORS rejection" - let the caller's original error
-        // surface instead.
+        // Generic case: the server actively rejected this origin. Propagate
+        // `credentials: requireCredentials` so the deep-link still pre-selects
+        // credentials when the caller needed them.
+        if (body?.result?.allowed === false) {
+          observer.error(new CorsOriginError({projectId, credentials: requireCredentials}))
+          return
+        }
+        // Anything else (allowed + credentials satisfied, unrecognised body)
+        // is treated as "not a confirmed CORS rejection" - let the caller's
+        // original error surface instead.
         observer.next()
         observer.complete()
       })
