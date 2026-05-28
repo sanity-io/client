@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.22.1](https://github.com/sanity-io/client/compare/v7.22.0...v7.22.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **live:** verify CORS via /check/cors (credentials-aware) before reporting CorsOriginError ([#1219](https://github.com/sanity-io/client/issues/1219)) ([566e1b5](https://github.com/sanity-io/client/commit/566e1b502f0872482efacc738a489acba633a094))
+
 ## [7.22.0](https://github.com/sanity-io/client/compare/v7.21.0...v7.22.0) (2026-04-24)
 
 
