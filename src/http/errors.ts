@@ -256,23 +256,33 @@ function sliceWithEllipsis(str: string, max: number) {
 
 /** @public */
 export class CorsOriginError extends Error {
-  projectId: string
+  projectId?: string
   addOriginUrl?: URL
 
-  constructor({projectId}: {projectId: string}) {
+  constructor({projectId, credentials}: {projectId?: string; credentials?: boolean} = {}) {
     super('CorsOriginError')
     this.name = 'CorsOriginError'
     this.projectId = projectId
 
-    const url = new URL(`https://sanity.io/manage/project/${projectId}/api`)
-    if (typeof location !== 'undefined') {
+    // Only build a deep-link when we know which project the user needs to
+    // configure - without `projectId` the management URL can't actually route
+    // them anywhere useful.
+    if (projectId && typeof location !== 'undefined') {
+      const url = new URL(`https://sanity.io/manage/project/${projectId}/api`)
       const {origin} = location
       url.searchParams.set('cors', 'add')
       url.searchParams.set('origin', origin)
+      if (credentials) {
+        // Pre-selects the "Allow credentials (token-based auth)" toggle in
+        // the Sanity management CORS form.
+        url.searchParams.set('credentials', '')
+      }
       this.addOriginUrl = url
       this.message = `The current origin is not allowed to connect to the Live Content API. Add it here: ${url}`
+    } else if (projectId) {
+      this.message = `The current origin is not allowed to connect to the Live Content API. Change your configuration here: https://sanity.io/manage/project/${projectId}/api`
     } else {
-      this.message = `The current origin is not allowed to connect to the Live Content API. Change your configuration here: ${url}`
+      this.message = `The current origin is not allowed to connect to the Live Content API.`
     }
   }
 }
