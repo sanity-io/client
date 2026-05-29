@@ -1,5 +1,5 @@
-import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {EventSource} from 'eventsource'
+import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
