@@ -47,6 +47,28 @@ export interface ResponseEvent {
 export type LegacyRequester = (options: Any) => Observable<ResponseEvent>
 
 /**
+ * Promise-based sibling of {@link LegacyRequester}. Resolves directly to the
+ * single `ResponseEvent` the transport produces, skipping the RxJS wrapper.
+ * Used by the promise-based client surface so it never constructs an
+ * Observable.
+ *
+ * @internal
+ */
+export type PromiseRequester = (options: Any) => Promise<ResponseEvent>
+
+/**
+ * Both forms of the transport, sharing a single underlying get-it requester
+ * (so retry state and the one-shot warning de-duplication are shared between
+ * the observable and promise paths).
+ *
+ * @internal
+ */
+export interface DualRequester {
+  observable: LegacyRequester
+  promise: PromiseRequester
+}
+
+/**
  * Options for tuning the HTTP request pipeline per-client.
  *
  * @internal
@@ -67,11 +89,17 @@ const testFetchOverride: WrappingMiddleware = async (opts, next) => {
   return next({...opts, fetch: globalFetch})
 }
 
-/** @internal */
-export function defineHttpRequest(
+/**
+ * Build both the observable and promise transport forms from a single get-it
+ * requester. The promise form is the primitive (`executeRequest` is already
+ * promise-based); the observable form simply wraps it with `from()`.
+ *
+ * @internal
+ */
+export function defineRequester(
   envOptions: EnvironmentOptions,
   config: HttpRequestConfig = {},
-): LegacyRequester {
+): DualRequester {
   const requester = createRequester({
     ...(envOptions.fetch ? {fetch: envOptions.fetch} : {}),
     headers: envOptions.headers,
@@ -91,10 +119,23 @@ export function defineHttpRequest(
     ],
   })
 
-  return (options: Any) => {
+  const promise: PromiseRequester = (options: Any) => {
     const fetchOptions = adaptToFetchOptions(options)
-    return from(executeRequest(requester, fetchOptions, options))
+    return executeRequest(requester, fetchOptions, options)
   }
+
+  return {
+    promise,
+    observable: (options: Any) => from(promise(options)),
+  }
+}
+
+/** @internal */
+export function defineHttpRequest(
+  envOptions: EnvironmentOptions,
+  config: HttpRequestConfig = {},
+): LegacyRequester {
+  return defineRequester(envOptions, config).observable
 }
 
 /**

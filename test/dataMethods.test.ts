@@ -1,10 +1,10 @@
-import {Observable, of, Subscription} from 'rxjs'
+import {Observable, Subscription} from 'rxjs'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import * as dataMethods from '../src/data/dataMethods'
 import type {
   ClientConfig,
-  HttpRequest,
+  HttpRequestPromise,
   InitializedClientConfig,
   RawQueryResponse,
   SanityDocument,
@@ -28,9 +28,9 @@ const {createClient}: typeof import('../src') = await import(
 
 const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
 
-const createMockResponse = (documents: SanityDocument[]) => of({documents})
+const createMockResponse = (documents: SanityDocument[]) => Promise.resolve({documents})
 
-const createMockQueryResponse = <T>(result: T) => of({result})
+const createMockQueryResponse = <T>(result: T) => Promise.resolve({result})
 
 type ClientLike = {
   config(): InitializedClientConfig | ClientConfig
@@ -46,7 +46,7 @@ type MethodOptions = {
 
 type DataMethodFn<T = unknown, Args extends readonly unknown[] = readonly unknown[]> = (
   clientObj: ClientLike,
-  httpRequest: HttpRequest,
+  httpRequestPromise: HttpRequestPromise,
   ...args: [...Args, MethodOptions?]
 ) => Observable<T>
 
@@ -89,6 +89,46 @@ const assertObservable = <T>(
   })
 }
 
+const assertObservableError = <T>(
+  observable: Observable<T>,
+  assertion: (error: Error) => void,
+): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
+    let hasRun = false
+    let subscriptionObj: Subscription | null = null
+
+    const observer = {
+      next: () => {
+        if (hasRun) return
+        hasRun = true
+
+        if (subscriptionObj) subscriptionObj.unsubscribe()
+        reject(new Error('Expected observable to error, but it emitted a value'))
+      },
+      error: (err: Error) => {
+        if (hasRun) return
+        hasRun = true
+
+        try {
+          assertion(err)
+          if (subscriptionObj) subscriptionObj.unsubscribe()
+          resolve()
+        } catch (assertionErr) {
+          if (subscriptionObj) subscriptionObj.unsubscribe()
+          reject(assertionErr)
+        }
+      },
+      complete: () => {
+        if (hasRun) return
+        if (subscriptionObj) subscriptionObj.unsubscribe()
+        reject(new Error('Expected observable to error, but it completed without emitting'))
+      },
+    }
+
+    subscriptionObj = observable.subscribe(observer)
+  })
+}
+
 const testTagOption = <T = unknown>(
   methodName: string,
   methodFn: (typeof dataMethods)[keyof typeof dataMethods],
@@ -102,7 +142,7 @@ const testTagOption = <T = unknown>(
 
     const client = getClient()
     const options = {tag: 'test-tag'}
-    const typedMethodFn = methodFn as DataMethodFn<T>
+    const typedMethodFn = methodFn as unknown as DataMethodFn<T>
     const observable = typedMethodFn(client, mockHttpRequest, ...args, options)
 
     return assertObservable(observable, () => {
@@ -124,13 +164,18 @@ const testSignalOption = <T = unknown>(
     )
 
     const client = getClient()
-    const signal = new AbortController().signal
-    const typedMethodFn = methodFn as DataMethodFn<T>
+    const controller = new AbortController()
+    const signal = controller.signal
+    const typedMethodFn = methodFn as unknown as DataMethodFn<T>
     const observable = typedMethodFn(client, mockHttpRequest, ...args, {signal})
 
     return assertObservable(observable, () => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1)
-      expect(mockHttpRequest.mock.calls[0][0].signal).toBe(signal)
+      const forwardedSignal = mockHttpRequest.mock.calls[0][0].signal
+      expect(forwardedSignal).toBeInstanceOf(AbortSignal)
+      expect(forwardedSignal.aborted).toBe(false)
+      controller.abort()
+      expect(forwardedSignal.aborted).toBe(true)
     })
   })
 }
@@ -212,11 +257,14 @@ describe('dataMethods', async () => {
     test('throws error when releaseId is provided with a draft ID', () => {
       const client = getClient()
 
-      expect(() => {
-        dataMethods._getDocument(client, mockHttpRequest, draftId, {releaseId})
-      }).toThrow(
-        'The document ID (`drafts.someDocId`) is a draft, but `options.releaseId` is set as `someReleaseId`',
-      )
+      const observable = dataMethods._getDocument(client, mockHttpRequest, draftId, {releaseId})
+
+      return assertObservableError(observable, (error) => {
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toEqual(
+          'The document ID (`drafts.someDocId`) is a draft, but `options.releaseId` is set as `someReleaseId`',
+        )
+      })
     })
 
     test('keeps existing version ID if it matches releaseId', () => {
@@ -239,11 +287,16 @@ describe('dataMethods', async () => {
       const differentReleaseId = 'differentReleaseId'
       const differentVersionId = `versions.${differentReleaseId}.${docId}`
 
-      expect(() => {
-        dataMethods._getDocument(client, mockHttpRequest, differentVersionId, {
-          releaseId,
-        })
-      }).toThrow(/The document ID .* is already a version .* but this does not match the provided/)
+      const observable = dataMethods._getDocument(client, mockHttpRequest, differentVersionId, {
+        releaseId,
+      })
+
+      return assertObservableError(observable, (error) => {
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toMatch(
+          /The document ID .* is already a version .* but this does not match the provided/,
+        )
+      })
     })
 
     test('passes includeAllVersions option to request query and returns array', () => {
@@ -504,7 +557,7 @@ describe('dataMethods', async () => {
         versionId: `versions.${releaseId}.${publishedId}`,
       }
 
-      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
+      mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -539,7 +592,7 @@ describe('dataMethods', async () => {
         ifBaseRevisionId,
       }
 
-      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
+      mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -569,7 +622,7 @@ describe('dataMethods', async () => {
       }
       const releaseId = 'release789'
 
-      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
+      mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -605,15 +658,20 @@ describe('dataMethods', async () => {
     test('throws when baseId is missing', () => {
       const client = getClient()
 
-      expect(() => {
-        dataMethods._createVersionFromBase(
-          client,
-          mockHttpRequest,
-          publishedId,
-          undefined,
-          versionId,
+      const observable = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        publishedId,
+        undefined,
+        versionId,
+      )
+
+      return assertObservableError(observable, (error) => {
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toEqual(
+          '`createVersion()` requires `baseId` when no `document` is provided',
         )
-      }).toThrow('`createVersion()` requires `baseId` when no `document` is provided')
+      })
     })
 
     test('creates draft version when releaseId is missing', () => {
@@ -624,7 +682,7 @@ describe('dataMethods', async () => {
         versionId: `drafts.${publishedId}`,
       }
 
-      mockHttpRequest.mockReturnValueOnce(of({transactionId: 'abc123'}))
+      mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
       const observable = dataMethods._createVersionFromBase(
@@ -649,33 +707,50 @@ describe('dataMethods', async () => {
     test('throws when publishedId is missing', () => {
       const client = getClient()
 
-      expect(() => {
-        dataMethods._createVersionFromBase(client, mockHttpRequest, undefined, baseId, versionId)
-      }).toThrow('`createVersion()` requires `publishedId` when `baseId` is provided')
+      const observable = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        undefined,
+        baseId,
+        versionId,
+      )
+
+      return assertObservableError(observable, (error) => {
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toEqual(
+          '`createVersion()` requires `publishedId` when `baseId` is provided',
+        )
+      })
     })
 
-    test('validates document IDs', () => {
+    test('validates document IDs', async () => {
       const client = getClient()
 
-      expect(() => {
-        dataMethods._createVersionFromBase(
-          client,
-          mockHttpRequest,
-          'invalid*id',
-          baseId,
-          'release123',
-        )
-      }).toThrow(/is not a valid document ID/)
+      const invalidPublishedId = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        'invalid*id',
+        baseId,
+        'release123',
+      )
 
-      expect(() => {
-        dataMethods._createVersionFromBase(
-          client,
-          mockHttpRequest,
-          publishedId,
-          'invalid*id',
-          'release123',
-        )
-      }).toThrow(/is not a valid document ID/)
+      await assertObservableError(invalidPublishedId, (error) => {
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toMatch(/is not a valid document ID/)
+      })
+
+      const invalidBaseId = dataMethods._createVersionFromBase(
+        client,
+        mockHttpRequest,
+        publishedId,
+        'invalid*id',
+        'release123',
+      )
+
+      await assertObservableError(invalidBaseId, (error) => {
+        expect(error).toBeInstanceOf(Error)
+        expect(error.message).toMatch(/is not a valid document ID/)
+      })
     })
   })
 })
