@@ -1,12 +1,12 @@
 import {type Observable} from 'rxjs'
 
-import {_request} from '../../data/dataMethods'
+import {_request, _requestPromise} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {
   AgentActionParams,
   AgentActionPath,
   Any,
-  HttpRequest,
+  HttpRequestPromise,
   IdentifiedSanityDocumentStub,
 } from '../../types'
 import {hasDataset} from '../../validators'
@@ -327,7 +327,7 @@ export type TransformDocument<T extends Record<string, Any> = Record<string, Any
 
 export function _transform<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequest: HttpRequest,
+  httpRequestPromise: HttpRequestPromise,
   request: TransformDocument<DocumentShape>,
 ): Observable<
   (typeof request)['async'] extends true
@@ -335,7 +335,24 @@ export function _transform<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequest, {
+  return _request(client, httpRequestPromise, {
+    method: 'POST',
+    uri: `/agent/action/transform/${dataset}`,
+    body: request,
+  })
+}
+
+export function _transformPromise<DocumentShape extends Record<string, Any>>(
+  client: SanityClient | ObservableSanityClient,
+  httpRequestPromise: HttpRequestPromise,
+  request: TransformDocument<DocumentShape>,
+): Promise<
+  (typeof request)['async'] extends true
+    ? {_id: string}
+    : IdentifiedSanityDocumentStub & DocumentShape
+> {
+  const dataset = hasDataset(client.config())
+  return _requestPromise(client, httpRequestPromise, {
     method: 'POST',
     uri: `/agent/action/transform/${dataset}`,
     body: request,

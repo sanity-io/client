@@ -1,8 +1,8 @@
 import {type Observable} from 'rxjs'
 
-import {_request} from '../../data/dataMethods'
+import {_request, _requestPromise} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
-import type {AgentActionParams, Any, HttpRequest} from '../../types'
+import type {AgentActionParams, Any, HttpRequestPromise} from '../../types'
 import {hasDataset} from '../../validators'
 
 /**  @beta */
@@ -127,11 +127,24 @@ export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> =
 
 export function _prompt<const DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequest: HttpRequest,
+  httpRequestPromise: HttpRequestPromise,
   request: PromptRequest<DocumentShape>,
 ): Observable<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequest, {
+  return _request(client, httpRequestPromise, {
+    method: 'POST',
+    uri: `/agent/action/prompt/${dataset}`,
+    body: request,
+  })
+}
+
+export function _promptPromise<const DocumentShape extends Record<string, Any>>(
+  client: SanityClient | ObservableSanityClient,
+  httpRequestPromise: HttpRequestPromise,
+  request: PromptRequest<DocumentShape>,
+): Promise<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
+  const dataset = hasDataset(client.config())
+  return _requestPromise(client, httpRequestPromise, {
     method: 'POST',
     uri: `/agent/action/prompt/${dataset}`,
     body: request,

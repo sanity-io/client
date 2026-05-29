@@ -1,9 +1,9 @@
-import {lastValueFrom, type Observable} from 'rxjs'
+import {type Observable} from 'rxjs'
 
-import {_request} from '../data/dataMethods'
+import {_request, _requestPromise} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
-  HttpRequest,
+  HttpRequestPromise,
   MediaLibraryAssetInstanceIdentifier,
   MediaLibraryPlaybackInfoOptions,
   SanityReference,
@@ -13,10 +13,10 @@ import type {
 /** @internal */
 export class ObservableMediaLibraryVideoClient {
   #client: ObservableSanityClient
-  #httpRequest: HttpRequest
-  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
+  #httpRequestPromise: HttpRequestPromise
+  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
     this.#client = client
-    this.#httpRequest = httpRequest
+    this.#httpRequestPromise = httpRequestPromise
   }
 
   /**
@@ -45,7 +45,7 @@ export class ObservableMediaLibraryVideoClient {
     const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
-    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
+    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequestPromise, {
       method: 'GET',
       uri,
       query: queryParams,
@@ -56,10 +56,10 @@ export class ObservableMediaLibraryVideoClient {
 /** @internal */
 export class MediaLibraryVideoClient {
   #client: SanityClient
-  #httpRequest: HttpRequest
-  constructor(client: SanityClient, httpRequest: HttpRequest) {
+  #httpRequestPromise: HttpRequestPromise
+  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
     this.#client = client
-    this.#httpRequest = httpRequest
+    this.#httpRequestPromise = httpRequestPromise
   }
 
   /**
@@ -72,12 +72,27 @@ export class MediaLibraryVideoClient {
     assetIdentifier: MediaLibraryAssetInstanceIdentifier,
     options: MediaLibraryPlaybackInfoOptions = {},
   ): Promise<VideoPlaybackInfo> {
-    return lastValueFrom(
-      new ObservableMediaLibraryVideoClient(
-        this.#client.observable,
-        this.#httpRequest,
-      ).getPlaybackInfo(assetIdentifier, options),
-    )
+    const config = this.#client.config()
+    const resource = config.resource || config['~experimental_resource']
+    const configMediaLibraryId = resource?.id
+
+    const {instanceId, libraryId} = parseAssetInstanceId(assetIdentifier)
+    const effectiveLibraryId = libraryId || configMediaLibraryId
+
+    if (!effectiveLibraryId) {
+      throw new Error(
+        'Could not determine Media Library ID - you need to provide a valid Media Library ID in the client config or a Media Library GDR',
+      )
+    }
+
+    const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
+    const queryParams = buildQueryParams(options)
+
+    return _requestPromise<VideoPlaybackInfo>(this.#client, this.#httpRequestPromise, {
+      method: 'GET',
+      uri,
+      query: queryParams,
+    })
   }
 }
 

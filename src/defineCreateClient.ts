@@ -1,8 +1,8 @@
-import type {Observable} from 'rxjs'
+import {lastValueFrom} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
-import {defineHttpRequest, type EnvironmentOptions} from './http/request'
-import type {Any, ClientConfig, HttpRequest} from './types'
+import {defineRequester, type EnvironmentOptions} from './http/request'
+import type {Any, ClientConfig, HttpRequestPromise} from './types'
 
 export {validateApiPerspective} from './config'
 export {
@@ -39,27 +39,46 @@ export default function defineCreateClientExports<
   ClientConfigType extends ClientConfig,
 >(
   envOptions: EnvironmentOptions,
-  ClassConstructor: new (httpRequest: HttpRequest, config: ClientConfigType) => SanityClientType,
+  ClassConstructor: new (
+    httpRequestPromise: HttpRequestPromise,
+    config: ClientConfigType,
+  ) => SanityClientType,
 ) {
   // Set the http client to use for requests, and its environment specific options
-  const defaultRequester = defineHttpRequest(envOptions)
+  const defaultRequester = defineRequester(envOptions).observable
 
   const createClient = (config: ClientConfigType) => {
-    const clientRequester = defineHttpRequest(envOptions, {
-      ignoreWarnings: config.ignoreWarnings,
-      maxRetries: config.maxRetries,
-      retryDelay: config.retryDelay,
-    })
-    const httpRequest: HttpRequest = (options, requester) => {
-      const stream: Observable<Any> = (requester || clientRequester)({
+    const {observable: clientRequester, promise: clientRequesterPromise} = defineRequester(
+      envOptions,
+      {
+        ignoreWarnings: config.ignoreWarnings,
+        maxRetries: config.maxRetries,
+        retryDelay: config.retryDelay,
+      },
+    )
+    // The single transport for the whole client. Resolves a request to its
+    // parsed response body as a Promise; the observable client surface wraps
+    // this in `new Observable(...)` (see `_observe` in dataMethods). A
+    // user-supplied custom `requester` (deprecated, observable-typed) is
+    // honored by bridging it through `lastValueFrom` — the only path that
+    // touches RxJS here.
+    const userRequester = config.requester
+    const httpRequestPromise: HttpRequestPromise = async (options) => {
+      const requestOptions = {
         maxRedirects: 0,
         lineage: config.lineage,
         ...options,
-      } as Any)
-      return stream.pipe(
-        filter((event: Any) => event?.type === 'response'),
-        map((event: Any) => event.body as unknown),
-      )
+      } as Any
+      if (userRequester) {
+        return lastValueFrom(
+          userRequester(requestOptions).pipe(
+            filter((event: Any) => event?.type === 'response'),
+            map((event: Any) => event.body as unknown),
+          ),
+        )
+      }
+      const event = await clientRequesterPromise(requestOptions)
+      return event.body
     }
     // Ensure `config.requester` is always populated so internal paths
     // (e.g. the asset upload event stream) can reach the underlying transport.
@@ -71,7 +90,7 @@ export default function defineCreateClientExports<
       requester: config.requester ?? clientRequester,
       resolveProxyFetch: envOptions.resolveProxyFetch,
     }
-    return new ClassConstructor(httpRequest, resolvedConfig)
+    return new ClassConstructor(httpRequestPromise, resolvedConfig)
   }
 
   return {requester: defaultRequester, createClient}

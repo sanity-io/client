@@ -2559,28 +2559,19 @@ error messages, update your patterns.
 The structured fields on the error (`statusCode`, `responseBody`,
 `response.statusMessage`, `response.headers`, etc.) are unchanged.
 
-### Custom `HttpRequest` / `_requestHandler` consumers return body-only Observables
+### The `_requestHandler` interceptor is removed
 
-The internal `HttpRequest` type and the `_requestHandler` interceptor (both
-`@internal`, both `@deprecated`) now resolve to `Observable<unknown>` of
-the parsed response body — no more event union, no transport-level fields.
+The `_requestHandler` client config option (and its `RequestHandler` type),
+both `@internal` and `@deprecated`, have been removed. The promise-based
+client surface (`client.fetch()`, `client.create()`, …) now talks to the
+transport directly as a Promise, and only `client.observable.*` and the
+real-time subscription APIs (`client.listen()`, `client.live.events()`) use
+RxJS. There is no longer a single observable choke point to intercept.
 
-If you implemented one of these, drop the
-`event.type === 'response'`/`event.body` peeling:
-
-```diff
--defaultRequester(request).pipe(
--  map((event) => {
--    if (event.type === 'response') {
--      return {...event, body: {...event.body, injected: true}}
--    }
--    return event
--  }),
--)
-+defaultRequester(request).pipe(
-+  map((body) => ({...(body as Record<string, unknown>), injected: true})),
-+)
-```
+If you relied on `_requestHandler` for cross-cutting concerns (logging,
+injecting headers, token refresh, rate limiting), move that logic into a
+`get-it` middleware, or wrap the client methods you call. Custom transports
+can still be supplied via the `requester` config option.
 
 ### Mid-process `HTTPS_PROXY` changes no longer take effect
 
