@@ -6,7 +6,7 @@ import {requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
-  HttpRequestPromise,
+  HttpRequest,
   InitializedClientConfig,
   SanityAssetDocument,
   SanityImageAssetDocument,
@@ -20,10 +20,10 @@ import * as validators from '../validators'
 /** @internal */
 export class ObservableAssetsClient {
   #client: ObservableSanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -68,17 +68,17 @@ export class ObservableAssetsClient {
     body: UploadBody,
     options?: UploadClientConfig,
   ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
-    return _upload(this.#client, this.#httpRequestPromise, assetType, body, options)
+    return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
 }
 
 /** @internal */
 export class AssetsClient {
   #client: SanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -123,13 +123,7 @@ export class AssetsClient {
     options?: UploadClientConfig,
   ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
     type Doc = {document: SanityAssetDocument | SanityImageAssetDocument}
-    const observable = _upload<Doc>(
-      this.#client,
-      this.#httpRequestPromise,
-      assetType,
-      body,
-      options,
-    )
+    const observable = _upload<Doc>(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
         filter((event): event is UploadResponseEvent<Doc> => event.type === 'response'),
@@ -141,7 +135,7 @@ export class AssetsClient {
 
 function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>(
   client: SanityClient | ObservableSanityClient,
-  _httpRequestPromise: HttpRequestPromise,
+  _httpRequest: HttpRequest,
   assetType: 'image' | 'file',
   body: UploadBody,
   opts: UploadClientConfig = {},

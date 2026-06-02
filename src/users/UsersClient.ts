@@ -1,16 +1,16 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {CurrentSanityUser, HttpRequestPromise, SanityUser} from '../types'
+import type {CurrentSanityUser, HttpRequest, SanityUser} from '../types'
 
 /** @public */
 export class ObservableUsersClient {
   #client: ObservableSanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -21,9 +21,9 @@ export class ObservableUsersClient {
   getById<T extends 'me' | string>(
     id: T,
   ): Observable<T extends 'me' ? CurrentSanityUser : SanityUser> {
-    return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
+    return _requestObservable<T extends 'me' ? CurrentSanityUser : SanityUser>(
       this.#client,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       {uri: `/users/${id}`},
     )
   }
@@ -32,10 +32,10 @@ export class ObservableUsersClient {
 /** @public */
 export class UsersClient {
   #client: SanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -46,9 +46,9 @@ export class UsersClient {
   getById<T extends 'me' | string>(
     id: T,
   ): Promise<T extends 'me' ? CurrentSanityUser : SanityUser> {
-    return _requestPromise<T extends 'me' ? CurrentSanityUser : SanityUser>(
+    return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
       this.#client,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       {uri: `/users/${id}`},
     )
   }

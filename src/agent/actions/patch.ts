@@ -1,13 +1,13 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {
   AgentActionPath,
   AgentActionPathSegment,
   Any,
   GenerateTargetDocument,
-  HttpRequestPromise,
+  HttpRequest,
   IdentifiedSanityDocumentStub,
 } from '../../types'
 import {hasDataset} from '../../validators'
@@ -118,9 +118,9 @@ export type PatchDocument<T extends Record<string, Any> = Record<string, Any>> =
   | PatchDocumentSync<T>
   | PatchDocumentAsync<T>
 
-export function _patch<DocumentShape extends Record<string, Any>>(
+export function _patchObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: PatchDocument<DocumentShape>,
 ): Observable<
   (typeof request)['async'] extends true
@@ -128,16 +128,16 @@ export function _patch<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequestPromise, {
+  return _requestObservable(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/patch/${dataset}`,
     body: request,
   })
 }
 
-export function _patchPromise<DocumentShape extends Record<string, Any>>(
+export function _patch<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: PatchDocument<DocumentShape>,
 ): Promise<
   (typeof request)['async'] extends true
@@ -145,7 +145,7 @@ export function _patchPromise<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _requestPromise(client, httpRequestPromise, {
+  return _request(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/patch/${dataset}`,
     body: request,

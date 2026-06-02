@@ -1,6 +1,6 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   DatasetCreateOptions,
@@ -9,17 +9,17 @@ import type {
   DatasetsResponse,
   EmbeddingsSettings,
   EmbeddingsSettingsBody,
-  HttpRequestPromise,
+  HttpRequest,
 } from '../types'
 import * as validate from '../validators'
 
 /** @internal */
 export class ObservableDatasetsClient {
   #client: ObservableSanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -29,7 +29,7 @@ export class ObservableDatasetsClient {
    * @param options - Options for the dataset, including optional embeddings configuration
    */
   create(name: string, options?: DatasetCreateOptions): Observable<DatasetResponse> {
-    return _modify<DatasetResponse>(this.#client, this.#httpRequestPromise, 'PUT', name, options)
+    return _modifyObservable<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options)
   }
 
   /**
@@ -39,7 +39,13 @@ export class ObservableDatasetsClient {
    * @param options - New options for the dataset
    */
   edit(name: string, options?: DatasetEditOptions): Observable<DatasetResponse> {
-    return _modify<DatasetResponse>(this.#client, this.#httpRequestPromise, 'PATCH', name, options)
+    return _modifyObservable<DatasetResponse>(
+      this.#client,
+      this.#httpRequest,
+      'PATCH',
+      name,
+      options,
+    )
   }
 
   /**
@@ -48,7 +54,7 @@ export class ObservableDatasetsClient {
    * @param name - Name of the dataset to delete
    */
   delete(name: string): Observable<{deleted: true}> {
-    return _modify<{deleted: true}>(this.#client, this.#httpRequestPromise, 'DELETE', name)
+    return _modifyObservable<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name)
   }
 
   /**
@@ -63,7 +69,7 @@ export class ObservableDatasetsClient {
       uri = `/projects/${projectId}/datasets`
     }
 
-    return _request<DatasetsResponse>(this.#client, this.#httpRequestPromise, {
+    return _requestObservable<DatasetsResponse>(this.#client, this.#httpRequest, {
       uri,
       tag: null,
     })
@@ -77,7 +83,7 @@ export class ObservableDatasetsClient {
   getEmbeddingsSettings(name: string): Observable<EmbeddingsSettings> {
     validate.resourceGuard('dataset', this.#client.config())
     validate.dataset(name)
-    return _request<EmbeddingsSettings>(this.#client, this.#httpRequestPromise, {
+    return _requestObservable<EmbeddingsSettings>(this.#client, this.#httpRequest, {
       uri: _embeddingsSettingsUri(this.#client, name),
       tag: null,
     })
@@ -92,7 +98,7 @@ export class ObservableDatasetsClient {
   editEmbeddingsSettings(name: string, settings: EmbeddingsSettingsBody): Observable<void> {
     validate.resourceGuard('dataset', this.#client.config())
     validate.dataset(name)
-    return _request<void>(this.#client, this.#httpRequestPromise, {
+    return _requestObservable<void>(this.#client, this.#httpRequest, {
       method: 'PUT',
       uri: _embeddingsSettingsUri(this.#client, name),
       body: settings,
@@ -104,10 +110,10 @@ export class ObservableDatasetsClient {
 /** @internal */
 export class DatasetsClient {
   #client: SanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -118,13 +124,7 @@ export class DatasetsClient {
    */
   create(name: string, options?: DatasetCreateOptions): Promise<DatasetResponse> {
     validate.resourceGuard('dataset', this.#client.config())
-    return _modifyPromise<DatasetResponse>(
-      this.#client,
-      this.#httpRequestPromise,
-      'PUT',
-      name,
-      options,
-    )
+    return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PUT', name, options)
   }
 
   /**
@@ -135,13 +135,7 @@ export class DatasetsClient {
    */
   edit(name: string, options?: DatasetEditOptions): Promise<DatasetResponse> {
     validate.resourceGuard('dataset', this.#client.config())
-    return _modifyPromise<DatasetResponse>(
-      this.#client,
-      this.#httpRequestPromise,
-      'PATCH',
-      name,
-      options,
-    )
+    return _modify<DatasetResponse>(this.#client, this.#httpRequest, 'PATCH', name, options)
   }
 
   /**
@@ -151,7 +145,7 @@ export class DatasetsClient {
    */
   delete(name: string): Promise<{deleted: true}> {
     validate.resourceGuard('dataset', this.#client.config())
-    return _modifyPromise<{deleted: true}>(this.#client, this.#httpRequestPromise, 'DELETE', name)
+    return _modify<{deleted: true}>(this.#client, this.#httpRequest, 'DELETE', name)
   }
 
   /**
@@ -166,7 +160,7 @@ export class DatasetsClient {
       uri = `/projects/${projectId}/datasets`
     }
 
-    return _requestPromise<DatasetsResponse>(this.#client, this.#httpRequestPromise, {
+    return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
       uri,
       tag: null,
     })
@@ -180,7 +174,7 @@ export class DatasetsClient {
   getEmbeddingsSettings(name: string): Promise<EmbeddingsSettings> {
     validate.resourceGuard('dataset', this.#client.config())
     validate.dataset(name)
-    return _requestPromise<EmbeddingsSettings>(this.#client, this.#httpRequestPromise, {
+    return _request<EmbeddingsSettings>(this.#client, this.#httpRequest, {
       uri: _embeddingsSettingsUri(this.#client, name),
       tag: null,
     })
@@ -195,7 +189,7 @@ export class DatasetsClient {
   editEmbeddingsSettings(name: string, settings: EmbeddingsSettingsBody): Promise<void> {
     validate.resourceGuard('dataset', this.#client.config())
     validate.dataset(name)
-    return _requestPromise<void>(this.#client, this.#httpRequestPromise, {
+    return _request<void>(this.#client, this.#httpRequest, {
       method: 'PUT',
       uri: _embeddingsSettingsUri(this.#client, name),
       body: settings,
@@ -215,9 +209,9 @@ function _embeddingsSettingsUri(
   return `/datasets/${name}/settings/embeddings`
 }
 
-function _modify<R = unknown>(
+function _modifyObservable<R = unknown>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   method: 'DELETE' | 'PATCH' | 'PUT',
   name: string,
   options?: DatasetCreateOptions | DatasetEditOptions,
@@ -225,7 +219,7 @@ function _modify<R = unknown>(
   validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
 
-  return _request<R>(client, httpRequestPromise, {
+  return _requestObservable<R>(client, httpRequest, {
     method,
     uri: `/datasets/${name}`,
     body: options,
@@ -233,9 +227,9 @@ function _modify<R = unknown>(
   })
 }
 
-function _modifyPromise<R = unknown>(
+function _modify<R = unknown>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   method: 'DELETE' | 'PATCH' | 'PUT',
   name: string,
   options?: DatasetCreateOptions | DatasetEditOptions,
@@ -243,7 +237,7 @@ function _modifyPromise<R = unknown>(
   validate.resourceGuard('dataset', client.config())
   validate.dataset(name)
 
-  return _requestPromise<R>(client, httpRequestPromise, {
+  return _request<R>(client, httpRequest, {
     method,
     uri: `/datasets/${name}`,
     body: options,

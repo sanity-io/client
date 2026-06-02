@@ -17,7 +17,7 @@ import type {
   DiscardVersionAction,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  HttpRequestPromise,
+  HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
   InitializedStegaConfig,
@@ -117,27 +117,27 @@ function _fetchRequest<Q>(
 }
 
 /** @internal */
-export function _fetch<R, Q>(
+export function _fetchObservable<R, Q>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   _stega: InitializedStegaConfig,
   query: string,
   _params: Q = {} as Q,
   options: QueryOptions = {},
 ): Observable<RawQueryResponse<R> | R> {
   return _observe(options.signal, (signal) =>
-    _fetchPromise<R, Q>(client, httpRequestPromise, _stega, query, _params, {...options, signal}),
+    _fetch<R, Q>(client, httpRequest, _stega, query, _params, {...options, signal}),
   )
 }
 
 /**
- * Promise-based sibling of {@link _fetch}.
+ * Promise-based sibling of {@link _fetchObservable}.
  *
  * @internal
  */
-export function _fetchPromise<R, Q>(
+export function _fetch<R, Q>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   _stega: InitializedStegaConfig,
   query: string,
   _params: Q = {} as Q,
@@ -148,7 +148,7 @@ export function _fetchPromise<R, Q>(
   // Kick off the request synchronously (not in an `async` body) so option
   // validation - e.g. an invalid request tag or a missing dataset - throws
   // synchronously at call time, matching the rest of the promise surface.
-  const request = _dataRequestPromise(client, httpRequestPromise, 'query', {query, params}, reqOpts)
+  const request = _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts)
   if (!stega.enabled) {
     return request.then(mapResponse)
   }
@@ -161,71 +161,69 @@ export function _fetchPromise<R, Q>(
 }
 
 /** @internal */
-export function _getDocument<R extends Record<string, Any>>(
+export function _getDocumentObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions: true},
 ): Observable<SanityDocument<R>[]>
 /** @internal */
-export function _getDocument<R extends Record<string, Any>>(
+export function _getDocumentObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   id: string,
   opts?: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: false},
 ): Observable<SanityDocument<R> | undefined>
 /** @internal */
-export function _getDocument<R extends Record<string, Any>>(
+export function _getDocumentObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
 ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
   return _observe(opts.signal, (signal) =>
-    _requestPromise<{documents?: SanityDocument<R>[]}>(
+    _request<{documents?: SanityDocument<R>[]}>(
       client,
-      httpRequestPromise,
+      httpRequest,
       _getDocumentOptions(client, id, {...opts, signal}),
     ).then((body) => _mapGetDocument<R>(body, opts.includeAllVersions)),
   )
 }
 
 /**
- * Promise-based sibling of {@link _getDocument}.
+ * Promise-based sibling of {@link _getDocumentObservable}.
  *
  * @internal
  */
-export function _getDocumentPromise<R extends Record<string, Any>>(
+export function _getDocument<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions: true},
 ): Promise<SanityDocument<R>[]>
 /** @internal */
-export function _getDocumentPromise<R extends Record<string, Any>>(
+export function _getDocument<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   id: string,
   opts?: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: false},
 ): Promise<SanityDocument<R> | undefined>
 /** @internal */
-export function _getDocumentPromise<R extends Record<string, Any>>(
+export function _getDocument<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
 ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
   const options = _getDocumentOptions(client, id, opts)
-  return _requestPromise<{documents?: SanityDocument<R>[]}>(
-    client,
-    httpRequestPromise,
-    options,
-  ).then((body) => _mapGetDocument<R>(body, opts.includeAllVersions))
+  return _request<{documents?: SanityDocument<R>[]}>(client, httpRequest, options).then((body) =>
+    _mapGetDocument<R>(body, opts.includeAllVersions),
+  )
 }
 
 /**
  * Resolve the document id (honoring `releaseId`) and build the transport
- * request options for {@link _getDocument}. Shared by the observable and
+ * request options for {@link _getDocumentObservable}. Shared by the observable and
  * promise paths.
  *
  * @internal
@@ -276,34 +274,32 @@ function _mapGetDocument<R extends Record<string, Any>>(
 }
 
 /** @internal */
-export function _getDocuments<R extends Record<string, Any>>(
+export function _getDocumentsObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<(SanityDocument<R> | null)[]> {
   return _observe(opts.signal, (signal) =>
-    _getDocumentsPromise<R>(client, httpRequestPromise, ids, {...opts, signal}),
+    _getDocuments<R>(client, httpRequest, ids, {...opts, signal}),
   )
 }
 
 /**
- * Promise-based sibling of {@link _getDocuments}.
+ * Promise-based sibling of {@link _getDocumentsObservable}.
  *
  * @internal
  */
-export function _getDocumentsPromise<R extends Record<string, Any>>(
+export function _getDocuments<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
 ): Promise<(SanityDocument<R> | null)[]> {
   const options = _getDocumentsOptions(client, ids, opts)
-  return _requestPromise<{documents?: SanityDocument<R>[]}>(
-    client,
-    httpRequestPromise,
-    options,
-  ).then((body) => _mapGetDocuments<R>(body, ids))
+  return _request<{documents?: SanityDocument<R>[]}>(client, httpRequest, options).then((body) =>
+    _mapGetDocuments<R>(body, ids),
+  )
 }
 
 function _getDocumentsOptions(
@@ -373,31 +369,31 @@ export function _documentsExists(
 }
 
 /** @internal */
-export function _getReleaseDocuments<R extends Record<string, Any>>(
+export function _getReleaseDocumentsObservable<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   releaseId: string,
   opts: BaseMutationOptions = {},
 ): Observable<RawQueryResponse<SanityDocument<R>[]>> {
   return _observe(opts.signal, (signal) =>
-    _getReleaseDocumentsPromise<R>(client, httpRequestPromise, releaseId, {...opts, signal}),
+    _getReleaseDocuments<R>(client, httpRequest, releaseId, {...opts, signal}),
   )
 }
 
 /**
- * Promise-based sibling of {@link _getReleaseDocuments}.
+ * Promise-based sibling of {@link _getReleaseDocumentsObservable}.
  *
  * @internal
  */
-export function _getReleaseDocumentsPromise<R extends Record<string, Any>>(
+export function _getReleaseDocuments<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   releaseId: string,
   opts: BaseMutationOptions = {},
 ): Promise<RawQueryResponse<SanityDocument<R>[]>> {
-  return _dataRequestPromise(
+  return _dataRequest(
     client,
-    httpRequestPromise,
+    httpRequest,
     'query',
     {
       query: '*[sanity::partOfRelease($releaseId)]',
@@ -410,9 +406,9 @@ export function _getReleaseDocumentsPromise<R extends Record<string, Any>>(
 }
 
 /** @internal */
-export function _createIfNotExists<R extends Record<string, Any>>(
+export function _createIfNotExistsObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
     | AllDocumentIdsMutationOptions
@@ -424,14 +420,14 @@ export function _createIfNotExists<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   return _observe(options?.signal, (signal) =>
-    _createIfNotExistsPromise<R>(client, httpRequestPromise, doc, {...options, signal}),
+    _createIfNotExists<R>(client, httpRequest, doc, {...options, signal}),
   )
 }
 
 /** @internal */
-export function _createOrReplace<R extends Record<string, Any>>(
+export function _createOrReplaceObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
     | AllDocumentIdsMutationOptions
@@ -443,27 +439,27 @@ export function _createOrReplace<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   return _observe(options?.signal, (signal) =>
-    _createOrReplacePromise<R>(client, httpRequestPromise, doc, {...options, signal}),
+    _createOrReplace<R>(client, httpRequest, doc, {...options, signal}),
   )
 }
 
 /** @internal */
-export function _createVersion<R extends Record<string, Any>>(
+export function _createVersionObservable<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   publishedId: string,
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   return _observe(options?.signal, (signal) =>
-    _createVersionPromise<R>(client, httpRequestPromise, doc, publishedId, {...options, signal}),
+    _createVersion<R>(client, httpRequest, doc, publishedId, {...options, signal}),
   )
 }
 
 /** @internal */
-export function _createVersionFromBase(
+export function _createVersionFromBaseObservable(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   publishedId?: string,
   baseId?: string,
   releaseId?: string,
@@ -471,22 +467,17 @@ export function _createVersionFromBase(
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   return _observe(options?.signal, (signal) =>
-    _createVersionFromBasePromise(
-      client,
-      httpRequestPromise,
-      publishedId,
-      baseId,
-      releaseId,
-      ifBaseRevisionId,
-      {...options, signal},
-    ),
+    _createVersionFromBase(client, httpRequest, publishedId, baseId, releaseId, ifBaseRevisionId, {
+      ...options,
+      signal,
+    }),
   )
 }
 
 /** @internal */
-export function _delete<R extends Record<string, Any>>(
+export function _deleteObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   selection: string | MutationSelection,
   options?:
     | AllDocumentIdsMutationOptions
@@ -498,45 +489,45 @@ export function _delete<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   return _observe(options?.signal, (signal) =>
-    _deletePromise<R>(client, httpRequestPromise, selection, {...options, signal}),
+    _delete<R>(client, httpRequest, selection, {...options, signal}),
   )
 }
 
 /** @internal */
-export function _discardVersion(
+export function _discardVersionObservable(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   versionId: string,
   purge: boolean = false,
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   return _observe(options?.signal, (signal) =>
-    _discardVersionPromise(client, httpRequestPromise, versionId, purge, {...options, signal}),
+    _discardVersion(client, httpRequest, versionId, purge, {...options, signal}),
   )
 }
 
 /** @internal */
-export function _replaceVersion<R extends Record<string, Any>>(
+export function _replaceVersionObservable<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   return _observe(options?.signal, (signal) =>
-    _replaceVersionPromise<R>(client, httpRequestPromise, doc, {...options, signal}),
+    _replaceVersion<R>(client, httpRequest, doc, {...options, signal}),
   )
 }
 
 /** @internal */
-export function _unpublishVersion(
+export function _unpublishVersionObservable(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   versionId: string,
   publishedId: string,
   options?: BaseActionOptions,
 ): Observable<SingleActionResult> {
   return _observe(options?.signal, (signal) =>
-    _unpublishVersionPromise(client, httpRequestPromise, versionId, publishedId, {
+    _unpublishVersion(client, httpRequest, versionId, publishedId, {
       ...options,
       signal,
     }),
@@ -544,9 +535,9 @@ export function _unpublishVersion(
 }
 
 /** @internal */
-export function _mutate<R extends Record<string, Any>>(
+export function _mutateObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
   options?:
     | AllDocumentIdsMutationOptions
@@ -558,21 +549,21 @@ export function _mutate<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   return _observe(options?.signal, (signal) =>
-    _mutatePromise<R>(client, httpRequestPromise, mutations, {...options, signal}),
+    _mutate<R>(client, httpRequest, mutations, {...options, signal}),
   )
 }
 
 /**
  * @internal
  */
-export function _action(
+export function _actionObservable(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   actions: Action | Action[],
   options?: BaseActionOptions,
 ): Observable<SingleActionResult | MultipleActionResult> {
   return _observe(options?.signal, (signal) =>
-    _actionPromise(client, httpRequestPromise, actions, {...options, signal}),
+    _action(client, httpRequest, actions, {...options, signal}),
   )
 }
 
@@ -664,32 +655,32 @@ function _mapDataResponse(
 /**
  * @internal
  */
-export function _dataRequest(
+export function _dataRequestObservable(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   endpoint: string,
   body: Any,
   options: Any = {},
 ): Observable<Any> {
   return _observe(options.signal, (signal) =>
-    _dataRequestPromise(client, httpRequestPromise, endpoint, body, {...options, signal}),
+    _dataRequest(client, httpRequest, endpoint, body, {...options, signal}),
   )
 }
 
 /**
- * Promise-based sibling of {@link _dataRequest}.
+ * Promise-based sibling of {@link _dataRequestObservable}.
  *
  * @internal
  */
-export function _dataRequestPromise(
+export function _dataRequest(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   endpoint: string,
   body: Any,
   options: Any = {},
 ): Promise<Any> {
   const {reqOptions, isMutation, returnFirst} = _dataRequestOptions(client, endpoint, body, options)
-  return _requestPromise(client, httpRequestPromise, reqOptions).then((res: Any) =>
+  return _request(client, httpRequest, reqOptions).then((res: Any) =>
     _mapDataResponse(res, isMutation, returnFirst, options.returnDocuments),
   )
 }
@@ -697,9 +688,9 @@ export function _dataRequestPromise(
 /**
  * @internal
  */
-export function _create<R extends Record<string, Any>>(
+export function _createObservable<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: Any,
   op: Any,
   options: Any = {},
@@ -707,18 +698,18 @@ export function _create<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   return _observe(options.signal, (signal) =>
-    _createPromise<R>(client, httpRequestPromise, doc, op, {...options, signal}),
+    _create<R>(client, httpRequest, doc, op, {...options, signal}),
   )
 }
 
 /**
- * Promise-based sibling of {@link _create}.
+ * Promise-based sibling of {@link _createObservable}.
  *
  * @internal
  */
-export function _createPromise<R extends Record<string, Any>>(
+export function _create<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: Any,
   op: Any,
   options: Any = {},
@@ -727,17 +718,17 @@ export function _createPromise<R extends Record<string, Any>>(
 > {
   const mutation = {[op]: doc}
   const opts = Object.assign({returnFirst: true, returnDocuments: true}, options)
-  return _dataRequestPromise(client, httpRequestPromise, 'mutate', {mutations: [mutation]}, opts)
+  return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
 /**
- * Promise-based sibling of {@link _action}.
+ * Promise-based sibling of {@link _actionObservable}.
  *
  * @internal
  */
-export function _actionPromise(
+export function _action(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   actions: Action | Action[],
   options?: BaseActionOptions,
 ): Promise<SingleActionResult | MultipleActionResult> {
@@ -747,9 +738,9 @@ export function _actionPromise(
     (options && options.skipCrossDatasetReferenceValidation) || undefined
   const dryRun = (options && options.dryRun) || undefined
 
-  return _dataRequestPromise(
+  return _dataRequest(
     client,
-    httpRequestPromise,
+    httpRequest,
     'actions',
     {actions: acts, transactionId, skipCrossDatasetReferenceValidation, dryRun},
     options,
@@ -757,13 +748,13 @@ export function _actionPromise(
 }
 
 /**
- * Promise-based sibling of {@link _mutate}.
+ * Promise-based sibling of {@link _mutateObservable}.
  *
  * @internal
  */
-export function _mutatePromise<R extends Record<string, Any>>(
+export function _mutate<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
   options?:
     | AllDocumentIdsMutationOptions
@@ -785,23 +776,17 @@ export function _mutatePromise<R extends Record<string, Any>>(
 
   const muts = Array.isArray(mut) ? mut : [mut]
   const transactionId = (options && options.transactionId) || undefined
-  return _dataRequestPromise(
-    client,
-    httpRequestPromise,
-    'mutate',
-    {mutations: muts, transactionId},
-    options,
-  )
+  return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
 }
 
 /**
- * Promise-based sibling of {@link _delete}.
+ * Promise-based sibling of {@link _deleteObservable}.
  *
  * @internal
  */
-export function _deletePromise<R extends Record<string, Any>>(
+export function _delete<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   selection: string | MutationSelection,
   options?:
     | AllDocumentIdsMutationOptions
@@ -812,9 +797,9 @@ export function _deletePromise<R extends Record<string, Any>>(
 ): Promise<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
-  return _dataRequestPromise(
+  return _dataRequest(
     client,
-    httpRequestPromise,
+    httpRequest,
     'mutate',
     {mutations: [{delete: getSelection(selection)}]},
     options,
@@ -822,13 +807,13 @@ export function _deletePromise<R extends Record<string, Any>>(
 }
 
 /**
- * Promise-based sibling of {@link _createIfNotExists}.
+ * Promise-based sibling of {@link _createIfNotExistsObservable}.
  *
  * @internal
  */
-export function _createIfNotExistsPromise<R extends Record<string, Any>>(
+export function _createIfNotExists<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
     | AllDocumentIdsMutationOptions
@@ -840,17 +825,17 @@ export function _createIfNotExistsPromise<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   validators.requireDocumentId('createIfNotExists', doc)
-  return _createPromise<R>(client, httpRequestPromise, doc, 'createIfNotExists', options)
+  return _create<R>(client, httpRequest, doc, 'createIfNotExists', options)
 }
 
 /**
- * Promise-based sibling of {@link _createOrReplace}.
+ * Promise-based sibling of {@link _createOrReplaceObservable}.
  *
  * @internal
  */
-export function _createOrReplacePromise<R extends Record<string, Any>>(
+export function _createOrReplace<R extends Record<string, Any>>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?:
     | AllDocumentIdsMutationOptions
@@ -862,17 +847,17 @@ export function _createOrReplacePromise<R extends Record<string, Any>>(
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   validators.requireDocumentId('createOrReplace', doc)
-  return _createPromise<R>(client, httpRequestPromise, doc, 'createOrReplace', options)
+  return _create<R>(client, httpRequest, doc, 'createOrReplace', options)
 }
 
 /**
- * Promise-based sibling of {@link _createVersion}.
+ * Promise-based sibling of {@link _createVersionObservable}.
  *
  * @internal
  */
-export function _createVersionPromise<R extends Record<string, Any>>(
+export function _createVersion<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   publishedId: string,
   options?: BaseActionOptions,
@@ -887,17 +872,17 @@ export function _createVersionPromise<R extends Record<string, Any>>(
     document: doc,
   }
 
-  return _actionPromise(client, httpRequestPromise, createVersionAction, options)
+  return _action(client, httpRequest, createVersionAction, options)
 }
 
 /**
- * Promise-based sibling of {@link _createVersionFromBase}.
+ * Promise-based sibling of {@link _createVersionFromBaseObservable}.
  *
  * @internal
  */
-export function _createVersionFromBasePromise(
+export function _createVersionFromBase(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   publishedId?: string,
   baseId?: string,
   releaseId?: string,
@@ -923,17 +908,17 @@ export function _createVersionFromBasePromise(
     ifBaseRevisionId,
   }
 
-  return _actionPromise(client, httpRequestPromise, createVersionAction, options)
+  return _action(client, httpRequest, createVersionAction, options)
 }
 
 /**
- * Promise-based sibling of {@link _discardVersion}.
+ * Promise-based sibling of {@link _discardVersionObservable}.
  *
  * @internal
  */
-export function _discardVersionPromise(
+export function _discardVersion(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   versionId: string,
   purge: boolean = false,
   options?: BaseActionOptions,
@@ -944,17 +929,17 @@ export function _discardVersionPromise(
     purge,
   }
 
-  return _actionPromise(client, httpRequestPromise, discardVersionAction, options)
+  return _action(client, httpRequest, discardVersionAction, options)
 }
 
 /**
- * Promise-based sibling of {@link _replaceVersion}.
+ * Promise-based sibling of {@link _replaceVersionObservable}.
  *
  * @internal
  */
-export function _replaceVersionPromise<R extends Record<string, Any>>(
+export function _replaceVersion<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?: BaseActionOptions,
 ): Promise<SingleActionResult> {
@@ -966,17 +951,17 @@ export function _replaceVersionPromise<R extends Record<string, Any>>(
     document: doc,
   }
 
-  return _actionPromise(client, httpRequestPromise, replaceVersionAction, options)
+  return _action(client, httpRequest, replaceVersionAction, options)
 }
 
 /**
- * Promise-based sibling of {@link _unpublishVersion}.
+ * Promise-based sibling of {@link _unpublishVersionObservable}.
  *
  * @internal
  */
-export function _unpublishVersionPromise(
+export function _unpublishVersion(
   client: ObservableSanityClient | SanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   versionId: string,
   publishedId: string,
   options?: BaseActionOptions,
@@ -987,7 +972,7 @@ export function _unpublishVersionPromise(
     publishedId,
   }
 
-  return _actionPromise(client, httpRequestPromise, unpublishVersionAction, options)
+  return _action(client, httpRequest, unpublishVersionAction, options)
 }
 
 const hasDataConfig = (client: Client) => {
@@ -1181,43 +1166,25 @@ export function _observe<R>(
  *
  * @internal
  */
-export function _requestPromise<R>(
-  client: Client,
-  httpRequestPromise: HttpRequestPromise,
-  options: Any,
-): Promise<R> {
+export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
   const reqOptions = _prepareRequest(client, options)
-  return httpRequestPromise(reqOptions).then((body) => body as R)
+  return httpRequest(reqOptions).then((body) => body as R)
 }
 
 /**
  * Execute an HTTP request through the regular pipeline and resolve to the
- * parsed response body. Observable wrapper over {@link _requestPromise}.
+ * parsed response body. Observable wrapper over {@link _request}.
  *
  * @internal
  */
 export function _requestObservable<R>(
   client: Client,
-  httpRequestPromise: HttpRequestPromise,
-  options: RequestObservableOptions,
-): Observable<R> {
-  return _observe(options.signal, (signal) =>
-    _requestPromise<R>(client, httpRequestPromise, {...options, signal}),
-  )
-}
-
-/**
- * Alias for {@link _requestObservable} kept for clarity at call sites that
- * expect a single-value Observable.
- *
- * @internal
- */
-export function _request<R>(
-  client: Client,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   options: Any,
 ): Observable<R> {
-  return _requestObservable<R>(client, httpRequestPromise, options)
+  return _observe(options.signal, (signal) =>
+    _request<R>(client, httpRequest, {...options, signal}),
+  )
 }
 
 /**

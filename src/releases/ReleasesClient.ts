@@ -2,11 +2,11 @@ import {map, Observable} from 'rxjs'
 
 import {
   _action,
-  _actionPromise,
+  _actionObservable,
   _getDocument,
-  _getDocumentPromise,
+  _getDocumentObservable,
   _getReleaseDocuments,
-  _getReleaseDocumentsPromise,
+  _getReleaseDocumentsObservable,
 } from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
@@ -15,7 +15,7 @@ import type {
   BaseMutationOptions,
   DeleteReleaseAction,
   EditReleaseAction,
-  HttpRequestPromise,
+  HttpRequest,
   PatchOperations,
   PublishReleaseAction,
   RawQueryResponse,
@@ -31,10 +31,10 @@ import {createRelease} from './createRelease'
 /** @public */
 export class ObservableReleasesClient {
   #client: ObservableSanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -68,9 +68,9 @@ export class ObservableReleasesClient {
     {releaseId}: {releaseId: string},
     options?: {signal?: AbortSignal; tag?: string},
   ): Observable<ReleaseDocument | undefined> {
-    return _getDocument<ReleaseDocument>(
+    return _getDocumentObservable<ReleaseDocument>(
       this.#client,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       `_.releases.${releaseId}`,
       options,
     )
@@ -147,7 +147,7 @@ export class ObservableReleasesClient {
     const {action, options} = createRelease(releaseOrOptions, maybeOptions)
     const {releaseId, metadata} = action
 
-    return _action(this.#client, this.#httpRequestPromise, action, options).pipe(
+    return _actionObservable(this.#client, this.#httpRequest, action, options).pipe(
       map((actionResult) => ({
         ...actionResult,
         releaseId,
@@ -179,7 +179,7 @@ export class ObservableReleasesClient {
       patch,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, editAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, editAction, options)
   }
 
   /**
@@ -209,7 +209,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, publishAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, publishAction, options)
   }
 
   /**
@@ -236,7 +236,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, archiveAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, archiveAction, options)
   }
 
   /**
@@ -261,7 +261,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, unarchiveAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, unarchiveAction, options)
   }
 
   /**
@@ -290,7 +290,7 @@ export class ObservableReleasesClient {
       publishAt,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, scheduleAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, scheduleAction, options)
   }
 
   /**
@@ -317,7 +317,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, unscheduleAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, unscheduleAction, options)
   }
 
   /**
@@ -342,7 +342,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequestPromise, deleteAction, options)
+    return _actionObservable(this.#client, this.#httpRequest, deleteAction, options)
   }
 
   /**
@@ -361,17 +361,17 @@ export class ObservableReleasesClient {
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Observable<RawQueryResponse<SanityDocument[]>> {
-    return _getReleaseDocuments(this.#client, this.#httpRequestPromise, releaseId, options)
+    return _getReleaseDocumentsObservable(this.#client, this.#httpRequest, releaseId, options)
   }
 }
 
 /** @public */
 export class ReleasesClient {
   #client: SanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -404,9 +404,9 @@ export class ReleasesClient {
     {releaseId}: {releaseId: string},
     options?: {signal?: AbortSignal; tag?: string},
   ): Promise<ReleaseDocument | undefined> {
-    return _getDocumentPromise<ReleaseDocument>(
+    return _getDocument<ReleaseDocument>(
       this.#client,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       `_.releases.${releaseId}`,
       options,
     )
@@ -475,12 +475,7 @@ export class ReleasesClient {
     const {action, options} = createRelease(releaseOrOptions, maybeOptions)
     const {releaseId, metadata} = action
 
-    const actionResult = await _actionPromise(
-      this.#client,
-      this.#httpRequestPromise,
-      action,
-      options,
-    )
+    const actionResult = await _action(this.#client, this.#httpRequest, action, options)
 
     return {...actionResult, releaseId, metadata}
   }
@@ -508,7 +503,7 @@ export class ReleasesClient {
       patch,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, editAction, options)
+    return _action(this.#client, this.#httpRequest, editAction, options)
   }
 
   /**
@@ -538,7 +533,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, publishAction, options)
+    return _action(this.#client, this.#httpRequest, publishAction, options)
   }
 
   /**
@@ -565,7 +560,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, archiveAction, options)
+    return _action(this.#client, this.#httpRequest, archiveAction, options)
   }
 
   /**
@@ -590,7 +585,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, unarchiveAction, options)
+    return _action(this.#client, this.#httpRequest, unarchiveAction, options)
   }
 
   /**
@@ -619,7 +614,7 @@ export class ReleasesClient {
       publishAt,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, scheduleAction, options)
+    return _action(this.#client, this.#httpRequest, scheduleAction, options)
   }
 
   /**
@@ -646,7 +641,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, unscheduleAction, options)
+    return _action(this.#client, this.#httpRequest, unscheduleAction, options)
   }
 
   /**
@@ -671,7 +666,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _actionPromise(this.#client, this.#httpRequestPromise, deleteAction, options)
+    return _action(this.#client, this.#httpRequest, deleteAction, options)
   }
 
   /**
@@ -690,6 +685,6 @@ export class ReleasesClient {
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Promise<RawQueryResponse<SanityDocument[]>> {
-    return _getReleaseDocumentsPromise(this.#client, this.#httpRequestPromise, releaseId, options)
+    return _getReleaseDocuments(this.#client, this.#httpRequest, releaseId, options)
   }
 }

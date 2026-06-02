@@ -448,26 +448,17 @@ export interface ErrorProps {
 }
 
 /**
- * The internal HTTP request abstraction used by the client. Resolves to the
- * parsed response body — middleware-level transport details (status codes,
- * headers, progress events) are not exposed.
+ * The internal HTTP request abstraction used by the client. Resolves directly
+ * to the parsed response body as a Promise — middleware-level transport
+ * details (status codes, headers, progress events) are not exposed. The
+ * observable client surface wraps this in an Observable; the promise surface
+ * uses it directly.
  *
  * The body is typed as `unknown`; consumers narrow at their own boundary.
  *
- * @public
- */
-export type HttpRequest = {
-  (options: RequestOptions, requester: Requester): Observable<unknown>
-}
-
-/**
- * Promise-based sibling of {@link HttpRequest}, used by the promise-based
- * client surface. Resolves directly to the parsed response body without
- * wrapping it in an RxJS Observable.
- *
  * @internal
  */
-export type HttpRequestPromise = {
+export type HttpRequest = {
   (options: RequestOptions): Promise<unknown>
 }
 
