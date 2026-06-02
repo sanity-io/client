@@ -1,12 +1,12 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {
   AgentActionParams,
   AgentActionPath,
   Any,
-  HttpRequestPromise,
+  HttpRequest,
   IdentifiedSanityDocumentStub,
 } from '../../types'
 import {hasDataset} from '../../validators'
@@ -324,9 +324,9 @@ export type TransformDocumentAsync = TransformRequestBase & AgentActionAsync
 export type TransformDocument<T extends Record<string, Any> = Record<string, Any>> =
   TransformDocumentSync<T> | TransformDocumentAsync
 
-export function _transform<DocumentShape extends Record<string, Any>>(
+export function _transformObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: TransformDocument<DocumentShape>,
 ): Observable<
   (typeof request)['async'] extends true
@@ -334,16 +334,16 @@ export function _transform<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequestPromise, {
+  return _requestObservable(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/transform/${dataset}`,
     body: request,
   })
 }
 
-export function _transformPromise<DocumentShape extends Record<string, Any>>(
+export function _transform<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: TransformDocument<DocumentShape>,
 ): Promise<
   (typeof request)['async'] extends true
@@ -351,7 +351,7 @@ export function _transformPromise<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _requestPromise(client, httpRequestPromise, {
+  return _request(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/transform/${dataset}`,
     body: request,

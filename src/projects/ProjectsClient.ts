@@ -1,8 +1,8 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequestPromise, SanityProject} from '../types'
+import type {HttpRequest, SanityProject} from '../types'
 
 type ListOptions = {
   includeMembers?: boolean
@@ -18,10 +18,10 @@ type OmittedProjectFields<T extends ListOptions | undefined> =
 /** @internal */
 export class ObservableProjectsClient {
   #client: ObservableSanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -51,7 +51,7 @@ export class ObservableProjectsClient {
       query.onlyExplicitMembership = 'true'
     }
 
-    return _request<SanityProject[]>(this.#client, this.#httpRequestPromise, {
+    return _requestObservable<SanityProject[]>(this.#client, this.#httpRequest, {
       uri,
       query,
     }) as Observable<Omit<SanityProject, OmittedProjectFields<T>>[]>
@@ -63,7 +63,7 @@ export class ObservableProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Observable<SanityProject> {
-    return _request<SanityProject>(this.#client, this.#httpRequestPromise, {
+    return _requestObservable<SanityProject>(this.#client, this.#httpRequest, {
       uri: `/projects/${projectId}`,
     })
   }
@@ -72,10 +72,10 @@ export class ObservableProjectsClient {
 /** @internal */
 export class ProjectsClient {
   #client: SanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -104,7 +104,7 @@ export class ProjectsClient {
     if (options?.onlyExplicitMembership) {
       query.onlyExplicitMembership = 'true'
     }
-    return _requestPromise<SanityProject[]>(this.#client, this.#httpRequestPromise, {
+    return _request<SanityProject[]>(this.#client, this.#httpRequest, {
       uri,
       query,
     }) as Promise<Omit<SanityProject, OmittedProjectFields<T>>[]>
@@ -116,7 +116,7 @@ export class ProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Promise<SanityProject> {
-    return _requestPromise<SanityProject>(this.#client, this.#httpRequestPromise, {
+    return _request<SanityProject>(this.#client, this.#httpRequest, {
       uri: `/projects/${projectId}`,
     })
   }

@@ -1,9 +1,9 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
-  HttpRequestPromise,
+  HttpRequest,
   MediaLibraryAssetInstanceIdentifier,
   MediaLibraryPlaybackInfoOptions,
   SanityReference,
@@ -13,10 +13,10 @@ import type {
 /** @internal */
 export class ObservableMediaLibraryVideoClient {
   #client: ObservableSanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: ObservableSanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -45,7 +45,7 @@ export class ObservableMediaLibraryVideoClient {
     const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
-    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequestPromise, {
+    return _requestObservable<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
       method: 'GET',
       uri,
       query: queryParams,
@@ -56,10 +56,10 @@ export class ObservableMediaLibraryVideoClient {
 /** @internal */
 export class MediaLibraryVideoClient {
   #client: SanityClient
-  #httpRequestPromise: HttpRequestPromise
-  constructor(client: SanityClient, httpRequestPromise: HttpRequestPromise) {
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
   }
 
   /**
@@ -88,7 +88,7 @@ export class MediaLibraryVideoClient {
     const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
-    return _requestPromise<VideoPlaybackInfo>(this.#client, this.#httpRequestPromise, {
+    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
       method: 'GET',
       uri,
       query: queryParams,

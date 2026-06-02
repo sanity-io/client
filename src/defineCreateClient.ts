@@ -2,7 +2,7 @@ import {lastValueFrom} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
 import {defineRequester, type EnvironmentOptions} from './http/request'
-import type {Any, ClientConfig, HttpRequestPromise} from './types'
+import type {Any, ClientConfig, HttpRequest} from './types'
 
 export {validateApiPerspective} from './config'
 export {
@@ -39,10 +39,7 @@ export default function defineCreateClientExports<
   ClientConfigType extends ClientConfig,
 >(
   envOptions: EnvironmentOptions,
-  ClassConstructor: new (
-    httpRequestPromise: HttpRequestPromise,
-    config: ClientConfigType,
-  ) => SanityClientType,
+  ClassConstructor: new (httpRequest: HttpRequest, config: ClientConfigType) => SanityClientType,
 ) {
   // Set the http client to use for requests, and its environment specific options
   const defaultRequester = defineRequester(envOptions).observable
@@ -63,7 +60,7 @@ export default function defineCreateClientExports<
     // honored by bridging it through `lastValueFrom` — the only path that
     // touches RxJS here.
     const userRequester = config.requester
-    const httpRequestPromise: HttpRequestPromise = async (options) => {
+    const httpRequest: HttpRequest = async (options) => {
       const requestOptions = {
         maxRedirects: 0,
         lineage: config.lineage,
@@ -90,7 +87,7 @@ export default function defineCreateClientExports<
       requester: config.requester ?? clientRequester,
       resolveProxyFetch: envOptions.resolveProxyFetch,
     }
-    return new ClassConstructor(httpRequestPromise, resolvedConfig)
+    return new ClassConstructor(httpRequest, resolvedConfig)
   }
 
   return {requester: defaultRequester, createClient}

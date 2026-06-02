@@ -1,13 +1,13 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {
   AgentActionParams,
   AgentActionPathSegment,
   AgentActionTarget,
   Any,
-  HttpRequestPromise,
+  HttpRequest,
   IdentifiedSanityDocumentStub,
 } from '../../types'
 import {hasDataset} from '../../validators'
@@ -149,9 +149,9 @@ export type TranslateDocumentAsync = TranslateRequestBase & AgentActionAsync
 export type TranslateDocument<T extends Record<string, Any> = Record<string, Any>> =
   TranslateDocumentSync<T> | TranslateDocumentAsync
 
-export function _translate<DocumentShape extends Record<string, Any>>(
+export function _translateObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: TranslateDocument<DocumentShape>,
 ): Observable<
   (typeof request)['async'] extends true
@@ -159,16 +159,16 @@ export function _translate<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequestPromise, {
+  return _requestObservable(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/translate/${dataset}`,
     body: request,
   })
 }
 
-export function _translatePromise<DocumentShape extends Record<string, Any>>(
+export function _translate<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: TranslateDocument<DocumentShape>,
 ): Promise<
   (typeof request)['async'] extends true
@@ -176,7 +176,7 @@ export function _translatePromise<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _requestPromise(client, httpRequestPromise, {
+  return _request(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/translate/${dataset}`,
     body: request,

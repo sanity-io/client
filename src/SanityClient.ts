@@ -28,7 +28,7 @@ import type {
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
-  HttpRequestPromise,
+  HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
   MultipleActionResult,
@@ -87,37 +87,37 @@ export class ObservableSanityClient {
    * Private properties
    */
   #clientConfig: InitializedClientConfig
-  #httpRequestPromise: HttpRequestPromise
+  #httpRequest: HttpRequest
 
   /**
    * Instance properties
    */
   listen = _listen
 
-  constructor(httpRequestPromise: HttpRequestPromise, config: ClientConfig = defaultConfig) {
+  constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
     this.config(config)
 
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
 
-    this.assets = new ObservableAssetsClient(this, this.#httpRequestPromise)
-    this.datasets = new ObservableDatasetsClient(this, this.#httpRequestPromise)
+    this.assets = new ObservableAssetsClient(this, this.#httpRequest)
+    this.datasets = new ObservableDatasetsClient(this, this.#httpRequest)
     this.live = new LiveClient(this)
     this.mediaLibrary = {
-      video: new ObservableMediaLibraryVideoClient(this, this.#httpRequestPromise),
+      video: new ObservableMediaLibraryVideoClient(this, this.#httpRequest),
     }
-    this.projects = new ObservableProjectsClient(this, this.#httpRequestPromise)
-    this.users = new ObservableUsersClient(this, this.#httpRequestPromise)
+    this.projects = new ObservableProjectsClient(this, this.#httpRequest)
+    this.users = new ObservableUsersClient(this, this.#httpRequest)
     this.agent = {
-      action: new ObservableAgentsActionClient(this, this.#httpRequestPromise),
+      action: new ObservableAgentsActionClient(this, this.#httpRequest),
     }
-    this.releases = new ObservableReleasesClient(this, this.#httpRequestPromise)
+    this.releases = new ObservableReleasesClient(this, this.#httpRequest)
   }
 
   /**
    * Clone the client - returns a new instance
    */
   clone(): ObservableSanityClient {
-    return new ObservableSanityClient(this.#httpRequestPromise, this.config())
+    return new ObservableSanityClient(this.#httpRequest, this.config())
   }
 
   /**
@@ -150,7 +150,7 @@ export class ObservableSanityClient {
    */
   withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClient {
     const thisConfig = this.config()
-    return new ObservableSanityClient(this.#httpRequestPromise, {
+    return new ObservableSanityClient(this.#httpRequest, {
       ...thisConfig,
       ...newConfig,
       stega: {
@@ -225,9 +225,9 @@ export class ObservableSanityClient {
     params?: Q,
     options?: QueryOptions,
   ): Observable<RawQueryResponse<R> | R> {
-    return dataMethods._fetch<R, Q>(
+    return dataMethods._fetchObservable<R, Q>(
       this,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       this.#clientConfig.stega,
       query,
       params,
@@ -276,7 +276,7 @@ export class ObservableSanityClient {
   ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
     // Implementation needs to handle union type safely
     if (options?.includeAllVersions === true) {
-      return dataMethods._getDocument<R>(this, this.#httpRequestPromise, id, {
+      return dataMethods._getDocumentObservable<R>(this, this.#httpRequest, id, {
         ...options,
         includeAllVersions: true,
       })
@@ -288,7 +288,7 @@ export class ObservableSanityClient {
       releaseId: options?.releaseId,
       ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
     }
-    return dataMethods._getDocument<R>(this, this.#httpRequestPromise, id, opts)
+    return dataMethods._getDocumentObservable<R>(this, this.#httpRequest, id, opts)
   }
 
   /**
@@ -304,7 +304,7 @@ export class ObservableSanityClient {
     ids: string[],
     options?: {tag?: string},
   ): Observable<(SanityDocument<R> | null)[]> {
-    return dataMethods._getDocuments<R>(this, this.#httpRequestPromise, ids, options)
+    return dataMethods._getDocumentsObservable<R>(this, this.#httpRequest, ids, options)
   }
 
   /**
@@ -387,7 +387,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._create<R>(this, this.#httpRequestPromise, document, 'create', options)
+    return dataMethods._createObservable<R>(this, this.#httpRequest, document, 'create', options)
   }
 
   /**
@@ -456,7 +456,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createIfNotExists<R>(this, this.#httpRequestPromise, document, options)
+    return dataMethods._createIfNotExistsObservable<R>(this, this.#httpRequest, document, options)
   }
 
   /**
@@ -525,7 +525,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createOrReplace<R>(this, this.#httpRequestPromise, document, options)
+    return dataMethods._createOrReplaceObservable<R>(this, this.#httpRequest, document, options)
   }
 
   /**
@@ -638,9 +638,9 @@ export class ObservableSanityClient {
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
     if (!document) {
-      return dataMethods._createVersionFromBase(
+      return dataMethods._createVersionFromBaseObservable(
         this,
-        this.#httpRequestPromise,
+        this.#httpRequest,
         publishedId,
         baseId,
         releaseId,
@@ -658,9 +658,9 @@ export class ObservableSanityClient {
     const documentVersion = {...document, _id: documentVersionId}
     const versionPublishedId = publishedId || getPublishedId(document._id)
 
-    return dataMethods._createVersion<R>(
+    return dataMethods._createVersionObservable<R>(
       this,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       documentVersion,
       versionPublishedId,
       options,
@@ -782,7 +782,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._delete<R>(this, this.#httpRequestPromise, selection, options)
+    return dataMethods._deleteObservable<R>(this, this.#httpRequest, selection, options)
   }
 
   /**
@@ -820,9 +820,9 @@ export class ObservableSanityClient {
   ): Observable<SingleActionResult | MultipleActionResult> {
     const documentVersionId = getDocumentVersionId(publishedId, releaseId)
 
-    return dataMethods._discardVersion(
+    return dataMethods._discardVersionObservable(
       this,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       documentVersionId,
       purge,
       options,
@@ -930,7 +930,12 @@ export class ObservableSanityClient {
 
     const documentVersion = {...document, _id: documentVersionId}
 
-    return dataMethods._replaceVersion<R>(this, this.#httpRequestPromise, documentVersion, options)
+    return dataMethods._replaceVersionObservable<R>(
+      this,
+      this.#httpRequest,
+      documentVersion,
+      options,
+    )
   }
 
   /**
@@ -960,9 +965,9 @@ export class ObservableSanityClient {
   ): Observable<SingleActionResult | MultipleActionResult> {
     const versionId = getVersionId(publishedId, releaseId)
 
-    return dataMethods._unpublishVersion(
+    return dataMethods._unpublishVersionObservable(
       this,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       versionId,
       publishedId,
       options,
@@ -1035,7 +1040,7 @@ export class ObservableSanityClient {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._mutate<R>(this, this.#httpRequestPromise, operations, options)
+    return dataMethods._mutateObservable<R>(this, this.#httpRequest, operations, options)
   }
 
   /**
@@ -1097,7 +1102,7 @@ export class ObservableSanityClient {
     operations: Action | Action[],
     options?: BaseActionOptions,
   ): Observable<SingleActionResult | MultipleActionResult> {
-    return dataMethods._action(this, this.#httpRequestPromise, operations, options)
+    return dataMethods._actionObservable(this, this.#httpRequest, operations, options)
   }
 
   /**
@@ -1106,7 +1111,7 @@ export class ObservableSanityClient {
    * @param options - Request options
    */
   request<R = Any>(options: RawRequestOptions): Observable<R> {
-    return dataMethods._request(this, this.#httpRequestPromise, options)
+    return dataMethods._requestObservable(this, this.#httpRequest, options)
   }
 
   /**
@@ -1154,39 +1159,39 @@ export class SanityClient {
    * Private properties
    */
   #clientConfig: InitializedClientConfig
-  #httpRequestPromise: HttpRequestPromise
+  #httpRequest: HttpRequest
 
   /**
    * Instance properties
    */
   listen = _listen
 
-  constructor(httpRequestPromise: HttpRequestPromise, config: ClientConfig = defaultConfig) {
+  constructor(httpRequest: HttpRequest, config: ClientConfig = defaultConfig) {
     this.config(config)
 
-    this.#httpRequestPromise = httpRequestPromise
+    this.#httpRequest = httpRequest
 
-    this.assets = new AssetsClient(this, this.#httpRequestPromise)
-    this.datasets = new DatasetsClient(this, this.#httpRequestPromise)
+    this.assets = new AssetsClient(this, this.#httpRequest)
+    this.datasets = new DatasetsClient(this, this.#httpRequest)
     this.live = new LiveClient(this)
     this.mediaLibrary = {
-      video: new MediaLibraryVideoClient(this, this.#httpRequestPromise),
+      video: new MediaLibraryVideoClient(this, this.#httpRequest),
     }
-    this.projects = new ProjectsClient(this, this.#httpRequestPromise)
-    this.users = new UsersClient(this, this.#httpRequestPromise)
+    this.projects = new ProjectsClient(this, this.#httpRequest)
+    this.users = new UsersClient(this, this.#httpRequest)
     this.agent = {
-      action: new AgentActionsClient(this, this.#httpRequestPromise),
+      action: new AgentActionsClient(this, this.#httpRequest),
     }
-    this.releases = new ReleasesClient(this, this.#httpRequestPromise)
+    this.releases = new ReleasesClient(this, this.#httpRequest)
 
-    this.observable = new ObservableSanityClient(httpRequestPromise, config)
+    this.observable = new ObservableSanityClient(httpRequest, config)
   }
 
   /**
    * Clone the client - returns a new instance
    */
   clone(): SanityClient {
-    return new SanityClient(this.#httpRequestPromise, this.config())
+    return new SanityClient(this.#httpRequest, this.config())
   }
 
   /**
@@ -1223,7 +1228,7 @@ export class SanityClient {
    */
   withConfig(newConfig?: Partial<ClientConfig>): SanityClient {
     const thisConfig = this.config()
-    return new SanityClient(this.#httpRequestPromise, {
+    return new SanityClient(this.#httpRequest, {
       ...thisConfig,
       ...newConfig,
       stega: {
@@ -1298,9 +1303,9 @@ export class SanityClient {
     params?: Q,
     options?: QueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>> | ClientReturn<G, R>> {
-    return dataMethods._fetchPromise<ClientReturn<G, R>, Q>(
+    return dataMethods._fetch<ClientReturn<G, R>, Q>(
       this,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       this.#clientConfig.stega,
       query,
       params,
@@ -1349,7 +1354,7 @@ export class SanityClient {
   ): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
     // Implementation needs to handle union type safely
     if (options?.includeAllVersions === true) {
-      return dataMethods._getDocumentPromise<R>(this, this.#httpRequestPromise, id, {
+      return dataMethods._getDocument<R>(this, this.#httpRequest, id, {
         ...options,
         includeAllVersions: true,
       })
@@ -1361,7 +1366,7 @@ export class SanityClient {
       releaseId: options?.releaseId,
       ...(options && 'includeAllVersions' in options ? {includeAllVersions: false as const} : {}),
     }
-    return dataMethods._getDocumentPromise<R>(this, this.#httpRequestPromise, id, opts)
+    return dataMethods._getDocument<R>(this, this.#httpRequest, id, opts)
   }
 
   /**
@@ -1377,7 +1382,7 @@ export class SanityClient {
     ids: string[],
     options?: {signal?: AbortSignal; tag?: string},
   ): Promise<(SanityDocument<R> | null)[]> {
-    return dataMethods._getDocumentsPromise<R>(this, this.#httpRequestPromise, ids, options)
+    return dataMethods._getDocuments<R>(this, this.#httpRequest, ids, options)
   }
 
   /**
@@ -1460,13 +1465,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createPromise<R>(
-      this,
-      this.#httpRequestPromise,
-      document,
-      'create',
-      options,
-    )
+    return dataMethods._create<R>(this, this.#httpRequest, document, 'create', options)
   }
 
   /**
@@ -1535,12 +1534,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createIfNotExistsPromise<R>(
-      this,
-      this.#httpRequestPromise,
-      document,
-      options,
-    )
+    return dataMethods._createIfNotExists<R>(this, this.#httpRequest, document, options)
   }
 
   /**
@@ -1609,7 +1603,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._createOrReplacePromise<R>(this, this.#httpRequestPromise, document, options)
+    return dataMethods._createOrReplace<R>(this, this.#httpRequest, document, options)
   }
 
   /**
@@ -1710,9 +1704,9 @@ export class SanityClient {
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
     if (!document) {
-      return dataMethods._createVersionFromBasePromise(
+      return dataMethods._createVersionFromBase(
         this,
-        this.#httpRequestPromise,
+        this.#httpRequest,
         publishedId,
         baseId,
         releaseId,
@@ -1730,9 +1724,9 @@ export class SanityClient {
     const documentVersion = {...document, _id: documentVersionId}
     const versionPublishedId = publishedId || getPublishedId(document._id)
 
-    return dataMethods._createVersionPromise<R>(
+    return dataMethods._createVersion<R>(
       this,
-      this.#httpRequestPromise,
+      this.#httpRequest,
       documentVersion,
       versionPublishedId,
       options,
@@ -1854,7 +1848,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._deletePromise<R>(this, this.#httpRequestPromise, selection, options)
+    return dataMethods._delete<R>(this, this.#httpRequest, selection, options)
   }
 
   /**
@@ -1892,13 +1886,7 @@ export class SanityClient {
   ): Promise<SingleActionResult | MultipleActionResult> {
     const documentVersionId = getDocumentVersionId(publishedId, releaseId)
 
-    return dataMethods._discardVersionPromise(
-      this,
-      this.#httpRequestPromise,
-      documentVersionId,
-      purge,
-      options,
-    )
+    return dataMethods._discardVersion(this, this.#httpRequest, documentVersionId, purge, options)
   }
 
   /**
@@ -2003,12 +1991,7 @@ export class SanityClient {
 
     const documentVersion = {...document, _id: documentVersionId}
 
-    return dataMethods._replaceVersionPromise<R>(
-      this,
-      this.#httpRequestPromise,
-      documentVersion,
-      options,
-    )
+    return dataMethods._replaceVersion<R>(this, this.#httpRequest, documentVersion, options)
   }
 
   /**
@@ -2038,13 +2021,7 @@ export class SanityClient {
   ): Promise<SingleActionResult | MultipleActionResult> {
     const versionId = getVersionId(publishedId, releaseId)
 
-    return dataMethods._unpublishVersionPromise(
-      this,
-      this.#httpRequestPromise,
-      versionId,
-      publishedId,
-      options,
-    )
+    return dataMethods._unpublishVersion(this, this.#httpRequest, versionId, publishedId, options)
   }
 
   /**
@@ -2113,7 +2090,7 @@ export class SanityClient {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    return dataMethods._mutatePromise<R>(this, this.#httpRequestPromise, operations, options)
+    return dataMethods._mutate<R>(this, this.#httpRequest, operations, options)
   }
 
   /**
@@ -2176,7 +2153,7 @@ export class SanityClient {
     operations: Action | Action[],
     options?: BaseActionOptions,
   ): Promise<SingleActionResult | MultipleActionResult> {
-    return dataMethods._actionPromise(this, this.#httpRequestPromise, operations, options)
+    return dataMethods._action(this, this.#httpRequest, operations, options)
   }
 
   /**
@@ -2187,7 +2164,7 @@ export class SanityClient {
    * @returns Promise resolving to the response body
    */
   request<R = Any>(options: RawRequestOptions): Promise<R> {
-    return dataMethods._requestPromise<R>(this, this.#httpRequestPromise, options)
+    return dataMethods._request<R>(this, this.#httpRequest, options)
   }
 
   /**
@@ -2201,7 +2178,7 @@ export class SanityClient {
    * @internal
    */
   dataRequest(endpoint: string, body: unknown, options?: BaseMutationOptions): Promise<Any> {
-    return dataMethods._dataRequestPromise(this, this.#httpRequestPromise, endpoint, body, options)
+    return dataMethods._dataRequest(this, this.#httpRequest, endpoint, body, options)
   }
 
   /**

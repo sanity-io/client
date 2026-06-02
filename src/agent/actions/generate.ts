@@ -1,13 +1,8 @@
 import {type Observable} from 'rxjs'
 
-import {_request, _requestPromise} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
-import type {
-  AgentActionParams,
-  Any,
-  HttpRequestPromise,
-  IdentifiedSanityDocumentStub,
-} from '../../types'
+import type {AgentActionParams, Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
 import {hasDataset} from '../../validators'
 import type {
   AgentActionAsync,
@@ -292,9 +287,9 @@ export type GenerateAsyncInstruction<T extends Record<string, Any> = Record<stri
 export type GenerateInstruction<T extends Record<string, Any> = Record<string, Any>> =
   GenerateSyncInstruction<T> | GenerateAsyncInstruction<T>
 
-export function _generate<DocumentShape extends Record<string, Any>>(
+export function _generateObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: GenerateInstruction<DocumentShape>,
 ): Observable<
   (typeof request)['async'] extends true
@@ -302,16 +297,16 @@ export function _generate<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _request(client, httpRequestPromise, {
+  return _requestObservable(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/generate/${dataset}`,
     body: request,
   })
 }
 
-export function _generatePromise<DocumentShape extends Record<string, Any>>(
+export function _generate<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   request: GenerateInstruction<DocumentShape>,
 ): Promise<
   (typeof request)['async'] extends true
@@ -319,7 +314,7 @@ export function _generatePromise<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
-  return _requestPromise(client, httpRequestPromise, {
+  return _request(client, httpRequest, {
     method: 'POST',
     uri: `/agent/action/generate/${dataset}`,
     body: request,

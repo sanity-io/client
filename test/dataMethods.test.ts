@@ -4,7 +4,7 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import * as dataMethods from '../src/data/dataMethods'
 import type {
   ClientConfig,
-  HttpRequestPromise,
+  HttpRequest,
   InitializedClientConfig,
   RawQueryResponse,
   SanityDocument,
@@ -46,7 +46,7 @@ type MethodOptions = {
 
 type DataMethodFn<T = unknown, Args extends readonly unknown[] = readonly unknown[]> = (
   clientObj: ClientLike,
-  httpRequestPromise: HttpRequestPromise,
+  httpRequest: HttpRequest,
   ...args: [...Args, MethodOptions?]
 ) => Observable<T>
 
@@ -193,7 +193,7 @@ describe('dataMethods', async () => {
     })
   })
 
-  describe('_getDocument', () => {
+  describe('_getDocumentObservable', () => {
     const mockHttpRequest = vi.fn()
     const docId = 'someDocId'
     const draftId = 'drafts.someDocId'
@@ -216,7 +216,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId)
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId)
 
       return assertObservable(observable, (document) => {
         expect(document).toEqual(mockDoc)
@@ -229,21 +229,21 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId)
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId)
 
       return assertObservable(observable, (document) => {
         expect(document).toBeUndefined()
       })
     })
 
-    testTagOption('_getDocument', dataMethods._getDocument, [docId])
-    testSignalOption('_getDocument', dataMethods._getDocument, [docId])
+    testTagOption('_getDocumentObservable', dataMethods._getDocumentObservable, [docId])
+    testSignalOption('_getDocumentObservable', dataMethods._getDocumentObservable, [docId])
 
     test('uses version ID when releaseId is provided', () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([{...mockDoc, _id: versionId}]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId, {
         releaseId,
       })
 
@@ -257,7 +257,9 @@ describe('dataMethods', async () => {
     test('throws error when releaseId is provided with a draft ID', () => {
       const client = getClient()
 
-      const observable = dataMethods._getDocument(client, mockHttpRequest, draftId, {releaseId})
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, draftId, {
+        releaseId,
+      })
 
       return assertObservableError(observable, (error) => {
         expect(error).toBeInstanceOf(Error)
@@ -271,7 +273,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([{...mockDoc, _id: versionId}]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, versionId, {
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, versionId, {
         releaseId,
       })
 
@@ -287,9 +289,14 @@ describe('dataMethods', async () => {
       const differentReleaseId = 'differentReleaseId'
       const differentVersionId = `versions.${differentReleaseId}.${docId}`
 
-      const observable = dataMethods._getDocument(client, mockHttpRequest, differentVersionId, {
-        releaseId,
-      })
+      const observable = dataMethods._getDocumentObservable(
+        client,
+        mockHttpRequest,
+        differentVersionId,
+        {
+          releaseId,
+        },
+      )
 
       return assertObservableError(observable, (error) => {
         expect(error).toBeInstanceOf(Error)
@@ -316,7 +323,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse(multipleVersions))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId, {
         includeAllVersions: true,
       })
 
@@ -333,7 +340,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId, {
         includeAllVersions: false,
       })
 
@@ -349,7 +356,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([mockDoc]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {})
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId, {})
 
       return assertObservable(observable, (document) => {
         expect(mockHttpRequest).toHaveBeenCalledTimes(1)
@@ -363,7 +370,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId, {
         includeAllVersions: true,
       })
 
@@ -379,7 +386,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse([]))
 
       const client = getClient()
-      const observable = dataMethods._getDocument(client, mockHttpRequest, docId, {
+      const observable = dataMethods._getDocumentObservable(client, mockHttpRequest, docId, {
         includeAllVersions: false,
       })
 
@@ -391,7 +398,7 @@ describe('dataMethods', async () => {
     })
   })
 
-  describe('_getDocuments', () => {
+  describe('_getDocumentsObservable', () => {
     const mockHttpRequest = vi.fn()
     const docIds = ['doc1', 'doc2', 'doc3']
     const mockDocs = [
@@ -429,7 +436,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse(mockDocs))
 
       const client = getClient()
-      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds)
+      const observable = dataMethods._getDocumentsObservable(client, mockHttpRequest, docIds)
 
       return assertObservable(observable, (documents) => {
         expect(documents).toEqual(mockDocs)
@@ -443,15 +450,15 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse(availableDocs))
 
       const client = getClient()
-      const observable = dataMethods._getDocuments(client, mockHttpRequest, docIds)
+      const observable = dataMethods._getDocumentsObservable(client, mockHttpRequest, docIds)
 
       return assertObservable(observable, (documents) => {
         expect(documents).toEqual([mockDocs[0], null, mockDocs[2]])
       })
     })
 
-    testTagOption('_getDocuments', dataMethods._getDocuments, [docIds])
-    testSignalOption('_getDocuments', dataMethods._getDocuments, [docIds])
+    testTagOption('_getDocumentsObservable', dataMethods._getDocumentsObservable, [docIds])
+    testSignalOption('_getDocumentsObservable', dataMethods._getDocumentsObservable, [docIds])
 
     test('fetches versioned documents', () => {
       const releaseId = 'someReleaseId'
@@ -461,7 +468,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockResponse(versionDocs))
 
       const client = getClient()
-      const observable = dataMethods._getDocuments(client, mockHttpRequest, versionIds)
+      const observable = dataMethods._getDocumentsObservable(client, mockHttpRequest, versionIds)
 
       return assertObservable(observable, (documents) => {
         expect(documents).toEqual(versionDocs)
@@ -472,7 +479,7 @@ describe('dataMethods', async () => {
     })
   })
 
-  describe('_getReleaseDocuments', () => {
+  describe('_getReleaseDocumentsObservable', () => {
     const mockHttpRequest = vi.fn()
     const releaseId = 'summerRelease'
     const mockDocs = [
@@ -502,7 +509,11 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockReturnValueOnce(createMockQueryResponse(mockDocs))
 
       const client = getClient()
-      const observable = dataMethods._getReleaseDocuments(client, mockHttpRequest, releaseId)
+      const observable = dataMethods._getReleaseDocumentsObservable(
+        client,
+        mockHttpRequest,
+        releaseId,
+      )
 
       return assertObservable<RawQueryResponse<SanityDocument[]>>(observable, (response) => {
         expect(response.result).toEqual(mockDocs)
@@ -517,13 +528,19 @@ describe('dataMethods', async () => {
       })
     })
 
-    testTagOption('_getReleaseDocuments', dataMethods._getReleaseDocuments, [releaseId])
+    testTagOption('_getReleaseDocumentsObservable', dataMethods._getReleaseDocumentsObservable, [
+      releaseId,
+    ])
 
     test('handles empty response', () => {
       mockHttpRequest.mockReturnValueOnce(createMockQueryResponse([]))
 
       const client = getClient()
-      const observable = dataMethods._getReleaseDocuments(client, mockHttpRequest, releaseId)
+      const observable = dataMethods._getReleaseDocumentsObservable(
+        client,
+        mockHttpRequest,
+        releaseId,
+      )
 
       return assertObservable<RawQueryResponse<SanityDocument[]>>(observable, (response) => {
         expect(response.result).toEqual([])
@@ -537,7 +554,7 @@ describe('dataMethods', async () => {
     })
   })
 
-  describe('_createVersionFromBase', () => {
+  describe('_createVersionFromBaseObservable', () => {
     const mockHttpRequest = vi.fn()
     const publishedId = 'pub123'
     const baseId = 'base456'
@@ -560,7 +577,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
-      const observable = dataMethods._createVersionFromBase(
+      const observable = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         publishedId,
@@ -595,7 +612,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
-      const observable = dataMethods._createVersionFromBase(
+      const observable = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         publishedId,
@@ -625,7 +642,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
-      const observable = dataMethods._createVersionFromBase(
+      const observable = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         publishedId,
@@ -658,7 +675,7 @@ describe('dataMethods', async () => {
     test('throws when baseId is missing', () => {
       const client = getClient()
 
-      const observable = dataMethods._createVersionFromBase(
+      const observable = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         publishedId,
@@ -685,7 +702,7 @@ describe('dataMethods', async () => {
       mockHttpRequest.mockResolvedValueOnce({transactionId: 'abc123'})
 
       const client = getClient()
-      const observable = dataMethods._createVersionFromBase(
+      const observable = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         publishedId,
@@ -707,7 +724,7 @@ describe('dataMethods', async () => {
     test('throws when publishedId is missing', () => {
       const client = getClient()
 
-      const observable = dataMethods._createVersionFromBase(
+      const observable = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         undefined,
@@ -726,7 +743,7 @@ describe('dataMethods', async () => {
     test('validates document IDs', async () => {
       const client = getClient()
 
-      const invalidPublishedId = dataMethods._createVersionFromBase(
+      const invalidPublishedId = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         'invalid*id',
@@ -739,7 +756,7 @@ describe('dataMethods', async () => {
         expect(error.message).toMatch(/is not a valid document ID/)
       })
 
-      const invalidBaseId = dataMethods._createVersionFromBase(
+      const invalidBaseId = dataMethods._createVersionFromBaseObservable(
         client,
         mockHttpRequest,
         publishedId,

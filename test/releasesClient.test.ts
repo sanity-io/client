@@ -11,7 +11,7 @@ import type {
   CreateReleaseAction,
   DeleteReleaseAction,
   EditReleaseAction,
-  HttpRequestPromise,
+  HttpRequest,
   PatchOperations,
   PublishReleaseAction,
   ReleaseAction,
@@ -582,7 +582,7 @@ describe('ObservableReleasesClient', () => {
 
     observableReleasesClient = new ObservableReleasesClient(
       client.observable as ObservableSanityClient,
-      observableHttpRequest as HttpRequestPromise,
+      observableHttpRequest as HttpRequest,
     )
   })
 
