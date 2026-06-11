@@ -5070,6 +5070,31 @@ describe('client', async () => {
       expect(callSiteStack).toBeInstanceOf(Error)
     })
 
+    test.runIf(isNode)('includes async user callsite in HTTP error stack', async () => {
+      nock(projectHost())
+        .get('/v1/data/query/foo')
+        .query({query: '*[_type == "post"]', returnQuery: 'false'})
+        .reply(400, {
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'Invalid request parameters',
+        })
+
+      const client = getClient({maxRetries: 0})
+
+      async function fetchPostsFromUserCallsite() {
+        await Promise.resolve()
+        return client.fetch('*[_type == "post"]')
+      }
+
+      const err = await fetchPostsFromUserCallsite().catch((error) => error)
+
+      expect(err).toBeInstanceOf(ClientError)
+      expect(err.stack).toMatch(
+        /\n\s+at fetchPostsFromUserCallsite \(.+test\/client\.test\.ts:\d+:\d+\)/,
+      )
+    })
+
     test('ClientError includes message in stack', () => {
       const body = {error: {description: 'Invalid query'}}
       const error = new ClientError({statusCode: 400, headers: {}, body})
