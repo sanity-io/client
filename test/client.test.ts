@@ -5089,9 +5089,13 @@ describe('client', async () => {
 
       const err = await fetchPostsFromUserCallsite().catch((error) => error)
 
+      const escapedPathSep = path.sep === '\\' ? '\\\\' : path.sep
+
       expect(err).toBeInstanceOf(ClientError)
       expect(err.stack).toMatch(
-        /\n\s+at fetchPostsFromUserCallsite \(.+test\/client\.test\.ts:\d+:\d+\)/,
+        new RegExp(
+          `\\n\\s+at fetchPostsFromUserCallsite \\(.+test${escapedPathSep}client\\.test\\.ts:\\d+:\\d+\\)`,
+        ),
       )
     })
 
