@@ -5,6 +5,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.23.0](https://github.com/sanity-io/client/compare/v7.22.1...v7.23.0) (2026-06-17)
+
+
+### Features
+
+* add documentsExists for batch existence checks ([#1215](https://github.com/sanity-io/client/issues/1215)) ([7c0406a](https://github.com/sanity-io/client/commit/7c0406a2714c977abc969e1c64240a8dac1a21d9))
+* improve get-it HTTP stacktraces ([#1184](https://github.com/sanity-io/client/issues/1184)) ([d3aad14](https://github.com/sanity-io/client/commit/d3aad14fff00bc5ab7b9d76f956130e3d89ebd90))
+
 ## [7.22.1](https://github.com/sanity-io/client/compare/v7.22.0...v7.22.1) (2026-05-28)
 
 
