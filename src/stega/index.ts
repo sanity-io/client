@@ -6,9 +6,8 @@ import {
   SanityClient,
 } from '@sanity/client'
 
-export {encodeIntoResult} from './encodeIntoResult'
 export {stegaClean, vercelStegaCleanAll} from './stegaClean'
-export {stegaEncodeSourceMap} from './stegaEncodeSourceMap'
+export {encodeIntoResult, stegaEncodeSourceMap} from './stegaEncodeSourceMap'
 export * from './types'
 
 /**

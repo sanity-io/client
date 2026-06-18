@@ -2,7 +2,7 @@ import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
 describe('Client config warnings', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  const {createClient} = await import(isEdge ? '../dist/index.browser.js' : '../src')
+  const {createClient} = await import(isEdge ? '../dist/index.js' : '../src')
 
   const warn = vi.spyOn(console, 'warn')
   beforeEach(() => {
