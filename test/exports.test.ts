@@ -3,12 +3,13 @@ import {describe, expect, test} from 'vitest'
 import pkg from '../package.json'
 
 /**
- * The browser/fetch build that worker/edge runtimes must resolve. The Node
- * build (`./dist/index.js`) pulls in `get-it/node` (undici), which is not
+ * The default platform-neutral fetch build that worker/edge runtimes (and
+ * everything that isn't Node) must resolve. The Node build
+ * (`./dist/index.node.js`) pulls in `get-it/node` (undici), which is not
  * available on worker runtimes.
  */
-const FETCH_BUILD = './dist/index.browser.js'
-const NODE_BUILD = './dist/index.js'
+const FETCH_BUILD = './dist/index.js'
+const NODE_BUILD = './dist/index.node.js'
 
 type ExportEntry = string | {[condition: string]: ExportEntry}
 
@@ -81,13 +82,13 @@ describe('pkg.exports["."]', () => {
   test('check that `source` fields are in sync with test expectations', () => {
     // if these entries change then ensure test suites have updated assumptions
     expect(pkg.exports['.'].source).toBe('./src/index.ts')
-    expect(pkg.exports['.'].browser.source).toBe('./src/index.browser.ts')
+    expect(pkg.exports['.'].node.source).toBe('./src/index.node.ts')
   })
-  test('ensure the `source` and `browser.source` entries have the same exports', async () => {
-    // It can be easy to forget changing index.browser.ts while changing index.ts
+  test('ensure the default and `node` entries have the same exports', async () => {
+    // It can be easy to forget changing index.node.ts while changing index.ts
     const source = await import('../src/index')
-    const browser = await import('../src/index.browser')
-    expect(Object.keys(source)).toEqual(Object.keys(browser))
+    const node = await import('../src/index.node')
+    expect(Object.keys(source)).toEqual(Object.keys(node))
   })
   // eslint-disable-next-line no-warning-comments
   // @TODO disabling this test until we no longer have the migrationNotice.ts
@@ -97,8 +98,8 @@ describe('pkg.exports["."]', () => {
       `src/index.ts shouldn't have a default export`,
     ).resolves.not.toHaveProperty('default')
     await expect(
-      import('../src/index.browser'),
-      `src/index.browser.ts shouldn't have a default export`,
+      import('../src/index.node'),
+      `src/index.node.ts shouldn't have a default export`,
     ).resolves.not.toHaveProperty('default')
   })
 })

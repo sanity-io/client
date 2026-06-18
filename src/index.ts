@@ -1,6 +1,6 @@
 import defineCreateClientExports, {type ClientConfig, SanityClient} from './defineCreateClient'
 import {defineDeprecatedCreateClient} from './defineDeprecatedCreateClient'
-import environment from './http/nodeMiddleware'
+import environment from './http/browserMiddleware'
 import type {Requester} from './types'
 
 export * from './defineCreateClient'

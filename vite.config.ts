@@ -13,7 +13,8 @@ export default defineConfig({
     alias: {
       '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
       '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
-      '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
+      // The default Node suite exercises the Node build (undici middleware).
+      '@sanity/client': new URL(pkg.exports['.'].node.source, import.meta.url).pathname,
     },
     typecheck: {
       enabled: true,

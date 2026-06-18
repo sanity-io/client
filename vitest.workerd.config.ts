@@ -25,9 +25,8 @@ export default defineConfig({
     // the packaging-resolution guard in `test/exports.test.ts` instead.
     alias: {
       '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
-      '@sanity/client/stega': new URL(pkg.exports['./stega'].browser.source, import.meta.url)
-        .pathname,
-      '@sanity/client': new URL(pkg.exports['.'].browser.source, import.meta.url).pathname,
+      '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
+      '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
     },
     server: {
       deps: {

@@ -3,7 +3,7 @@ const nodeResolve = require('@rollup/plugin-node-resolve')
 const commonjs = require('@rollup/plugin-commonjs')
 
 module.exports = {
-  input: 'dist/index.browser.js',
+  input: 'dist/index.js',
   output: {
     file: 'umd/sanityClient.js',
     format: 'umd',
