@@ -40,6 +40,7 @@
       "deno": "./dist/index.browser.js",
       "edge": "./dist/index.browser.js",
       "edge-light": "./dist/index.browser.js",
+      "workerd": "./dist/index.browser.js",
       "worker": "./dist/index.browser.js",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
@@ -101,13 +102,14 @@
     "prepublishOnly": "npm run build",
     "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
     "test": "vitest",
-    "test:browser": "npm test -- --config ./vitest.browser.config.ts",
+    "test:browser": "vitest run --config ./vitest.browser.config.ts",
     "test:bun": "bun test runtimes/bun",
     "test:deno": "deno test --allow-read --allow-net --allow-env --fail-fast --import-map=runtimes/deno/import_map.json runtimes/deno",
     "test:deno:update_import_map": "deno run --allow-read --allow-write runtimes/deno/update_import_map.ts",
-    "test:edge-runtime": "npm test -- --config vitest.edge.config.ts",
-    "test:next": "npm test -- --config ./vitest.next.config.ts",
-    "test:node-runtimes": "(cd runtimes/node && node --test)"
+    "test:next": "vitest run --config ./vitest.next.config.ts",
+    "test:node-runtimes": "(cd runtimes/node && node --test)",
+    "test:vercel-edge": "vitest run --config ./vitest.vercel-edge.config.ts",
+    "test:workerd": "vitest run --config ./vitest.workerd.config.ts"
   },
   "browserslist": "extends @sanity/browserslist-config",
   "prettier": {
@@ -127,6 +129,7 @@
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.16",
     "@edge-runtime/types": "^4.0.0",
     "@edge-runtime/vm": "^5.0.0",
     "@eslint/eslintrc": "^3.3.1",
@@ -169,6 +172,6 @@
   },
   "packageManager": "npm@11.4.1",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.12.0"
   }
 }
