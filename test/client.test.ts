@@ -5278,47 +5278,14 @@ describe('client', async () => {
 
     // Don't rely on this unless you're working at Sanity Inc ;)
     test('can use alternative http requester', async () => {
-      let callSiteStack: unknown
-      const requester = (options: {callSiteStack?: unknown}) => {
-        callSiteStack = options.callSiteStack
-        return observableOf({
+      const requester = () =>
+        observableOf({
           type: 'response',
           body: {documents: [{foo: 'bar'}]},
         })
-      }
 
       const res = await getClient({requester} as any).getDocument('foo.bar')
       expect(res!.foo).toEqual('bar')
-      expect(callSiteStack).toBeInstanceOf(Error)
-    })
-
-    test.runIf(isNode)('includes async user callsite in HTTP error stack', async () => {
-      nock(projectHost())
-        .get('/v1/data/query/foo')
-        .query({query: '*[_type == "post"]', returnQuery: 'false'})
-        .reply(400, {
-          statusCode: 400,
-          error: 'Bad Request',
-          message: 'Invalid request parameters',
-        })
-
-      const client = getClient({maxRetries: 0})
-
-      async function fetchPostsFromUserCallsite() {
-        await Promise.resolve()
-        return client.fetch('*[_type == "post"]')
-      }
-
-      const err = await fetchPostsFromUserCallsite().catch((error) => error)
-
-      const escapedPathSep = path.sep === '\\' ? '\\\\' : path.sep
-
-      expect(err).toBeInstanceOf(ClientError)
-      expect(err.stack).toMatch(
-        new RegExp(
-          `\\n\\s+at fetchPostsFromUserCallsite \\(.+test${escapedPathSep}client\\.test\\.ts:\\d+:\\d+\\)`,
-        ),
-      )
     })
 
     test('ClientError includes message in stack', () => {

@@ -318,7 +318,7 @@ export class ObservableSanityClient {
     ids: string[],
     options?: {signal?: AbortSignal; tag?: string},
   ): Observable<Set<string>> {
-    return dataMethods._documentsExists(this, this.#httpRequest, ids, options)
+    return dataMethods._documentsExistsObservable(this, this.#httpRequest, ids, options)
   }
 
   /**
@@ -1396,7 +1396,7 @@ export class SanityClient {
     ids: string[],
     options?: {signal?: AbortSignal; tag?: string},
   ): Promise<Set<string>> {
-    return lastValueFrom(dataMethods._documentsExists(this, this.#httpRequest, ids, options))
+    return dataMethods._documentsExists(this, this.#httpRequest, ids, options)
   }
 
   /**

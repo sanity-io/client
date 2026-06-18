@@ -1,6 +1,6 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
-import {from, type MonoTypeOperatorFunction, Observable, of} from 'rxjs'
-import {concatMap, filter, map, reduce} from 'rxjs/operators'
+import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
+import {filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
 import {requestOptions} from '../http/requestOptions'
@@ -326,46 +326,54 @@ function _mapGetDocuments<R extends Record<string, Any>>(
 const DOCUMENTS_EXISTS_BATCH_SIZE = 100
 
 /** @internal */
-export function _documentsExists(
+export function _documentsExistsObservable(
   client: Client,
   httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<Set<string>> {
+  return _observe(opts.signal, (signal) =>
+    _documentsExists(client, httpRequest, ids, {...opts, signal}),
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _documentsExistsObservable}. Checks document
+ * existence in batches, resolving to the set of IDs that exist.
+ *
+ * @internal
+ */
+export async function _documentsExists(
+  client: Client,
+  httpRequest: HttpRequest,
+  ids: string[],
+  opts: {signal?: AbortSignal; tag?: string} = {},
+): Promise<Set<string>> {
+  const existing = new Set<string>()
   if (ids.length === 0) {
-    return of(new Set<string>())
+    return existing
   }
 
-  const batches: string[][] = []
   for (let i = 0; i < ids.length; i += DOCUMENTS_EXISTS_BATCH_SIZE) {
-    batches.push(ids.slice(i, i + DOCUMENTS_EXISTS_BATCH_SIZE))
-  }
-
-  const fetchBatch = (batchIds: string[]) =>
-    _requestObservable<Any>(client, httpRequest, {
+    const batchIds = ids.slice(i, i + DOCUMENTS_EXISTS_BATCH_SIZE)
+    const body = await _request<{omitted?: {id: string; reason: string}[]}>(client, httpRequest, {
       uri: _getDataUrl(client, 'doc', batchIds.map(encodeURIComponent).join(',')),
       tag: opts.tag,
       signal: opts.signal,
       query: {excludeContent: true},
-    }).pipe(
-      filter(isResponse),
-      map((event: Any) => {
-        const missing = new Set<string>()
-        for (const omitted of event.body.omitted || []) {
-          if (omitted.reason !== 'existence') continue
-          missing.add(omitted.id)
-        }
-        return new Set(batchIds.filter((id) => !missing.has(id)))
-      }),
-    )
+    })
 
-  return from(batches).pipe(
-    concatMap(fetchBatch),
-    reduce((acc, set) => {
-      for (const id of set) acc.add(id)
-      return acc
-    }, new Set<string>()),
-  )
+    const missing = new Set<string>()
+    for (const omitted of body.omitted || []) {
+      if (omitted.reason !== 'existence') continue
+      missing.add(omitted.id)
+    }
+    for (const id of batchIds) {
+      if (!missing.has(id)) existing.add(id)
+    }
+  }
+
+  return existing
 }
 
 /** @internal */
