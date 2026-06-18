@@ -1,6 +1,3 @@
-import {lastValueFrom} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
-
 import {defineRequester, type EnvironmentOptions} from './http/request'
 import type {Any, ClientConfig, HttpRequest} from './types'
 
@@ -55,36 +52,24 @@ export default function defineCreateClientExports<
     )
     // The single transport for the whole client. Resolves a request to its
     // parsed response body as a Promise; the observable client surface wraps
-    // this in `new Observable(...)` (see `_observe` in dataMethods). A
-    // user-supplied custom `requester` (deprecated, observable-typed) is
-    // honored by bridging it through `lastValueFrom` — the only path that
-    // touches RxJS here.
-    const userRequester = config.requester
+    // this in `new Observable(...)` (see `_observe` in dataMethods).
     const httpRequest: HttpRequest = async (options) => {
       const requestOptions = {
         maxRedirects: 0,
         lineage: config.lineage,
         ...options,
       } as Any
-      if (userRequester) {
-        return lastValueFrom(
-          userRequester(requestOptions).pipe(
-            filter((event: Any) => event?.type === 'response'),
-            map((event: Any) => event.body as unknown),
-          ),
-        )
-      }
       const event = await clientRequesterPromise(requestOptions)
       return event.body
     }
-    // Ensure `config.requester` is always populated so internal paths
+    // Populate `requester` on the initialized config so internal paths
     // (e.g. the asset upload event stream) can reach the underlying transport.
     // `resolveProxyFetch` is threaded onto the config so EventSource fetches
     // can reach a proxy-aware fetch without importing `get-it/node` from a
     // browser-shared module (would leak `undici` into the browser bundle).
     const resolvedConfig = {
       ...config,
-      requester: config.requester ?? clientRequester,
+      requester: clientRequester,
       resolveProxyFetch: envOptions.resolveProxyFetch,
     }
     return new ClassConstructor(httpRequest, resolvedConfig)
