@@ -1200,8 +1200,8 @@ export function _requestObservable<R>(
  * exposing the full upload event stream (progress + response).
  *
  * Bypasses the body-only `HttpRequest` boundary so progress events from the
- * transport layer can surface to consumers. Asset uploads are not routed
- * through `_requestHandler`.
+ * transport layer can surface to consumers, reading the resolved requester
+ * straight off the initialized config.
  *
  * @internal
  */
@@ -1210,7 +1210,7 @@ export function _uploadObservable<T>(
   options: RequestObservableOptions,
 ): Observable<UploadEvent<T>> {
   const reqOptions = _prepareRequest(client, options)
-  const requester = client.config().requester!
+  const requester = client.config().requester
   const request = new Observable<Any>((subscriber) =>
     requester(reqOptions).subscribe(subscriber),
   ).pipe(

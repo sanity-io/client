@@ -25,7 +25,7 @@ import {
   type VideoPlaybackInfoSigned,
 } from '@sanity/client'
 import {encode} from 'eventsource-encoder'
-import {firstValueFrom, lastValueFrom, of as observableOf, toArray} from 'rxjs'
+import {firstValueFrom, lastValueFrom, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'
 import {describe, expect, expectTypeOf, test, vi} from 'vitest'
 
@@ -46,7 +46,12 @@ const fixture = (name: string) => path.join(__dirname, 'fixtures', name)
 
 describe('client', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  const isNode = !isEdge && typeof document === 'undefined'
+  // workerd has `typeof document === 'undefined'` AND shims
+  // `process.versions.node`, so neither distinguishes it from Node. The only
+  // reliable signal is its user agent.
+  const isCloudflareWorker =
+    typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers'
+  const isNode = !isEdge && !isCloudflareWorker && typeof document === 'undefined'
   let nock: typeof import('./helpers/nockShim').default = (() => {
     throw new Error('Not supported in EdgeRuntime')
   }) as any
@@ -5274,18 +5279,6 @@ describe('client', async () => {
       nock(projectHost(), {reqheaders}).get('/v1/data/doc/foo/bar').reply(200, {documents: []})
 
       await expect(getClient().getDocument('bar')).resolves.not.toThrow()
-    })
-
-    // Don't rely on this unless you're working at Sanity Inc ;)
-    test('can use alternative http requester', async () => {
-      const requester = () =>
-        observableOf({
-          type: 'response',
-          body: {documents: [{foo: 'bar'}]},
-        })
-
-      const res = await getClient({requester} as any).getDocument('foo.bar')
-      expect(res!.foo).toEqual('bar')
     })
 
     test('ClientError includes message in stack', () => {

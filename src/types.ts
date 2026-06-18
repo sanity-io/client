@@ -208,11 +208,6 @@ export interface ClientConfig {
   useProjectHostname?: boolean
 
   /**
-   * @deprecated Don't use
-   */
-  requester?: Requester
-
-  /**
    * Set internally by the environment-specific entry point so the EventSource
    * fetch helper can build a proxy-aware fetch without itself importing
    * `get-it/node` (which would pull `undici` into the browser bundle).
@@ -268,6 +263,14 @@ export interface InitializedClientConfig extends ClientConfig {
    * The fully initialized stega config, can be used to check if stega is enabled
    */
   stega: InitializedStegaConfig
+  /**
+   * The resolved low-level requester for this client. Always populated by
+   * `createClient` so internal paths (e.g. the asset upload event stream) can
+   * reach the underlying transport.
+   *
+   * @internal
+   */
+  requester: Requester
   /**
    * Default headers to include with all requests
    *
