@@ -336,15 +336,21 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(event.type).toBe('reconnect')
     })
 
-    test('uses non-project hostname for /check/cors when useProjectHostname is false', async () => {
-      expect.assertions(2)
+    test('uses non-project hostname and sends projectId for /check/cors when useProjectHostname is false', async () => {
+      // Regression for SDK-1783: resource/global-host clients reach
+      // `api.sanity.io/.../check/cors`, where the path carries no project
+      // context. The probe must send `?projectId=` so the endpoint can evaluate
+      // the correct project's allow-list instead of rejecting every origin.
+      expect.assertions(3)
 
       const {default: nock} = await import('nock')
 
       let checkCorsHits = 0
+      let checkCorsProjectId: string | null = null
       server.use(
-        http.get('https://api.sanity.io/vX/check/cors', () => {
+        http.get('https://api.sanity.io/vX/check/cors', ({request}) => {
           checkCorsHits++
+          checkCorsProjectId = new URL(request.url).searchParams.get('projectId')
           return HttpResponse.json({result: {allowed: false, withCredentials: false}})
         }),
       )
@@ -362,6 +368,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       const error = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
       expect(error).toBeInstanceOf(CorsOriginError)
       expect(checkCorsHits).toBeGreaterThan(0)
+      expect(checkCorsProjectId).toBe('abc123')
     })
 
     test('reports CorsOriginError when EventSource needs credentials but /check/cors reports withCredentials: false', async () => {

@@ -122,8 +122,17 @@ export class LiveClient {
       'goaway',
     ])
 
+    // Carry the `projectId` so `/check/cors` can be evaluated against the right
+    // project. Resource-addressed clients talk to the global API host
+    // (`api.sanity.io`), where the path holds no project context - without this
+    // the endpoint reports every origin as disallowed and we raise a false
+    // `CorsOriginError` on reconnect (SDK-1783).
+    const corsCheckUrl = new URL(this.#client.getUrl('/check/cors', false))
+    if (projectId) {
+      corsCheckUrl.searchParams.set('projectId', projectId)
+    }
     const checkCors = checkCorsObservable(
-      new URL(this.#client.getUrl('/check/cors', false)),
+      corsCheckUrl,
       projectId,
       esOptions.withCredentials === true,
     )
