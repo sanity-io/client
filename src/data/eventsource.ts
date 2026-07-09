@@ -5,11 +5,25 @@ import {type Any} from '../types'
 
 /**
  * @public
- * Thrown if the EventSource connection could not be established.
- * Note that ConnectionFailedErrors are rare, and disconnects will normally be handled by the EventSource instance itself and emitted as `reconnect` events.
+ * Thrown when the EventSource connection could not be established, or was rejected by the server.
+ * Transient failures (network drops, 5xx, 408, 429) are reconnected internally and emitted as
+ * `reconnect` events; a permanent rejection (any other 4xx, eg an expired token) errors the
+ * stream with this class so consumers can react — check `status` for the rejection code.
  */
 export class ConnectionFailedError extends Error {
   readonly name = 'ConnectionFailedError'
+  /**
+   * HTTP status code of the rejected connection attempt, if known.
+   * Only set when the EventSource implementation exposes it — the polyfill used in
+   * Node.js and when custom headers (eg authorization) are required does, while
+   * native EventSource implementations (browser and Node.js) do not.
+   */
+  readonly status?: number
+  constructor(message?: string, options: ErrorOptions & {status?: number} = {}) {
+    const {status, ...errorOptions} = options
+    super(message, errorOptions)
+    this.status = status
+  }
 }
 
 /**
@@ -147,6 +161,18 @@ function connectWithESInstance<EventTypeName extends string>(
       // automatically, but in some cases (like when a laptop lid is closed), it will trigger onError
       // if it can't reconnect.
       // see https://html.spec.whatwg.org/multipage/server-sent-events.html#sse-processing-model
+      // The polyfills expose the HTTP status of a rejected connection on the error event
+      // (native EventSource implementations do not). A status means the server rejected the
+      // connection attempt, so error out regardless of readyState — the polyfills disagree
+      // on whether the connection closes before or after the error event is dispatched —
+      // and let `reconnectOnConnectionFailure` classify it (4xx fatal, otherwise retried).
+      const rawStatus = (evt as {status?: unknown}).status
+      const status = typeof rawStatus === 'number' ? rawStatus : undefined
+      if (status !== undefined) {
+        observer.error(new ConnectionFailedError('EventSource connection failed', {status}))
+        return
+      }
+
       if (es.readyState === es.CLOSED) {
         // In these cases we'll signal to consumers (via the error path) that a retry/reconnect is needed.
         observer.error(new ConnectionFailedError('EventSource connection failed'))

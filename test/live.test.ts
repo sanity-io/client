@@ -1,7 +1,12 @@
 /* eslint-disable no-shadow */
 import type {AddressInfo} from 'node:net'
 
-import {type ClientConfig, CorsOriginError, createClient} from '@sanity/client'
+import {
+  type ClientConfig,
+  ConnectionFailedError,
+  CorsOriginError,
+  createClient,
+} from '@sanity/client'
 import {http, HttpResponse} from 'msw'
 import {setupServer} from 'msw/node'
 import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
@@ -273,6 +278,85 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       // Since CORS check reports allowed: true, should get a reconnect event (not CorsOriginError)
       const event = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
       expect(event.type).toBe('reconnect')
+    })
+
+    test('keeps reconnecting when the connection is rejected with a 429 (rate limited)', async () => {
+      expect.assertions(1)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.get('https://abc123.api.sanity.io/vX/check/cors', () =>
+          HttpResponse.json({result: {allowed: true, withCredentials: false}}),
+        ),
+      )
+
+      // Rate limiting is transient — unlike other 4xx rejections it must keep
+      // the reconnect behavior so listeners recover when the throttle lifts
+      nock('https://abc123.api.sanity.io')
+        .persist()
+        .get('/vX/data/live/events/rate-limited-dataset')
+        .query(true)
+        .reply(429, 'Too Many Requests')
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'rate-limited-dataset',
+        useCdn: false,
+        apiVersion: 'X',
+        token: 'valid-but-throttled-token',
+      })
+
+      try {
+        const event = await firstValueFrom(
+          client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+        )
+        expect(event).toEqual({type: 'reconnect'})
+      } finally {
+        nock.cleanAll()
+      }
+    })
+
+    test('stops reconnecting and surfaces the error when the connection is rejected with a 4xx', async () => {
+      expect.assertions(2)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.get('https://abc123.api.sanity.io/vX/check/cors', () =>
+          HttpResponse.json({result: {allowed: true, withCredentials: false}}),
+        ),
+      )
+
+      // Simulate an auth rejection, e.g. an expired or revoked token. Unlike a
+      // transient 5xx, the server will keep rejecting — reconnecting forever
+      // would hammer the API once per second.
+      nock('https://abc123.api.sanity.io')
+        .persist()
+        .get('/vX/data/live/events/unauthorized-dataset')
+        .query(true)
+        .reply(401, 'Unauthorized')
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'unauthorized-dataset',
+        useCdn: false,
+        apiVersion: 'X',
+        token: 'expired-token',
+      })
+
+      try {
+        // `includeDrafts` sets an auth header, forcing the polyfill — the only
+        // EventSource implementation that exposes the HTTP status of a
+        // rejected connection
+        const event = await firstValueFrom(
+          client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+        )
+        expect(event).toBeInstanceOf(ConnectionFailedError)
+        expect(event.status).toBe(401)
+      } finally {
+        nock.cleanAll()
+      }
     })
 
     test('does not report CorsOriginError when /check/cors returns a non-2xx response', async () => {
