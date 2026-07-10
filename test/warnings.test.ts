@@ -51,11 +51,12 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('warns if server sends warning back', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'Friction endures'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({status: 200, body: {}, headers: {'X-Sanity-Warning': 'Friction endures'}})
 
     await createClient({projectId: 'abc123', useCdn: true, apiVersion: '1'}).users.getById('me')
     expect(warn).toHaveBeenCalledWith('Friction endures')
@@ -64,12 +65,13 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('only warns once', async () => {
     expect.assertions(2)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .times(2)
-      .reply(200, {}, {'X-Sanity-Warning': 'Friction endures'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({status: 200, body: {}, headers: {'X-Sanity-Warning': 'Friction endures'}})
+      .respond({status: 200, body: {}, headers: {'X-Sanity-Warning': 'Friction endures'}})
 
     const client = createClient({
       projectId: 'abc123',
@@ -87,11 +89,16 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using string pattern', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version warning'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({
+        status: 200,
+        body: {},
+        headers: {'X-Sanity-Warning': 'This is an experimental API version warning'},
+      })
 
     await createClient({
       projectId: 'abc123',
@@ -106,11 +113,16 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using regex pattern', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version warning'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({
+        status: 200,
+        body: {},
+        headers: {'X-Sanity-Warning': 'This is an experimental API version warning'},
+      })
 
     await createClient({
       projectId: 'abc123',
@@ -125,11 +137,12 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using array of patterns', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'Rate limit warning'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({status: 200, body: {}, headers: {'X-Sanity-Warning': 'Rate limit warning'}})
 
     await createClient({
       projectId: 'abc123',
@@ -144,11 +157,16 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('shows warnings when ignoreWarnings does not match', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'This is an important warning'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({
+        status: 200,
+        body: {},
+        headers: {'X-Sanity-Warning': 'This is an important warning'},
+      })
 
     await createClient({
       projectId: 'abc123',
@@ -163,12 +181,17 @@ describe('Client config warnings', async () => {
   test.skipIf(isEdge)('ignores warnings using exported constant', async () => {
     expect.assertions(1)
 
-    const {default: nock} = await import('./helpers/nockShim')
+    const {getActiveMock} = await import('./helpers/mockFetch')
     const {EXPERIMENTAL_API_WARNING} = await import('../src/types')
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/users/me')
-      .reply(200, {}, {'X-Sanity-Warning': 'This is an experimental API version warning'})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/users/me')
+      .respond({
+        status: 200,
+        body: {},
+        headers: {'X-Sanity-Warning': 'This is an experimental API version warning'},
+      })
 
     await createClient({
       projectId: 'abc123',

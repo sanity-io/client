@@ -24,7 +24,7 @@ import type {
   UnscheduleReleaseAction,
 } from '../src/types'
 import * as createVersionIdModule from '../src/util/createVersionId'
-import nock from './helpers/nockShim'
+import {getActiveMock} from './helpers/mockFetch'
 
 vi.mock('../src/util/createVersionId', () => ({
   generateReleaseId: vi.fn().mockReturnValue('generatedReleaseId'),
@@ -125,12 +125,10 @@ describe('ReleasesClient', () => {
 
     releasesClient = new ReleasesClient(client, httpRequest)
 
-    nock.disableNetConnect()
     vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
   })
 
   afterEach(() => {
-    nock.cleanAll()
     vi.resetAllMocks()
   })
 
@@ -145,11 +143,10 @@ describe('ReleasesClient', () => {
         _updatedAt: '2023-01-01T00:00:00.000Z',
       }
 
-      nock(TEST_PROJECT_HOST)
-        .get(`/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
-        .reply(200, {
-          documents: [releaseDocument],
-        })
+      getActiveMock()
+        .scope(TEST_PROJECT_HOST)
+        .on('GET', `/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
+        .respond({status: 200, body: {documents: [releaseDocument]}})
 
       mockHttpDocumentResponse(httpRequest, releaseDocument as Partial<ReleaseDocument>)
 
@@ -164,11 +161,10 @@ describe('ReleasesClient', () => {
     test('returns undefined when release does not exist', async () => {
       const releaseId = 'nonexistent'
 
-      nock(TEST_PROJECT_HOST)
-        .get(`/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
-        .reply(200, {
-          documents: [],
-        })
+      getActiveMock()
+        .scope(TEST_PROJECT_HOST)
+        .on('GET', `/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
+        .respond({status: 200, body: {documents: []}})
 
       httpRequest.mockResolvedValueOnce({documents: []})
 
