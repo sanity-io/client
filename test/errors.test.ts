@@ -107,16 +107,19 @@ describe('groq errors', () => {
 
 describe('http errors', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  let nock: typeof import('./helpers/nockShim').default = (() => {
+  let getActiveMock: typeof import('./helpers/mockFetch').getActiveMock = () => {
     throw new Error('Not supported in EdgeRuntime')
-  }) as any
+  }
   if (!isEdge) {
-    const _nock = await import('./helpers/nockShim')
-    nock = _nock.default
+    const mod = await import('./helpers/mockFetch')
+    getActiveMock = mod.getActiveMock
   }
 
   test.skipIf(isEdge)('yields ServerError on 503 (non-sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(503, 'Service Unavailable')
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({status: 503, body: 'Service Unavailable'})
     const client = createClient({
       useCdn: true,
       apiVersion: '1',
@@ -136,11 +139,17 @@ describe('http errors', async () => {
   })
 
   test.skipIf(isEdge)('yields ServerError on 503 (sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(503, {
-      statusCode: 503,
-      error: 'Service Unavailable',
-      message: 'Some internal error occurred',
-    })
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({
+        status: 503,
+        body: {
+          statusCode: 503,
+          error: 'Service Unavailable',
+          message: 'Some internal error occurred',
+        },
+      })
     const client = createClient({
       useCdn: true,
       apiVersion: '1',
@@ -160,7 +169,10 @@ describe('http errors', async () => {
   })
 
   test.skipIf(isEdge)('yields ClientError on 400 (non-sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(400, 'Bad Request')
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({status: 400, body: 'Bad Request'})
 
     const client = createClient({
       useCdn: true,
@@ -181,11 +193,17 @@ describe('http errors', async () => {
   })
 
   test.skipIf(isEdge)('yields ClientError on 400 (sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(400, {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Invalid request parameters',
-    })
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({
+        status: 400,
+        body: {
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'Invalid request parameters',
+        },
+      })
 
     const client = createClient({
       useCdn: true,

@@ -20,12 +20,12 @@ const clientConfig = {
 
 describe('@sanity/client/stega', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  let nock: typeof import('../helpers/nockShim').default = (() => {
+  let getActiveMock: typeof import('../helpers/mockFetch').getActiveMock = () => {
     throw new Error('Not supported in EdgeRuntime')
-  }) as any
+  }
   if (!isEdge) {
-    const _nock = await import('../helpers/nockShim')
-    nock = _nock.default
+    const mod = await import('../helpers/mockFetch')
+    getActiveMock = mod.getActiveMock
   }
 
   const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
@@ -130,11 +130,13 @@ describe('@sanity/client/stega', async () => {
     })
 
     test.skipIf(isEdge)('it returns stega strings in the response', async () => {
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
         )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .respond({status: 200, body: {ms: 123, result, resultSourceMap}})
 
       const res = await getClient({stega: {enabled: true, studioUrl: '/studio'}}).fetch(
         query,
@@ -165,11 +167,13 @@ describe('@sanity/client/stega', async () => {
     })
 
     test.skipIf(isEdge)('it strips stega strings from params', async () => {
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
         )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .respond({status: 200, body: {ms: 123, result, resultSourceMap}})
 
       const res = await getClient({stega: {enabled: true, studioUrl: '/studio'}}).fetch(query, {
         id: vercelStegaCombine(params.id, JSON.stringify({origin: 'sanity.io', href: '/studio'})),
@@ -180,11 +184,13 @@ describe('@sanity/client/stega', async () => {
 
   describe.skipIf(isEdge)('client.fetch', async () => {
     test('the stega option accepts booleans as a shortcut to toggle `enabled`', async () => {
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
         )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .respond({status: 200, body: {ms: 123, result, resultSourceMap}})
 
       const res = await getClient({stega: {studioUrl}}).fetch(query, params, {
         stega: true,
@@ -204,9 +210,10 @@ describe('@sanity/client/stega', async () => {
     })
 
     test('the stega option accepts booleans as a shortcut to toggle `enabled`', async () => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=${qs}&returnQuery=false`)
-        .reply(200, {ms: 123, result, resultSourceMap})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=${qs}&returnQuery=false`)
+        .respond({status: 200, body: {ms: 123, result, resultSourceMap}})
 
       const res = await getClient({stega: {studioUrl, enabled: true}}).fetch(query, params, {
         stega: false,
@@ -215,11 +222,13 @@ describe('@sanity/client/stega', async () => {
     })
 
     test('the stega option merges in defaults', async () => {
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/v1/data/query/foo?query=${qs}&returnQuery=false&resultSourceMap=withKeyArraySelector`,
         )
-        .reply(200, {ms: 123, result, resultSourceMap})
+        .respond({status: 200, body: {ms: 123, result, resultSourceMap}})
 
       const res = await getClient({stega: {studioUrl, enabled: true}}).fetch(query, params, {
         stega: {
@@ -263,15 +272,16 @@ describe('@sanity/client', () => {
   })
   describe.skipIf(typeof EdgeRuntime === 'string')('client.fetch', async () => {
     const client = createClient(clientConfig)
-    const nock = (await import('../helpers/nockShim')).default
+    const {getActiveMock, objectContaining} = await import('../helpers/mockFetch')
 
     // Mock fetch handlers must be registered after the per-test setup has
     // installed an active mock, so register inside beforeEach rather than at
     // describe-block setup time.
     beforeEach(() => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*`)
-        .reply(200, {ms: 123, query: '*', result: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/query/foo', {query: objectContaining({query: '*'})})
+        .respond({status: 200, body: {ms: 123, query: '*', result: []}})
     })
 
     test('allows passing stega: undefined', async () => {

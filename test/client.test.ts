@@ -52,12 +52,20 @@ describe('client', async () => {
   const isCloudflareWorker =
     typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers'
   const isNode = !isEdge && !isCloudflareWorker && typeof document === 'undefined'
-  let nock: typeof import('./helpers/nockShim').default = (() => {
+  let getActiveMock: typeof import('./helpers/mockFetch').getActiveMock = () => {
     throw new Error('Not supported in EdgeRuntime')
-  }) as any
+  }
+  let objectContaining: typeof import('./helpers/mockFetch').objectContaining = () => {
+    throw new Error('Not supported in EdgeRuntime')
+  }
+  let anyValue: typeof import('./helpers/mockFetch').anyValue = () => {
+    throw new Error('Not supported in EdgeRuntime')
+  }
   if (!isEdge) {
-    const _nock = await import('./helpers/nockShim')
-    nock = _nock.default
+    const mod = await import('./helpers/mockFetch')
+    getActiveMock = mod.getActiveMock
+    objectContaining = mod.objectContaining
+    anyValue = mod.anyValue
   }
 
   const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
@@ -243,7 +251,10 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can use request() for API-relative requests', async () => {
-      nock(projectHost()).get('/v1/ping').reply(200, {pong: true})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
 
       await expect(getClient().request({uri: '/ping'})).resolves.toMatchObject({pong: true})
     })
@@ -251,7 +262,10 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'can use request() for API-relative requests (custom api version)',
       async () => {
-        nock(projectHost()).get('/v2019-01-29/ping').reply(200, {pong: true})
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v2019-01-29/ping')
+          .respond({status: 200, body: {pong: true}})
 
         await expect(
           getClient({apiVersion: '2019-01-29'}).request({uri: '/ping'}),
@@ -261,9 +275,11 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('observable requests are lazy', async () => {
       expect.assertions(2)
-      const {getActiveMock} = await import('./helpers/nockShim')
 
-      nock(projectHost()).get('/v1/ping').reply(200, {pong: true})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
 
       const req = getClient().observable.request({uri: '/ping'})
       await new Promise((resolve) => setTimeout(resolve, 1))
@@ -282,9 +298,12 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('observable requests are cold', async () => {
       expect.assertions(3)
-      const {getActiveMock} = await import('./helpers/nockShim')
 
-      nock(projectHost()).get('/v1/ping').twice().reply(200, {pong: true})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
+        .respond({status: 200, body: {pong: true}})
 
       const req = getClient().observable.request({uri: '/ping'})
 
@@ -354,11 +373,13 @@ describe('client', async () => {
                           Array.isArray(perspective) ? perspective.join(',') : perspective,
                         )
                       }
-                      nock(`https://${apiHost}`)
-                        .get(
+                      getActiveMock()
+                        .scope(`https://${apiHost}`)
+                        .on(
+                          'GET',
                           `/v${apiVersion || '1'}${resource.baseUrl}/query?${queryParams.toString()}`,
                         )
-                        .reply(200, {result: doc})
+                        .respond({status: 200, body: {result: doc}})
                       const config: ClientConfig = {
                         useProjectHostname: false,
                         apiHost: `https://${apiHost}`,
@@ -381,18 +402,24 @@ describe('client', async () => {
                 test('mutate: create', async () => {
                   const base = `/v${apiVersion || '1'}${resource.baseUrl}/mutate?returnIds=true&returnDocuments=true&visibility=sync`
 
-                  nock(`https://${apiHost}`)
-                    .post(base, {
-                      mutations: [{create: doc}],
+                  getActiveMock()
+                    .scope(`https://${apiHost}`)
+                    .on('POST', base, {
+                      body: {
+                        mutations: [{create: doc}],
+                      },
                     })
-                    .reply(200, {
-                      transactionId: 'abc123',
-                      results: [
-                        {
-                          document: doc,
-                          operation: 'create',
-                        },
-                      ],
+                    .respond({
+                      status: 200,
+                      body: {
+                        transactionId: 'abc123',
+                        results: [
+                          {
+                            document: doc,
+                            operation: 'create',
+                          },
+                        ],
+                      },
                     })
 
                   const config: ClientConfig = {
@@ -409,27 +436,33 @@ describe('client', async () => {
                 test('mutate: patch', async () => {
                   const base = `/v${apiVersion || '1'}${resource.baseUrl}/mutate?returnIds=true&returnDocuments=true&visibility=sync`
 
-                  nock(`https://${apiHost}`)
-                    .post(base, {
-                      mutations: [
-                        {
-                          patch: {
-                            id: doc._id,
-                            set: {
-                              name: 'tada',
+                  getActiveMock()
+                    .scope(`https://${apiHost}`)
+                    .on('POST', base, {
+                      body: {
+                        mutations: [
+                          {
+                            patch: {
+                              id: doc._id,
+                              set: {
+                                name: 'tada',
+                              },
                             },
                           },
-                        },
-                      ],
+                        ],
+                      },
                     })
-                    .reply(200, {
-                      transactionId: 'abc123',
-                      results: [
-                        {
-                          document: doc,
-                          operation: 'update',
-                        },
-                      ],
+                    .respond({
+                      status: 200,
+                      body: {
+                        transactionId: 'abc123',
+                        results: [
+                          {
+                            document: doc,
+                            operation: 'update',
+                          },
+                        ],
+                      },
                     })
 
                   const config: ClientConfig = {
@@ -453,20 +486,26 @@ describe('client', async () => {
                 test('mutate: transaction', async () => {
                   const base = `/v${apiVersion || '1'}${resource.baseUrl}/mutate?returnIds=true&visibility=sync`
 
-                  nock(`https://${apiHost}`)
-                    .post(base, {
-                      mutations: [
-                        {patch: {id: 'foo', set: {bar: 123}}},
-                        {createIfNotExists: {_id: '123', _type: 'baz'}},
-                      ],
+                  getActiveMock()
+                    .scope(`https://${apiHost}`)
+                    .on('POST', base, {
+                      body: {
+                        mutations: [
+                          {patch: {id: 'foo', set: {bar: 123}}},
+                          {createIfNotExists: {_id: '123', _type: 'baz'}},
+                        ],
+                      },
                     })
-                    .reply(200, {
-                      transactionId: 'abc123',
-                      results: [
-                        {
-                          operation: 'update',
-                        },
-                      ],
+                    .respond({
+                      status: 200,
+                      body: {
+                        transactionId: 'abc123',
+                        results: [
+                          {
+                            operation: 'update',
+                          },
+                        ],
+                      },
                     })
 
                   const config: ClientConfig = {
@@ -486,17 +525,25 @@ describe('client', async () => {
 
                 test.skipIf(!isNode)('uploads images using resource config', async () => {
                   const fixturePath = fixture('horsehead-nebula.jpg')
-                  const isImage = (body: any) =>
-                    Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+                  const isImage = {
+                    asymmetricMatch: (body: any) =>
+                      Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+                  }
 
                   if (resource.type === 'media-library') {
-                    nock(`https://${apiHost}`)
-                      .post(`/v${apiVersion || '1'}${resource.baseUrl}/upload`, isImage)
-                      .reply(201, {document: {url: 'https://some.asset.url'}})
+                    getActiveMock()
+                      .scope(`https://${apiHost}`)
+                      .on('POST', `/v${apiVersion || '1'}${resource.baseUrl}/upload`, {
+                        body: isImage,
+                      })
+                      .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
                   } else {
-                    nock(`https://${apiHost}`)
-                      .post(`/v${apiVersion || '1'}${resource.baseUrl}/assets/images`, isImage)
-                      .reply(201, {document: {url: 'https://some.asset.url'}})
+                    getActiveMock()
+                      .scope(`https://${apiHost}`)
+                      .on('POST', `/v${apiVersion || '1'}${resource.baseUrl}/assets/images`, {
+                        body: isImage,
+                      })
+                      .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
                   }
 
                   const config: ClientConfig = {
@@ -521,9 +568,10 @@ describe('client', async () => {
                 })
 
                 test('users: me', async () => {
-                  nock(`https://${apiHost}`)
-                    .get(`/v${apiVersion || '1'}/users/me`)
-                    .reply(200, {id: 123})
+                  getActiveMock()
+                    .scope(`https://${apiHost}`)
+                    .on('GET', `/v${apiVersion || '1'}/users/me`)
+                    .respond({status: 200, body: {id: 123}})
 
                   const config: ClientConfig = {
                     apiHost: `https://${apiHost}`,
@@ -538,9 +586,10 @@ describe('client', async () => {
                 })
 
                 test('users: by id', async () => {
-                  nock(`https://${apiHost}`)
-                    .get(`/v${apiVersion || '1'}/users/12345`)
-                    .reply(200, {id: 123})
+                  getActiveMock()
+                    .scope(`https://${apiHost}`)
+                    .on('GET', `/v${apiVersion || '1'}/users/12345`)
+                    .respond({status: 200, body: {id: 123}})
 
                   const config: ClientConfig = {
                     apiHost: `https://${apiHost}`,
@@ -560,9 +609,13 @@ describe('client', async () => {
       })
 
       test('fetch: dataset', async () => {
-        nock(`https://${apiHost}`)
-          .get('/v1/projects/myProjectid/datasets/myDatasetName/query?query=*&returnQuery=false')
-          .reply(200, {result: doc})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on(
+            'GET',
+            '/v1/projects/myProjectid/datasets/myDatasetName/query?query=*&returnQuery=false',
+          )
+          .respond({status: 200, body: {result: doc}})
 
         const client = createClient({
           useProjectHostname: false,
@@ -574,9 +627,10 @@ describe('client', async () => {
       })
 
       test('fetch: perspective', async () => {
-        nock(`https://${apiHost}`)
-          .get('/v1/canvases/theResourceId/query?query=*&returnQuery=false&perspective=raw')
-          .reply(200, {result: doc})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/canvases/theResourceId/query?query=*&returnQuery=false&perspective=raw')
+          .respond({status: 200, body: {result: doc}})
 
         const client = createClient({
           useProjectHostname: false,
@@ -588,21 +642,28 @@ describe('client', async () => {
       })
 
       test('mutate: create', async () => {
-        nock(`https://${apiHost}`)
-          .post(
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on(
+            'POST',
             '/v1/canvases/theResourceId/mutate?returnIds=true&returnDocuments=true&visibility=sync',
             {
-              mutations: [{create: doc}],
+              body: {
+                mutations: [{create: doc}],
+              },
             },
           )
-          .reply(200, {
-            transactionId: 'abc123',
-            results: [
-              {
-                document: doc,
-                operation: 'create',
-              },
-            ],
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+              results: [
+                {
+                  document: doc,
+                  operation: 'create',
+                },
+              ],
+            },
           })
 
         const client = createClient({
@@ -617,9 +678,12 @@ describe('client', async () => {
         'executes transaction using resource path when commit() is called',
         async () => {
           const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
-          nock(`https://${apiHost}`)
-            .post('/v1/canvases/res-id/mutate?returnIds=true&visibility=sync', {mutations})
-            .reply(200, {transactionId: 'blatti'})
+          getActiveMock()
+            .scope(`https://${apiHost}`)
+            .on('POST', '/v1/canvases/res-id/mutate?returnIds=true&visibility=sync', {
+              body: {mutations},
+            })
+            .respond({status: 200, body: {transactionId: 'blatti'}})
 
           const res = await getClient({'~experimental_resource': {type: 'canvas', id: 'res-id'}})
             .transaction()
@@ -643,12 +707,17 @@ describe('client', async () => {
             encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
             encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
-          nock(`https://${apiHost}`)
-            .get('/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
-            .reply(200, response, {
-              'cache-control': 'no-cache',
-              'content-type': 'text/event-stream; charset=utf-8',
-              'transfer-encoding': 'chunked',
+          getActiveMock()
+            .scope(`https://${apiHost}`)
+            .on('GET', '/v1/media-libraries/res-id/listen?query=foo.bar&includeResult=true')
+            .respond({
+              status: 200,
+              body: response,
+              headers: {
+                'cache-control': 'no-cache',
+                'content-type': 'text/event-stream; charset=utf-8',
+                'transfer-encoding': 'chunked',
+              },
             })
 
           const evt = await firstValueFrom(
@@ -664,9 +733,10 @@ describe('client', async () => {
 
   describe.skipIf(isEdge)('PROJECTS', () => {
     test('can request list of projects', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const projects = await client.projects.list()
@@ -675,10 +745,11 @@ describe('client', async () => {
     })
 
     test('can request list of projects with members', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects')
-        .times(2)
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       let projects = await client.projects.list({includeMembers: true})
@@ -691,9 +762,10 @@ describe('client', async () => {
     })
 
     test('can request list of projects without members', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects?includeMembers=false')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects?includeMembers=false')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const projects = await client.projects.list({includeMembers: false})
@@ -706,9 +778,10 @@ describe('client', async () => {
     })
 
     test('can request list of projects for an organization', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects?organizationId=org_123')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects?organizationId=org_123')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const projects = await client.projects.list({organizationId: 'org_123'})
@@ -717,9 +790,10 @@ describe('client', async () => {
     })
 
     test('can request list of projects with only explicit membership', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects?onlyExplicitMembership=true')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects?onlyExplicitMembership=true')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const projects = await client.projects.list({onlyExplicitMembership: true})
@@ -728,9 +802,10 @@ describe('client', async () => {
     })
 
     test('does not include onlyExplicitMembership param when false', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const projects = await client.projects.list({onlyExplicitMembership: false})
@@ -739,9 +814,10 @@ describe('client', async () => {
     })
 
     test('can combine onlyExplicitMembership with other options', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects?organizationId=org_123&onlyExplicitMembership=true')
-        .reply(200, [{id: 'foo'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects?organizationId=org_123&onlyExplicitMembership=true')
+        .respond({status: 200, body: [{id: 'foo'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const projects = await client.projects.list({
@@ -753,9 +829,10 @@ describe('client', async () => {
     })
 
     test('can request list of projects, ignoring non-false `includeMembers` option', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/projects')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
 
@@ -767,9 +844,10 @@ describe('client', async () => {
     })
 
     test('can request list of projects (custom api version)', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v2019-01-29/projects')
-        .reply(200, [{id: 'foo'}, {id: 'bar'}])
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v2019-01-29/projects')
+        .respond({status: 200, body: [{id: 'foo'}, {id: 'bar'}]})
 
       const client = createClient({
         useProjectHostname: false,
@@ -797,7 +875,10 @@ describe('client', async () => {
         ],
       }
 
-      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(200, doc)
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respond({status: 200, body: doc})
 
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const project = await client.projects.getById('n1f7y')
@@ -818,8 +899,14 @@ describe('client', async () => {
           },
         ],
       }
-      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
-      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(200, doc)
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respond({status: code, body: {}})
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respond({status: 200, body: doc})
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const project = await client.projects.getById('n1f7y')
       expect(project).toEqual(doc)
@@ -856,7 +943,10 @@ describe('client', async () => {
     })
 
     test.each([429, 502, 503])('can be configured to not retry %d', async (code) => {
-      nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respond({status: code, body: {}})
       const client = createClient({
         useProjectHostname: false,
         apiHost: `https://${apiHost}`,
@@ -868,11 +958,26 @@ describe('client', async () => {
 
     test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {
       for (let i = 0; i < 5; i++) {
-        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
-        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
-        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
-        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
-        nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(code, {})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/projects/n1f7y')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/projects/n1f7y')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/projects/n1f7y')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/projects/n1f7y')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/projects/n1f7y')
+          .respond({status: code, body: {}})
       }
 
       const client = createClient({
@@ -894,11 +999,26 @@ describe('client', async () => {
       }
 
       for (let i = 0; i < 5; i++) {
-        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
-        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
-        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
-        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(code, {})
-        nock(`https://${apiHost}`).get('/v2023-03-25/users/me').reply(200, userObj)
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v2023-03-25/users/me')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v2023-03-25/users/me')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v2023-03-25/users/me')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v2023-03-25/users/me')
+          .respond({status: code, body: {}})
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v2023-03-25/users/me')
+          .respond({status: 200, body: userObj})
       }
 
       const fn = vi.fn().mockReturnValue(100)
@@ -925,39 +1045,41 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can create dataset', async () => {
-      nock(projectHost()).put('/v1/datasets/bar').reply(200)
+      getActiveMock().scope(projectHost()).on('PUT', '/v1/datasets/bar').respond({status: 200})
       await expect(dsClient.datasets.create('bar')).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('can delete dataset', async () => {
-      nock(projectHost()).delete('/v1/datasets/bar').reply(200)
+      getActiveMock().scope(projectHost()).on('DELETE', '/v1/datasets/bar').respond({status: 200})
       await expect(dsClient.datasets.delete('bar')).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('can list datasets', async () => {
-      nock(projectHost())
-        .get('/v1/datasets')
-        .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/datasets')
+        .respond({status: 200, body: [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse})
       await expect(dsClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
     })
 
     test.skipIf(isEdge)('can list datasets with useProjectHostname=false', async () => {
-      nock.cleanAll()
-      const scope = nock(`https://${apiHost}`)
-        .get(`/v1/projects/${defaultProjectId}/datasets`)
-        .times(1) // ensure it's called exactly once
-        .reply(200, [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse)
+      getActiveMock().clear()
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', `/v1/projects/${defaultProjectId}/datasets`)
+        .respond({status: 200, body: [{name: 'foo'}, {name: 'bar'}] as DatasetsResponse})
 
       const client = getClient({useProjectHostname: false})
       await expect(client.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
 
-      expect(scope.isDone()).toBe(true) // all expectations satisfied
+      expect(() => getActiveMock().assertAllConsumed()).not.toThrow() // all expectations satisfied
     })
 
     test.skipIf(isEdge)('can create dataset with embeddings config', async () => {
-      const scope = nock(projectHost())
-        .put('/v1/datasets/bar', {aclMode: 'public', embeddings: {enabled: true}})
-        .reply(200, {datasetName: 'bar', aclMode: 'public'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('PUT', '/v1/datasets/bar', {body: {aclMode: 'public', embeddings: {enabled: true}}})
+        .respond({status: 200, body: {datasetName: 'bar', aclMode: 'public'}})
 
       await expect(
         dsClient.datasets.create('bar', {
@@ -966,7 +1088,7 @@ describe('client', async () => {
         }),
       ).resolves.toEqual({datasetName: 'bar', aclMode: 'public'})
 
-      expect(scope.isDone()).toBe(true)
+      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
     })
 
     test.skipIf(isEdge)('can get embeddings settings', async () => {
@@ -975,36 +1097,41 @@ describe('client', async () => {
         projection: 'myProjection',
         status: 'active',
       }
-      const scope = nock(projectHost())
-        .get('/v1/datasets/foo/settings/embeddings')
-        .reply(200, settings)
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/datasets/foo/settings/embeddings')
+        .respond({status: 200, body: settings})
 
       await expect(dsClient.datasets.getEmbeddingsSettings('foo')).resolves.toEqual(settings)
-      expect(scope.isDone()).toBe(true)
+      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
     })
 
     test.skipIf(isEdge)('can get embeddings settings with useProjectHostname=false', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const settings: EmbeddingsSettings = {
         enabled: false,
         status: 'inactive',
       }
-      const scope = nock(`https://${apiHost}`)
-        .get(`/v1/projects/${defaultProjectId}/datasets/foo/settings/embeddings`)
-        .reply(200, settings)
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', `/v1/projects/${defaultProjectId}/datasets/foo/settings/embeddings`)
+        .respond({status: 200, body: settings})
 
       const client = getClient({useProjectHostname: false})
       await expect(client.datasets.getEmbeddingsSettings('foo')).resolves.toEqual(settings)
-      expect(scope.isDone()).toBe(true)
+      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
     })
 
     test.skipIf(isEdge)('can edit embeddings settings', async () => {
-      const scope = nock(projectHost())
-        .put('/v1/datasets/foo/settings/embeddings', {
-          enabled: true,
-          projection: 'myProjection',
+      getActiveMock()
+        .scope(projectHost())
+        .on('PUT', '/v1/datasets/foo/settings/embeddings', {
+          body: {
+            enabled: true,
+            projection: 'myProjection',
+          },
         })
-        .reply(200)
+        .respond({status: 200})
 
       await expect(
         dsClient.datasets.editEmbeddingsSettings('foo', {
@@ -1012,22 +1139,25 @@ describe('client', async () => {
           projection: 'myProjection',
         }),
       ).resolves.not.toThrow()
-      expect(scope.isDone()).toBe(true)
+      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
     })
 
     test.skipIf(isEdge)('can edit embeddings settings with useProjectHostname=false', async () => {
-      nock.cleanAll()
-      const scope = nock(`https://${apiHost}`)
-        .put(`/v1/projects/${defaultProjectId}/datasets/foo/settings/embeddings`, {
-          enabled: false,
+      getActiveMock().clear()
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('PUT', `/v1/projects/${defaultProjectId}/datasets/foo/settings/embeddings`, {
+          body: {
+            enabled: false,
+          },
         })
-        .reply(200)
+        .respond({status: 200})
 
       const client = getClient({useProjectHostname: false})
       await expect(
         client.datasets.editEmbeddingsSettings('foo', {enabled: false}),
       ).resolves.not.toThrow()
-      expect(scope.isDone()).toBe(true)
+      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
     })
 
     test('throws when trying to get embeddings settings with invalid dataset name', () => {
@@ -1078,10 +1208,16 @@ describe('client', async () => {
       const qs =
         'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
-      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}&returnQuery=false`).reply(200, {
-        ms: 123,
-        result,
-      })
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=${qs}&returnQuery=false`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
+        })
 
       const res = await getClient().fetch(query, params)
       expect(res.length, 'length should match').toBe(1)
@@ -1094,11 +1230,17 @@ describe('client', async () => {
       const qs =
         'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
-      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
-        ms: 123,
-        query,
-        result,
-      })
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=${qs}`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            query,
+            result,
+          },
+        })
 
       const res = await getClient().fetch(query, params, {filterResponse: false})
       expect(res.ms, 'should include timing info').toBe(123)
@@ -1113,11 +1255,17 @@ describe('client', async () => {
       const qs =
         'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
-      nock(projectHost()).get(`/v1/data/query/foo?query=${qs}`).reply(200, {
-        ms: 123,
-        query,
-        result,
-      })
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=${qs}`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            query,
+            result,
+          },
+        })
 
       const res = await getClient().fetch(query, params, {filterResponse: false, returnQuery: true})
       expect(res.ms, 'should include timing info').toBe(123)
@@ -1128,15 +1276,19 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('gets helpful error messages on query errors (no tag)', async () => {
       const query = '*[_type == "event]'
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false`)
-        .reply(400, {
-          error: {
-            description: 'unexpected token "\\"event]", expected expression',
-            end: 18,
-            query: '*[_type == "event]',
-            start: 11,
-            type: 'queryParseError',
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false`)
+        .respond({
+          status: 400,
+          body: {
+            error: {
+              description: 'unexpected token "\\"event]", expected expression',
+              end: 18,
+              query: '*[_type == "event]',
+              start: 11,
+              type: 'queryParseError',
+            },
           },
         })
 
@@ -1149,17 +1301,22 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('gets helpful error messages on query errors (with tag)', async () => {
       const query = '*[_type == "event]'
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/v1/data/query/foo?query=${encodeURIComponent(query)}&returnQuery=false&tag=get-events`,
         )
-        .reply(400, {
-          error: {
-            description: 'unexpected token "\\"event]", expected expression',
-            end: 18,
-            query: '*[_type == "event]',
-            start: 11,
-            type: 'queryParseError',
+        .respond({
+          status: 400,
+          body: {
+            error: {
+              description: 'unexpected token "\\"event]", expected expression',
+              end: 18,
+              query: '*[_type == "event]',
+              start: 11,
+              type: 'queryParseError',
+            },
           },
         })
 
@@ -1174,11 +1331,15 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for documents with request tag', async () => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*&tag=mycompany.syncjob&returnQuery=false`)
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=*&tag=mycompany.syncjob&returnQuery=false`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const res = await getClient().fetch('*', {}, {tag: 'mycompany.syncjob'})
@@ -1187,13 +1348,18 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for documents with last live event ID', async () => {
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/vX/data/query/foo?query=*&returnQuery=false&lastLiveEventId=MTA0MDM1Nnx2a2lQY200bnRHQQ`,
         )
-        .reply(200, {
-          ms: 123,
-          result,
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const res = await getClient({apiVersion: 'X'}).fetch(
@@ -1208,13 +1374,18 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'allows passing last live event ID from Next.js style searchParams',
       async () => {
-        nock(projectHost())
-          .get(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'GET',
             `/vX/data/query/foo?query=*&returnQuery=false&lastLiveEventId=MTA0MDM1Nnx2a2lQY200bnRHQQ`,
           )
-          .reply(200, {
-            ms: 123,
-            result,
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+            },
           })
 
         const res = await getClient({apiVersion: 'X'}).fetch(
@@ -1233,10 +1404,16 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'allows passing last live event ID from URLSearchParams that might be null',
       async () => {
-        nock(projectHost()).get(`/vX/data/query/foo?query=*&returnQuery=false`).reply(200, {
-          ms: 123,
-          result,
-        })
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', `/vX/data/query/foo?query=*&returnQuery=false`)
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+            },
+          })
         const searchParams = new URLSearchParams('')
 
         const res = await getClient({apiVersion: 'X'}).fetch(
@@ -1253,10 +1430,16 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'allows passing last live event ID from URLSearchParams that might be an empty string',
       async () => {
-        nock(projectHost()).get(`/vX/data/query/foo?query=*&returnQuery=false`).reply(200, {
-          ms: 123,
-          result,
-        })
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', `/vX/data/query/foo?query=*&returnQuery=false`)
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+            },
+          })
         const searchParams = new URLSearchParams('lastLiveEventId=')
 
         const res = await getClient({apiVersion: 'X'}).fetch(
@@ -1273,14 +1456,19 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'can query for documents with resultSourceMap and perspective',
       async () => {
-        nock(projectHost())
-          .get(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'GET',
             `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=true&perspective=previewDrafts`,
           )
-          .reply(200, {
-            ms: 123,
-            result,
-            resultSourceMap,
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+              resultSourceMap,
+            },
           })
 
         const client = getClient({
@@ -1297,14 +1485,19 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'can query for documents with resultSourceMap=withKeyArraySelector and perspective',
       async () => {
-        nock(projectHost())
-          .get(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'GET',
             `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=withKeyArraySelector&perspective=previewDrafts`,
           )
-          .reply(200, {
-            ms: 123,
-            result,
-            resultSourceMap,
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+              resultSourceMap,
+            },
           })
 
         const client = getClient({
@@ -1319,11 +1512,15 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('automatically useCdn false if perspective is previewDrafts', async () => {
-      nock('https://abc123.api.sanity.io')
-        .get(`/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const client = createClient({
@@ -1340,14 +1537,19 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
       async () => {
-        nock(projectHost())
-          .get(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'GET',
             `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=true&perspective=previewDrafts`,
           )
-          .reply(200, {
-            ms: 123,
-            result,
-            resultSourceMap,
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+              resultSourceMap,
+            },
           })
 
         const client = getClient({apiVersion: 'X'})
@@ -1364,12 +1566,16 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'setting resultSourceMap and perspective on client.fetch overrides the config',
       async () => {
-        nock(projectHost())
-          .get(`/vX/data/query/foo?query=*&returnQuery=false&perspective=published`)
-          .reply(200, {
-            ms: 123,
-            result,
-            resultSourceMap,
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&perspective=published`)
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+              resultSourceMap,
+            },
           })
 
         const client = getClient({
@@ -1386,11 +1592,15 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'setting a perspective previewDrafts override on client.fetch sets useCdn to false',
       async () => {
-        nock('https://abc123.api.sanity.io')
-          .get(`/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
-          .reply(200, {
-            ms: 123,
-            result,
+        getActiveMock()
+          .scope('https://abc123.api.sanity.io')
+          .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              result,
+            },
           })
 
         const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
@@ -1514,11 +1724,15 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('allow overriding useCdn to false on client.fetch', async () => {
-      nock('https://abc123.api.sanity.io')
-        .get(`/v1/data/query/foo?query=*&returnQuery=false`)
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
@@ -1528,11 +1742,15 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('allow overriding useCdn to true on client.fetch', async () => {
-      nock('https://abc123.apicdn.sanity.io')
-        .get(`/v1/data/query/foo?query=*&returnQuery=false`)
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope('https://abc123.apicdn.sanity.io')
+        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: false})
@@ -1548,12 +1766,16 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can use a tag-prefixed client', async () => {
-      nock(projectHost())
-        .get(`/v1/data/query/foo?query=*&returnQuery=false&tag=mycompany.syncjob`)
-        .reply(200, {
-          ms: 123,
-          query: '*',
-          result,
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&tag=mycompany.syncjob`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            query: '*',
+            result,
+          },
         })
 
       const res = await getClient({requestTagPrefix: 'mycompany'}).fetch('*', {}, {tag: 'syncjob'})
@@ -1562,11 +1784,15 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query using cacheMode=noStale using APICDN', async () => {
-      nock('https://abc123.apicdn.sanity.io')
-        .get(`/v1/data/query/foo?query=*&returnQuery=false&cacheMode=noStale`)
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope('https://abc123.apicdn.sanity.io')
+        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&cacheMode=noStale`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const client = createClient({projectId: 'abc123', dataset: 'foo'})
@@ -1576,11 +1802,15 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('cacheMode is ignored when useCdn:false', async () => {
-      nock('https://abc123.api.sanity.io')
-        .get(`/v1/data/query/foo?query=*&returnQuery=false`)
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false`)
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const client = createClient({projectId: 'abc123', dataset: 'foo'})
@@ -1598,10 +1828,14 @@ describe('client', async () => {
         message: 'You are not allowed to access this resource',
       }
 
-      nock(projectHost())
-        .get('/v1/data/query/foo?query=area51&returnQuery=false')
-        .times(5)
-        .reply(403, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/query/foo?query=area51&returnQuery=false')
+        .respond({status: 403, body: response})
+        .respond({status: 403, body: response})
+        .respond({status: 403, body: response})
+        .respond({status: 403, body: response})
+        .respond({status: 403, body: response})
 
       try {
         await getClient().fetch('area51')
@@ -1627,9 +1861,10 @@ describe('client', async () => {
         },
       }
 
-      nock(projectHost())
-        .get('/v1/data/query/foo?query=foo.bar.baz%20%2012%23%5B%7B&returnQuery=false')
-        .reply(400, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/query/foo?query=foo.bar.baz%20%2012%23%5B%7B&returnQuery=false')
+        .respond({status: 400, body: response})
 
       try {
         await getClient().fetch('foo.bar.baz  12#[{')
@@ -1649,11 +1884,18 @@ describe('client', async () => {
         test('client.fetch', async () => {
           expect.assertions(2)
 
-          nock(projectHost()).get(`/v1/data/query/foo?query=*`).delay(100).reply(200, {
-            ms: 123,
-            query: '*',
-            result: [],
-          })
+          getActiveMock()
+            .scope(projectHost())
+            .on('GET', '/v1/data/query/foo', {query: objectContaining({query: '*'})})
+            .respond({
+              status: 200,
+              body: {
+                ms: 123,
+                query: '*',
+                result: [],
+              },
+              delay: 100,
+            })
 
           const abortController = new AbortController()
           const promise = getClient().fetch('*', {}, {signal: abortController.signal})
@@ -1670,12 +1912,16 @@ describe('client', async () => {
         test('client.getDocument', async () => {
           expect.assertions(2)
 
-          nock(projectHost())
-            .get('/v1/data/doc/foo/abc123dfg')
-            .delay(100)
-            .reply(200, {
-              ms: 123,
-              documents: [{_id: 'abc123dfg', mood: 'lax'}],
+          getActiveMock()
+            .scope(projectHost())
+            .on('GET', '/v1/data/doc/foo/abc123dfg')
+            .respond({
+              status: 200,
+              body: {
+                ms: 123,
+                documents: [{_id: 'abc123dfg', mood: 'lax'}],
+              },
+              delay: 100,
             })
 
           const abortController = new AbortController()
@@ -1697,11 +1943,15 @@ describe('client', async () => {
           const releaseId = 'release456'
           const versionId = `versions.${releaseId}.${documentId}`
 
-          nock(projectHost())
-            .get(`/v1/data/doc/foo/${versionId}`)
-            .reply(200, {
-              ms: 123,
-              documents: [{_id: versionId, mood: 'excited'}],
+          getActiveMock()
+            .scope(projectHost())
+            .on('GET', `/v1/data/doc/foo/${versionId}`)
+            .respond({
+              status: 200,
+              body: {
+                ms: 123,
+                documents: [{_id: versionId, mood: 'excited'}],
+              },
             })
 
           const doc = await getClient().getDocument(documentId, {releaseId})
@@ -1714,11 +1964,15 @@ describe('client', async () => {
           const releaseId = 'release456'
           const versionId = `versions.${releaseId}.${documentId}`
 
-          nock(projectHost())
-            .get(`/v1/data/doc/foo/${versionId}`)
-            .reply(200, {
-              ms: 123,
-              documents: [{_id: versionId, mood: 'content'}],
+          getActiveMock()
+            .scope(projectHost())
+            .on('GET', `/v1/data/doc/foo/${versionId}`)
+            .respond({
+              status: 200,
+              body: {
+                ms: 123,
+                documents: [{_id: versionId, mood: 'content'}],
+              },
             })
 
           // No releaseId in options to avoid validation error
@@ -1763,15 +2017,19 @@ describe('client', async () => {
         test('client.getDocuments', async () => {
           expect.assertions(2)
 
-          nock(projectHost())
-            .get('/v1/data/doc/foo/abc123dfg,abc321dfg')
-            .delay(100)
-            .reply(200, {
-              ms: 123,
-              documents: [
-                {_id: 'abc123dfg', mood: 'lax'},
-                {_id: 'abc321dfg', mood: 'tense'},
-              ],
+          getActiveMock()
+            .scope(projectHost())
+            .on('GET', '/v1/data/doc/foo/abc123dfg,abc321dfg')
+            .respond({
+              status: 200,
+              body: {
+                ms: 123,
+                documents: [
+                  {_id: 'abc123dfg', mood: 'lax'},
+                  {_id: 'abc321dfg', mood: 'tense'},
+                ],
+              },
+              delay: 100,
             })
 
           const abortController = new AbortController()
@@ -1793,11 +2051,15 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('can query for single document', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123')
-        .reply(200, {
-          ms: 123,
-          documents: [{_id: 'abc123', mood: 'lax'}],
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123')
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            documents: [{_id: 'abc123', mood: 'lax'}],
+          },
         })
 
       await expect(getClient().getDocument('abc123'), 'data should match').resolves.toMatchObject({
@@ -1806,11 +2068,15 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for single document using resource config', async () => {
-      nock(`https://${apiHost}`)
-        .get('/v1/media-libraries/res-id/doc/abc123')
-        .reply(200, {
-          ms: 123,
-          documents: [{_id: 'abc123', mood: 'lax'}],
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/media-libraries/res-id/doc/abc123')
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            documents: [{_id: 'abc123', mood: 'lax'}],
+          },
         })
 
       await expect(
@@ -1824,11 +2090,15 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for single document with request tag', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123?tag=some.tag')
-        .reply(200, {
-          ms: 123,
-          documents: [{_id: 'abc123', mood: 'lax'}],
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123?tag=some.tag')
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            documents: [{_id: 'abc123', mood: 'lax'}],
+          },
         })
 
       await expect(
@@ -1840,14 +2110,18 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for multiple documents', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123,abc321')
-        .reply(200, {
-          ms: 123,
-          documents: [
-            {_id: 'abc123', mood: 'lax'},
-            {_id: 'abc321', mood: 'tense'},
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123,abc321')
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            documents: [
+              {_id: 'abc123', mood: 'lax'},
+              {_id: 'abc321', mood: 'tense'},
+            ],
+          },
         })
 
       const [abc123, abc321] = await getClient().getDocuments(['abc123', 'abc321'])
@@ -1856,14 +2130,18 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query for multiple documents with tag', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123,abc321?tag=mood.docs')
-        .reply(200, {
-          ms: 123,
-          documents: [
-            {_id: 'abc123', mood: 'lax'},
-            {_id: 'abc321', mood: 'tense'},
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123,abc321?tag=mood.docs')
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            documents: [
+              {_id: 'abc123', mood: 'lax'},
+              {_id: 'abc321', mood: 'tense'},
+            ],
+          },
         })
 
       const [abc123, abc321] = await getClient().getDocuments(['abc123', 'abc321'], {
@@ -1874,14 +2152,18 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('preserves the position of requested documents', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123,abc321,abc456')
-        .reply(200, {
-          ms: 123,
-          documents: [
-            {_id: 'abc456', mood: 'neutral'},
-            {_id: 'abc321', mood: 'tense'},
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123,abc321,abc456')
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            documents: [
+              {_id: 'abc456', mood: 'neutral'},
+              {_id: 'abc321', mood: 'tense'},
+            ],
+          },
         })
 
       const [abc123, abc321, abc456] = await getClient().getDocuments([
@@ -1897,10 +2179,12 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'documentsExists returns set with all ids when none are omitted',
       async () => {
-        nock(projectHost())
-          .get('/v1/data/doc/foo/abc123,abc321')
-          .query({excludeContent: 'true'})
-          .reply(200, {ms: 123, omitted: []})
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/abc123,abc321', {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({status: 200, body: {ms: 123, omitted: []}})
 
         const existing = await getClient().documentsExists(['abc123', 'abc321'])
         expect(existing).toBeInstanceOf(Set)
@@ -1913,15 +2197,20 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'documentsExists excludes ids omitted with reason "existence"',
       async () => {
-        nock(projectHost())
-          .get('/v1/data/doc/foo/abc123,abc321,abc456')
-          .query({excludeContent: 'true'})
-          .reply(200, {
-            ms: 123,
-            omitted: [
-              {id: 'abc321', reason: 'existence'},
-              {id: 'abc456', reason: 'existence'},
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/abc123,abc321,abc456', {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              omitted: [
+                {id: 'abc321', reason: 'existence'},
+                {id: 'abc456', reason: 'existence'},
+              ],
+            },
           })
 
         const existing = await getClient().documentsExists(['abc123', 'abc321', 'abc456'])
@@ -1935,12 +2224,17 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'documentsExists keeps ids omitted with reason other than "existence"',
       async () => {
-        nock(projectHost())
-          .get('/v1/data/doc/foo/abc123,abc321')
-          .query({excludeContent: 'true'})
-          .reply(200, {
-            ms: 123,
-            omitted: [{id: 'abc321', reason: 'permissions'}],
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/abc123,abc321', {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              omitted: [{id: 'abc321', reason: 'permissions'}],
+            },
           })
 
         const existing = await getClient().documentsExists(['abc123', 'abc321'])
@@ -1951,10 +2245,12 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('documentsExists forwards the tag option', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123')
-        .query({excludeContent: 'true', tag: 'check.exists'})
-        .reply(200, {ms: 123, omitted: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123', {
+          query: objectContaining({excludeContent: 'true', tag: 'check.exists'}),
+        })
+        .respond({status: 200, body: {ms: 123, omitted: []}})
 
       const existing = await getClient().documentsExists(['abc123'], {tag: 'check.exists'})
       expect(existing.has('abc123')).toBe(true)
@@ -1970,10 +2266,10 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('documentsExists works with a single id', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123')
-        .query({excludeContent: 'true'})
-        .reply(200, {ms: 123, omitted: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123', {query: objectContaining({excludeContent: 'true'})})
+        .respond({status: 200, body: {ms: 123, omitted: []}})
 
       const existing = await getClient().documentsExists(['abc123'])
       expect(existing).toBeInstanceOf(Set)
@@ -1982,10 +2278,10 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('documentsExists rejects on http error responses', async () => {
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123')
-        .query({excludeContent: 'true'})
-        .reply(500, {error: 'Internal Server Error'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123', {query: objectContaining({excludeContent: 'true'})})
+        .respond({status: 500, body: {error: 'Internal Server Error'}})
 
       await expect(getClient().documentsExists(['abc123'])).rejects.toThrow(/Internal Server Error/)
     })
@@ -1993,7 +2289,10 @@ describe('client', async () => {
     test.skipIf(isEdge)('documentsExists rejects on http error', async () => {
       expect.assertions(2)
 
-      nock(projectHost()).get('/v1/data/doc/foo/abc123').query({excludeContent: 'true'}).reply(500)
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123', {query: objectContaining({excludeContent: 'true'})})
+        .respond({status: 500})
 
       try {
         await getClient().documentsExists(['abc123'])
@@ -2006,10 +2305,12 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'documentsExists treats missing omitted field as all ids existing',
       async () => {
-        nock(projectHost())
-          .get('/v1/data/doc/foo/abc123,abc321')
-          .query({excludeContent: 'true'})
-          .reply(200, {ms: 123})
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/abc123,abc321', {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({status: 200, body: {ms: 123}})
 
         const existing = await getClient().documentsExists(['abc123', 'abc321'])
         expect(existing.size).toBe(2)
@@ -2021,10 +2322,12 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'documentsExists percent-encodes ids so delimiter chars are preserved',
       async () => {
-        nock(projectHost())
-          .get('/v1/data/doc/foo/weird%2Cid,normal')
-          .query({excludeContent: 'true'})
-          .reply(200, {ms: 123, omitted: []})
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/weird%2Cid,normal', {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({status: 200, body: {ms: 123, omitted: []}})
 
         const existing = await getClient().documentsExists(['weird,id', 'normal'])
         expect(existing.size).toBe(2)
@@ -2040,15 +2343,19 @@ describe('client', async () => {
         const firstBatch = ids.slice(0, 100)
         const secondBatch = ids.slice(100)
 
-        nock(projectHost())
-          .get(`/v1/data/doc/foo/${firstBatch.join(',')}`)
-          .query({excludeContent: 'true'})
-          .reply(200, {ms: 1, omitted: [{id: 'id5', reason: 'existence'}]})
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', `/v1/data/doc/foo/${firstBatch.join(',')}`, {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({status: 200, body: {ms: 1, omitted: [{id: 'id5', reason: 'existence'}]}})
 
-        nock(projectHost())
-          .get(`/v1/data/doc/foo/${secondBatch.join(',')}`)
-          .query({excludeContent: 'true'})
-          .reply(200, {ms: 1, omitted: [{id: 'id105', reason: 'existence'}]})
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', `/v1/data/doc/foo/${secondBatch.join(',')}`, {
+            query: objectContaining({excludeContent: 'true'}),
+          })
+          .respond({status: 200, body: {ms: 1, omitted: [{id: 'id105', reason: 'existence'}]}})
 
         const existing = await getClient().documentsExists(ids)
         expect(existing.size).toBe(148)
@@ -2066,7 +2373,10 @@ describe('client', async () => {
       async () => {
         expect.assertions(2)
 
-        nock(projectHost()).get('/v1/data/doc/foo/abc123').reply(400)
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/abc123')
+          .respond({status: 400})
 
         try {
           await getClient().getDocument('abc123')
@@ -2082,9 +2392,10 @@ describe('client', async () => {
       async () => {
         expect.assertions(2)
 
-        nock(projectHost())
-          .get('/v1/data/doc/foo/abc123')
-          .reply(400, 'Some string short enough to inline fully')
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/doc/foo/abc123')
+          .respond({status: 400, body: 'Some string short enough to inline fully'})
 
         try {
           await getClient().getDocument('abc123')
@@ -2102,12 +2413,10 @@ describe('client', async () => {
       async () => {
         expect.assertions(2)
 
-        nock(projectHost())
-          .get('/v1/data/doc/foo/abc123')
-          .reply(
-            400,
-            'Some long string that should be capped at 100 characters because it seems odd to have the entire string if it is like HTML or something',
-          )
+        getActiveMock().scope(projectHost()).on('GET', '/v1/data/doc/foo/abc123').respond({
+          status: 400,
+          body: 'Some long string that should be capped at 100 characters because it seems odd to have the entire string if it is like HTML or something',
+        })
 
         try {
           await getClient().getDocument('abc123')
@@ -2123,7 +2432,10 @@ describe('client', async () => {
     test.skipIf(isEdge)('uses `error` property as error if present and is string', async () => {
       expect.assertions(2)
 
-      nock(projectHost()).get('/v1/data/doc/foo/abc123').reply(400, {error: 'Some error'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123')
+        .respond({status: 400, body: {error: 'Some error'}})
 
       try {
         await getClient().getDocument('abc123')
@@ -2136,7 +2448,10 @@ describe('client', async () => {
     test.skipIf(isEdge)('uses `message` property as error if present and is string', async () => {
       expect.assertions(2)
 
-      nock(projectHost()).get('/v1/data/doc/foo/abc123').reply(400, {message: 'Some other error'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123')
+        .respond({status: 400, body: {message: 'Some other error'}})
 
       try {
         await getClient().getDocument('abc123')
@@ -2149,9 +2464,10 @@ describe('client', async () => {
     test.skipIf(isEdge)('falls back to HTTP error code if error shape is unknown', async () => {
       expect.assertions(2)
 
-      nock(projectHost())
-        .get('/v1/data/doc/foo/abc123')
-        .reply(400, {error: {hmm: 'what is this'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123')
+        .respond({status: 400, body: {error: {hmm: 'what is this'}}})
 
       try {
         await getClient().getDocument('abc123')
@@ -2164,7 +2480,14 @@ describe('client', async () => {
     test.skipIf(isEdge)('populates response body on errors', async () => {
       expect.assertions(3)
 
-      nock(projectHost()).get('/v1/data/doc/foo/abc123').times(5).reply(400, 'Some Weird Error')
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/abc123')
+        .respond({status: 400, body: 'Some Weird Error'})
+        .respond({status: 400, body: 'Some Weird Error'})
+        .respond({status: 400, body: 'Some Weird Error'})
+        .respond({status: 400, body: 'Some Weird Error'})
+        .respond({status: 400, body: 'Some Weird Error'})
 
       try {
         await getClient().getDocument('abc123')
@@ -2184,18 +2507,24 @@ describe('client', async () => {
     test.skipIf(isEdge)('can create documents', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
 
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-          mutations: [{create: doc}],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: {
+            mutations: [{create: doc}],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
-          results: [
-            {
-              document: {_id: 'abc123', _createdAt: '2016-10-24T08:09:32.997Z', name: 'Raptor'},
-              operation: 'create',
-            },
-          ],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+            results: [
+              {
+                document: {_id: 'abc123', _createdAt: '2016-10-24T08:09:32.997Z', name: 'Raptor'},
+                operation: 'create',
+              },
+            ],
+          },
         })
 
       const res = await getClient().create(doc)
@@ -2206,19 +2535,22 @@ describe('client', async () => {
     test.skipIf(isEdge)('can create documents without specifying ID', async () => {
       const doc = {_type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{create: {...doc}}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {
-          transactionId: '123abc',
-          results: [
-            {
-              id: 'abc456',
-              document: {_id: 'abc456', name: 'Raptor'},
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {
+            transactionId: '123abc',
+            results: [
+              {
+                id: 'abc456',
+                document: {_id: 'abc456', name: 'Raptor'},
+              },
+            ],
+          },
         })
 
       const res = await getClient().create(doc)
@@ -2228,19 +2560,24 @@ describe('client', async () => {
     test.skipIf(isEdge)('can create documents with request tag', async () => {
       const doc = {_type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{create: {...doc}}]}
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?tag=dino.import&returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
+          {body: expectedBody},
         )
-        .reply(200, {
-          transactionId: '123abc',
-          results: [
-            {
-              id: 'abc456',
-              document: {_id: 'abc456', name: 'Raptor'},
-            },
-          ],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: '123abc',
+            results: [
+              {
+                id: 'abc456',
+                document: {_id: 'abc456', name: 'Raptor'},
+              },
+            ],
+          },
         })
 
       const res = await getClient().create(doc, {tag: 'dino.import'})
@@ -2249,9 +2586,15 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('can tell create() not to return documents', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations: [{create: doc}]})
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {
+          body: {mutations: [{create: doc}]},
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       const res = await getClient().create(doc, {returnDocuments: false})
       expect(res.transactionId, 'returns transaction ID').toEqual('abc123')
@@ -2260,13 +2603,19 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('can tell create() to use non-default visibility mode', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=async', {
-          mutations: [{create: doc}],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=async', {
+          body: {
+            mutations: [{create: doc}],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
-          results: [{id: 'abc123', document: doc, operation: 'create'}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+            results: [{id: 'abc123', document: doc, operation: 'create'}],
+          },
         })
 
       const res = await getClient().create(doc, {visibility: 'async'})
@@ -2280,22 +2629,29 @@ describe('client', async () => {
         name: 'Dromaeosauridae',
         genus: [{_type: 'dino', name: 'Velociraptor'}],
       }
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&autoGenerateArrayKeys=true&visibility=sync',
           {
-            mutations: [{create: doc}],
+            body: {
+              mutations: [{create: doc}],
+            },
           },
         )
-        .reply(200, {
-          transactionId: 'abc123',
-          results: [
-            {
-              id: 'abc123',
-              document: {...doc, genus: [{...doc.genus[0], _key: 'r4p70r'}]},
-              operation: 'create',
-            },
-          ],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+            results: [
+              {
+                id: 'abc123',
+                document: {...doc, genus: [{...doc.genus[0], _key: 'r4p70r'}]},
+                operation: 'create',
+              },
+            ],
+          },
         })
 
       const res = await getClient().create(doc, {autoGenerateArrayKeys: true})
@@ -2306,22 +2662,29 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('can tell create() to do a dry-run', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Dromaeosauridae'}
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync',
           {
-            mutations: [{create: doc}],
+            body: {
+              mutations: [{create: doc}],
+            },
           },
         )
-        .reply(200, {
-          transactionId: 'abc123',
-          results: [
-            {
-              id: 'abc123',
-              document: doc,
-              operation: 'create',
-            },
-          ],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+            results: [
+              {
+                id: 'abc123',
+                document: doc,
+                operation: 'create',
+              },
+            ],
+          },
         })
 
       const res = await getClient().create(doc, {dryRun: true})
@@ -2331,14 +2694,17 @@ describe('client', async () => {
     test.skipIf(isEdge)('createIfNotExists() sends correct mutation', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createIfNotExists: doc}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {
-          transactionId: '123abc',
-          results: [{id: 'abc123', document: doc, operation: 'create'}],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {
+            transactionId: '123abc',
+            results: [{id: 'abc123', document: doc, operation: 'create'}],
+          },
         })
 
       await expect(getClient().createIfNotExists(doc)).resolves.not.toThrow()
@@ -2347,9 +2713,13 @@ describe('client', async () => {
     test.skipIf(isEdge)('can tell createIfNotExists() not to return documents', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createIfNotExists: doc}]}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {body: expectedBody})
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       const res = await getClient().createIfNotExists(doc, {returnDocuments: false})
       expect(res.transactionId, 'returns transaction ID').toEqual('abc123')
@@ -2359,9 +2729,15 @@ describe('client', async () => {
     test.skipIf(isEdge)('can use request tag with createIfNotExists()', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createIfNotExists: doc}]}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?tag=mysync&returnIds=true&visibility=sync', expectedBody)
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?tag=mysync&returnIds=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       const res = await getClient().createIfNotExists(doc, {
         returnDocuments: false,
@@ -2374,12 +2750,15 @@ describe('client', async () => {
     test.skipIf(isEdge)('createOrReplace() sends correct mutation', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createOrReplace: doc}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       await expect(getClient().createOrReplace(doc)).resolves.not.toThrow()
     })
@@ -2387,9 +2766,13 @@ describe('client', async () => {
     test.skipIf(isEdge)('can tell createOrReplace() not to return documents', async () => {
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createOrReplace: doc}]}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {body: expectedBody})
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       const res = await getClient().createOrReplace(doc, {returnDocuments: false})
       expect(res.transactionId, 'returns transaction ID').toEqual('abc123')
@@ -2398,36 +2781,44 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('delete() sends correct mutation', async () => {
       const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]},
+        })
 
       await expect(getClient().delete('abc123')).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('delete() can use query', async () => {
       const expectedBody = {mutations: [{delete: {query: 'foo.sometype'}}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: 'abc123'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({status: 200, body: {transactionId: 'abc123'}})
 
       await expect(getClient().delete({query: 'foo.sometype'})).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('delete() can use request tag', async () => {
       const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?tag=delete.abc&returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
+          {body: expectedBody},
         )
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]},
+        })
 
       await expect(getClient().delete('abc123', {tag: 'delete.abc'})).resolves.not.toThrow()
     })
@@ -2436,21 +2827,25 @@ describe('client', async () => {
       const query = '*[_type == "beer" && title == $beerName]'
       const params = {beerName: 'Headroom Double IPA'}
       const expectedBody = {mutations: [{delete: {query, params: params}}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: 'abc123'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({status: 200, body: {transactionId: 'abc123'}})
 
       await expect(getClient().delete({query, params: params})).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('delete() can be told not to return documents', async () => {
       const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {body: expectedBody})
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]},
+        })
 
       await expect(getClient().delete('abc123', {returnDocuments: false})).resolves.not.toThrow()
     })
@@ -2473,16 +2868,22 @@ describe('client', async () => {
 
       const mutations = [{create: docs[0]}, {delete: {id: 'movies.the-phantom-menace'}}]
 
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-          mutations,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: {
+            mutations,
+          },
         })
-        .reply(200, {
-          transactionId: 'foo',
-          results: [
-            {id: 'movies.raiders-of-the-lost-ark', operation: 'create', document: docs[0]},
-            {id: 'movies.the-phantom-menace', operation: 'delete', document: docs[1]},
-          ],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+            results: [
+              {id: 'movies.raiders-of-the-lost-ark', operation: 'create', document: docs[0]},
+              {id: 'movies.the-phantom-menace', operation: 'delete', document: docs[1]},
+            ],
+          },
         })
 
       await expect(getClient().mutate(mutations)).resolves.not.toThrow()
@@ -2491,16 +2892,23 @@ describe('client', async () => {
     test.skipIf(isEdge)('mutate() accepts request tag', async () => {
       const mutations = [{delete: {id: 'abc123'}}]
 
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync',
           {
-            mutations,
+            body: {
+              mutations,
+            },
           },
         )
-        .reply(200, {
-          transactionId: 'foo',
-          results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+            results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+          },
         })
 
       await expect(getClient().mutate(mutations, {tag: 'foobar'})).resolves.not.toThrow()
@@ -2509,14 +2917,20 @@ describe('client', async () => {
     test.skipIf(isEdge)('mutate() accepts transaction id', async () => {
       const mutations = [{delete: {id: 'abc123'}}]
 
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-          mutations,
-          transactionId: 'spec-ific',
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: {
+            mutations,
+            transactionId: 'spec-ific',
+          },
         })
-        .reply(200, {
-          transactionId: 'spec-ific',
-          results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'spec-ific',
+            results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+          },
         })
 
       await expect(
@@ -2535,14 +2949,19 @@ describe('client', async () => {
         },
       ]
 
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync&autoGenerateArrayKeys=true',
-          {mutations},
+          {body: {mutations}},
         )
-        .reply(200, {
-          transactionId: 'foo',
-          results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+            results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
+          },
         })
 
       await expect(
@@ -2553,16 +2972,23 @@ describe('client', async () => {
     test.skipIf(isEdge)('mutate() accepts `dryRun`', async () => {
       const mutations = [{create: {_id: 'abc123', _type: 'post'}}]
 
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?dryRun=true&returnIds=true&returnDocuments=true&visibility=sync',
           {
-            mutations,
+            body: {
+              mutations,
+            },
           },
         )
-        .reply(200, {
-          transactionId: 'foo',
-          results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+            results: [{id: 'abc123', operation: 'create', document: {_id: 'abc123'}}],
+          },
         })
 
       await expect(getClient().mutate(mutations, {dryRun: true})).resolves.not.toThrow()
@@ -2571,14 +2997,19 @@ describe('client', async () => {
     test.skipIf(isEdge)('mutate() accepts `skipCrossDatasetReferenceValidation`', async () => {
       const mutations = [{delete: {id: 'abc123'}}]
 
-      nock(projectHost())
-        .post(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'POST',
           '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync&skipCrossDatasetReferenceValidation=true',
-          {mutations},
+          {body: {mutations}},
         )
-        .reply(200, {
-          transactionId: 'foo',
-          results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+            results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+          },
         })
 
       await expect(
@@ -2591,16 +3022,23 @@ describe('client', async () => {
       async () => {
         const mutations = [{delete: {id: 'abc123'}}]
 
-        nock(projectHost())
-          .post(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'POST',
             '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync',
             {
-              mutations,
+              body: {
+                mutations,
+              },
             },
           )
-          .reply(200, {
-            transactionId: 'foo',
-            results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'foo',
+              results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+            },
           })
 
         await expect(
@@ -2622,12 +3060,18 @@ describe('client', async () => {
         ifExists: 'fail',
       }
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [action],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [action],
+          },
         })
-        .reply(200, {
-          transactionId: 'foo',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+          },
         })
 
       await expect(getClient().action(action)).resolves.not.toThrow()
@@ -2683,15 +3127,18 @@ describe('client', async () => {
         publishedId: 'post7',
       }
 
-      nock(projectHost())
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore: TS is wrong here, it is not able to infer the correct type for
-        // edit action patch interface.
-        .post('/v1/data/actions/foo', {
-          actions: [action1, action2, action3, action4, action5, action6, action7],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [action1, action2, action3, action4, action5, action6, action7],
+          },
         })
-        .reply(200, {
-          transactionId: 'foo',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+          },
         })
 
       await expect(
@@ -2713,15 +3160,21 @@ describe('client', async () => {
         dryRun: true,
       }
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [action],
-          transactionId: 'txn1',
-          skipCrossDatasetReferenceValidation: true,
-          dryRun: true,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [action],
+            transactionId: 'txn1',
+            skipCrossDatasetReferenceValidation: true,
+            dryRun: true,
+          },
         })
-        .reply(200, {
-          transactionId: 'txn1',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'txn1',
+          },
         })
 
       await expect(getClient().action(action, options)).resolves.not.toThrow()
@@ -2741,12 +3194,18 @@ describe('client', async () => {
         dryRun: undefined,
       }
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [action],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [action],
+          },
         })
-        .reply(200, {
-          transactionId: 'foo',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+          },
         })
 
       await expect(getClient().action(action, options)).resolves.not.toThrow()
@@ -2766,12 +3225,17 @@ describe('client', async () => {
       // Again, just... don't do this.
       const query = `*[_type == "beer" && (${clause.join(' || ')})]`
 
-      nock(projectHost())
-        .get('/v1/data/query/foo')
-        .query({query, ...qParams, returnQuery: 'false'})
-        .reply(200, {
-          ms: 123,
-          result,
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/query/foo', {
+          query: objectContaining({query, ...qParams, returnQuery: 'false'}),
+        })
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
         })
 
       const res = await getClient().fetch(query, params)
@@ -2791,12 +3255,18 @@ describe('client', async () => {
       // Again, just... don't do this.
       const query = `*[_type == "beer" && (${clause.join(' || ')})]`
 
-      const expectedBody = JSON.stringify({query, params})
-      nock(projectHost()).post('/v1/data/query/foo?returnQuery=false', expectedBody).reply(200, {
-        ms: 123,
-        query,
-        result,
-      })
+      const expectedBody = {query, params}
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/query/foo?returnQuery=false', {body: expectedBody})
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            query,
+            result,
+          },
+        })
 
       const res = await getClient().fetch(query, params)
       expect(res.length, 'length should match').toEqual(1)
@@ -2814,14 +3284,23 @@ describe('client', async () => {
 
       // Again, just... don't do this.
       const query = `*[_type == "beer" && (${clause.join(' || ')})]`
-      const expectedBody = JSON.stringify({query, params})
+      const expectedBody = {query, params}
 
-      nock(projectHost()).post('/v1/data/query/foo?returnQuery=false', expectedBody).reply(code, {})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/query/foo?returnQuery=false', {body: expectedBody})
+        .respond({status: code, body: {}})
 
-      nock(projectHost()).post('/v1/data/query/foo?returnQuery=false', expectedBody).reply(200, {
-        ms: 123,
-        result,
-      })
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/query/foo?returnQuery=false', {body: expectedBody})
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            result,
+          },
+        })
 
       const res = await getClient().fetch(query, params)
       expect(res.length, 'length should match').toEqual(1)
@@ -2840,14 +3319,20 @@ describe('client', async () => {
 
         // Again, just... don't do this.
         const query = `*[_type == "beer" && (${clause.join(' || ')})]`
-        const expectedBody = JSON.stringify({query, params})
+        const expectedBody = {query, params}
 
-        nock(projectHost())
-          .post('/v1/data/query/foo?tag=myapp.silly-query&returnQuery=false', expectedBody)
-          .reply(200, {
-            ms: 123,
-            query,
-            result,
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/query/foo?tag=myapp.silly-query&returnQuery=false', {
+            body: expectedBody,
+          })
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              query,
+              result,
+            },
           })
 
         const res = await getClient().fetch(query, params, {tag: 'myapp.silly-query'})
@@ -2868,18 +3353,23 @@ describe('client', async () => {
 
         // Again, just... don't do this.
         const query = `*[_type == "beer" && (${clause.join(' || ')})]`
-        const expectedBody = JSON.stringify({query, params})
+        const expectedBody = {query, params}
 
-        nock(projectHost())
-          .post(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'POST',
             '/vX/data/query/foo?resultSourceMap=true&perspective=previewDrafts&returnQuery=false',
-            expectedBody,
+            {body: expectedBody},
           )
-          .reply(200, {
-            ms: 123,
-            query,
-            result,
-            resultSourceMap,
+          .respond({
+            status: 200,
+            body: {
+              ms: 123,
+              query,
+              result,
+              resultSourceMap,
+            },
           })
 
         const client = getClient({
@@ -2904,15 +3394,18 @@ describe('client', async () => {
       }
 
       const query = `*[_type == "beer" && (${clause.join(' || ')})]`
-      //const expectedBody = JSON.stringify({query, params})
+      //const expectedBody = {query, params}
 
-      nock('https://abc123.apicdn.sanity.io')
-        .filteringRequestBody(/.*/, '*')
-        .post('/v1/data/query/foo?returnQuery=false', '*')
-        .reply(200, {
-          ms: 123,
-          query,
-          result,
+      getActiveMock()
+        .scope('https://abc123.apicdn.sanity.io')
+        .on('POST', '/v1/data/query/foo?returnQuery=false', {body: anyValue()})
+        .respond({
+          status: 200,
+          body: {
+            ms: 123,
+            query,
+            result,
+          },
         })
 
       const res = await client.fetch(query, params)
@@ -2926,18 +3419,24 @@ describe('client', async () => {
         const publishedId = 'pub123'
         const expectedVersionId = `drafts.${publishedId}`
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                document: {...document, _id: expectedVersionId},
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  document: {...document, _id: expectedVersionId},
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({document, publishedId})
@@ -2950,18 +3449,24 @@ describe('client', async () => {
         const releaseId = 'release456'
         const expectedVersionId = `versions.${releaseId}.${publishedId}`
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                document: {...document, _id: expectedVersionId},
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  document: {...document, _id: expectedVersionId},
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({document, publishedId, releaseId})
@@ -2977,20 +3482,26 @@ describe('client', async () => {
           dryRun: true,
         }
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                document: {...document, _id: expectedVersionId},
-              },
-            ],
-            skipCrossDatasetReferenceValidation: true,
-            dryRun: true,
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  document: {...document, _id: expectedVersionId},
+                },
+              ],
+              skipCrossDatasetReferenceValidation: true,
+              dryRun: true,
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({document, publishedId}, options)
@@ -3001,7 +3512,10 @@ describe('client', async () => {
         const document = {_type: 'post', title: 'Error test'}
         const publishedId = 'pub123'
 
-        nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo')
+          .respondWithError(new Error('Network error occurred'))
 
         await expect(getClient().createVersion({document, publishedId})).rejects.toThrowError()
       })
@@ -3103,18 +3617,24 @@ describe('client', async () => {
         const documentId = 'drafts.existing123'
         const document = {_id: documentId, _type: 'post', title: 'Only document ID'}
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId: 'existing123',
-                document: {...document, _id: documentId},
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId: 'existing123',
+                  document: {...document, _id: documentId},
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({document})
@@ -3126,18 +3646,24 @@ describe('client', async () => {
         const expectedPublishedId = 'post123'
         const document = {_id: documentId, _type: 'post', title: 'Draft document'}
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId: expectedPublishedId,
-                document: {...document, _id: documentId},
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId: expectedPublishedId,
+                  document: {...document, _id: documentId},
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({document})
@@ -3217,19 +3743,25 @@ describe('client', async () => {
         const publishedId = 'targetDoc123'
         const expectedVersionId = 'versions.release456.targetDoc123'
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                baseId,
-                versionId: expectedVersionId,
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  baseId,
+                  versionId: expectedVersionId,
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({baseId, releaseId, publishedId})
@@ -3243,20 +3775,26 @@ describe('client', async () => {
         const ifBaseRevisionId = 'rev456'
         const expectedVersionId = 'versions.release456.targetDoc123'
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                baseId,
-                versionId: expectedVersionId,
-                ifBaseRevisionId,
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  baseId,
+                  versionId: expectedVersionId,
+                  ifBaseRevisionId,
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({
@@ -3278,21 +3816,27 @@ describe('client', async () => {
           dryRun: true,
         }
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                baseId,
-                versionId: expectedVersionId,
-              },
-            ],
-            skipCrossDatasetReferenceValidation: true,
-            dryRun: true,
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  baseId,
+                  versionId: expectedVersionId,
+                },
+              ],
+              skipCrossDatasetReferenceValidation: true,
+              dryRun: true,
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({baseId, releaseId, publishedId}, options)
@@ -3318,19 +3862,25 @@ describe('client', async () => {
         const publishedId = 'targetDoc123'
         const expectedVersionId = 'drafts.targetDoc123'
 
-        nock(projectHost())
-          .post('/v1/data/actions/foo', {
-            actions: [
-              {
-                actionType: 'sanity.action.document.version.create',
-                publishedId,
-                baseId,
-                versionId: expectedVersionId,
-              },
-            ],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo', {
+            body: {
+              actions: [
+                {
+                  actionType: 'sanity.action.document.version.create',
+                  publishedId,
+                  baseId,
+                  versionId: expectedVersionId,
+                },
+              ],
+            },
           })
-          .reply(200, {
-            transactionId: 'abc123',
+          .respond({
+            status: 200,
+            body: {
+              transactionId: 'abc123',
+            },
           })
 
         const res = await getClient().createVersion({baseId, publishedId})
@@ -3376,7 +3926,10 @@ describe('client', async () => {
         const releaseId = 'release456'
         const publishedId = 'targetDoc123'
 
-        nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/actions/foo')
+          .respondWithError(new Error('Network error occurred'))
 
         await expect(
           getClient().createVersion({baseId, releaseId, publishedId}),
@@ -3576,9 +4129,12 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('executes patch when commit() is called', async () => {
       const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations: [expectedPatch]})
-        .reply(200, {transactionId: 'blatti'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {
+          body: {mutations: [expectedPatch]},
+        })
+        .respond({status: 200, body: {transactionId: 'blatti'}})
 
       const res = await getClient()
         .patch('abc123')
@@ -3592,11 +4148,14 @@ describe('client', async () => {
       'executes patch with request tag when commit() is called with tag',
       async () => {
         const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
-        nock(projectHost())
-          .post('/v1/data/mutate/foo?tag=company.setvisited&returnIds=true&visibility=sync', {
-            mutations: [expectedPatch],
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/mutate/foo?tag=company.setvisited&returnIds=true&visibility=sync', {
+            body: {
+              mutations: [expectedPatch],
+            },
           })
-          .reply(200, {transactionId: 'blatti'})
+          .respond({status: 200, body: {transactionId: 'blatti'}})
 
         const res = await getClient()
           .patch('abc123')
@@ -3610,11 +4169,18 @@ describe('client', async () => {
       'executes patch with auto generate key option if specified commit()',
       async () => {
         const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
-        nock(projectHost())
-          .post('/v1/data/mutate/foo?returnIds=true&autoGenerateArrayKeys=true&visibility=sync', {
-            mutations: [expectedPatch],
-          })
-          .reply(200, {transactionId: 'blatti'})
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'POST',
+            '/v1/data/mutate/foo?returnIds=true&autoGenerateArrayKeys=true&visibility=sync',
+            {
+              body: {
+                mutations: [expectedPatch],
+              },
+            },
+          )
+          .respond({status: 200, body: {transactionId: 'blatti'}})
 
         const res = await getClient()
           .patch('abc123')
@@ -3626,9 +4192,12 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('executes patch with given token override commit() is called', async () => {
       const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
-      nock(projectHost(), {reqheaders: {Authorization: 'Bearer abc123'}})
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations: [expectedPatch]})
-        .reply(200, {transactionId: 'blatti'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {
+          body: {mutations: [expectedPatch]},
+        })
+        .respond({status: 200, body: {transactionId: 'blatti'}})
 
       const res = await getClient()
         .patch('abc123')
@@ -3641,25 +4210,28 @@ describe('client', async () => {
     test.skipIf(isEdge)('returns patched document by default', async () => {
       const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
       const expectedBody = {mutations: [expectedPatch]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {
-          transactionId: 'blatti',
-          results: [
-            {
-              id: 'abc123',
-              operation: 'update',
-              document: {
-                _id: 'abc123',
-                _createdAt: '2016-10-24T08:09:32.997Z',
-                count: 2,
-                visited: true,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'blatti',
+            results: [
+              {
+                id: 'abc123',
+                operation: 'update',
+                document: {
+                  _id: 'abc123',
+                  _createdAt: '2016-10-24T08:09:32.997Z',
+                  count: 2,
+                  visited: true,
+                },
               },
-            },
-          ],
+            ],
+          },
         })
 
       const res = await getClient().patch('abc123').inc({count: 1}).set({visited: true}).commit()
@@ -3671,12 +4243,12 @@ describe('client', async () => {
 
       const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
       const expectedBody = {mutations: [expectedPatch]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(400)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({status: 400})
 
       try {
         await getClient().patch('abc123').inc({count: 1}).set({visited: true}).commit()
@@ -3735,11 +4307,14 @@ describe('client', async () => {
       const patch = new Patch('foo').dec({count: 1})
 
       const mutations = [{patch: {id: 'foo', dec: {count: 1}}}]
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-          mutations,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: {
+            mutations,
+          },
         })
-        .reply(200, {results: [{id: 'foo', operation: 'update'}]})
+        .respond({status: 200, body: {results: [{id: 'foo', operation: 'update'}]}})
 
       await expect(getClient().mutate(patch)).resolves.not.toThrow()
     })
@@ -3922,9 +4497,10 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('executes transaction when commit() is called', async () => {
       const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations})
-        .reply(200, {transactionId: 'blatti'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {body: {mutations}})
+        .respond({status: 200, body: {transactionId: 'blatti'}})
 
       const res = await getClient()
         .transaction()
@@ -3938,11 +4514,14 @@ describe('client', async () => {
       'executes transaction with request tag when commit() is called with tag',
       async () => {
         const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
-        nock(projectHost())
-          .post('/v1/data/mutate/foo?tag=sfcraft.createbar&returnIds=true&visibility=sync', {
-            mutations,
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/mutate/foo?tag=sfcraft.createbar&returnIds=true&visibility=sync', {
+            body: {
+              mutations,
+            },
           })
-          .reply(200, {transactionId: 'blatti'})
+          .respond({status: 200, body: {transactionId: 'blatti'}})
 
         const res = await getClient()
           .transaction()
@@ -4009,11 +4588,14 @@ describe('client', async () => {
         trx.delete('foo')
 
         const mutations = [{delete: {id: 'foo'}}]
-        nock(projectHost())
-          .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-            mutations,
+        getActiveMock()
+          .scope(projectHost())
+          .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+            body: {
+              mutations,
+            },
           })
-          .reply(200, {results: [{id: 'foo', operation: 'delete'}]})
+          .respond({status: 200, body: {results: [{id: 'foo', operation: 'delete'}]}})
 
         await expect(getClient().mutate(trx)).resolves.not.toThrow()
       },
@@ -4027,9 +4609,12 @@ describe('client', async () => {
     test.skipIf(isEdge)('transaction can be given an explicit transaction ID', async () => {
       const transactionId = 'moop'
       const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', {mutations, transactionId})
-        .reply(200, {transactionId})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {
+          body: {mutations, transactionId},
+        })
+        .respond({status: 200, body: {transactionId}})
 
       const res = await getClient()
         .transaction()
@@ -4051,12 +4636,17 @@ describe('client', async () => {
         encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
         encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
-      nock(projectHost())
-        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
-        .reply(200, response, {
-          'cache-control': 'no-cache',
-          'content-type': 'text/event-stream; charset=utf-8',
-          'transfer-encoding': 'chunked',
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .respond({
+          status: 200,
+          body: response,
+          headers: {
+            'cache-control': 'no-cache',
+            'content-type': 'text/event-stream; charset=utf-8',
+            'transfer-encoding': 'chunked',
+          },
         })
 
       const evt = await firstValueFrom(getClient().listen('foo.bar'))
@@ -4072,14 +4662,20 @@ describe('client', async () => {
         encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
         encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           '/v1/data/listen/foo?tag=sfcraft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
-        .reply(200, response, {
-          'cache-control': 'no-cache',
-          'content-type': 'text/event-stream; charset=utf-8',
-          'transfer-encoding': 'chunked',
+        .respond({
+          status: 200,
+          body: response,
+          headers: {
+            'cache-control': 'no-cache',
+            'content-type': 'text/event-stream; charset=utf-8',
+            'transfer-encoding': 'chunked',
+          },
         })
 
       const evt = await firstValueFrom(
@@ -4097,14 +4693,20 @@ describe('client', async () => {
         encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
         encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
 
-      nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           '/v1/data/listen/foo?tag=sf.craft.checkins&query=*%5B_type%20%3D%3D%20%22checkin%22%5D&includeResult=true',
         )
-        .reply(200, response, {
-          'cache-control': 'no-cache',
-          'content-type': 'text/event-stream; charset=utf-8',
-          'transfer-encoding': 'chunked',
+        .respond({
+          status: 200,
+          body: response,
+          headers: {
+            'cache-control': 'no-cache',
+            'content-type': 'text/event-stream; charset=utf-8',
+            'transfer-encoding': 'chunked',
+          },
         })
 
       const evt = await firstValueFrom(
@@ -4120,15 +4722,19 @@ describe('client', async () => {
 
     test('listeners requests are lazy', async () => {
       expect.assertions(2)
-      const {getActiveMock} = await import('./helpers/nockShim')
 
       const response =
         encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
         encode({event: 'mutation', data: '{}'})
 
-      nock(projectHost())
-        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
-        .reply(200, response, {'content-type': 'text/event-stream; charset=utf-8'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .respond({
+          status: 200,
+          body: response,
+          headers: {'content-type': 'text/event-stream; charset=utf-8'},
+        })
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
       await new Promise((resolve) => setTimeout(resolve, 10))
 
@@ -4139,17 +4745,25 @@ describe('client', async () => {
 
     test('listener requests are cold', async () => {
       expect.assertions(3)
-      const {getActiveMock} = await import('./helpers/nockShim')
 
       const response = encode({
         event: 'welcome',
         data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'}),
       })
 
-      nock(projectHost())
-        .get('/v1/data/listen/foo?query=foo.bar&includeResult=true')
-        .twice()
-        .reply(200, response, {'content-type': 'text/event-stream; charset=utf-8'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .respond({
+          status: 200,
+          body: response,
+          headers: {'content-type': 'text/event-stream; charset=utf-8'},
+        })
+        .respond({
+          status: 200,
+          body: response,
+          headers: {'content-type': 'text/event-stream; charset=utf-8'},
+        })
 
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
 
@@ -4164,12 +4778,15 @@ describe('client', async () => {
   describe.runIf(isNode)('ASSETS', () => {
     test('uploads images', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath))
       expect(document.url).toEqual('https://some.asset.url')
@@ -4177,12 +4794,15 @@ describe('client', async () => {
 
     test('uploads images with request tag if given', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo?tag=galaxy.images', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo?tag=galaxy.images', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
         tag: 'galaxy.images',
@@ -4192,12 +4812,15 @@ describe('client', async () => {
 
     test('uploads images with prefixed request tag if given', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo?tag=galaxy.images', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo?tag=galaxy.images', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient({requestTagPrefix: 'galaxy'}).assets.upload(
         'image',
@@ -4209,12 +4832,15 @@ describe('client', async () => {
 
     test('uploads images with given content type', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost(), {reqheaders: {'Content-Type': 'image/jpeg'}})
-        .post('/v1/assets/images/foo', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
         contentType: 'image/jpeg',
@@ -4224,12 +4850,15 @@ describe('client', async () => {
 
     test('uploads images with specified metadata to be extracted', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo?meta=palette&meta=location', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo?meta=palette&meta=location', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const options = {extract: ['palette' as const, 'location' as const]}
       const document = await getClient().assets.upload(
@@ -4242,12 +4871,15 @@ describe('client', async () => {
 
     test('empty extract array sends `none` as metadata', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo?meta=none', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo?meta=none', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const options = {extract: []}
       const document = await getClient().assets.upload(
@@ -4263,12 +4895,15 @@ describe('client', async () => {
       // only ever emit the terminal `response` event. Browsers get progress
       // events via a separate XHR-based code path (see `browserUpload`).
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo', isImage)
-        .reply(201, {url: 'https://some.asset.url'})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo', {body: isImage})
+        .respond({status: 201, body: {url: 'https://some.asset.url'}})
 
       const uploadProgress = getClient()
         .observable.assets.upload('image', fs.createReadStream(fixturePath))
@@ -4280,12 +4915,15 @@ describe('client', async () => {
 
     test('uploads images with custom label', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
       const label = 'xy zzy'
-      nock(projectHost())
-        .post(`/v1/assets/images/foo?label=${encodeURIComponent(label)}`, isImage)
-        .reply(201, {document: {label: label}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/assets/images/foo?label=${encodeURIComponent(label)}`, {body: isImage})
+        .respond({status: 201, body: {document: {label: label}}})
 
       const body = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
         label: label,
@@ -4295,12 +4933,15 @@ describe('client', async () => {
 
     test('uploads files', async () => {
       const fixturePath = fixture('pdf-sample.pdf')
-      const isFile = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isFile = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/files/foo', isFile)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/files/foo', {body: isFile})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient().assets.upload('file', fs.createReadStream(fixturePath))
       expect(document.url).toEqual('https://some.asset.url')
@@ -4308,12 +4949,15 @@ describe('client', async () => {
 
     test('uploads images and can cast to promise', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(projectHost())
-        .post('/v1/assets/images/foo', isImage)
-        .reply(201, {document: {url: 'https://some.asset.url'}})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo', {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath))
       expect(document.url).toEqual('https://some.asset.url')
@@ -4321,12 +4965,15 @@ describe('client', async () => {
 
     test('delete assets', async () => {
       const expectedBody = {mutations: [{delete: {id: 'image-abc123_foobar-123x123-png'}}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: 'abc123', results: [{id: 'abc123', operation: 'delete'}]},
+        })
 
       await expect(getClient().delete('image-abc123_foobar-123x123-png')).resolves.not.toThrow()
     })
@@ -4336,9 +4983,10 @@ describe('client', async () => {
     test('can use instruction', async () => {
       const response = 'i did the thing'
 
-      nock(projectHost())
-        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.prompt({
         instruction: 'say you did the thing',
@@ -4349,9 +4997,10 @@ describe('client', async () => {
     test('can ask for json', async () => {
       const response = {json: true}
 
-      nock(projectHost())
-        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.prompt<{json: true}>({
         instruction: 'return the exact json: {json: true}',
@@ -4363,9 +5012,10 @@ describe('client', async () => {
     test('requires documentId for field and document params', async () => {
       const response = {json: true}
 
-      nock(projectHost())
-        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.prompt({
         instruction: '$a $b',
@@ -4387,9 +5037,10 @@ describe('client', async () => {
     test('all the params', async () => {
       const response = 'whatever'
 
-      nock(projectHost())
-        .post(`/v1/agent/action/prompt/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/prompt/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.prompt<{title?: string}>({
         instruction: '$a $b $d',
@@ -4423,9 +5074,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch({
         schemaId: 'some-schema-id',
@@ -4444,9 +5096,10 @@ describe('client', async () => {
         title: 'new title',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch({
         schemaId: 'some-schema-id',
@@ -4461,9 +5114,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch({
         documentId: 'some-id',
@@ -4479,9 +5133,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch<{title?: string}>({
         documentId: 'some-id',
@@ -4497,9 +5152,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       await getClient().agent.action.patch<{title?: string}>({
         documentId: 'some-id',
@@ -4516,9 +5172,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch({
         documentId: 'some-id',
@@ -4535,9 +5192,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch({
         documentId: 'some-id',
@@ -4556,9 +5214,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/patch/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/patch/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.patch<{title?: string}>({
         targetDocument: {_id: 'some-id', operation: 'edit'},
@@ -4588,9 +5247,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate({
         targetDocument: {
@@ -4608,9 +5268,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate({
         targetDocument: {operation: 'createIfNotExists', _id: 'new', _type: 'some-type'},
@@ -4625,9 +5286,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate({
         documentId: 'some-id',
@@ -4643,9 +5305,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
@@ -4662,9 +5325,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       await getClient().agent.action.generate<{title?: string}>({
         documentId: 'some-id',
@@ -4681,9 +5345,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate({
         documentId: 'some-id',
@@ -4700,9 +5365,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate({
         documentId: 'some-id',
@@ -4721,9 +5387,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/generate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/generate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.generate<{title?: string}>({
         targetDocument: {_id: 'some-id', operation: 'edit'},
@@ -4784,9 +5451,10 @@ describe('client', async () => {
     test('can create new document', async () => {
       const response = {_id: 'created'}
 
-      nock(projectHost())
-        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/transform/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.transform({
         schemaId: 'some-schema-id',
@@ -4802,9 +5470,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/transform/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.transform({
         schemaId: 'some-schema-id',
@@ -4820,9 +5489,10 @@ describe('client', async () => {
         title: 'OVERRIDE',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/transform/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.transform<{title?: string}>({
         schemaId: 'some-schema-id',
@@ -4838,9 +5508,10 @@ describe('client', async () => {
         title: 'OVERRIDE',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/transform/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.transform({
         documentId: 'some-id',
@@ -4857,9 +5528,10 @@ describe('client', async () => {
         title: 'OVERRIDE',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/transform/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.transform({
         documentId: 'some-id',
@@ -4877,9 +5549,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/transform/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/transform/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.transform<{title?: string}>({
         documentId: 'some-id',
@@ -4955,9 +5628,10 @@ describe('client', async () => {
     test('can create new document', async () => {
       const response = {_id: 'created'}
 
-      nock(projectHost())
-        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/translate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.translate({
         schemaId: 'some-schema-id',
@@ -4976,9 +5650,10 @@ describe('client', async () => {
         _id: 'generated',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/translate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.translate({
         schemaId: 'some-schema-id',
@@ -4997,9 +5672,10 @@ describe('client', async () => {
         title: 'oversatt',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/translate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.translate<{title?: string}>({
         schemaId: 'some-schema-id',
@@ -5018,9 +5694,10 @@ describe('client', async () => {
         title: 'OVERRIDE',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/translate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.translate({
         documentId: 'some-id',
@@ -5040,9 +5717,10 @@ describe('client', async () => {
         title: 'OVERRIDE',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/translate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.translate({
         documentId: 'some-id',
@@ -5064,9 +5742,10 @@ describe('client', async () => {
         title: 'override',
       }
 
-      nock(projectHost())
-        .post(`/v1/agent/action/translate/${clientConfig.dataset}`)
-        .reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', `/v1/agent/action/translate/${clientConfig.dataset}`)
+        .respond({status: 200, body: response})
 
       const body = await getClient().agent.action.translate<{title?: string}>({
         documentId: 'some-id',
@@ -5145,7 +5824,10 @@ describe('client', async () => {
         email: 'some@email.com',
       }
 
-      nock(projectHost()).get('/v1/users/me').reply(200, response)
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/users/me')
+        .respond({status: 200, body: response})
 
       const body = await getClient().users.getById('me')
       expect(body).toEqual(response)
@@ -5157,9 +5839,10 @@ describe('client', async () => {
       const client = createClient({projectId: 'abc123', dataset: 'foo'})
 
       const response = {result: []}
-      nock('https://abc123.apicdn.sanity.io')
-        .get('/v1/data/query/foo?query=*&returnQuery=false')
-        .reply(200, response)
+      getActiveMock()
+        .scope('https://abc123.apicdn.sanity.io')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .respond({status: 200, body: response})
 
       const docs = await client.fetch('*')
       expect(docs.length).toEqual(0)
@@ -5169,9 +5852,10 @@ describe('client', async () => {
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: false})
 
       const response = {result: []}
-      nock('https://abc123.api.sanity.io')
-        .get('/v1/data/query/foo?query=*&returnQuery=false')
-        .reply(200, response)
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .respond({status: 200, body: response})
 
       const docs = await client.fetch('*')
       expect(docs.length).toEqual(0)
@@ -5180,9 +5864,10 @@ describe('client', async () => {
     test('will use live API for mutations', async () => {
       const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
-      nock('https://abc123.api.sanity.io')
-        .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
-        .reply(200, {})
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
+        .respond({status: 200, body: {}})
 
       await expect(client.create({_type: 'foo', title: 'yep'})).resolves.not.toThrow()
     })
@@ -5195,12 +5880,13 @@ describe('client', async () => {
         token: 'foo',
       })
 
-      const reqheaders = {Authorization: 'Bearer foo'}
-      nock('https://abc123.apicdn.sanity.io', {reqheaders})
-        .get('/v1/data/query/foo?query=*&returnQuery=false')
-        .reply(200, {result: []})
+      getActiveMock()
+        .scope('https://abc123.apicdn.sanity.io')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
+      expect(getActiveMock().getRequests()[0].headers.get('Authorization')).toBe('Bearer foo')
     })
 
     test('allows overriding headers', async () => {
@@ -5211,12 +5897,13 @@ describe('client', async () => {
         useCdn: false,
       })
 
-      const reqheaders = {foo: 'bar'}
-      nock('https://abc123.api.sanity.io', {reqheaders})
-        .get('/v1/data/query/foo?query=*&returnQuery=false')
-        .reply(200, {result: []})
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
+      expect(getActiveMock().getRequests()[0].headers.get('foo')).toBe('bar')
     })
 
     test('will use live API if withCredentials is set to true', async () => {
@@ -5227,9 +5914,10 @@ describe('client', async () => {
         useCdn: true,
       })
 
-      nock('https://abc123.api.sanity.io')
-        .get('/v1/data/query/foo?query=*&returnQuery=false')
-        .reply(200, {result: []})
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
     })
@@ -5239,27 +5927,38 @@ describe('client', async () => {
     test.skipIf(isEdge)('includes token if set', async () => {
       const qs = '?query=foo.bar&returnQuery=false'
       const token = 'abcdefghijklmnopqrstuvwxyz'
-      const reqheaders = {Authorization: `Bearer ${token}`}
-      nock(projectHost(), {reqheaders}).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo${qs}`)
+        .respond({status: 200, body: {result: []}})
 
       const docs = await getClient({token}).fetch('foo.bar')
       expect(docs.length).toEqual(0)
+      expect(getActiveMock().getRequests()[0].headers.get('Authorization')).toBe(`Bearer ${token}`)
     })
 
     test.skipIf(isEdge)('allows overriding token', async () => {
       const qs = '?query=foo.bar&returnQuery=false'
       const token = 'abcdefghijklmnopqrstuvwxyz'
       const override = '123456789'
-      const reqheaders = {Authorization: `Bearer ${override}`}
-      nock(projectHost(), {reqheaders}).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo${qs}`)
+        .respond({status: 200, body: {result: []}})
 
       const docs = await getClient({token}).fetch('foo.bar', {}, {token: override})
       expect(docs.length).toEqual(0)
+      expect(getActiveMock().getRequests()[0].headers.get('Authorization')).toBe(
+        `Bearer ${override}`,
+      )
     })
 
     test.skipIf(isEdge)('allows overriding timeout', async () => {
       const qs = `?query=${encodeURIComponent('*[][0]')}&returnQuery=false`
-      nock(projectHost()).get(`/v1/data/query/foo${qs}`).reply(200, {result: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/v1/data/query/foo${qs}`)
+        .respond({status: 200, body: {result: []}})
 
       const docs = await getClient().fetch('*[][0]', {}, {timeout: 60 * 1000})
       expect(docs.length).toEqual(0)
@@ -5267,18 +5966,15 @@ describe('client', async () => {
 
     test.runIf(isNode)('includes user agent in node', async () => {
       const {default: pkg} = await import('../package.json')
-      const reqheaders = {'User-Agent': `${pkg.name} ${pkg.version}`}
-      nock(projectHost(), {reqheaders}).get('/v1/data/doc/foo/bar').reply(200, {documents: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/doc/foo/bar')
+        .respond({status: 200, body: {documents: []}})
 
       await expect(getClient().getDocument('bar')).resolves.not.toThrow()
-    })
-
-    test.runIf(isNode)('includes user agent in node', async () => {
-      const {default: pkg} = await import('../package.json')
-      const reqheaders = {'User-Agent': `${pkg.name} ${pkg.version}`}
-      nock(projectHost(), {reqheaders}).get('/v1/data/doc/foo/bar').reply(200, {documents: []})
-
-      await expect(getClient().getDocument('bar')).resolves.not.toThrow()
+      expect(getActiveMock().getRequests()[0].headers.get('User-Agent')).toBe(
+        `${pkg.name} ${pkg.version}`,
+      )
     })
 
     test('ClientError includes message in stack', () => {
@@ -5403,13 +6099,12 @@ describe('client', async () => {
 
       const doc = {_id: 'barfoo', _type: 'document', visits: 5}
       const expectedBody = {mutations: [{create: doc}]}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .times(6)
-        .replyWithError(new Error('Something went wrong'))
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respondWithError(new Error('Something went wrong'))
 
       try {
         await getClient().create(doc)
@@ -5459,18 +6154,24 @@ describe('client', async () => {
     test('can discard draft version of a document with publishedId', async () => {
       const publishedId = 'doc123'
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.discard',
-              versionId: 'drafts.doc123',
-              purge: false,
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.discard',
+                versionId: 'drafts.doc123',
+                purge: false,
+              },
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().discardVersion({publishedId})
@@ -5481,18 +6182,24 @@ describe('client', async () => {
       const publishedId = 'doc123'
       const releaseId = 'release456'
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.discard',
-              versionId: 'versions.release456.doc123',
-              purge: false,
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.discard',
+                versionId: 'versions.release456.doc123',
+                purge: false,
+              },
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().discardVersion({publishedId, releaseId})
@@ -5502,18 +6209,24 @@ describe('client', async () => {
     test('can discard version with purge option set to true', async () => {
       const publishedId = 'doc123'
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.discard',
-              versionId: 'drafts.doc123',
-              purge: true,
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.discard',
+                versionId: 'drafts.doc123',
+                purge: true,
+              },
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().discardVersion({publishedId}, true)
@@ -5523,7 +6236,10 @@ describe('client', async () => {
     test('handles errors when discarding versions', async () => {
       const publishedId = 'doc123'
 
-      nock(projectHost()).post('/v1/data/actions/foo').replyWithError('Network error occurred')
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo')
+        .respondWithError(new Error('Network error occurred'))
 
       await expect(getClient().discardVersion({publishedId})).rejects.toThrowError()
     })
@@ -5547,18 +6263,24 @@ describe('client', async () => {
       const publishedId = 'doc123'
       const releaseId = 'release456'
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.unpublish',
-              versionId: 'versions.release456.doc123',
-              publishedId,
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.unpublish',
+                versionId: 'versions.release456.doc123',
+                publishedId,
+              },
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().unpublishVersion({publishedId, releaseId})
@@ -5573,20 +6295,26 @@ describe('client', async () => {
         dryRun: true,
       }
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.unpublish',
-              versionId: 'versions.release456.doc123',
-              publishedId,
-            },
-          ],
-          skipCrossDatasetReferenceValidation: true,
-          dryRun: true,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.unpublish',
+                versionId: 'versions.release456.doc123',
+                publishedId,
+              },
+            ],
+            skipCrossDatasetReferenceValidation: true,
+            dryRun: true,
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().unpublishVersion({publishedId, releaseId}, options)
@@ -5610,10 +6338,16 @@ describe('client', async () => {
     test('throws when data request fails', async () => {
       const args = {publishedId: 'doc123', releaseId: 'release456'} as any
 
-      nock(projectHost()).post('/v1/data/actions/foo').reply(400, {
-        error: 'Invalid document ID',
-        message: 'Document ID must be a string',
-      })
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo')
+        .respond({
+          status: 400,
+          body: {
+            error: 'Invalid document ID',
+            message: 'Document ID must be a string',
+          },
+        })
 
       let error: Error | null = null
       try {
@@ -5629,25 +6363,31 @@ describe('client', async () => {
 
   describe.skipIf(isEdge)('replaceVersion()', () => {
     test('can replace version using only document with _id', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const documentId = 'drafts.doc123'
       const document = {_id: documentId, _type: 'post', title: 'Only document ID'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {
-                _id: documentId,
-                _type: 'post',
-                title: 'Only document ID',
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {
+                  _id: documentId,
+                  _type: 'post',
+                  title: 'Only document ID',
+                },
               },
-            },
-          ],
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document})
@@ -5655,26 +6395,32 @@ describe('client', async () => {
     })
 
     test('can replace version using document with _id and publishedId', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const documentId = 'drafts.doc123'
       const publishedId = 'doc123'
       const document = {_id: documentId, _type: 'post', title: 'Only document ID'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {
-                _id: documentId,
-                _type: 'post',
-                title: 'Only document ID',
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {
+                  _id: documentId,
+                  _type: 'post',
+                  title: 'Only document ID',
+                },
               },
-            },
-          ],
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document, publishedId})
@@ -5685,17 +6431,23 @@ describe('client', async () => {
       const publishedId = 'doc123'
       const document = {_type: 'post', title: 'Replace Version Test'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {...document, _id: 'drafts.doc123'},
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {...document, _id: 'drafts.doc123'},
+              },
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document, publishedId})
@@ -5707,17 +6459,23 @@ describe('client', async () => {
       const releaseId = 'release456'
       const document = {_type: 'post', title: 'Replace Version Test'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {...document, _id: 'versions.release456.doc123'},
-            },
-          ],
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {...document, _id: 'versions.release456.doc123'},
+              },
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document, publishedId, releaseId})
@@ -5793,20 +6551,20 @@ describe('client', async () => {
     })
 
     test('handles network errors gracefully', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const publishedId = 'error123'
       const document = {_type: 'post', title: 'Error Test', _id: 'drafts.error123'}
 
-      nock(projectHost())
-        .filteringRequestBody(() => '*')
-        .post('/v1/data/actions/foo', '*')
-        .replyWithError('Network error occurred')
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {body: anyValue()})
+        .respondWithError(new Error('Network error occurred'))
 
       await expect(getClient().replaceVersion({document, publishedId})).rejects.toThrowError()
     })
 
     test('throws when document is missing _type property', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const publishedId = 'typeless123'
       const document = {title: 'Missing Type'} as any
 
@@ -5891,25 +6649,31 @@ describe('client', async () => {
     })
 
     test('can use document with existing _id', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const documentId = 'drafts.existing123'
       const document = {_id: documentId, _type: 'post', title: 'Only document ID'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {
-                _id: documentId,
-                _type: 'post',
-                title: 'Only document ID',
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {
+                  _id: documentId,
+                  _type: 'post',
+                  title: 'Only document ID',
+                },
               },
-            },
-          ],
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document})
@@ -5917,25 +6681,31 @@ describe('client', async () => {
     })
 
     test('can use publishedId to generate draft ID with no document._id', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const publishedId = 'doc123'
       const document = {_type: 'post', title: 'Replace Version Test'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {
-                _type: 'post',
-                title: 'Replace Version Test',
-                _id: `drafts.${publishedId}`,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {
+                  _type: 'post',
+                  title: 'Replace Version Test',
+                  _id: `drafts.${publishedId}`,
+                },
               },
-            },
-          ],
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document, publishedId})
@@ -5943,26 +6713,32 @@ describe('client', async () => {
     })
 
     test('combines publishedId and releaseId to create version ID', async () => {
-      nock.cleanAll()
+      getActiveMock().clear()
       const publishedId = 'rel123'
       const releaseId = 'release789'
       const document = {_type: 'post', title: 'Replace with Release Test'}
 
-      nock(projectHost())
-        .post('/v1/data/actions/foo', {
-          actions: [
-            {
-              actionType: 'sanity.action.document.version.replace',
-              document: {
-                _type: 'post',
-                title: 'Replace with Release Test',
-                _id: `versions.${releaseId}.${publishedId}`,
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [
+              {
+                actionType: 'sanity.action.document.version.replace',
+                document: {
+                  _type: 'post',
+                  title: 'Replace with Release Test',
+                  _id: `versions.${releaseId}.${publishedId}`,
+                },
               },
-            },
-          ],
+            ],
+          },
         })
-        .reply(200, {
-          transactionId: 'abc123',
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+          },
         })
 
       const res = await getClient().replaceVersion({document, publishedId, releaseId})
@@ -5978,12 +6754,13 @@ describe('client', async () => {
       useCdn: false,
     })
 
-    const reqheaders = {foo: 'bar'}
-    nock('https://abc123.api.sanity.io', {reqheaders})
-      .get('/v1/data/query/foo?query=*&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
+    expect(getActiveMock().getRequests()[0].headers.get('foo')).toBe('bar')
   })
 
   test.skipIf(isEdge)('applies headers from client configuration', async () => {
@@ -5997,15 +6774,15 @@ describe('client', async () => {
       },
     })
 
-    const reqheaders = {
-      'X-Custom-Header': 'custom-value',
-      'X-Another-Header': 'another-value',
-    }
-    nock('https://abc123.api.sanity.io', {reqheaders})
-      .get('/v1/data/query/foo?query=*&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('*')).resolves.not.toThrow()
+    const {headers} = getActiveMock().getRequests()[0]
+    expect(headers.get('X-Custom-Header')).toBe('custom-value')
+    expect(headers.get('X-Another-Header')).toBe('another-value')
   })
 
   test.skipIf(isEdge)('critical headers are not overridden by config headers', async () => {
@@ -6020,21 +6797,15 @@ describe('client', async () => {
       },
     })
 
-    const reqheaders = {
-      Authorization: 'Bearer auth-token',
-      'X-Custom-Header': 'config-value',
-    }
-    nock('https://abc123.api.sanity.io', {reqheaders})
-      .get('/v1/data/query/foo?query=auth-test&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=auth-test&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
-    const reqheaders2 = {
-      Authorization: 'Bearer request-token',
-      'X-Custom-Header': 'request-value',
-    }
-    nock('https://abc123.api.sanity.io', {reqheaders: reqheaders2})
-      .get('/v1/data/query/foo?query=request-test&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=request-test&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('auth-test')).resolves.not.toThrow()
     await expect(
@@ -6049,6 +6820,14 @@ describe('client', async () => {
         },
       ),
     ).resolves.not.toThrow()
+
+    const [authReq, requestReq] = getActiveMock().getRequests()
+    // The token from config is not overridden by the `Authorization` config header.
+    expect(authReq.headers.get('Authorization')).toBe('Bearer auth-token')
+    expect(authReq.headers.get('X-Custom-Header')).toBe('config-value')
+    // Per-request headers do take effect.
+    expect(requestReq.headers.get('Authorization')).toBe('Bearer request-token')
+    expect(requestReq.headers.get('X-Custom-Header')).toBe('request-value')
   })
 
   test.skipIf(isEdge)('headers can be reconfigured', async () => {
@@ -6061,10 +6840,13 @@ describe('client', async () => {
       },
     })
 
-    const reqheaders = {'X-Custom-Header': 'mutation-test'}
-    nock('https://abc123.api.sanity.io', {reqheaders})
-      .post('/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
-      .reply(200, {transactionId: 'abc123', results: [{id: 'doc123', operation: 'create'}]})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync')
+      .respond({
+        status: 200,
+        body: {transactionId: 'abc123', results: [{id: 'doc123', operation: 'create'}]},
+      })
 
     await expect(client.create({_type: 'test', title: 'Test Document'})).resolves.not.toThrow()
 
@@ -6074,10 +6856,10 @@ describe('client', async () => {
       },
     })
 
-    const reqheaders2 = {'X-Custom-Header': 'new-value'}
-    nock('https://abc123.api.sanity.io', {reqheaders: reqheaders2})
-      .get('/v1/data/query/foo?query=*&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('*')).resolves.not.toThrow()
 
@@ -6085,11 +6867,17 @@ describe('client', async () => {
       headers: {},
     })
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/data/query/foo?query=empty-test&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=empty-test&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('empty-test')).resolves.not.toThrow()
+
+    const [mutateReq, fetchReq, emptyReq] = getActiveMock().getRequests()
+    expect(mutateReq.headers.get('X-Custom-Header')).toBe('mutation-test')
+    expect(fetchReq.headers.get('X-Custom-Header')).toBe('new-value')
+    expect(emptyReq.headers.get('X-Custom-Header')).toBeNull()
   })
 
   test.skipIf(isEdge)('will use live API if withCredentials is set to true', async () => {
@@ -6100,9 +6888,10 @@ describe('client', async () => {
       useCdn: true,
     })
 
-    nock('https://abc123.api.sanity.io')
-      .get('/v1/data/query/foo?query=*&returnQuery=false')
-      .reply(200, {result: []})
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('*')).resolves.not.toThrow()
   })
@@ -6125,9 +6914,10 @@ describe('client', async () => {
         aspectRatio: 1.77,
       }
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/video/video-abc123def/playback-info`)
-        .reply(200, mockResponse)
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/video/video-abc123def/playback-info`)
+        .respond({status: 200, body: mockResponse})
 
       const result = await client.mediaLibrary.video.getPlaybackInfo(assetId)
       expect(result).toEqual(mockResponse)
@@ -6146,9 +6936,10 @@ describe('client', async () => {
         aspectRatio: 1.77,
       }
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/video/instance456/playback-info`)
-        .reply(200, mockResponse)
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/video/instance456/playback-info`)
+        .respond({status: 200, body: mockResponse})
 
       const result = await client.mediaLibrary.video.getPlaybackInfo(assetRef)
       expect(result).toEqual(mockResponse)
@@ -6181,24 +6972,26 @@ describe('client', async () => {
         aspectRatio: 1.77,
       }
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/video/video-test123/playback-info`)
-        .query({
-          thumbnailWidth: 640,
-          thumbnailHeight: 360,
-          thumbnailTime: 30,
-          thumbnailFit: 'crop',
-          thumbnailFormat: 'jpg',
-          animatedWidth: 320,
-          animatedHeight: 180,
-          animatedStart: 10,
-          animatedEnd: 20,
-          animatedFps: 15,
-          animatedFormat: 'gif',
-          storyboardFormat: 'jpg',
-          expiration: 3600,
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/video/video-test123/playback-info`, {
+          query: {
+            thumbnailWidth: 640,
+            thumbnailHeight: 360,
+            thumbnailTime: 30,
+            thumbnailFit: 'crop',
+            thumbnailFormat: 'jpg',
+            animatedWidth: 320,
+            animatedHeight: 180,
+            animatedStart: 10,
+            animatedEnd: 20,
+            animatedFps: 15,
+            animatedFormat: 'gif',
+            storyboardFormat: 'jpg',
+            expiration: 3600,
+          },
         })
-        .reply(200, mockResponse)
+        .respond({status: 200, body: mockResponse})
 
       const result = await client.mediaLibrary.video.getPlaybackInfo(assetId, options)
       expect(result).toEqual(mockResponse)
@@ -6286,9 +7079,10 @@ describe('client', async () => {
       const client = getClient(mediaLibraryClientConfig)
       const assetId = 'video-error123'
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/video/video-error123/playback-info`)
-        .reply(404, {error: 'Asset not found'})
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/video/video-error123/playback-info`)
+        .respond({status: 404, body: {error: 'Asset not found'}})
 
       await expect(client.mediaLibrary.video.getPlaybackInfo(assetId)).rejects.toThrow()
     })
@@ -6312,13 +7106,15 @@ describe('client', async () => {
         aspectRatio: 1.77,
       }
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/video/video-partial123/playback-info`)
-        .query({
-          thumbnailWidth: 800,
-          animatedFormat: 'webp',
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/video/video-partial123/playback-info`, {
+          query: {
+            thumbnailWidth: 800,
+            animatedFormat: 'webp',
+          },
         })
-        .reply(200, mockResponse)
+        .respond({status: 200, body: mockResponse})
 
       const result = await client.mediaLibrary.video.getPlaybackInfo(assetId, options)
       expect(result).toEqual(mockResponse)
@@ -6337,9 +7133,10 @@ describe('client', async () => {
         aspectRatio: 1.77,
       }
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/video/video-secured123/playback-info`)
-        .reply(200, mockResponse)
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/video/video-secured123/playback-info`)
+        .respond({status: 200, body: mockResponse})
 
       const {getPlaybackTokens, isSignedPlaybackInfo} = await import('../src/media-library')
 
@@ -6406,14 +7203,19 @@ describe('client', async () => {
       const assetId = '36fOGtOJOadpl4F9xpksb9uKjYp'
       const expectedBody = {mutations: [{delete: {id: assetId}}]}
 
-      nock(globalApiHost)
-        .post(
+      getActiveMock()
+        .scope(globalApiHost)
+        .on(
+          'POST',
           `/v1/media-libraries/${mediaLibraryId}/mutate?returnIds=true&returnDocuments=true&visibility=sync`,
-          expectedBody,
+          {body: expectedBody},
         )
-        .reply(200, {
-          transactionId: 'abc123',
-          results: [{id: assetId, operation: 'delete'}],
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+            results: [{id: assetId, operation: 'delete'}],
+          },
         })
 
       // The correct way to delete Media Library assets is using mutations
@@ -6422,12 +7224,15 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('assets.upload() works with new resource config', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = (body: any) =>
-        Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0
+      const isImage = {
+        asymmetricMatch: (body: any) =>
+          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
+      }
 
-      nock(globalApiHost)
-        .post(`/v1/media-libraries/${mediaLibraryId}/upload`, isImage)
-        .reply(201, {document: {url: 'https://some.asset.url', _id: 'image-123'}})
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('POST', `/v1/media-libraries/${mediaLibraryId}/upload`, {body: isImage})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url', _id: 'image-123'}}})
 
       const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
       const body = fs.readFileSync(fixturePath)
@@ -6444,19 +7249,24 @@ describe('client', async () => {
         contentType: 'image/jpeg',
       }
 
-      nock(globalApiHost)
-        .post(`/v1/media-libraries/${mediaLibraryId}/upload`)
-        .query({
-          filename: 'custom-filename.jpg',
-          title: 'Custom Title',
-          // Note: Media Library only supports title and filename, not description/label/etc
-        })
-        .reply(201, {
-          document: {
-            url: 'https://some.asset.url',
-            _id: 'image-123',
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('POST', `/v1/media-libraries/${mediaLibraryId}/upload`, {
+          query: objectContaining({
+            filename: 'custom-filename.jpg',
             title: 'Custom Title',
-            originalFilename: 'custom-filename.jpg',
+            // Note: Media Library only supports title and filename, not description/label/etc
+          }),
+        })
+        .respond({
+          status: 201,
+          body: {
+            document: {
+              url: 'https://some.asset.url',
+              _id: 'image-123',
+              title: 'Custom Title',
+              originalFilename: 'custom-filename.jpg',
+            },
           },
         })
 
@@ -6487,11 +7297,15 @@ describe('client', async () => {
         resource: {type: 'media-library', id: 'invalid-id'},
       })
 
-      nock(globalApiHost)
-        .get('/v1/media-libraries/invalid-id/query?query=%2A&returnQuery=false')
-        .reply(404, {
-          error: {message: 'Media Library not found'},
-          statusCode: 404,
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', '/v1/media-libraries/invalid-id/query?query=%2A&returnQuery=false')
+        .respond({
+          status: 404,
+          body: {
+            error: {message: 'Media Library not found'},
+            statusCode: 404,
+          },
         })
 
       await expect(clientWithInvalidId.fetch('*')).rejects.toThrow()
@@ -6502,11 +7316,15 @@ describe('client', async () => {
         resource: {type: 'media-library', id: 'invalid-id'},
       })
 
-      nock(globalApiHost)
-        .post('/v1/media-libraries/invalid-id/upload')
-        .reply(404, {
-          error: {message: 'Media Library not found'},
-          statusCode: 404,
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('POST', '/v1/media-libraries/invalid-id/upload')
+        .respond({
+          status: 404,
+          body: {
+            error: {message: 'Media Library not found'},
+            statusCode: 404,
+          },
         })
 
       const fixturePath = fixture('horsehead-nebula.jpg')
@@ -6517,11 +7335,15 @@ describe('client', async () => {
     test.skipIf(isEdge)('fetch() works with resource config', async () => {
       const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
 
-      nock(globalApiHost)
-        .get(`/v1/media-libraries/${mediaLibraryId}/query?query=%2A&returnQuery=false`)
-        .reply(200, {
-          result: [{_id: 'asset-123', _type: 'sanity.asset'}],
-          ms: 100,
+      getActiveMock()
+        .scope(globalApiHost)
+        .on('GET', `/v1/media-libraries/${mediaLibraryId}/query?query=%2A&returnQuery=false`)
+        .respond({
+          status: 200,
+          body: {
+            result: [{_id: 'asset-123', _type: 'sanity.asset'}],
+            ms: 100,
+          },
         })
 
       const result = await client.fetch('*')
@@ -6532,13 +7354,10 @@ describe('client', async () => {
   describe.skipIf(!isNode)('lineage', () => {
     test('adds lineage header through client constructor', async () => {
       const client = getClient({lineage: 'my-lineage-id'})
-      nock(projectHost(), {
-        reqheaders: {
-          'x-sanity-lineage': 'my-lineage-id',
-        },
-      })
-        .get('/v1/data/query/foo?query=*&returnQuery=false')
-        .reply(200, {result: []})
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
     })
@@ -6550,16 +7369,15 @@ describe('client', async () => {
 
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createOrReplace: doc}]}
-      nock(projectHost(), {
-        reqheaders: {
-          'x-sanity-lineage': 'env-lineage-id',
-        },
-      })
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       await expect(client.createOrReplace(doc)).resolves.not.toThrow()
     })
@@ -6571,16 +7389,15 @@ describe('client', async () => {
 
       const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
       const expectedBody = {mutations: [{createOrReplace: doc}]}
-      nock(projectHost(), {
-        reqheaders: {
-          'x-sanity-lineage': 'env-lineage-id',
-        },
-      })
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {transactionId: '123abc', results: [{id: 'abc123', operation: 'create'}]},
+        })
 
       await expect(client.createOrReplace(doc)).resolves.not.toThrow()
     })

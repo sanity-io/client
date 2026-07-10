@@ -1,6 +1,6 @@
 import {afterEach, beforeEach} from 'vitest'
 
-import {installMock, uninstallMock} from './nockShim'
+import {installMock, uninstallMock} from './mockFetch'
 
 // In the simulated browser env (happy-dom), `XMLHttpRequest` is available
 // and `client.assets.upload()` routes through it for progress events.
