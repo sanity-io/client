@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.23.1](https://github.com/sanity-io/client/compare/v7.23.0...v7.23.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* stop reconnecting live/listen connections rejected with a 4xx ([#1226](https://github.com/sanity-io/client/issues/1226)) ([8c26558](https://github.com/sanity-io/client/commit/8c2655832cee5439820971fd34dd8c9a640a8748))
+
 ## [7.23.0](https://github.com/sanity-io/client/compare/v7.22.1...v7.23.0) (2026-06-17)
 
 
