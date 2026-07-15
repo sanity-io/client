@@ -150,7 +150,6 @@
     "prettier-plugin-packagejson": "^2.5.22",
     "rimraf": "^5.0.7",
     "rollup": "^4.62.4",
-    "sse-channel": "^4.0.2",
     "terser": "^5.49.0",
     "typescript": "5.9.3",
     "vitest": "^4.1.7"
