@@ -20,7 +20,7 @@ jobs:
       contents: read
       # Required to put a comment into the pull-request
       pull-requests: write
-    name: Build, lint and benchmark
+    name: Build and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -39,7 +39,6 @@ jobs:
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
-      - run: npm run benchmark
       - uses: actions/upload-artifact@v4
         name: Cache build output
         with:

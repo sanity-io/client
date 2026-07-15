@@ -80,7 +80,6 @@
     "umd"
   ],
   "scripts": {
-    "benchmark": "npm test -- bench",
     "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
     "clean": "npx rimraf dist coverage umd/*.js",
@@ -124,7 +123,6 @@
     "@eslint/js": "^9.24.0",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@sanity/client-latest": "npm:@sanity/client@latest",
     "@sanity/pkg-utils": "^10.5.0",
     "@types/debug": "^4.1.12",
     "@types/json-diff": "^1.0.3",
