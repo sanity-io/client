@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.23.2](https://github.com/sanity-io/client/compare/v7.23.1...v7.23.2) (2026-07-15)
+
+
+### Bug Fixes
+
+* **deps:** update @sanity/eventsource to v5.0.4 ([#1230](https://github.com/sanity-io/client/issues/1230)) ([17d15ee](https://github.com/sanity-io/client/commit/17d15ee37b61a74dded0de25167d405623d6c8d1))
+
 ## [7.23.1](https://github.com/sanity-io/client/compare/v7.23.0...v7.23.1) (2026-07-13)
 
 
