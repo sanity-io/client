@@ -129,7 +129,7 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@sanity/eventsource": "^5.0.2",
+    "@sanity/eventsource": "^5.0.4",
     "get-it": "^8.8.0",
     "nanoid": "^3.3.11",
     "rxjs": "^7.0.0"
