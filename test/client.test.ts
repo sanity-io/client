@@ -1410,6 +1410,119 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)('can query with a variant id set in the client config', async () => {
+      nock(projectHost())
+        .get(`/vX/data/query/foo?query=*&returnQuery=false&variant=abc`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const client = getClient({apiVersion: 'X', variant: 'abc'})
+      const res = await client.fetch('*', {})
+
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)('can query with a variant condition set in the client config', async () => {
+      nock(projectHost())
+        .get(`/vX/data/query/foo?query=*&returnQuery=false&variantCondition=market%3Aus`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const client = getClient({apiVersion: 'X', variant: {market: 'us'}})
+      const res = await client.fetch('*', {})
+
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)('setting a variant id on client.fetch supersedes the config', async () => {
+      nock(projectHost())
+        .get(`/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const client = getClient({
+        apiVersion: 'X',
+        variant: 'abc',
+      })
+
+      const res = await client.fetch('*', {}, {variant: 'xyz'})
+
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+    })
+
+    test.skipIf(isEdge)(
+      'setting a variant condition on client.fetch supersedes the config',
+      async () => {
+        nock(projectHost())
+          .get(`/vX/data/query/foo?query=*&returnQuery=false&variantCondition=market%3Aeu`)
+          .reply(200, {
+            ms: 123,
+            result,
+          })
+
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+        try {
+          const client = getClient({
+            apiVersion: 'X',
+            variant: {
+              market: 'us',
+            },
+          })
+
+          const res = await client.fetch(
+            '*',
+            {},
+            {
+              variant: {
+                market: 'eu',
+                currency: 'gbp',
+                audience: 'musicians',
+              },
+            },
+          )
+
+          expect(res.length, 'length should match').toBe(1)
+          expect(res[0].rating, 'data should match').toBe(5)
+
+          expect(warn).toHaveBeenCalledWith(
+            expect.stringContaining('Dropped: "currency" and "audience"'),
+          )
+        } finally {
+          warn.mockRestore()
+        }
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'setting a variant id on client.fetch supersedes a variant condition from the config',
+      async () => {
+        // the fetch-level variant replaces the config value wholesale – no
+        // `variantCondition` param should remain
+        nock(projectHost())
+          .get(`/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
+          .reply(200, {
+            ms: 123,
+            result,
+          })
+
+        const client = getClient({apiVersion: 'X', variant: {market: 'us'}})
+        const res = await client.fetch('*', {}, {variant: 'xyz'})
+
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
+      },
+    )
+
     test.skipIf(isEdge)('allow overriding useCdn to false on client.fetch', async () => {
       nock('https://abc123.api.sanity.io')
         .get(`/v1/data/query/foo?query=*&returnQuery=false`)
