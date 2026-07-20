@@ -549,6 +549,7 @@ export function _dataRequest(
     tag,
     returnQuery,
     perspective: options.perspective,
+    variant: options.variant,
     resultSourceMap: options.resultSourceMap,
     lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
     cacheMode: cacheMode,
@@ -700,6 +701,36 @@ export function _requestObservable<R>(
       }
     }
 
+    const variantOption = options.variant || config.variant
+
+    if (typeof variantOption !== 'undefined') {
+      if (typeof variantOption === 'string') {
+        options.query = {
+          variant: variantOption,
+          ...options.query,
+        }
+      }
+
+      if (typeof variantOption === 'object') {
+        const variantConditions = Object.entries(variantOption)
+        const searchParams = variantConditionPairsToSearchParams(variantConditions).slice(0, 1)
+
+        if (variantConditions.length > 1) {
+          const formatter = new Intl.ListFormat('en')
+
+          // eslint-disable-next-line no-console -- will be removed in an upcoming version; it's better this behaviour is noisy and obvious
+          console.warn(
+            `The Sanity client's beta \`variant\` option currently only supports one condition. Dropped: ${formatter.format(variantConditions.slice(1).map(([subject]) => JSON.stringify(subject)))}.`,
+          )
+        }
+
+        options.query = {
+          ...Object.fromEntries(searchParams),
+          ...options.query,
+        }
+      }
+    }
+
     if (options.lastLiveEventId) {
       options.query = {...options.query, lastLiveEventId: options.lastLiveEventId}
     }
@@ -842,4 +873,13 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
       // @ts-expect-error - handle all supported resource types
       throw new Error(`Unsupported resource type: ${type.toString()}`)
   }
+}
+
+function variantConditionPairsToSearchParams(
+  variantConditionPairs: string[][],
+): ['variantCondition', `${string}:${string}`][] {
+  return variantConditionPairs.map(([condition, value]) => [
+    'variantCondition',
+    `${condition}:${value}`,
+  ])
 }

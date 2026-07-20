@@ -55,6 +55,18 @@ export type ClientPerspective =
   | 'raw'
   | StackablePerspective[]
 
+/**
+ * @public
+ * @beta
+ */
+export type ClientVariantConditions = Record<string, string>
+
+/**
+ * @public
+ * @beta
+ */
+export type ClientVariant = ClientVariantConditions | string
+
 type ClientConfigResource =
   | {
       type: 'canvas'
@@ -111,6 +123,10 @@ export interface ClientConfig {
    * @defaultValue 'published'
    */
   perspective?: ClientPerspective
+  /**
+   * @beta
+   */
+  variant?: ClientVariant
   apiHost?: string
 
   /**
@@ -484,6 +500,10 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
   returnQuery?: boolean
   resultSourceMap?: boolean | 'withKeyArraySelector'
   perspective?: ClientPerspective
+  /**
+   * @beta
+   */
+  variant?: ClientVariant
   lastLiveEventId?: string
   cacheMode?: 'noStale'
 }
@@ -678,6 +698,8 @@ export interface QueryParams {
   next?: 'next' extends keyof RequestInit ? never : any
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   perspective?: never
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  variant?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   query?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
@@ -1424,6 +1446,10 @@ export interface ResumableListenOptions extends Omit<ListenOptions, 'events' | '
 /** @public */
 export interface ResponseQueryOptions extends RequestOptions {
   perspective?: ClientPerspective
+  /**
+   * @beta
+   */
+  variant?: ClientVariant
   resultSourceMap?: boolean | 'withKeyArraySelector'
   returnQuery?: boolean
   useCdn?: boolean
