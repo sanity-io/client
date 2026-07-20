@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.24.0](https://github.com/sanity-io/client/compare/v7.23.2...v7.24.0) (2026-07-20)
+
+
+### Features
+
+* variant querying ([#1232](https://github.com/sanity-io/client/issues/1232)) ([8b3ed7c](https://github.com/sanity-io/client/commit/8b3ed7cc9f946840f4fd5dcbea9ce8799b0853c9))
+
 ## [7.23.2](https://github.com/sanity-io/client/compare/v7.23.1...v7.23.2) (2026-07-15)
 
 
