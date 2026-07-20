@@ -3,6 +3,8 @@
   "include": ["./src", "./modules.d.ts", "./test"],
   "exclude": ["./test-esm/test.ts", "./node_modules/next", "./test-next"],
   "compilerOptions": {
-    "types": ["@edge-runtime/types"]
+    "types": ["@edge-runtime/types"],
+    // Allows testing that branded stega strings can be used in JSX, in test/stega/react.test-d.tsx
+    "jsx": "react-jsx"
   }
 }
