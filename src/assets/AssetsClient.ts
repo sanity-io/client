@@ -18,7 +18,7 @@ import type {
 import * as validators from '../validators'
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class ObservableAssetsClient {
@@ -76,7 +76,7 @@ export class ObservableAssetsClient {
 }
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class AssetsClient {
