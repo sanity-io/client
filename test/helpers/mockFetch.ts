@@ -16,9 +16,11 @@
  * ```
  *
  * Network errors (`.respondWithError()`), delayed responses (the `delay`
- * response option) and query-param coercion are all handled natively by
- * `get-it/mock` (9.1.0 and later), so this module only layers on the transport
- * wiring and binary-body normalisation the suite needs.
+ * response option), query-param coercion, request-header matching (the
+ * `headers` match option) and binary/streamed request bodies (recorded as
+ * `Uint8Array`, matched with `bodyBytes()`) are all handled natively by
+ * `get-it/mock` (9.2.0 and later), so this module only layers on the
+ * transport wiring the suite needs.
  *
  * @internal
  */
@@ -29,7 +31,14 @@ export type {AsymmetricMatcher, MockFetch, MockResponseDef, MockScope} from 'get
 // Re-export the asymmetric matchers so tests can reach them through the same
 // (edge-guarded, dynamically imported) helper module instead of importing
 // `get-it/mock` directly.
-export {anyValue, arrayContaining, objectContaining, stringMatching} from 'get-it/mock'
+export {
+  anyValue,
+  arrayContaining,
+  bodyBytes,
+  objectContaining,
+  queryContaining,
+  stringMatching,
+} from 'get-it/mock'
 
 let activeMock: MockFetch | null = null
 
@@ -48,36 +57,28 @@ export function getActiveMock(): MockFetch {
 export function installMock(): MockFetch {
   const mock = createMockFetch()
   activeMock = mock
-  // Wrap the mock fetch so that ReadableStream / binary bodies are
-  // materialised into a hex string before matching. get-it/mock only inspects
-  // string bodies on the request, and the suite's binary-body matchers (asset
-  // uploads) expect the body as a hex string.
-  const wrapped: typeof mock.fetch = async (url, init) => {
-    let body = init?.body
-    if (body instanceof ReadableStream) {
-      const chunks: Uint8Array[] = []
-      const reader = body.getReader()
-      while (true) {
-        const {value, done} = await reader.read()
-        if (done) break
-        if (value) chunks.push(value)
-      }
-      const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
-      const flat = new Uint8Array(total)
-      let offset = 0
-      for (const chunk of chunks) {
-        flat.set(chunk, offset)
-        offset += chunk.byteLength
-      }
-      body = bytesToHex(flat)
-    } else if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
-      const bytes = body instanceof ArrayBuffer ? new Uint8Array(body) : body
-      body = bytesToHex(bytes)
-    }
-    return mock.fetch(url, init ? {...init, body} : init)
-  }
-  ;(globalThis as {__sanityTestFetch?: typeof mock.fetch}).__sanityTestFetch = wrapped
+  ;(globalThis as {__sanityTestFetch?: typeof mock.fetch}).__sanityTestFetch =
+    'happyDOM' in globalThis ? lowercaseHeaders(mock.fetch) : mock.fetch
   return mock
+}
+
+/**
+ * happy-dom's `Headers` iterates names with their original casing, violating
+ * the fetch spec (header names must iterate lowercased). `get-it/mock` builds
+ * its header-match record from that iteration, so mixed-case names like
+ * `Authorization` would never match in the browser test environment.
+ * Normalizes to a lowercased plain record before handing off to the mock.
+ * See https://github.com/capricorn86/happy-dom/issues/2249
+ */
+function lowercaseHeaders(fetch: MockFetch['fetch']): MockFetch['fetch'] {
+  return (url, init) => {
+    if (!init?.headers) return fetch(url, init)
+    const headers: Record<string, string> = {}
+    new Headers(init.headers).forEach((value, key) => {
+      headers[key.toLowerCase()] = value
+    })
+    return fetch(url, {...init, headers})
+  }
 }
 
 /** Tear down the mock installed by installMock(). */
@@ -85,12 +86,4 @@ export function uninstallMock(): void {
   if (activeMock) activeMock.clear()
   activeMock = null
   delete (globalThis as {__sanityTestFetch?: unknown}).__sanityTestFetch
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  let hex = ''
-  for (let i = 0; i < bytes.length; i++) {
-    hex += bytes[i].toString(16).padStart(2, '0')
-  }
-  return hex
 }

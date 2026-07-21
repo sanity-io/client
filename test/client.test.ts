@@ -61,11 +61,15 @@ describe('client', async () => {
   let anyValue: typeof import('./helpers/mockFetch').anyValue = () => {
     throw new Error('Not supported in EdgeRuntime')
   }
+  let bodyBytes: typeof import('./helpers/mockFetch').bodyBytes = () => {
+    throw new Error('Not supported in EdgeRuntime')
+  }
   if (!isEdge) {
     const mod = await import('./helpers/mockFetch')
     getActiveMock = mod.getActiveMock
     objectContaining = mod.objectContaining
     anyValue = mod.anyValue
+    bodyBytes = mod.bodyBytes
   }
 
   const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
@@ -525,10 +529,7 @@ describe('client', async () => {
 
                 test.skipIf(!isNode)('uploads images using resource config', async () => {
                   const fixturePath = fixture('horsehead-nebula.jpg')
-                  const isImage = {
-                    asymmetricMatch: (body: any) =>
-                      Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-                  }
+                  const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
                   if (resource.type === 'media-library') {
                     getActiveMock()
@@ -4214,6 +4215,7 @@ describe('client', async () => {
         .scope(projectHost())
         .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {
           body: {mutations: [expectedPatch]},
+          headers: {Authorization: 'Bearer abc123'},
         })
         .respond({status: 200, body: {transactionId: 'blatti'}})
 
@@ -4796,10 +4798,7 @@ describe('client', async () => {
   describe.runIf(isNode)('ASSETS', () => {
     test('uploads images', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4812,10 +4811,7 @@ describe('client', async () => {
 
     test('uploads images with request tag if given', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4830,10 +4826,7 @@ describe('client', async () => {
 
     test('uploads images with prefixed request tag if given', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4850,14 +4843,14 @@ describe('client', async () => {
 
     test('uploads images with given content type', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
-        .on('POST', '/v1/assets/images/foo', {body: isImage})
+        .on('POST', '/v1/assets/images/foo', {
+          body: isImage,
+          headers: {'Content-Type': 'image/jpeg'},
+        })
         .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
       const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
@@ -4868,10 +4861,7 @@ describe('client', async () => {
 
     test('uploads images with specified metadata to be extracted', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4889,10 +4879,7 @@ describe('client', async () => {
 
     test('empty extract array sends `none` as metadata', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4913,10 +4900,7 @@ describe('client', async () => {
       // only ever emit the terminal `response` event. Browsers get progress
       // events via a separate XHR-based code path (see `browserUpload`).
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4933,10 +4917,7 @@ describe('client', async () => {
 
     test('uploads images with custom label', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
       const label = 'xy zzy'
       getActiveMock()
         .scope(projectHost())
@@ -4951,10 +4932,7 @@ describe('client', async () => {
 
     test('uploads files', async () => {
       const fixturePath = fixture('pdf-sample.pdf')
-      const isFile = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isFile = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -4967,10 +4945,7 @@ describe('client', async () => {
 
     test('uploads images and can cast to promise', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(projectHost())
@@ -5900,11 +5875,12 @@ describe('client', async () => {
 
       getActiveMock()
         .scope('https://abc123.apicdn.sanity.io')
-        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false', {
+          headers: {Authorization: 'Bearer foo'},
+        })
         .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
-      expect(getActiveMock().getRequests()[0].headers.get('Authorization')).toBe('Bearer foo')
     })
 
     test('allows overriding headers', async () => {
@@ -5917,11 +5893,12 @@ describe('client', async () => {
 
       getActiveMock()
         .scope('https://abc123.api.sanity.io')
-        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false', {
+          headers: {foo: 'bar'},
+        })
         .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
-      expect(getActiveMock().getRequests()[0].headers.get('foo')).toBe('bar')
     })
 
     test('will use live API if withCredentials is set to true', async () => {
@@ -5947,12 +5924,13 @@ describe('client', async () => {
       const token = 'abcdefghijklmnopqrstuvwxyz'
       getActiveMock()
         .scope(projectHost())
-        .on('GET', `/v1/data/query/foo${qs}`)
+        .on('GET', `/v1/data/query/foo${qs}`, {
+          headers: {Authorization: `Bearer ${token}`},
+        })
         .respond({status: 200, body: {result: []}})
 
       const docs = await getClient({token}).fetch('foo.bar')
       expect(docs.length).toEqual(0)
-      expect(getActiveMock().getRequests()[0].headers.get('Authorization')).toBe(`Bearer ${token}`)
     })
 
     test.skipIf(isEdge)('allows overriding token', async () => {
@@ -5961,14 +5939,13 @@ describe('client', async () => {
       const override = '123456789'
       getActiveMock()
         .scope(projectHost())
-        .on('GET', `/v1/data/query/foo${qs}`)
+        .on('GET', `/v1/data/query/foo${qs}`, {
+          headers: {Authorization: `Bearer ${override}`},
+        })
         .respond({status: 200, body: {result: []}})
 
       const docs = await getClient({token}).fetch('foo.bar', {}, {token: override})
       expect(docs.length).toEqual(0)
-      expect(getActiveMock().getRequests()[0].headers.get('Authorization')).toBe(
-        `Bearer ${override}`,
-      )
     })
 
     test.skipIf(isEdge)('allows overriding timeout', async () => {
@@ -5986,13 +5963,12 @@ describe('client', async () => {
       const {default: pkg} = await import('../package.json')
       getActiveMock()
         .scope(projectHost())
-        .on('GET', '/v1/data/doc/foo/bar')
+        .on('GET', '/v1/data/doc/foo/bar', {
+          headers: {'User-Agent': `${pkg.name} ${pkg.version}`},
+        })
         .respond({status: 200, body: {documents: []}})
 
       await expect(getClient().getDocument('bar')).resolves.not.toThrow()
-      expect(getActiveMock().getRequests()[0].headers.get('User-Agent')).toBe(
-        `${pkg.name} ${pkg.version}`,
-      )
     })
 
     test('ClientError includes message in stack', () => {
@@ -6774,11 +6750,12 @@ describe('client', async () => {
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
-      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false', {
+        headers: {foo: 'bar'},
+      })
       .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
-    expect(getActiveMock().getRequests()[0].headers.get('foo')).toBe('bar')
   })
 
   test.skipIf(isEdge)('applies headers from client configuration', async () => {
@@ -6794,13 +6771,15 @@ describe('client', async () => {
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
-      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false', {
+        headers: {
+          'X-Custom-Header': 'custom-value',
+          'X-Another-Header': 'another-value',
+        },
+      })
       .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('*')).resolves.not.toThrow()
-    const {headers} = getActiveMock().getRequests()[0]
-    expect(headers.get('X-Custom-Header')).toBe('custom-value')
-    expect(headers.get('X-Another-Header')).toBe('another-value')
   })
 
   test.skipIf(isEdge)('critical headers are not overridden by config headers', async () => {
@@ -6815,14 +6794,26 @@ describe('client', async () => {
       },
     })
 
+    // The token from config is not overridden by the `Authorization` config header.
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
-      .on('GET', '/v1/data/query/foo?query=auth-test&returnQuery=false')
+      .on('GET', '/v1/data/query/foo?query=auth-test&returnQuery=false', {
+        headers: {
+          Authorization: 'Bearer auth-token',
+          'X-Custom-Header': 'config-value',
+        },
+      })
       .respond({status: 200, body: {result: []}})
 
+    // Per-request headers do take effect.
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
-      .on('GET', '/v1/data/query/foo?query=request-test&returnQuery=false')
+      .on('GET', '/v1/data/query/foo?query=request-test&returnQuery=false', {
+        headers: {
+          Authorization: 'Bearer request-token',
+          'X-Custom-Header': 'request-value',
+        },
+      })
       .respond({status: 200, body: {result: []}})
 
     await expect(client.fetch('auth-test')).resolves.not.toThrow()
@@ -6838,14 +6829,6 @@ describe('client', async () => {
         },
       ),
     ).resolves.not.toThrow()
-
-    const [authReq, requestReq] = getActiveMock().getRequests()
-    // The token from config is not overridden by the `Authorization` config header.
-    expect(authReq.headers.get('Authorization')).toBe('Bearer auth-token')
-    expect(authReq.headers.get('X-Custom-Header')).toBe('config-value')
-    // Per-request headers do take effect.
-    expect(requestReq.headers.get('Authorization')).toBe('Bearer request-token')
-    expect(requestReq.headers.get('X-Custom-Header')).toBe('request-value')
   })
 
   test.skipIf(isEdge)('headers can be reconfigured', async () => {
@@ -7242,10 +7225,7 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('assets.upload() works with new resource config', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
-      const isImage = {
-        asymmetricMatch: (body: any) =>
-          Buffer.from(body, 'hex').compare(fs.readFileSync(fixturePath)) === 0,
-      }
+      const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
       getActiveMock()
         .scope(globalApiHost)
