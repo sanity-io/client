@@ -15,6 +15,7 @@
   "excludePrivate": true,
   "excludeInternal": true,
   "excludeProtected": true,
+  "excludeExternals": true,
   "excludeNotDocumented": false,
   "excludeReferences": true,
   "includeVersion": true,
