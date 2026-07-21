@@ -15,7 +15,10 @@ type OmittedProjectFields<T extends ListOptions | undefined> =
   | (T extends {includeMembers: false} ? 'members' : never)
   | (T extends {includeFeatures: false} ? 'features' : never)
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class ObservableProjectsClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -66,7 +69,10 @@ export class ObservableProjectsClient {
   }
 }
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class ProjectsClient {
   #client: SanityClient
   #httpRequest: HttpRequest

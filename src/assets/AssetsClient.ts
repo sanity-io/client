@@ -16,7 +16,10 @@ import type {
 } from '../types'
 import * as validators from '../validators'
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class ObservableAssetsClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -71,7 +74,10 @@ export class ObservableAssetsClient {
   }
 }
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class AssetsClient {
   #client: SanityClient
   #httpRequest: HttpRequest

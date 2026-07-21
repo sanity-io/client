@@ -8,7 +8,10 @@ import {_prompt, type PromptRequest} from './prompt'
 import {_transform, type TransformDocument} from './transform'
 import {_translate, type TranslateDocument} from './translate'
 
-/** @public */
+/**
+ * @public
+ * @inline
+ */
 export class ObservableAgentsActionClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -60,7 +63,10 @@ export class ObservableAgentsActionClient {
   }
 }
 
-/** @public */
+/**
+ * @public
+ * @inline
+ */
 export class AgentActionsClient {
   #client: SanityClient
   #httpRequest: HttpRequest

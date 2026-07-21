@@ -3,6 +3,7 @@
 
 # Compiled files
 dist
+docs
 
 # Coverage directories used by tools like c8
 coverage
