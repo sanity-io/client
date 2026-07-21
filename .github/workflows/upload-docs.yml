@@ -4,14 +4,14 @@ on:
   # Generate and upload TypeDoc on releases
   push:
     tags:
-      - "v*"
+      - 'v*'
   # Validate TypeDoc generation on PRs
   pull_request:
     paths:
-      - "src/**"
-      - "typedoc.json"
-      - "package.json"
-      - ".github/workflows/upload-docs.yml"
+      - 'src/**'
+      - 'typedoc.json'
+      - 'package.json'
+      - '.github/workflows/upload-docs.yml'
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -38,12 +38,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: lts/*
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Generate TypeDoc
         id: generate
         run: |
@@ -66,6 +66,14 @@ jobs:
             exit 1
           fi
 
+      - name: Upload TypeDoc artifact
+        if: steps.generate.outputs.success == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: typedoc-${{ github.sha }}
+          path: docs/client-typedoc-output.json
+          retention-days: 1
+
       - name: Upload HTML docs artifact
         if: github.event_name == 'pull_request' && steps.generate.outputs.success == 'true'
         id: html-artifact
@@ -79,7 +87,7 @@ jobs:
         if: github.event_name == 'pull_request' && steps.generate.outputs.success == 'true'
         uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3
         with:
-          comment-tag: "typedoc-result"
+          comment-tag: 'typedoc-result'
           message: |
             ## 📚 TypeDoc Generation Result
 
@@ -112,8 +120,8 @@ jobs:
         if: (startsWith(github.ref, 'refs/tags/v') || github.event.inputs.upload == 'true') && steps.generate.outputs.success == 'true'
         uses: sanity-io/reference-api-typedoc/.github/actions/typedoc-upload@main
         with:
-          packageName: "@sanity/client"
+          packageName: '@sanity/client'
           version: ${{ steps.version.outputs.version }}
-          typedocJsonPath: "docs/client-typedoc-output.json"
+          typedocJsonPath: 'docs/client-typedoc-output.json'
         env:
           SANITY_DOCS_API_TOKEN: ${{ secrets.SANITY_DOCS_API_TOKEN }}
