@@ -4,6 +4,7 @@ import {type ClientConfig, ConnectionFailedError, createClient} from '@sanity/cl
 import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
 import {beforeEach, describe, expect, test, vitest} from 'vitest'
 
+import {installMock} from './helpers/mockFetch'
 import {createSseServer, type OnRequest} from './helpers/sseServer'
 
 // These tests talk to a real local SSE server, so they need the real
@@ -137,20 +138,17 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('stops reconnecting and surfaces the error when the connection is rejected with a 4xx', async () => {
       expect.assertions(2)
 
-      const {default: nock} = await import('nock')
-
       // Simulate an auth rejection, e.g. an expired or revoked token. Unlike a
       // transient 5xx, the server will keep rejecting — reconnecting forever
-      // would hammer the API once per second.
-      nock('https://abc123.api.sanity.io')
-        .persist()
-        .get('/v1/data/listen/prod')
-        .query(true)
-        .reply(401, 'Unauthorized')
+      // would hammer the API once per second. The EventSource connection is
+      // routed through the mock fetch, which the file-level `beforeEach`
+      // unhooked — re-install it for this test.
+      const mock = installMock()
+      mock
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/v1/data/listen/prod')
+        .respondPersist({status: 401, body: 'Unauthorized'})
 
-      // The token sets an auth header, forcing the polyfill — the only
-      // EventSource implementation that exposes the HTTP status of a rejected
-      // connection
       const client = createClient({
         projectId: 'abc123',
         dataset: 'prod',
@@ -159,39 +157,29 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         token: 'expired-token',
       })
 
-      try {
-        const event = await firstValueFrom(
-          client
-            .listen('*', {}, {events: ['reconnect', 'mutation']})
-            .pipe(catchError((err) => of(err))),
-        )
-        expect(event).toBeInstanceOf(ConnectionFailedError)
-        expect(event.status).toBe(401)
-      } finally {
-        nock.cleanAll()
-      }
+      const event = await firstValueFrom(
+        client
+          .listen('*', {}, {events: ['reconnect', 'mutation']})
+          .pipe(catchError((err) => of(err))),
+      )
+      expect(event).toBeInstanceOf(ConnectionFailedError)
+      expect(event.status).toBe(401)
     })
 
     test('keeps reconnecting when the connection is rejected with a non-4xx error status', async () => {
-      // The Node polyfill dispatches the error event (with `status`) BEFORE
-      // closing for statuses like 501, so the connection is not yet CLOSED when
-      // `onError` runs. Relying on readyState alone leaves a permanently dead
-      // connection that neither errors nor reconnects — a status present on the
-      // event must always take over, letting `reconnectOnConnectionFailure`
-      // classify it (non-4xx → reconnect).
+      // Implementations may dispatch the error event (with the HTTP status)
+      // BEFORE closing for statuses like 501, so the connection is not yet
+      // CLOSED when `onError` runs. Relying on readyState alone leaves a
+      // permanently dead connection that neither errors nor reconnects — a
+      // status present on the event must always take over, letting
+      // `reconnectOnConnectionFailure` classify it (non-4xx → reconnect).
       expect.assertions(1)
 
-      const {default: nock} = await import('nock')
-
-      let attempts = 0
-      nock('https://abc123.api.sanity.io')
-        .persist()
-        .get('/v1/data/listen/prod')
-        .query(true)
-        .reply(501, () => {
-          attempts++
-          return 'Not Implemented'
-        })
+      const mock = installMock()
+      mock
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/v1/data/listen/prod')
+        .respondPersist({status: 501, body: 'Not Implemented'})
 
       const client = createClient({
         projectId: 'abc123',
@@ -209,10 +197,9 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         // The reconnect delay is 1s; two attempts within 2.5s proves the
         // connection is retried rather than silently dead after the first
         await new Promise((resolve) => setTimeout(resolve, 2500))
-        expect(attempts).toBeGreaterThanOrEqual(2)
+        expect(mock.getRequests().length).toBeGreaterThanOrEqual(2)
       } finally {
         subscription.unsubscribe()
-        nock.cleanAll()
       }
     })
 
