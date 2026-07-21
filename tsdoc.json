@@ -30,6 +30,11 @@
       "tagName": "@module",
       "syntaxKind": "block",
       "allowMultiple": false
+    },
+    {
+      "tagName": "@expand",
+      "syntaxKind": "modifier",
+      "allowMultiple": false
     }
   ],
   "supportForTags": {
@@ -52,6 +57,7 @@
     "@category": true,
     "@function": true,
     "@interface": true,
-    "@module": true
+    "@module": true,
+    "@expand": true
   }
 }
