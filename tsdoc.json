@@ -32,7 +32,7 @@
       "allowMultiple": false
     },
     {
-      "tagName": "@expand",
+      "tagName": "@inline",
       "syntaxKind": "modifier",
       "allowMultiple": false
     }
@@ -58,6 +58,6 @@
     "@function": true,
     "@interface": true,
     "@module": true,
-    "@expand": true
+    "@inline": true
   }
 }
