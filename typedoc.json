@@ -42,7 +42,8 @@
     "Other"
   ],
   "navigation": {
-    "includeCategories": true
+    "includeCategories": true,
+    "includeGroups": true
   },
   "kindSortOrder": [
     "Class",
