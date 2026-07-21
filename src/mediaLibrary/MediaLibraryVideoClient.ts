@@ -11,7 +11,7 @@ import type {
 } from '../types'
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class ObservableMediaLibraryVideoClient {
@@ -57,7 +57,7 @@ export class ObservableMediaLibraryVideoClient {
 }
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class MediaLibraryVideoClient {
