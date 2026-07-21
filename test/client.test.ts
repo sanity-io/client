@@ -1612,12 +1612,10 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('can query with a variant id set in the client config', async () => {
-      nock(projectHost())
-        .get(`/vX/data/query/foo?query=*&returnQuery=false&variant=abc`)
-        .reply(200, {
-          ms: 123,
-          result,
-        })
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=abc`)
+        .respond({status: 200, body: {ms: 123, result}})
 
       const client = getClient({apiVersion: 'X', variant: 'abc'})
       const res = await client.fetch('*', {})
@@ -1627,12 +1625,10 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('can query with a variant condition set in the client config', async () => {
-      nock(projectHost())
-        .get(`/vX/data/query/foo?query=*&returnQuery=false&variantCondition=market%3Aus`)
-        .reply(200, {
-          ms: 123,
-          result,
-        })
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=market%3Aus`)
+        .respond({status: 200, body: {ms: 123, result}})
 
       const client = getClient({apiVersion: 'X', variant: {market: 'us'}})
       const res = await client.fetch('*', {})
@@ -1642,12 +1638,10 @@ describe('client', async () => {
     })
 
     test.skipIf(isEdge)('setting a variant id on client.fetch supersedes the config', async () => {
-      nock(projectHost())
-        .get(`/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
-        .reply(200, {
-          ms: 123,
-          result,
-        })
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
+        .respond({status: 200, body: {ms: 123, result}})
 
       const client = getClient({
         apiVersion: 'X',
@@ -1663,14 +1657,13 @@ describe('client', async () => {
     test.skipIf(isEdge)(
       'setting a variant condition on client.fetch supersedes the config',
       async () => {
-        nock(projectHost())
-          .get(
+        getActiveMock()
+          .scope(projectHost())
+          .on(
+            'GET',
             `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu`,
           )
-          .reply(200, {
-            ms: 123,
-            result,
-          })
+          .respond({status: 200, body: {ms: 123, result}})
 
         const client = getClient({
           apiVersion: 'X',
@@ -1727,12 +1720,10 @@ describe('client', async () => {
       async () => {
         // the fetch-level variant replaces the config value wholesale – no
         // `variantCondition` param should remain
-        nock(projectHost())
-          .get(`/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
-          .reply(200, {
-            ms: 123,
-            result,
-          })
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
+          .respond({status: 200, body: {ms: 123, result}})
 
         const client = getClient({apiVersion: 'X', variant: {market: 'us'}})
         const res = await client.fetch('*', {}, {variant: 'xyz'})
