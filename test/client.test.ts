@@ -5931,6 +5931,82 @@ describe('client', async () => {
       expect(docs.length).toEqual(0)
     })
 
+    test.skipIf(isEdge)(
+      'forwards Next.js `cache` and `next` options to the fetch init',
+      async () => {
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+          .respond({status: 200, body: {result: []}})
+
+        // `cache`/`next` are consumed by framework-patched fetch implementations
+        // (Next.js App Router), so they must survive all the way to the actual
+        // fetch call. The mock only records standard request fields, so capture
+        // the raw init by wrapping the installed test fetch.
+        const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
+        const baseFetch = g.__sanityTestFetch
+        if (!baseFetch) throw new Error('mock fetch not installed')
+        const inits: unknown[] = []
+        g.__sanityTestFetch = (url, init) => {
+          inits.push(init)
+          return baseFetch(url, init)
+        }
+
+        try {
+          // `cache`/`next` only type-check with Next.js' `RequestInit`
+          // augmentation (see test-next/); runtime support must work regardless.
+          // @ts-expect-error -- see above
+          await getClient().fetch(
+            '*',
+            {},
+            {cache: 'no-store', next: {revalidate: 60, tags: ['sanity']}},
+          )
+        } finally {
+          g.__sanityTestFetch = baseFetch
+        }
+
+        expect(inits).toHaveLength(1)
+        expect(inits[0]).toMatchObject({
+          cache: 'no-store',
+          next: {revalidate: 60, tags: ['sanity']},
+        })
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'forwards fetch init from the deprecated `fetch` client config',
+      async () => {
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+          .respond({status: 200, body: {result: []}})
+
+        const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
+        const baseFetch = g.__sanityTestFetch
+        if (!baseFetch) throw new Error('mock fetch not installed')
+        const inits: unknown[] = []
+        g.__sanityTestFetch = (url, init) => {
+          inits.push(init)
+          return baseFetch(url, init)
+        }
+
+        try {
+          const client = getClient({
+            // @ts-expect-error -- `cache`/`next` only type-check with Next.js'
+            // `RequestInit` augmentation (see test-next/); runtime support must
+            // work regardless.
+            fetch: {cache: 'no-store', next: {revalidate: 60}},
+          })
+          await client.fetch('*')
+        } finally {
+          g.__sanityTestFetch = baseFetch
+        }
+
+        expect(inits).toHaveLength(1)
+        expect(inits[0]).toMatchObject({cache: 'no-store', next: {revalidate: 60}})
+      },
+    )
+
     test.runIf(isNode)('includes user agent in node', async () => {
       const {default: pkg} = await import('../package.json')
       getActiveMock()
