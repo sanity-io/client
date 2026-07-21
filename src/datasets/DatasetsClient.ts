@@ -14,7 +14,7 @@ import type {
 import * as validate from '../validators'
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class ObservableDatasetsClient {
@@ -105,7 +105,7 @@ export class ObservableDatasetsClient {
 }
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class DatasetsClient {

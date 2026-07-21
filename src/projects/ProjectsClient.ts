@@ -16,7 +16,7 @@ type OmittedProjectFields<T extends ListOptions | undefined> =
   | (T extends {includeFeatures: false} ? 'features' : never)
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class ObservableProjectsClient {
@@ -70,7 +70,7 @@ export class ObservableProjectsClient {
 }
 
 /**
- * @public
+ * @internal
  * @inline
  */
 export class ProjectsClient {
