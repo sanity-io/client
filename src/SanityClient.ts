@@ -61,18 +61,22 @@ import {deriveDocumentVersionId, getDocumentVersionId} from './util/createVersio
 
 export type {
   _listen,
+  AgentActionsClient,
   AssetsClient,
   CollaborationCommentsClient,
   DatasetsClient,
   LiveClient,
   MediaLibraryVideoClient,
+  ObservableAgentsActionClient,
   ObservableAssetsClient,
   ObservableCollaborationCommentsClient,
   ObservableDatasetsClient,
   ObservableMediaLibraryVideoClient,
   ObservableProjectsClient,
+  ObservableReleasesClient,
   ObservableUsersClient,
   ProjectsClient,
+  ReleasesClient,
   UsersClient,
 }
 
@@ -102,6 +106,7 @@ export class ObservableSanityClient {
    * @category Assets
    */
   mediaLibrary: {
+    /** Upload and manage Media Library video assets */
     video: ObservableMediaLibraryVideoClient
   }
   /**
@@ -122,6 +127,7 @@ export class ObservableSanityClient {
    * @category Agent Actions
    */
   agent: {
+    /** Run individual Agent Action operations */
     action: ObservableAgentsActionClient
   }
   collaboration: {
@@ -1259,6 +1265,7 @@ export class SanityClient {
    * @category Assets
    */
   mediaLibrary: {
+    /** Upload and manage Media Library video assets */
     video: MediaLibraryVideoClient
   }
   /**
@@ -1279,6 +1286,7 @@ export class SanityClient {
    * @category Agent Actions
    */
   agent: {
+    /** Run individual Agent Action operations */
     action: AgentActionsClient
   }
   collaboration: {

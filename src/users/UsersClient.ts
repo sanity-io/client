@@ -4,7 +4,10 @@ import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {CurrentSanityUser, HttpRequest, SanityUser} from '../types'
 
-/** @public */
+/**
+ * @public
+ * @expand
+ */
 export class ObservableUsersClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -27,7 +30,10 @@ export class ObservableUsersClient {
   }
 }
 
-/** @public */
+/**
+ * @public
+ * @expand
+ */
 export class UsersClient {
   #client: SanityClient
   #httpRequest: HttpRequest
