@@ -18,7 +18,7 @@ import * as validators from '../validators'
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableAssetsClient {
   #client: ObservableSanityClient
@@ -76,7 +76,7 @@ export class ObservableAssetsClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class AssetsClient {
   #client: SanityClient

@@ -15,7 +15,7 @@ import * as validate from '../validators'
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableDatasetsClient {
   #client: ObservableSanityClient
@@ -106,7 +106,7 @@ export class ObservableDatasetsClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class DatasetsClient {
   #client: SanityClient

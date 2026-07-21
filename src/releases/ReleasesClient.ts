@@ -23,7 +23,7 @@ import {createRelease} from './createRelease'
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableReleasesClient {
   #client: ObservableSanityClient
@@ -363,7 +363,7 @@ export class ObservableReleasesClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ReleasesClient {
   #client: SanityClient

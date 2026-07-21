@@ -12,7 +12,7 @@ import type {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableMediaLibraryVideoClient {
   #client: ObservableSanityClient
@@ -58,7 +58,7 @@ export class ObservableMediaLibraryVideoClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class MediaLibraryVideoClient {
   #client: SanityClient

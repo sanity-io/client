@@ -10,7 +10,7 @@ import {_translate, type TranslateDocument} from './translate'
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableAgentsActionClient {
   #client: ObservableSanityClient
@@ -65,7 +65,7 @@ export class ObservableAgentsActionClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class AgentActionsClient {
   #client: SanityClient
