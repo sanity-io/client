@@ -28,17 +28,22 @@
   "categorizeByGroup": true,
   "defaultCategory": "Other",
   "categoryOrder": [
-    "Client",
     "Configuration",
-    "Queries",
+    "Querying",
     "Mutations",
-    "Transactions",
-    "Assets",
+    "Versions",
     "Releases",
-    "Types",
-    "Utilities",
-    "*"
+    "Assets",
+    "Agent Actions",
+    "Real-time",
+    "Projects & Datasets",
+    "HTTP",
+    "*",
+    "Other"
   ],
+  "navigation": {
+    "includeCategories": true
+  },
   "kindSortOrder": [
     "Class",
     "Module",
