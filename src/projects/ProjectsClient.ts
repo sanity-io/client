@@ -17,7 +17,7 @@ type OmittedProjectFields<T extends ListOptions | undefined> =
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableProjectsClient {
   #client: ObservableSanityClient
@@ -74,7 +74,7 @@ export class ObservableProjectsClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ProjectsClient {
   #client: SanityClient

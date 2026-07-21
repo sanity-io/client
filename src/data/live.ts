@@ -26,7 +26,7 @@ const requiredApiVersion = '2021-03-25'
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class LiveClient {
   #client: SanityClient | ObservableSanityClient

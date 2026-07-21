@@ -6,7 +6,7 @@ import type {CurrentSanityUser, HttpRequest, SanityUser} from '../types'
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class ObservableUsersClient {
   #client: ObservableSanityClient
@@ -32,7 +32,7 @@ export class ObservableUsersClient {
 
 /**
  * @public
- * @expand
+ * @inline
  */
 export class UsersClient {
   #client: SanityClient

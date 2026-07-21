@@ -61,22 +61,18 @@ import {deriveDocumentVersionId, getDocumentVersionId} from './util/createVersio
 
 export type {
   _listen,
-  AgentActionsClient,
   AssetsClient,
   CollaborationCommentsClient,
   DatasetsClient,
   LiveClient,
   MediaLibraryVideoClient,
-  ObservableAgentsActionClient,
   ObservableAssetsClient,
   ObservableCollaborationCommentsClient,
   ObservableDatasetsClient,
   ObservableMediaLibraryVideoClient,
   ObservableProjectsClient,
-  ObservableReleasesClient,
   ObservableUsersClient,
   ProjectsClient,
-  ReleasesClient,
   UsersClient,
 }
 
