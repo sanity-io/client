@@ -100,6 +100,24 @@ export function defineRequester(
   envOptions: EnvironmentOptions,
   config: HttpRequestConfig = {},
 ): DualRequester {
+  // Framework-patched fetch implementations read extra `RequestInit` fields
+  // for caching semantics — Next.js App Router's `cache` and `next` options in
+  // particular. Legacy callers pass those via an object-valued `fetch` request
+  // option (see `adaptToFetchOptions`, which stashes it in `meta.fetchInit`
+  // since get-it v9's own `fetch` option only accepts a function). Merge them
+  // into the init of whichever fetch implementation is effective for the
+  // request: per-request/test-override fetch, the environment default, or the
+  // global fetch.
+  const applyFetchInit: WrappingMiddleware = (opts, next) => {
+    const fetchInit = opts.meta?.fetchInit
+    if (typeof fetchInit !== 'object' || fetchInit === null) return next(opts)
+    const baseFetch: NonNullable<FetchRequestOptions['fetch']> =
+      opts.fetch ?? envOptions.fetch ?? globalThis.fetch
+    const fetchWithInit: typeof baseFetch = (input, init) =>
+      baseFetch(input, {...fetchInit, ...init})
+    return next({...opts, fetch: fetchWithInit})
+  }
+
   const requester = createRequester({
     ...(envOptions.fetch ? {fetch: envOptions.fetch} : {}),
     headers: envOptions.headers,
@@ -115,6 +133,7 @@ export function defineRequester(
       }),
       ...envOptions.middleware,
       testFetchOverride,
+      applyFetchInit,
       printWarnings(config),
     ],
   })
@@ -256,7 +275,19 @@ function adaptToFetchOptions(options: Any): FetchRequestOptions {
   // Legacy callers pass `maxRedirects: 0` to opt out of redirects.
   if (options.maxRedirects === 0) fetchOptions.redirect = 'manual'
 
-  if (typeof options.fetch === 'function') fetchOptions.fetch = options.fetch
+  // The legacy `fetch` option is either a custom fetch implementation
+  // (function) or a bag of extra `RequestInit` fields (object) — Next.js App
+  // Router's `cache`/`next` caching options arrive as the latter, via
+  // `client.fetch(query, params, {cache, next})`. get-it v9's `fetch` option
+  // only accepts a function, so the init extras travel in `meta` and are
+  // merged into the effective fetch by the `applyFetchInit` middleware.
+  // (A boolean `fetch` was v8's "force the fetch transport" switch — a no-op
+  // now that fetch is the only transport.)
+  if (typeof options.fetch === 'function') {
+    fetchOptions.fetch = options.fetch
+  } else if (typeof options.fetch === 'object' && options.fetch !== null) {
+    fetchOptions.meta = {...fetchOptions.meta, fetchInit: options.fetch}
+  }
 
   // Per-request proxy is a Node-only legacy feature. Stash it in `meta` so
   // the Node middleware can swap in a proxy-configured fetch for this call.
