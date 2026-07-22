@@ -213,6 +213,37 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       }
     }, 10_000)
 
+    test('does not probe /check/cors when an established connection drops', async () => {
+      // An established connection that drops is a transient failure, not a
+      // CORS rejection — CORS is enforced when connecting. Probing
+      // `/check/cors` on every `reconnect` event meant a flaky (or
+      // deliberately dropped) connection fired a probe request per reconnect,
+      // hammering the API endlessly.
+      expect.assertions(2)
+
+      let corsProbes = 0
+      server.use(
+        http.get('*/check/cors', () => {
+          corsProbes++
+          return HttpResponse.json({result: {allowed: true, withCredentials: false}})
+        }),
+      )
+
+      const {server: sseServer, client} = await testSse(({channel}) => {
+        channel!.send({event: 'welcome'})
+        // Drop the connection shortly after it was established
+        setTimeout(() => channel!.close(), 25)
+      })
+
+      try {
+        const events = await lastValueFrom(client.live.events().pipe(take(2), toArray()))
+        expect(events.map((event) => event.type)).toEqual(['welcome', 'reconnect'])
+        expect(corsProbes, 'must not probe /check/cors after an established connection').toBe(0)
+      } finally {
+        sseServer.close()
+      }
+    }, 10_000)
+
     test('emits errors', async () => {
       expect.assertions(1)
 

@@ -128,6 +128,11 @@ export class LiveClient {
       esOptions.withCredentials === true,
     )
 
+    // Tracks whether the current connection delivered any server event since
+    // the last `reconnect`, so reconnects can tell "an established connection
+    // dropped" apart from "connection attempts keep failing".
+    let connectionEstablished = false
+
     const observable = events
       .pipe(
         reconnectOnConnectionFailure(),
@@ -140,11 +145,22 @@ export class LiveClient {
         // to fall back to polling per the Live Content API contract.
         takeWhile((event) => event.type !== 'goaway', true),
         mergeMap((event) => {
-          if (event.type === 'reconnect') {
-            // Check for CORS on reconnect events (which happen on 403s)
-            return checkCors.pipe(mergeMap(() => of(event)))
+          if (event.type !== 'reconnect') {
+            // Any server-sent event means the connection was established
+            connectionEstablished = true
+            return of(event)
           }
-          return of(event)
+          const wasEstablished = connectionEstablished
+          connectionEstablished = false
+          // An established connection that drops is a transient failure, not
+          // a CORS rejection — CORS is enforced when connecting. Only probe
+          // `/check/cors` while connection attempts fail without ever getting
+          // established (eg a 403 on connect), otherwise every drop of a
+          // healthy connection would fire a probe request per reconnect.
+          if (wasEstablished) {
+            return of(event)
+          }
+          return checkCors.pipe(mergeMap(() => of(event)))
         }),
         catchError((err) => {
           // If a prior `reconnect` already ran the CORS probe and produced a
@@ -178,7 +194,10 @@ export class LiveClient {
         }),
       )
       .pipe(
-        finalize(() => eventsCache.delete(key)),
+        finalize(() => {
+          connectionEstablished = false
+          eventsCache.delete(key)
+        }),
         shareReplayLatest({
           predicate: (event) => event.type === 'welcome',
         }),
