@@ -6007,6 +6007,62 @@ describe('client', async () => {
       },
     )
 
+    test.skipIf(isEdge)(
+      'attaches no abort signal to query fetches without a caller signal',
+      async () => {
+        // Next.js' patched fetch opts a request out of React Request
+        // Memoization whenever `init.signal` is present, and get-it v9
+        // attaches an `AbortSignal.timeout()` signal by default. Queries made
+        // without a caller-provided signal must reach fetch signal-free.
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+          .respond({status: 200, body: {result: []}})
+          .respond({status: 200, body: {result: []}})
+
+        const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
+        const baseFetch = g.__sanityTestFetch
+        if (!baseFetch) throw new Error('mock fetch not installed')
+        const inits: Array<{signal?: AbortSignal}> = []
+        g.__sanityTestFetch = (url, init) => {
+          if (typeof init === 'object' && init !== null) inits.push(init)
+          return baseFetch(url, init)
+        }
+
+        try {
+          await getClient().fetch('*')
+          // A caller-provided signal is the documented opt-out: it must still
+          // reach the fetch init untouched.
+          await getClient().fetch('*', {}, {signal: new AbortController().signal})
+        } finally {
+          g.__sanityTestFetch = baseFetch
+        }
+
+        expect(inits).toHaveLength(2)
+        expect(inits[0].signal, 'no signal without caller signal').toBeUndefined()
+        expect(inits[1].signal, 'caller signal must be forwarded').toBeInstanceOf(AbortSignal)
+      },
+    )
+
+    test.skipIf(isEdge)(
+      'signal-less queries still honor the timeout via soft rejection',
+      async () => {
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+          .respond({status: 200, body: {result: []}, delay: 250})
+
+        const request = getClient().fetch('*', {}, {timeout: 25})
+        const error = await request.then(
+          () => null,
+          (err) => err,
+        )
+        expect(error).toBeInstanceOf(Error)
+        expect(error.name).toBe('TimeoutError')
+        expect(error.message).toContain('timed out after 25ms')
+      },
+    )
+
     test.runIf(isNode)('includes user agent in node', async () => {
       const {default: pkg} = await import('../package.json')
       getActiveMock()

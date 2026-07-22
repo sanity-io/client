@@ -187,7 +187,7 @@ async function executeRequest(
 
   let response
   try {
-    response = await requester(fetchOptions)
+    response = await withSoftTimeout(requester(fetchOptions), fetchOptions, url)
   } catch (err) {
     if (err instanceof GetItHttpError) {
       // `err.body` is the response body as a string (get-it v9 stores the
@@ -224,6 +224,39 @@ async function executeRequest(
     url,
     method,
   }
+}
+
+/**
+ * Enforce a rejection-only timeout for requests that must not carry an abort
+ * signal (see the `useAbortSignal` handling in `adaptToFetchOptions`). The
+ * underlying request is left running when the timeout wins — the same
+ * trade-off the get-it v8 fetch transport made — so a memoizing fetch
+ * implementation (React/Next.js) can still settle the shared promise for
+ * other consumers.
+ */
+function withSoftTimeout<T>(
+  pending: Promise<T>,
+  fetchOptions: FetchRequestOptions,
+  url: string,
+): Promise<T> {
+  const softTimeout = fetchOptions.meta?.softTimeout
+  if (typeof softTimeout !== 'number' || softTimeout <= 0) return pending
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(
+        new DOMException(
+          `The operation timed out after ${softTimeout}ms while attempting to reach ${url}`,
+          'TimeoutError',
+        ),
+      )
+    }, softTimeout)
+  })
+  // If the timeout wins, the still-running request must not surface as an
+  // unhandled rejection when it eventually settles.
+  pending.catch(() => {})
+  return Promise.race([pending, timeout]).finally(() => clearTimeout(timer))
 }
 
 function parseJsonBody(response: {headers: Headers; text(): string}): unknown {
@@ -268,6 +301,23 @@ function adaptToFetchOptions(options: Any): FetchRequestOptions {
   // Timeout: legacy used `0` to disable; v9 uses `false`. Anything else is ms.
   if (options.timeout !== undefined) {
     fetchOptions.timeout = options.timeout === 0 ? false : options.timeout
+  }
+
+  // `useAbortSignal: false` is set by the query path when the caller provided
+  // no signal of their own, and means no AbortSignal may reach the fetch init:
+  // Next.js' patched fetch opts a request out of React Request Memoization
+  // whenever `init.signal` is present (next/dist/server/lib/dedupe-fetch.js),
+  // and get-it v9 implements timeouts via `AbortSignal.timeout()` — including
+  // a 120s default when no timeout is given. Disable the transport timeout
+  // and let `executeRequest` enforce it as a rejection-only "soft" timeout
+  // instead, mirroring the get-it v8 fetch transport (which likewise never
+  // aborted the underlying request when `useAbortSignal` was false).
+  if (options.useAbortSignal === false && !fetchOptions.signal) {
+    const softTimeout = fetchOptions.timeout
+    fetchOptions.timeout = false
+    if (typeof softTimeout === 'number' && softTimeout > 0) {
+      fetchOptions.meta = {...fetchOptions.meta, softTimeout}
+    }
   }
 
   if (options.withCredentials) fetchOptions.credentials = 'include'
