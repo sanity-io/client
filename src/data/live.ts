@@ -1,4 +1,4 @@
-import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
+import {catchError, mergeMap, Observable, of, takeWhile, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
@@ -131,6 +131,14 @@ export class LiveClient {
     const observable = events
       .pipe(
         reconnectOnConnectionFailure(),
+        // The server sends `goaway` when it rejects or is about to close the
+        // connection on purpose, eg when connection limits are reached. The
+        // EventSource machinery auto-reconnects — and the server will just
+        // keep rejecting — so deliver the event downstream, then complete,
+        // which tears down the EventSource before it can turn a deliberate
+        // rejection into an infinite reconnect loop. Consumers are expected
+        // to fall back to polling per the Live Content API contract.
+        takeWhile((event) => event.type !== 'goaway', true),
         mergeMap((event) => {
           if (event.type === 'reconnect') {
             // Check for CORS on reconnect events (which happen on 403s)
@@ -158,7 +166,15 @@ export class LiveClient {
             // Splat data properties from the eventsource message onto the returned event
             return {...rest, tags: (data as {tags: SyncTag[]}).tags} as LiveEventMessage
           }
-          return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome | LiveEventGoAway
+          if (event.type === 'goaway') {
+            const {data, ...rest} = event
+            // Splat the reason from the eventsource message onto the returned event
+            return {
+              ...rest,
+              reason: (data as {reason?: string} | undefined)?.reason,
+            } as LiveEventGoAway
+          }
+          return event as LiveEventRestart | LiveEventReconnect | LiveEventWelcome
         }),
       )
       .pipe(

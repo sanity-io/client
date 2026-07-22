@@ -9,7 +9,7 @@ import {
 } from '@sanity/client'
 import {http, HttpResponse} from 'msw'
 import {setupServer} from 'msw/node'
-import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
+import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
 import {afterAll, afterEach, beforeAll, describe, expect, test, vitest} from 'vitest'
 
 import {createSseServer, type OnRequest} from './helpers/sseServer'
@@ -180,6 +180,38 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(msg.type, 'emits goaway events to tell the client to switch to polling').toBe('goaway')
       server.close()
     })
+
+    test('exposes the goaway reason and stops reconnecting after a goaway event', async () => {
+      // `goaway` means the server rejected or is closing the connection on
+      // purpose (eg connection limits reached) and the client should fall
+      // back to polling. The EventSource machinery auto-reconnects when the
+      // server then closes the connection, which used to turn a deliberate
+      // rejection into an infinite reconnect loop: a new connection attempt
+      // and a `/check/cors` probe every second, forever, without ever
+      // surfacing anything to the subscriber.
+      expect.assertions(3)
+
+      let connectAttempts = 0
+      const {server, client} = await testSse(({channel}) => {
+        connectAttempts++
+        channel!.send({event: 'welcome'})
+        channel!.send({event: 'goaway', id: '123', data: {reason: 'connection limit reached'}})
+        process.nextTick(() => channel!.close())
+      })
+
+      try {
+        // `toArray` only resolves if the stream completes on its own
+        const events = await lastValueFrom(client.live.events().pipe(toArray()))
+        expect(events.map((event) => event.type)).toEqual(['welcome', 'goaway'])
+        expect(events[1]).toEqual({type: 'goaway', id: '123', reason: 'connection limit reached'})
+
+        // Give a (buggy) auto-reconnect a chance to fire before asserting
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        expect(connectAttempts, 'must not reconnect after a goaway event').toBe(1)
+      } finally {
+        server.close()
+      }
+    }, 10_000)
 
     test('emits errors', async () => {
       expect.assertions(1)
