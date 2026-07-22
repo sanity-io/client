@@ -3,6 +3,7 @@ import type {AddressInfo} from 'node:net'
 
 import {
   type ClientConfig,
+  ConnectionExhaustedError,
   ConnectionFailedError,
   CorsOriginError,
   createClient,
@@ -312,6 +313,65 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
           client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
         )
         expect(event).toEqual({type: 'reconnect'})
+      } finally {
+        nock.cleanAll()
+      }
+    })
+
+    test('stops reconnecting when the server repeatedly accepts the connection but immediately drops it', async () => {
+      // Regression for an infinite request loop observed in production: the API responded to
+      // /data/live/events with HTTP 200 and `content-type: text/event-stream`, but the body was
+      // a JSON error (`{"message":"Internal error"}`) instead of SSE frames, and the connection
+      // closed right away. EventSource treats such a response as a *successful* connection, so it
+      // reconnects internally forever — resetting its retry backoff on every attempt — without
+      // ever erroring. The client must detect the fruitless connection cycle, give up, and
+      // surface an error to subscribers.
+      expect.assertions(3)
+
+      const {default: nock} = await import('nock')
+
+      server.use(
+        http.get('https://abc123.api.sanity.io/vX/check/cors', () =>
+          HttpResponse.json({result: {allowed: true, withCredentials: true}}),
+        ),
+      )
+
+      let connectionAttempts = 0
+      nock('https://abc123.api.sanity.io')
+        .persist()
+        .get('/vX/data/live/events/internal-error')
+        .query(true)
+        .reply(() => {
+          connectionAttempts++
+          return [
+            200,
+            // `retry: 1` is valid SSE and speeds up the EventSource's internal reconnect delay
+            // so the test doesn't take multiple seconds — it dispatches no events, keeping the
+            // connection fruitless just like the raw JSON error body observed in production.
+            'retry: 1\n\n{"message":"Internal error"}\n',
+            {'Content-Type': 'text/event-stream'},
+          ]
+        })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'internal-error',
+        useCdn: false,
+        apiVersion: 'X',
+        token: 'valid-token',
+      })
+
+      try {
+        // The stream emits a `reconnect` event per fruitless cycle before giving up, so the
+        // error (mapped to a value by `catchError`) is the final emission.
+        const error = await lastValueFrom(
+          client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+        )
+        expect(error).toBeInstanceOf(ConnectionExhaustedError)
+        expect(error.message).toMatchInlineSnapshot(
+          `"The EventSource connection was repeatedly closed right after being established. Giving up after 5 consecutive short-lived connections — this usually means the server accepts the request but is unable to serve the event stream."`,
+        )
+        expect(connectionAttempts, 'must not keep reconnecting forever').toBe(5)
       } finally {
         nock.cleanAll()
       }

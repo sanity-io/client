@@ -27,6 +27,22 @@ export class ConnectionFailedError extends Error {
 }
 
 /**
+ * @public
+ * Thrown when the EventSource connection repeatedly connects successfully, only for the server
+ * to end the stream right away.
+ *
+ * EventSource implementations treat a 200 response with a `text/event-stream` content-type as a
+ * successful connection — even when the body is not valid SSE (eg an error payload) — and will
+ * reconnect indefinitely when the stream ends. Successful connections also reset the reconnection
+ * backoff, so a server that repeatedly accepts the connection and then drops it creates an
+ * infinite, tight request loop that never surfaces an error. This error breaks that loop:
+ * reconnect handling gives up and the stream errors so consumers can react.
+ */
+export class ConnectionExhaustedError extends Error {
+  readonly name = 'ConnectionExhaustedError'
+}
+
+/**
  * The listener has been told to explicitly disconnect.
  *  This is a rare situation, but may occur if the API knows reconnect attempts will fail,
  *  eg in the case of a deleted dataset, a blocked project or similar events.
@@ -88,6 +104,25 @@ export interface ServerSentEvent<Name extends string> {
 const REQUIRED_EVENTS = ['channelError', 'disconnect']
 
 /**
+ * A connection that dies within this window of the `open` event is considered "fruitless":
+ * the server accepted the request but hung up without keeping the stream alive.
+ * Healthy SSE connections are long-lived — surviving past this window resets the counter below.
+ */
+const FRUITLESS_CONNECTION_WINDOW = 1000
+
+/**
+ * How many consecutive fruitless connections to tolerate before giving up.
+ *
+ * EventSource implementations auto-reconnect internally when an established stream ends, and a
+ * successful `open` resets their retry backoff — so a server that repeatedly accepts the
+ * connection and immediately drops it (eg a 200 `text/event-stream` response carrying an error
+ * payload instead of SSE frames) causes an infinite reconnect loop at a constant, tight cadence
+ * that never errors. Those internal reconnects never reach RxJS-level retry logic, so the cap
+ * must live here, at the EventSource event handlers themselves.
+ */
+const MAX_CONSECUTIVE_FRUITLESS_CONNECTIONS = 5
+
+/**
  * @internal
  */
 export type EventSourceEvent<Name extends string> = ServerSentEvent<Name>
@@ -110,6 +145,7 @@ export type EventSourceInstance = InstanceType<typeof globalThis.EventSource>
  * - {@link ChannelError}
  * - {@link DisconnectError}
  * - {@link ConnectionFailedError}
+ * - {@link ConnectionExhaustedError}
  *
  * @param initEventSource - A function that returns an EventSource instance or an Observable that resolves to an EventSource instance
  * @param events - an array of named events from the API to listen for.
@@ -143,6 +179,15 @@ function connectWithESInstance<EventTypeName extends string>(
     const emitOpen = (events as string[]).includes('open')
     const emitReconnect = (events as string[]).includes('reconnect')
 
+    // Tracks when the current connection was established, so that error events can tell a
+    // long-lived connection dropping (fine, reconnect) apart from the server hanging up right
+    // after accepting the request (fruitless — see MAX_CONSECUTIVE_FRUITLESS_CONNECTIONS).
+    // `undefined` means no `open` has happened since the last error, eg the connection attempt
+    // failed at the network level — those are not counted, as backing off while offline and
+    // recovering when the network returns is exactly what the internal reconnects are for.
+    let openedAt: number | undefined
+    let consecutiveFruitlessConnections = 0
+
     // EventSource will emit a regular Event if it fails to connect, however the API may also emit an `error` MessageEvent
     // So we need to handle both cases
     function onError(evt: MessageEvent | Event) {
@@ -173,6 +218,29 @@ function connectWithESInstance<EventTypeName extends string>(
         return
       }
 
+      // The connection was established (`open` fired) but died again — classify it.
+      // A connection that survived the window is healthy and resets the counter; one that died
+      // right away is fruitless, and too many in a row means the server keeps accepting the
+      // request only to drop it (eg an error payload served as 200 `text/event-stream`).
+      // The EventSource reconnects internally — invisible to RxJS retry operators — and resets
+      // its retry backoff on every successful open, so without this cap such a server is
+      // hammered in a tight, infinite loop that never surfaces an error to consumers.
+      if (openedAt !== undefined) {
+        consecutiveFruitlessConnections =
+          Date.now() - openedAt < FRUITLESS_CONNECTION_WINDOW
+            ? consecutiveFruitlessConnections + 1
+            : 0
+        openedAt = undefined
+        if (consecutiveFruitlessConnections >= MAX_CONSECUTIVE_FRUITLESS_CONNECTIONS) {
+          observer.error(
+            new ConnectionExhaustedError(
+              `The EventSource connection was repeatedly closed right after being established. Giving up after ${consecutiveFruitlessConnections} consecutive short-lived connections — this usually means the server accepts the request but is unable to serve the event stream.`,
+            ),
+          )
+          return
+        }
+      }
+
       if (es.readyState === es.CLOSED) {
         // In these cases we'll signal to consumers (via the error path) that a retry/reconnect is needed.
         observer.error(new ConnectionFailedError('EventSource connection failed'))
@@ -182,8 +250,11 @@ function connectWithESInstance<EventTypeName extends string>(
     }
 
     function onOpen() {
-      // The open event of the EventSource API is fired when a connection with an event source is opened.
-      observer.next({type: 'open' as EventTypeName})
+      openedAt = Date.now()
+      if (emitOpen) {
+        // The open event of the EventSource API is fired when a connection with an event source is opened.
+        observer.next({type: 'open' as EventTypeName})
+      }
     }
 
     function onMessage(message: MessageEvent) {
@@ -223,10 +294,9 @@ function connectWithESInstance<EventTypeName extends string>(
     }
 
     es.addEventListener('error', onError)
-
-    if (emitOpen) {
-      es.addEventListener('open', onOpen)
-    }
+    // Always observe `open` (not only when the consumer subscribes to it) — the error handler
+    // above needs it to detect connections that are repeatedly dropped right after opening.
+    es.addEventListener('open', onOpen)
 
     // Make sure we have a unique list of events types to avoid listening multiple times,
     const cleanedEvents = [...new Set([...REQUIRED_EVENTS, ...events])]
@@ -237,9 +307,7 @@ function connectWithESInstance<EventTypeName extends string>(
 
     return () => {
       es.removeEventListener('error', onError)
-      if (emitOpen) {
-        es.removeEventListener('open', onOpen)
-      }
+      es.removeEventListener('open', onOpen)
       cleanedEvents.forEach((type: string) => es.removeEventListener(type, onMessage))
       es.close()
     }

@@ -14,7 +14,7 @@ import type {
 } from '../types'
 import {shareReplayLatest} from '../util/shareReplayLatest'
 import {_getDataUrl} from './dataMethods'
-import {connectEventSource} from './eventsource'
+import {connectEventSource, ConnectionExhaustedError} from './eventsource'
 import {eventSourcePolyfill} from './eventsourcePolyfill'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 
@@ -143,6 +143,11 @@ export class LiveClient {
           // `CorsOriginError`, just rethrow it instead of calling `/check/cors`
           // a second time only to get the same answer.
           if (err instanceof CorsOriginError) {
+            return throwError(() => err)
+          }
+          // Exhaustion means the server repeatedly *accepted* the connection and then dropped
+          // it — by definition not a CORS rejection, so skip the probe and surface it as-is.
+          if (err instanceof ConnectionExhaustedError) {
             return throwError(() => err)
           }
           return checkCors.pipe(

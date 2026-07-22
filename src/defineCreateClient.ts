@@ -7,6 +7,7 @@ export {validateApiPerspective} from './config'
 export {
   ChannelError,
   connectEventSource,
+  ConnectionExhaustedError,
   ConnectionFailedError,
   DisconnectError,
   type EventSourceEvent,
