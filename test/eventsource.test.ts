@@ -93,6 +93,34 @@ describe('connectEventSource - fruitless connections', () => {
     )
   })
 
+  test('a short-lived connection that delivers an event resets the counter', () => {
+    const es = new FakeEventSource()
+    const {events, getError} = subscribe(es)
+
+    for (let i = 0; i < 4; i++) {
+      es.openThenDrop()
+    }
+
+    // This connection also dies within the fruitless window, but the server delivered an event
+    // first — proving it can serve the stream — so it must not count towards exhaustion.
+    es.readyState = es.OPEN
+    es.dispatch('open')
+    es.dispatch('welcome', {data: '{}'})
+    es.readyState = es.CONNECTING
+    es.dispatch('error')
+    expect(getError()).toBeUndefined()
+    expect(events).toContainEqual({type: 'welcome', id: undefined})
+
+    // The counter was reset: a fresh run of fruitless connections is tolerated up to the limit
+    for (let i = 0; i < 4; i++) {
+      es.openThenDrop()
+    }
+    expect(getError()).toBeUndefined()
+
+    es.openThenDrop()
+    expect(getError()).toBeInstanceOf(ConnectionExhaustedError)
+  })
+
   test('a long-lived connection resets the counter', () => {
     const es = new FakeEventSource()
     const {getError} = subscribe(es)

@@ -104,9 +104,10 @@ export interface ServerSentEvent<Name extends string> {
 const REQUIRED_EVENTS = ['channelError', 'disconnect']
 
 /**
- * A connection that dies within this window of the `open` event is considered "fruitless":
- * the server accepted the request but hung up without keeping the stream alive.
- * Healthy SSE connections are long-lived — surviving past this window resets the counter below.
+ * A connection that dies within this window of the `open` event without delivering any events is
+ * considered "fruitless": the server accepted the request but hung up without serving the stream.
+ * Healthy SSE connections are long-lived — surviving past this window, or delivering an event
+ * (which proves the server can serve the stream), resets the counter below.
  */
 const FRUITLESS_CONNECTION_WINDOW = 1000
 
@@ -218,10 +219,11 @@ function connectWithESInstance<EventTypeName extends string>(
         return
       }
 
-      // The connection was established (`open` fired) but died again — classify it.
-      // A connection that survived the window is healthy and resets the counter; one that died
-      // right away is fruitless, and too many in a row means the server keeps accepting the
-      // request only to drop it (eg an error payload served as 200 `text/event-stream`).
+      // The connection was established (`open` fired) but died again without delivering any
+      // events — classify it. A connection that survived the window is healthy and resets the
+      // counter (so does delivering an event, see `onMessage`); one that died right away is
+      // fruitless, and too many in a row means the server keeps accepting the request only to
+      // drop it (eg an error payload served as 200 `text/event-stream`).
       // The EventSource reconnects internally — invisible to RxJS retry operators — and resets
       // its retry backoff on every successful open, so without this cap such a server is
       // hammered in a tight, infinite loop that never surfaces an error to consumers.
@@ -258,6 +260,13 @@ function connectWithESInstance<EventTypeName extends string>(
     }
 
     function onMessage(message: MessageEvent) {
+      // The server delivered an event, proving it can serve the stream — the connection is not
+      // fruitless, even if it ends up shorter-lived than the fruitless window (eg a `goaway`
+      // followed by a prompt close). Mirrors `reconnectOnConnectionFailure`, which resets its
+      // backoff on any delivered event.
+      openedAt = undefined
+      consecutiveFruitlessConnections = 0
+
       const [parseError, event] = parseEvent(message)
       if (parseError) {
         observer.error(
