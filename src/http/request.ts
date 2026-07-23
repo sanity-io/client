@@ -345,10 +345,13 @@ function adaptToFetchOptions(options: Any): FetchRequestOptions {
     fetchOptions.meta = {...fetchOptions.meta, fetchInit: options.fetch}
   }
 
-  // Per-request proxy is a Node-only legacy feature. Stash it in `meta` so
-  // the Node middleware can swap in a proxy-configured fetch for this call.
-  if (typeof options.proxy === 'string') {
-    fetchOptions.meta = {...fetchOptions.meta, proxy: options.proxy}
+  // An explicit `proxy` from the client config arrives pre-resolved as the
+  // internal `proxyFetch` (see `requestOptions`). Resolved from the live
+  // config on every request, so replacing the proxy via `client.config()` or
+  // `withConfig()` applies to subsequent requests. A caller-supplied `fetch`
+  // function wins over it.
+  if (!fetchOptions.fetch && typeof options.proxyFetch === 'function') {
+    fetchOptions.fetch = options.proxyFetch
   }
 
   return fetchOptions

@@ -11,56 +11,34 @@ const testCert = {
 }
 
 import {createClient} from '@sanity/client'
-import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {requestOptions} from '../src/http/requestOptions'
+import {getActiveMock} from './helpers/mockFetch'
 
 describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefined')(
   'proxy configuration',
   () => {
     describe('requestOptions', () => {
-      test('passes proxy from config to request options', () => {
+      test('config proxy resolves to the environment fetch, not a per-request option', () => {
+        // The per-request proxy option was removed; a config-level proxy is
+        // resolved against the environment's fetch on each request (from the
+        // live config, so `config()`/`withConfig()` replacements apply).
+        // (Unknown override keys still pass through `requestOptions`
+        // untouched, but the transport ignores them - see the
+        // 'per-request proxy option is no longer honored' integration test.)
+        const proxyFetch = async () => new Response('')
+        const resolveFetch = vi.fn(() => proxyFetch)
         const config = {
           projectId: 'abc123',
           dataset: 'production',
           proxy: 'http://proxy.example.com:8080',
+          resolveFetch,
         }
         const options = requestOptions(config)
-        expect(options.proxy).toBe('http://proxy.example.com:8080')
-      })
-
-      test('passes proxy from overrides to request options', () => {
-        const config = {
-          projectId: 'abc123',
-          dataset: 'production',
-        }
-        const overrides = {
-          proxy: 'http://override-proxy.example.com:8080',
-        }
-        const options = requestOptions(config, overrides)
-        expect(options.proxy).toBe('http://override-proxy.example.com:8080')
-      })
-
-      test('overrides proxy takes precedence over config proxy', () => {
-        const config = {
-          projectId: 'abc123',
-          dataset: 'production',
-          proxy: 'http://config-proxy.example.com:8080',
-        }
-        const overrides = {
-          proxy: 'http://override-proxy.example.com:9090',
-        }
-        const options = requestOptions(config, overrides)
-        expect(options.proxy).toBe('http://override-proxy.example.com:9090')
-      })
-
-      test('proxy is undefined when not specified', () => {
-        const config = {
-          projectId: 'abc123',
-          dataset: 'production',
-        }
-        const options = requestOptions(config)
-        expect(options.proxy).toBeUndefined()
+        expect('proxy' in options).toBe(false)
+        expect(options.proxyFetch).toBe(proxyFetch)
+        expect(resolveFetch).toHaveBeenCalledWith('http://proxy.example.com:8080')
       })
     })
 
@@ -291,6 +269,69 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
         expect(tunneledRequests.length).toBe(1)
         expect(tunneledRequests[0].headers.authorization).toBe('Bearer test-token')
+      })
+
+      test('config({proxy}) applies to subsequent requests', async () => {
+        const client = createClient({
+          projectId: 'abc123',
+          dataset: 'production',
+          apiVersion: '2021-06-07',
+          useCdn: false,
+        })
+        client.config({proxy: `http://127.0.0.1:${proxyPort}`})
+
+        await client.fetch('*[_type == "post"]')
+
+        expect(connectRequests.length).toBe(1)
+        expect(connectRequests[0].url).toBe('abc123.api.sanity.io:443')
+      })
+
+      test('withConfig({proxy}) applies to the derived client only', async () => {
+        getActiveMock()
+          .scope('https://abc123.api.sanity.io')
+          .on('GET', '/v2021-06-07/data/query/production?query=*&returnQuery=false')
+          .respond({status: 200, body: {result: []}})
+
+        const base = createClient({
+          projectId: 'abc123',
+          dataset: 'production',
+          apiVersion: '2021-06-07',
+          useCdn: false,
+        })
+        const proxied = base.withConfig({proxy: `http://127.0.0.1:${proxyPort}`})
+
+        await proxied.fetch('*[_type == "post"]')
+        expect(connectRequests.length).toBe(1)
+
+        // The base client is unaffected - it goes through the regular
+        // (mocked) transport, not the proxy.
+        await base.fetch('*')
+        expect(connectRequests.length).toBe(1)
+      })
+
+      test('a per-request proxy option is no longer honored', async () => {
+        // BREAKING (v9): proxying is configured at client instantiation only.
+        // A `proxy` passed with request options must be ignored - the request
+        // goes through the regular (here: mocked) transport, never the proxy.
+        getActiveMock()
+          .scope('https://abc123.api.sanity.io')
+          .on('GET', '/v2021-06-07/users/me')
+          .respond({status: 200, body: {id: 'me'}})
+
+        const client = createClient({
+          projectId: 'abc123',
+          dataset: 'production',
+          apiVersion: '2021-06-07',
+          useCdn: false,
+        })
+
+        await client.request({
+          uri: '/users/me',
+          // @ts-expect-error -- the per-request `proxy` option was removed
+          proxy: `http://127.0.0.1:${proxyPort}`,
+        })
+
+        expect(connectRequests.length).toBe(0)
       })
 
       test('proxy receives project ID header when useProjectHostname is false', async () => {

@@ -5,9 +5,13 @@ const projectHeader = 'X-Sanity-Project-ID'
 /**
  * Build the per-request options object passed down to the HTTP layer.
  *
- * Returns the legacy "get-it v8 + sanity client" shape (incl. `withCredentials`,
- * `proxy`, `json`); the request layer adapter translates that into the actual
- * fetch options for get-it v9.
+ * Deliberately returns the legacy "get-it v8 + sanity client" shape (incl.
+ * `withCredentials` and `json`) even though the transport is fetch-based now:
+ * every calling layer (dataMethods, assets, agents, ...) was written against
+ * that shape, so keeping it stable confined the get-it v9 migration to a
+ * single translation boundary (`adaptToFetchOptions` in `http/request.ts`)
+ * instead of rippling through every call site. Collapsing the legacy and
+ * fetch shapes into one is a candidate for the planned follow-up refactor.
  *
  * @internal
  */
@@ -37,7 +41,14 @@ export function requestOptions(config: Any, overrides: Any = {}): Any {
   return Object.assign({}, overrides, {
     headers: Object.assign({}, headers, overrides.headers || {}),
     timeout: typeof timeout === 'undefined' ? 5 * 60 * 1000 : timeout,
-    proxy: overrides.proxy || config.proxy,
+    // An explicit `proxy` config is resolved against the environment's fetch
+    // here, from the live config — so replacing it via `client.config()` or
+    // `withConfig()` affects subsequent requests. Kept separate from the
+    // `fetch` option, which is reserved for caller-supplied fetch functions
+    // and RequestInit extras. There is deliberately no per-request proxy.
+    ...(typeof config.proxy === 'string' && config.resolveFetch
+      ? {proxyFetch: config.resolveFetch(config.proxy)}
+      : {}),
     json: true,
     withCredentials,
     fetch:
