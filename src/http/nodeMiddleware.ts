@@ -81,14 +81,6 @@ const middleware: LegacyMiddleware[] = [
       return {...opts, body: Readable.toWeb(opts.body)}
     },
   },
-
-  // Per-request proxy support. Legacy callers can pass `proxy: 'http://...'`
-  // and we swap in a proxy-configured fetch for that single request.
-  async (opts, next) => {
-    const proxy = opts.meta?.proxy
-    if (typeof proxy !== 'string' || opts.fetch) return next(opts)
-    return next({...opts, fetch: getProxyFetch(proxy)})
-  },
 ]
 
 /**

@@ -2570,16 +2570,26 @@ RxJS. There is no longer a single observable choke point to intercept.
 
 If you relied on `_requestHandler` for cross-cutting concerns (logging,
 injecting headers, token refresh, rate limiting), move that logic into a
-`get-it` middleware, or wrap the client methods you call. Custom transports
-can still be supplied via the `requester` config option.
+`get-it` middleware, or wrap the client methods you call.
+
+### Proxying is configured per client, not per request
+
+The `proxy` option can no longer be passed with individual request options —
+it is resolved once, when the client is instantiated. Pass `proxy:` on the
+client config instead (Node.js only), or set `HTTP_PROXY` / `HTTPS_PROXY` /
+`NO_PROXY` before the process starts for environment-driven proxying. If
+different requests genuinely need different proxies, create one client per
+proxy — clients are cheap to instantiate.
+
+The client-level `proxy` now also applies to `listen()` and `live.events()`
+connections, which previously bypassed it.
 
 ### Mid-process `HTTPS_PROXY` changes no longer take effect
 
 The HTTP transport now uses Node's built-in fetch, which reads the
 `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` env vars once when the proxy
 dispatcher is constructed — not per request. Set proxy env vars before the
-process starts, or pass `proxy:` on the client config for per-request
-routing.
+process starts, or pass `proxy:` on the client config.
 
 ### Retry now retries `ENOTFOUND`
 

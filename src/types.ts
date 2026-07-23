@@ -146,6 +146,12 @@ export interface ClientConfig {
    * As of API version `v2025-02-19`, the default perspective has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/676aaa9d-2da6-44fb-abe5-580f28047c10|Changelog}
    */
   apiVersion?: string
+  /**
+   * Route requests through an HTTP(S) proxy. Node.js only. Can be replaced
+   * on an existing client via `client.config({proxy})` or
+   * `client.withConfig({proxy})`. For environment-driven proxying, set
+   * `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` before the process starts.
+   */
   proxy?: string
 
   /**
@@ -1615,7 +1621,6 @@ export interface RawRequestOptions {
   query?: {[key: string]: string | string[]}
   headers?: {[key: string]: string}
   timeout?: number
-  proxy?: string
   body?: Any
   maxRedirects?: number
   signal?: AbortSignal
