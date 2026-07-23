@@ -282,7 +282,15 @@ function parseJsonBody(response: {headers: Headers; text(): string}): unknown {
   return parseJsonText(response.text(), response.headers)
 }
 
-function parseJsonText(text: string, headers: Headers): unknown {
+/**
+ * Parse a response body according to its `content-type`: JSON when the header
+ * says so (falling back to the raw text on malformed JSON), text otherwise.
+ * Shared with the browser XHR upload path so error bodies parse identically
+ * on both transports.
+ *
+ * @internal
+ */
+export function parseJsonText(text: string, headers: Headers): unknown {
   const contentType = (headers.get('content-type') ?? '').toLowerCase()
   if (!text) return undefined
   if (contentType.includes('application/json')) {
