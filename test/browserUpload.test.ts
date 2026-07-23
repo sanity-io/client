@@ -21,6 +21,7 @@ interface FakeXhrInstance {
   method: string
   url: string
   timeout: number
+  aborted: boolean
 }
 
 /**
@@ -43,7 +44,8 @@ function stubXhr(response: FakeXhrResponse, behavior: FakeXhrBehavior = {}): Fak
     status = 0
     statusText = ''
     responseText = ''
-    #record: FakeXhrInstance = {method: '', url: '', timeout: 0}
+    #record: FakeXhrInstance = {method: '', url: '', timeout: 0, aborted: false}
+    #sent = false
     constructor() {
       instances.push(this.#record)
     }
@@ -53,12 +55,16 @@ function stubXhr(response: FakeXhrResponse, behavior: FakeXhrBehavior = {}): Fak
     }
     setRequestHeader() {}
     abort() {
-      this.onabort?.()
+      this.#record.aborted = true
+      // Per spec, the `abort` event only fires when `send()` has been called
+      // and the request hasn't settled.
+      if (this.#sent) this.onabort?.()
     }
     getAllResponseHeaders() {
       return response.headers
     }
     send() {
+      this.#sent = true
       this.#record.timeout = this.timeout
       queueMicrotask(() => {
         if (behavior.hang) {
@@ -86,7 +92,7 @@ const successResponse: FakeXhrResponse = {
   responseText: JSON.stringify({document: {url: 'https://some.asset.url'}}),
 }
 
-const upload = (options: {timeout?: number | false} = {}) =>
+const upload = (options: {timeout?: number | false; signal?: AbortSignal} = {}) =>
   uploadWithProgress<{document: {url: string}}>({
     url: 'https://abc123.api.sanity.io/v1/assets/images/foo',
     method: 'POST',
@@ -180,6 +186,30 @@ describe('uploadWithProgress', () => {
     expect(error.message).toContain('HTTP 503 Service Unavailable')
     expect(error.message).toContain('upstream capacity exceeded')
     expect(error.responseBody).toBe('upstream capacity exceeded')
+  })
+
+  test('aborts the in-flight upload when unsubscribed', async () => {
+    const instances = stubXhr(successResponse, {hang: true})
+
+    const subscription = upload().subscribe()
+    // Let the microtask queue drain so `send()` has run.
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+    subscription.unsubscribe()
+
+    expect(instances).toHaveLength(1)
+    expect(instances[0].aborted, 'unsubscribing must abort the XHR').toBe(true)
+  })
+
+  test('errors immediately when given an already-aborted signal', async () => {
+    const instances = stubXhr(successResponse)
+    const controller = new AbortController()
+    controller.abort()
+
+    const error = await errorOf(upload({signal: controller.signal}))
+    expect(error).toBeInstanceOf(DOMException)
+    expect(error.name).toBe('AbortError')
+    // The request must never have been sent.
+    expect(instances[0].timeout).toBe(0)
   })
 
   test('honors the timeout and rejects with a TimeoutError', async () => {
