@@ -1,8 +1,8 @@
 import {defer, lastValueFrom, type Observable} from 'rxjs'
 import {filter, map, mergeAll} from 'rxjs/operators'
 
-import {_getUrl, _uploadObservable} from '../data/dataMethods'
-import {requestOptions} from '../http/requestOptions'
+import {_prepareRequest, _uploadObservable} from '../data/dataMethods'
+import type {FetchRequest} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
@@ -199,17 +199,19 @@ function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>
   if (typeof XMLHttpRequest !== 'undefined') {
     return defer(async () => {
       const {uploadWithProgress} = await import('../http/browserUpload')
-      const reqOpts = requestOptions(config, {
-        ...baseRequest,
-        url: _getUrl(client, baseRequest.uri, false),
-      })
-      const finalUrl = appendQuery(reqOpts.url, query)
+      // Build the request the same way the fetch path does, so the request
+      // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
+      // credentials and timeout are identical across both upload transports.
+      // The XHR API needs the query baked into the URL, though.
+      const req = _prepareRequest(client, {...baseRequest})
       return uploadWithProgress<T>({
-        url: finalUrl,
-        method: 'POST',
-        headers: reqOpts.headers,
+        url: appendQuery(req.url, req.query),
+        method: req.method ?? 'POST',
+        headers: req.headers,
         body,
-        withCredentials: reqOpts.credentials === 'include',
+        withCredentials: req.credentials === 'include',
+        timeout: req.timeout,
+        signal: req.signal,
       })
     }).pipe(mergeAll())
   }
@@ -217,18 +219,16 @@ function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>
   return _uploadObservable<T>(client, baseRequest)
 }
 
-function appendQuery(url: string, query: Record<string, unknown>): string {
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null) continue
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (item !== undefined && item !== null) params.append(key, `${item}`)
-      }
-    } else {
-      params.append(key, `${value}`)
-    }
-  }
+function appendQuery(url: string, query: FetchRequest['query']): string {
+  if (!query) return url
+  const params =
+    query instanceof URLSearchParams
+      ? query
+      : new URLSearchParams(
+          Object.entries(query).flatMap(([key, value]) =>
+            value === undefined || value === null ? [] : [[key, `${value}`]],
+          ),
+        )
   const qs = params.toString()
   if (!qs) return url
   return url + (url.includes('?') ? '&' : '?') + qs

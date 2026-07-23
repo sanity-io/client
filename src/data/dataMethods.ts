@@ -1016,7 +1016,7 @@ const isData = (client: Client, uri: string) =>
  *
  * @internal
  */
-function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
+export function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
   const uri = options.url || (options.uri as string)
   const config = client.config()
 
