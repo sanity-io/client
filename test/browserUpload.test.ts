@@ -222,4 +222,23 @@ describe('assets.upload() through the XHR path', () => {
     expect(requestUrl.searchParams.get('tag')).toBe('studio.asset')
     expect(instances[0].timeout).toBe(4321)
   })
+
+  test('has no timeout unless explicitly set - uploads can be slow', async () => {
+    const instances = stubXhr(successResponse)
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      apiVersion: '1',
+      useCdn: false,
+      // A client-level timeout applies to regular requests but must NOT leak
+      // into uploads - upload timeouts are opt-in via the upload options.
+      timeout: 30000,
+    })
+
+    await lastValueFrom(client.observable.assets.upload('image', new Uint8Array([1, 2, 3])))
+
+    expect(instances).toHaveLength(1)
+    expect(instances[0].timeout, 'xhr.timeout must stay disabled (0)').toBe(0)
+  })
 })

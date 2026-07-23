@@ -321,7 +321,10 @@ export interface UploadClientConfig {
   filename?: string
 
   /**
-   * Milliseconds to wait before timing the request out
+   * Milliseconds to wait before timing the request out.
+   *
+   * Unlike other requests, uploads have NO timeout unless one is explicitly
+   * set here — uploads can legitimately be slow, so timing out is opt-in.
    */
   timeout?: number
 

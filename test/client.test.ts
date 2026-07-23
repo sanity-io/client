@@ -4781,6 +4781,35 @@ describe('client', async () => {
       expect(document.url).toEqual('https://some.asset.url')
     })
 
+    test('uploads have no timeout by default, even with a client-level timeout', async () => {
+      const fixturePath = fixture('horsehead-nebula.jpg')
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/assets/images/foo', {body: bodyBytes(fs.readFileSync(fixturePath))})
+        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
+
+      // Timing out an upload is opt-in (uploads can legitimately be slow), so
+      // the fetch init must carry NO abort signal: neither the client-level
+      // timeout nor get-it's default timeout may reach the upload request.
+      const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
+      const baseFetch = g.__sanityTestFetch
+      if (!baseFetch) throw new Error('mock fetch not installed')
+      const inits: Array<{signal?: AbortSignal}> = []
+      g.__sanityTestFetch = (url, init) => {
+        if (typeof init === 'object' && init !== null) inits.push(init)
+        return baseFetch(url, init)
+      }
+
+      try {
+        await getClient({timeout: 30000}).assets.upload('image', fs.createReadStream(fixturePath))
+      } finally {
+        g.__sanityTestFetch = baseFetch
+      }
+
+      expect(inits).toHaveLength(1)
+      expect(inits[0].signal, 'no timeout signal on uploads by default').toBeUndefined()
+    })
+
     test('uploads images with request tag if given', async () => {
       const fixturePath = fixture('horsehead-nebula.jpg')
       const isImage = bodyBytes(fs.readFileSync(fixturePath))
