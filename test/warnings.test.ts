@@ -4,10 +4,15 @@ import {testResolveFetch} from './helpers/mockFetch'
 
 describe('Client config warnings', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
+  // The conditional specifier means TS can only resolve this import's type
+  // when `dist/` has been built (it types as `any` otherwise, e.g. in the CI
+  // test job), so the shim below anchors its type to the source entry
+  // point — a type-only reference that always resolves and is erased at
+  // runtime.
   const {createClient: createCoreClient} = await import(isEdge ? '../dist/index.js' : '../src')
   // Clients in this suite go through the per-test mock, injected via the
   // public `resolveFetch` config option.
-  const createClient: typeof createCoreClient = (config) =>
+  const createClient: typeof import('../src').createClient = (config) =>
     createCoreClient({resolveFetch: testResolveFetch, ...config})
 
   const warn = vi.spyOn(console, 'warn')
