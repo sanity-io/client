@@ -23,6 +23,7 @@ export const createSseServer = (onRequest: OnRequest): Promise<http.Server> =>
       let channel
       if (
         request?.url?.indexOf('/v1/data/listen/') === 0 ||
+        /\/collaboration\/comments\/listen/.test(request?.url || '') ||
         /\/live\/events/.test(request?.url || '') ||
         request?.url?.indexOf('/listen/beerns?query=') === 0
       ) {
