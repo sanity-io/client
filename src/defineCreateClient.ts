@@ -1,5 +1,5 @@
 import {defineRequester, type EnvironmentOptions} from './http/request'
-import type {Any, ClientConfig, HttpRequest} from './types'
+import type {ClientConfig, HttpRequest} from './types'
 
 export {validateApiPerspective} from './config'
 export {
@@ -53,13 +53,10 @@ export default function defineCreateClientExports<
     // The single transport for the whole client. Resolves a request to its
     // parsed response body as a Promise; the observable client surface wraps
     // this in `new Observable(...)` (see `_observe` in dataMethods).
+    // Redirects are surfaced rather than followed unless a request opts in
+    // (via the public `maxRedirects` option, translated in `requestOptions`).
     const httpRequest: HttpRequest = async (options) => {
-      const requestOptions = {
-        maxRedirects: 0,
-        lineage: config.lineage,
-        ...options,
-      } as Any
-      const event = await clientRequesterPromise(requestOptions)
+      const event = await clientRequesterPromise({redirect: 'manual', ...options})
       return event.body
     }
     // Populate `requester` on the initialized config so internal paths

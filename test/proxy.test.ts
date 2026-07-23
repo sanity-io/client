@@ -23,10 +23,8 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       test('config proxy resolves to the environment fetch, not a per-request option', () => {
         // The per-request proxy option was removed; a config-level proxy is
         // resolved against the environment's fetch on each request (from the
-        // live config, so `config()`/`withConfig()` replacements apply).
-        // (Unknown override keys still pass through `requestOptions`
-        // untouched, but the transport ignores them - see the
-        // 'per-request proxy option is no longer honored' integration test.)
+        // live config, so `config()`/`withConfig()` replacements apply) and
+        // becomes the request's `fetch` implementation directly.
         const proxyFetch = async () => new Response('')
         const resolveFetch = vi.fn(() => proxyFetch)
         const config = {
@@ -37,7 +35,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         }
         const options = requestOptions(config)
         expect('proxy' in options).toBe(false)
-        expect(options.proxyFetch).toBe(proxyFetch)
+        expect(options.fetch).toBe(proxyFetch)
         expect(resolveFetch).toHaveBeenCalledWith('http://proxy.example.com:8080')
       })
     })
