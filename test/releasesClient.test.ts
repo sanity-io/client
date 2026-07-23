@@ -1,6 +1,5 @@
 import {createClient} from '@sanity/client'
-import nock from 'nock'
-import {firstValueFrom, Observable, Subscriber} from 'rxjs'
+import {firstValueFrom, Observable} from 'rxjs'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ObservableReleasesClient, ReleasesClient} from '../src/releases/ReleasesClient'
@@ -19,7 +18,6 @@ import type {
   ReleaseDocument,
   ReleaseType,
   RequestOptions,
-  ResponseEvent,
   ScheduleReleaseAction,
   SingleActionResult,
   UnarchiveReleaseAction,
@@ -27,15 +25,13 @@ import type {
 } from '../src/types'
 import * as createVersionIdModule from '../src/util/createVersionId'
 
-type MockResponseEvent = Partial<ResponseEvent>
-
 vi.mock('../src/util/createVersionId', () => ({
   generateReleaseId: vi.fn().mockReturnValue('generatedReleaseId'),
 }))
 
 const TEST_PROJECT_ID = 'test123'
 const TEST_DATASET = 'test-dataset'
-const TEST_PROJECT_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
+const TEST_API_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
 const TEST_RELEASE_ID = 'release123'
 const TEST_METADATA = {
   releaseType: 'scheduled' as ReleaseType,
@@ -46,16 +42,7 @@ const TEST_PUBLISH_AT = '2023-12-31T12:00:00.000Z'
 const TEST_TXN_ID = 'txn123'
 
 const mockHttpSuccess = (httpRequest: ReturnType<typeof vi.fn>, transactionId: string) => {
-  httpRequest.mockImplementationOnce(() => ({
-    subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-      subscriber.next?.({
-        type: 'response',
-        body: {transactionId},
-      })
-      subscriber.complete?.()
-      return {unsubscribe: () => {}}
-    },
-  }))
+  httpRequest.mockResolvedValueOnce({transactionId})
 }
 
 const mockHttpError = (
@@ -63,30 +50,16 @@ const mockHttpError = (
   errorMessage: string,
   details?: ApiError,
 ) => {
-  httpRequest.mockImplementationOnce(() => ({
-    subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-      const error = new Error(errorMessage)
-      Object.defineProperty(error, 'details', {value: details})
-      subscriber.error?.(error)
-      return {unsubscribe: () => {}}
-    },
-  }))
+  const error = new Error(errorMessage)
+  Object.defineProperty(error, 'details', {value: details})
+  httpRequest.mockRejectedValueOnce(error)
 }
 
 const mockHttpDocumentResponse = (
   httpRequest: ReturnType<typeof vi.fn>,
   document: Partial<ReleaseDocument>,
 ) => {
-  httpRequest.mockImplementationOnce(() => ({
-    subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-      subscriber.next?.({
-        type: 'response',
-        body: {documents: [document]},
-      })
-      subscriber.complete?.()
-      return {unsubscribe: () => {}}
-    },
-  }))
+  httpRequest.mockResolvedValueOnce({documents: [document]})
 }
 
 const createTestActionMethod = (httpRequest: ReturnType<typeof vi.fn>) => {
@@ -125,19 +98,13 @@ const createTestActionMethod = (httpRequest: ReturnType<typeof vi.fn>) => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   }
 }
 
-const httpRequest = vi.fn().mockImplementation(() => ({
-  subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-    subscriber.next?.({type: 'response', body: {}})
-    subscriber.complete?.()
-    return {unsubscribe: () => {}}
-  },
-}))
+const httpRequest = vi.fn().mockResolvedValue({})
 
 const testActionMethod = createTestActionMethod(httpRequest)
 
@@ -157,12 +124,10 @@ describe('ReleasesClient', () => {
 
     releasesClient = new ReleasesClient(client, httpRequest)
 
-    nock.disableNetConnect()
     vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
   })
 
   afterEach(() => {
-    nock.cleanAll()
     vi.resetAllMocks()
   })
 
@@ -177,12 +142,6 @@ describe('ReleasesClient', () => {
         _updatedAt: '2023-01-01T00:00:00.000Z',
       }
 
-      nock(TEST_PROJECT_HOST)
-        .get(`/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
-        .reply(200, {
-          documents: [releaseDocument],
-        })
-
       mockHttpDocumentResponse(httpRequest, releaseDocument as Partial<ReleaseDocument>)
 
       const result = await releasesClient.get({releaseId: TEST_RELEASE_ID})
@@ -190,32 +149,24 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toEqual(`/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
+      expect(requestArgs.url).toEqual(
+        `${TEST_API_HOST}/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`,
+      )
     })
 
     test('returns undefined when release does not exist', async () => {
       const releaseId = 'nonexistent'
 
-      nock(TEST_PROJECT_HOST)
-        .get(`/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
-        .reply(200, {
-          documents: [],
-        })
-
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {documents: []}})
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      httpRequest.mockResolvedValueOnce({documents: []})
 
       const result = await releasesClient.get({releaseId})
       expect(result).toBeUndefined()
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toEqual(`/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
+      expect(requestArgs.url).toEqual(
+        `${TEST_API_HOST}/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`,
+      )
     })
 
     test('forwards signal and tag options', async () => {
@@ -225,20 +176,14 @@ describe('ReleasesClient', () => {
         tag: 'releases.get',
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {documents: []}})
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      httpRequest.mockResolvedValueOnce({documents: []})
 
       await releasesClient.get({releaseId: TEST_RELEASE_ID}, options)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.signal).toEqual(options.signal)
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
     })
   })
 
@@ -365,7 +310,7 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
 
@@ -406,7 +351,7 @@ describe('ReleasesClient', () => {
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
       const action = requestArgs.body.actions[0]
@@ -496,20 +441,14 @@ describe('ReleasesClient', () => {
         {_id: 'doc2', _type: 'post', title: 'Document 2'},
       ]
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {result: documents}})
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      httpRequest.mockResolvedValueOnce({result: documents})
 
       const result = await releasesClient.fetchDocuments({releaseId: TEST_RELEASE_ID})
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(decodeURIComponent(requestArgs.uri)).toEqual(
-        '/data/query/test-dataset?query=*[sanity::partOfRelease($releaseId)]&$releaseId="release123"',
+      expect(decodeURIComponent(requestArgs.url)).toEqual(
+        `${TEST_API_HOST}/v1/data/query/test-dataset?query=*[sanity::partOfRelease($releaseId)]&$releaseId="release123"`,
       )
 
       expect(result).toEqual({result: documents})
@@ -521,19 +460,13 @@ describe('ReleasesClient', () => {
         signal: new AbortController().signal,
       }
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {result: []}})
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      httpRequest.mockResolvedValueOnce({result: []})
 
       await releasesClient.fetchDocuments({releaseId: TEST_RELEASE_ID}, options)
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.signal).toEqual(options.signal)
     })
   })
@@ -577,19 +510,7 @@ describe('ReleasesClient', () => {
       const validationError = new Error('Release not found')
       validationError.name = 'ValidationError'
 
-      httpRequest
-        .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-            if (subscriber.error) subscriber.error(validationError)
-            return {unsubscribe: () => {}}
-          },
-        }))
-        .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-            if (subscriber.error) subscriber.error(validationError)
-            return {unsubscribe: () => {}}
-          },
-        }))
+      httpRequest.mockRejectedValueOnce(validationError).mockRejectedValueOnce(validationError)
 
       await expect(releasesClient.publish({releaseId: TEST_RELEASE_ID})).rejects.toThrow(
         'Release not found',
@@ -604,19 +525,7 @@ describe('ReleasesClient', () => {
       const timeoutError = new Error('Request timed out')
       timeoutError.name = 'TimeoutError'
 
-      httpRequest
-        .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-            if (subscriber.error) subscriber.error(timeoutError)
-            return {unsubscribe: () => {}}
-          },
-        }))
-        .mockImplementationOnce(() => ({
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-            if (subscriber.error) subscriber.error(timeoutError)
-            return {unsubscribe: () => {}}
-          },
-        }))
+      httpRequest.mockRejectedValueOnce(timeoutError).mockRejectedValueOnce(timeoutError)
 
       await expect(releasesClient.archive({releaseId: TEST_RELEASE_ID})).rejects.toThrow(
         'Request timed out',
@@ -631,12 +540,7 @@ describe('ReleasesClient', () => {
       const abortError = new Error('Request aborted')
       abortError.name = 'AbortError'
 
-      httpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          if (subscriber.error) subscriber.error(abortError)
-          return {unsubscribe: () => {}}
-        },
-      }))
+      httpRequest.mockRejectedValueOnce(abortError)
 
       const abortController = new AbortController()
       const promise = releasesClient.unarchive(
@@ -663,13 +567,7 @@ describe('ObservableReleasesClient', () => {
       useCdn: false,
     })
 
-    observableHttpRequest = vi.fn().mockImplementation(() => ({
-      subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-        subscriber.next?.({type: 'response', body: {}})
-        subscriber.complete?.()
-        return {unsubscribe: () => {}}
-      },
-    }))
+    observableHttpRequest = vi.fn().mockResolvedValue({})
 
     observableReleasesClient = new ObservableReleasesClient(
       client.observable as ObservableSanityClient,
@@ -705,16 +603,7 @@ describe('ObservableReleasesClient', () => {
         },
       }
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {documents: [releaseDocument]},
-          })
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({documents: [releaseDocument]})
 
       const result = observableReleasesClient.get({releaseId: TEST_RELEASE_ID})
 
@@ -730,16 +619,7 @@ describe('ObservableReleasesClient', () => {
         title: 'Custom Release',
       }
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({transactionId: TEST_TXN_ID})
 
       const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
 
@@ -756,16 +636,7 @@ describe('ObservableReleasesClient', () => {
         releaseType: 'undecided',
       }
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({transactionId: TEST_TXN_ID})
 
       const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID})
 
@@ -788,16 +659,7 @@ describe('ObservableReleasesClient', () => {
         releaseType: 'undecided',
       }
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({transactionId: TEST_TXN_ID})
 
       const result = observableReleasesClient.create({releaseId: TEST_RELEASE_ID, metadata})
 
@@ -823,20 +685,11 @@ describe('ObservableReleasesClient', () => {
         const action = (options.body as {actions: CreateReleaseAction[]}).actions[0]
         action.releaseId = 'generatedReleaseId'
 
-        return {
-          subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-            subscriber.next?.({
-              type: 'response',
-              body: {
-                transactionId: TEST_TXN_ID,
-                releaseId: 'generatedReleaseId',
-                metadata,
-              },
-            })
-            subscriber.complete?.()
-            return {unsubscribe: () => {}}
-          },
-        }
+        return Promise.resolve({
+          transactionId: TEST_TXN_ID,
+          releaseId: 'generatedReleaseId',
+          metadata,
+        })
       })
 
       const result = observableReleasesClient.create({metadata})
@@ -853,16 +706,7 @@ describe('ObservableReleasesClient', () => {
       vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
       vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: TEST_TXN_ID},
-          })
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({transactionId: TEST_TXN_ID})
 
       const result = observableReleasesClient.create({})
       const response = await firstValueFrom(result)
@@ -894,16 +738,7 @@ describe('ObservableReleasesClient', () => {
         tag: 'releases.create.options',
       }
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({
-            type: 'response',
-            body: {transactionId: options.transactionId},
-          })
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({transactionId: options.transactionId})
 
       const result = observableReleasesClient.create(options)
       const response = await firstValueFrom(result)
@@ -912,7 +747,7 @@ describe('ObservableReleasesClient', () => {
       expect(observableHttpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = observableHttpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
       const action = requestArgs.body.actions[0]
@@ -980,13 +815,7 @@ describe('ObservableReleasesClient', () => {
         {_id: 'doc2', _type: 'post', title: 'Document 2'},
       ]
 
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          subscriber.next?.({type: 'response', body: {result: documents}})
-          subscriber.complete?.()
-          return {unsubscribe: () => {}}
-        },
-      }))
+      observableHttpRequest.mockResolvedValueOnce({result: documents})
 
       const result = observableReleasesClient.fetchDocuments({releaseId: TEST_RELEASE_ID})
       expect(result).toBeDefined()
@@ -1028,22 +857,6 @@ describe('ObservableReleasesClient', () => {
         message: expect.stringContaining('Invalid patch operation'),
         details: expect.objectContaining(errorResponse),
       })
-    })
-
-    test('properly cleans up subscriptions when errors occur', async () => {
-      const unsubscribeSpy = vi.fn()
-
-      observableHttpRequest.mockImplementationOnce(() => ({
-        subscribe: (subscriber: Subscriber<MockResponseEvent>) => {
-          if (subscriber.error) subscriber.error(new Error('Server error'))
-          return {unsubscribe: unsubscribeSpy}
-        },
-      }))
-
-      const result = observableReleasesClient.get({releaseId: TEST_RELEASE_ID})
-      await expect(firstValueFrom(result)).rejects.toThrow('Server error')
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      expect(unsubscribeSpy).toHaveBeenCalled()
     })
   })
 })

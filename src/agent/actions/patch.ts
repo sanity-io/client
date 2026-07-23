@@ -1,6 +1,6 @@
 import {type Observable} from 'rxjs'
 
-import {_request} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {
   AgentActionPath,
@@ -118,7 +118,7 @@ export type PatchDocument<T extends Record<string, Any> = Record<string, Any>> =
   | PatchDocumentSync<T>
   | PatchDocumentAsync<T>
 
-export function _patch<DocumentShape extends Record<string, Any>>(
+export function _patchObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   request: PatchDocument<DocumentShape>,
@@ -128,9 +128,26 @@ export function _patch<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
+  return _requestObservable(client, httpRequest, {
+    method: 'POST',
+    url: `/agent/action/patch/${dataset}`,
+    body: request,
+  })
+}
+
+export function _patch<DocumentShape extends Record<string, Any>>(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  request: PatchDocument<DocumentShape>,
+): Promise<
+  (typeof request)['async'] extends true
+    ? {_id: string}
+    : IdentifiedSanityDocumentStub & DocumentShape
+> {
+  const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/patch/${dataset}`,
+    url: `/agent/action/patch/${dataset}`,
     body: request,
   })
 }

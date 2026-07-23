@@ -1,11 +1,24 @@
 // deno-lint-ignore-file no-empty-interface
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
-import type {Requester} from 'get-it'
+import type {FetchFunction} from 'get-it'
 import type {Observable} from 'rxjs'
 
-import type {SanityClient} from './SanityClient'
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
+
+/**
+ * Low-level requester returned by `defineHttpRequest`. Surfaces as
+ * `client.config().requester` and as the named `requester` export.
+ *
+ * Defined locally rather than imported from `http/request` so api-extractor
+ * inlines it into the bundled `.d.ts` instead of emitting a relative import
+ * that doesn't survive into `dist/` ([#1290][]).
+ *
+ * [#1290]: https://github.com/sanity-io/client/issues/1290
+ *
+ * @public
+ */
+export type Requester = (options: Any) => Observable<unknown>
 
 /**
  * Used to tag types that is set to `any` as a temporary measure, but should be replaced with proper typings in the future
@@ -134,6 +147,12 @@ export interface ClientConfig {
    * As of API version `v2025-02-19`, the default perspective has changed from `raw` to `published`. {@link https://www.sanity.io/changelog/676aaa9d-2da6-44fb-abe5-580f28047c10|Changelog}
    */
   apiVersion?: string
+  /**
+   * Route requests through an HTTP(S) proxy. Node.js only. Can be replaced
+   * on an existing client via `client.config({proxy})` or
+   * `client.withConfig({proxy})`. For environment-driven proxying, set
+   * `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` before the process starts.
+   */
   proxy?: string
 
   /**
@@ -196,16 +215,33 @@ export interface ClientConfig {
   useProjectHostname?: boolean
 
   /**
-   * @deprecated Don't use
+   * Resolves the fetch implementation every request (including EventSource
+   * connections) goes through. Defaults to the environment entry point's
+   * fetch — the Node entry supplies get-it's undici-backed fetch (resolved
+   * via the entry point instead of a direct import so `get-it/node`/`undici`
+   * stays out of the browser bundle), the browser entry leaves it unset (the
+   * global fetch IS the environment's fetch there). Receives the explicit
+   * `proxy` config, when set, as its argument.
+   *
+   * Supplying it in the client config replaces the transport wholesale —
+   * custom fetch variants, alternative undici configurations, or a mock
+   * (the test suite injects `get-it/mock` this way).
+   *
+   * Returns get-it's minimal `FetchFunction` contract rather than the full
+   * `typeof fetch` — that is what the environments actually provide, and
+   * every consumer (the transport, the EventSource fetch resolver) only
+   * needs that subset.
+   *
+   * @internal
    */
-  requester?: Requester
+  resolveFetch?: (proxyUrl?: string) => FetchFunction
 
   /**
    * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
    */
   resultSourceMap?: boolean | 'withKeyArraySelector'
   /**
-   *@deprecated set `cache` and `next` options on `client.fetch` instead
+   * @deprecated set `cache` and `next` options on `client.fetch` instead
    */
   fetch?:
     | {
@@ -221,33 +257,6 @@ export interface ClientConfig {
    * Lineage token for recursion control
    */
   lineage?: string
-
-  /**
-   * A custom request handler that intercepts all HTTP requests made by the client.
-   *
-   * Useful for logging, adding custom headers, refreshing auth tokens, rate limiting, etc.
-   *
-   * When using `withConfig()`, the new handler **replaces** the previous one (it does not
-   * wrap it). To compose handlers, you can chain them manually:
-   *
-   * ```ts
-   * const parent = createClient({...config, _requestHandler: handlerA})
-   * const child = parent.withConfig({
-   *   _requestHandler: (req, defaultRequester) =>
-   *     handlerB(req, (opts) => handlerA(opts, defaultRequester)),
-   * })
-   * ```
-   *
-   * Setting `_requestHandler` to `undefined` via `withConfig()` removes the handler.
-   *
-   * Note: This only applies to HTTP requests. Real-time listener connections
-   * (`client.listen()`) use EventSource and are not intercepted by this handler.
-   *
-   * @internal
-   * @deprecated Don't use outside of Sanity internals
-   * @see {@link RequestHandler}
-   */
-  _requestHandler?: RequestHandler
 }
 
 /** @public */
@@ -274,6 +283,14 @@ export interface InitializedClientConfig extends ClientConfig {
    * The fully initialized stega config, can be used to check if stega is enabled
    */
   stega: InitializedStegaConfig
+  /**
+   * The resolved low-level requester for this client. Always populated by
+   * `createClient` so internal paths (e.g. the asset upload event stream) can
+   * reach the underlying transport.
+   *
+   * @internal
+   */
+  requester: Requester
   /**
    * Default headers to include with all requests
    *
@@ -311,7 +328,10 @@ export interface UploadClientConfig {
   filename?: string
 
   /**
-   * Milliseconds to wait before timing the request out
+   * Milliseconds to wait before timing the request out.
+   *
+   * Unlike other requests, uploads have NO timeout unless one is explicitly
+   * set here — uploads can legitimately be slow, so timing out is opt-in.
    */
   timeout?: number
 
@@ -453,47 +473,24 @@ export interface ErrorProps {
   details: Any
 }
 
-/** @public */
-export type HttpRequest = {
-  (options: RequestOptions, requester: Requester): ReturnType<Requester>
-}
-
 /**
- * A function that intercepts HTTP requests made by the client.
+ * The internal HTTP request abstraction used by the client. Resolves directly
+ * to the parsed response body as a Promise — middleware-level transport
+ * details (status codes, headers, progress events) are not exposed. The
+ * observable client surface wraps this in an Observable; the promise surface
+ * uses it directly.
  *
- * Receives the resolved request options, a `defaultRequester` function that
- * executes the request through the normal pipeline, and a `client` instance
- * without a `_requestHandler` (to avoid recursive interception).
- *
- * The consumer can:
- * - Modify request options before calling `defaultRequester`
- * - Transform the response stream (e.g. via `pipe`)
- * - Skip `defaultRequester` entirely and return a custom Observable
- * - Use `client` to make additional requests (e.g. refresh an auth token on 401)
- *
- * When set via `withConfig()`, the new handler **replaces** (not wraps) the previous one.
- *
- * Note: This only applies to HTTP requests. Real-time listener connections
- * (`client.listen()`) use EventSource and are not intercepted by this handler.
- *
- * @param request - The resolved request options including `url`
- * @param defaultRequester - Executes the request through the normal pipeline
- * @param client - A client instance with the same configuration but without a `_requestHandler`,
- *   useful for making side requests (e.g. token refresh) without triggering the handler recursively
+ * The body is typed as `unknown`; consumers narrow at their own boundary.
  *
  * @internal
- * @deprecated Don't use outside of Sanity internals
  */
-export type RequestHandler = (
-  request: RequestOptions & {url: string},
-  defaultRequester: (options: RequestOptions & {url: string}) => Observable<HttpRequestEvent>,
-  client: SanityClient,
-) => Observable<HttpRequestEvent>
+export type HttpRequest = {
+  (options: Any): Promise<unknown>
+}
 
 /** @internal */
 export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
-  url?: string
-  uri?: string
+  url: string
   canUseCdn?: boolean
   useCdn?: boolean
   tag?: string
@@ -509,7 +506,7 @@ export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
 }
 
 /** @public */
-export interface ProgressEvent {
+export interface UploadProgressEvent {
   type: 'progress'
   stage: 'upload' | 'download'
   percent: number
@@ -519,18 +516,20 @@ export interface ProgressEvent {
 }
 
 /** @public */
-export interface ResponseEvent<T = unknown> {
+export interface UploadResponseEvent<T = unknown> {
   type: 'response'
   body: T
-  url: string
-  method: string
-  statusCode: number
-  statusMessage?: string
-  headers: Record<string, string>
 }
 
-/** @public */
-export type HttpRequestEvent<T = unknown> = ResponseEvent<T> | ProgressEvent
+/**
+ * Events emitted by `client.assets.upload()` when called via the observable
+ * API. Progress events are best-effort — they're only emitted when the
+ * environment supports tracking upload/download bytes (e.g. browsers via
+ * `XMLHttpRequest`). Other runtimes only emit the terminal `response` event.
+ *
+ * @public
+ */
+export type UploadEvent<T = unknown> = UploadResponseEvent<T> | UploadProgressEvent
 
 /** @internal */
 export interface AuthProvider {
@@ -1620,10 +1619,10 @@ export interface MultipleActionResult {
 
 /** @internal */
 export interface RawRequestOptions {
-  url?: string
-  uri?: string
+  url: string
   method?: string
   token?: string
+  /** @deprecated has no effect — response parsing is driven by the response `content-type` */
   json?: boolean
   tag?: string
   useGlobalApi?: boolean
@@ -1631,9 +1630,10 @@ export interface RawRequestOptions {
   query?: {[key: string]: string | string[]}
   headers?: {[key: string]: string}
   timeout?: number
-  proxy?: string
   body?: Any
   maxRedirects?: number
+  /** Cap the number of retries for this request; `0` disables retries. Cannot extend the client-level maximum. */
+  maxRetries?: number
   signal?: AbortSignal
 }
 

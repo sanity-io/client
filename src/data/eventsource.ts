@@ -14,8 +14,8 @@ export class ConnectionFailedError extends Error {
   readonly name = 'ConnectionFailedError'
   /**
    * HTTP status code of the rejected connection attempt, if known.
-   * Only set when the EventSource implementation exposes it — the polyfill used in
-   * Node.js and when custom headers (eg authorization) are required does, while
+   * Only set when the EventSource implementation exposes it — the `eventsource`
+   * package used by the client does (as `code` on its error events), while
    * native EventSource implementations (browser and Node.js) do not.
    */
   readonly status?: number
@@ -161,12 +161,13 @@ function connectWithESInstance<EventTypeName extends string>(
       // automatically, but in some cases (like when a laptop lid is closed), it will trigger onError
       // if it can't reconnect.
       // see https://html.spec.whatwg.org/multipage/server-sent-events.html#sse-processing-model
-      // The polyfills expose the HTTP status of a rejected connection on the error event
-      // (native EventSource implementations do not). A status means the server rejected the
-      // connection attempt, so error out regardless of readyState — the polyfills disagree
-      // on whether the connection closes before or after the error event is dispatched —
-      // and let `reconnectOnConnectionFailure` classify it (4xx fatal, otherwise retried).
-      const rawStatus = (evt as {status?: unknown}).status
+      // The `eventsource` package exposes the HTTP status of a rejected connection as
+      // `code` on the error event (native EventSource implementations expose nothing).
+      // A status means the server rejected the connection attempt, so error out
+      // regardless of readyState — implementations disagree on whether the connection
+      // closes before or after the error event is dispatched — and let
+      // `reconnectOnConnectionFailure` classify it (4xx fatal, otherwise retried).
+      const rawStatus = (evt as {code?: unknown}).code
       const status = typeof rawStatus === 'number' ? rawStatus : undefined
       if (status !== undefined) {
         observer.error(new ConnectionFailedError('EventSource connection failed', {status}))

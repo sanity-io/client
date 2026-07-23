@@ -1,6 +1,6 @@
 import {type Observable} from 'rxjs'
 
-import {_request} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {
   AgentActionParams,
@@ -150,7 +150,7 @@ export type TranslateDocument<T extends Record<string, Any> = Record<string, Any
   | TranslateDocumentSync<T>
   | TranslateDocumentAsync
 
-export function _translate<DocumentShape extends Record<string, Any>>(
+export function _translateObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   request: TranslateDocument<DocumentShape>,
@@ -160,9 +160,26 @@ export function _translate<DocumentShape extends Record<string, Any>>(
     : IdentifiedSanityDocumentStub & DocumentShape
 > {
   const dataset = hasDataset(client.config())
+  return _requestObservable(client, httpRequest, {
+    method: 'POST',
+    url: `/agent/action/translate/${dataset}`,
+    body: request,
+  })
+}
+
+export function _translate<DocumentShape extends Record<string, Any>>(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  request: TranslateDocument<DocumentShape>,
+): Promise<
+  (typeof request)['async'] extends true
+    ? {_id: string}
+    : IdentifiedSanityDocumentStub & DocumentShape
+> {
+  const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/translate/${dataset}`,
+    url: `/agent/action/translate/${dataset}`,
     body: request,
   })
 }

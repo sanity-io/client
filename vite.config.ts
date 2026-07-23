@@ -8,11 +8,13 @@ export default defineConfig({
   test: {
     // don't use vitest to run Bun and Deno tests
     exclude: [...configDefaults.exclude, 'runtimes/**', 'test-next/**'],
+    setupFiles: ['./test/helpers/setupMockFetch.ts'],
     // Allow switching test runs from using the source TS or compiled ESM
     alias: {
       '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
       '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
-      '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
+      // The default Node suite exercises the Node build (undici middleware).
+      '@sanity/client': new URL(pkg.exports['.'].node.source, import.meta.url).pathname,
     },
     typecheck: {
       enabled: true,

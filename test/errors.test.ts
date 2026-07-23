@@ -1,4 +1,4 @@
-import {createClient} from '@sanity/client'
+import {createClient as createCoreClient} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {
@@ -8,6 +8,12 @@ import {
   isHttpError,
   ServerError,
 } from '../src/http/errors'
+import {testResolveFetch} from './helpers/mockFetch'
+
+// Clients in this suite go through the per-test mock, injected via the
+// public `resolveFetch` config option.
+const createClient: typeof createCoreClient = (config) =>
+  createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 const apiHost = 'api.sanity.url'
 
@@ -107,16 +113,19 @@ describe('groq errors', () => {
 
 describe('http errors', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  let nock: typeof import('nock') = (() => {
+  let getActiveMock: typeof import('./helpers/mockFetch').getActiveMock = () => {
     throw new Error('Not supported in EdgeRuntime')
-  }) as any
+  }
   if (!isEdge) {
-    const _nock = await import('nock')
-    nock = _nock.default
+    const mod = await import('./helpers/mockFetch')
+    getActiveMock = mod.getActiveMock
   }
 
   test.skipIf(isEdge)('yields ServerError on 503 (non-sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(503, 'Service Unavailable')
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({status: 503, body: 'Service Unavailable'})
     const client = createClient({
       useCdn: true,
       apiVersion: '1',
@@ -129,18 +138,24 @@ describe('http errors', async () => {
     expect(err).toBeInstanceOf(Error)
     expect(err).toBeInstanceOf(ServerError)
     expect(err.constructor.name).toBe('ServerError')
-    expect(err.message).toContain('503 (Service Unavailable)')
+    expect(err.message).toContain('HTTP 503 Service Unavailable')
     expect(err).toHaveProperty('statusCode', 503)
 
     expect(isHttpError(err)).toBe(true)
   })
 
   test.skipIf(isEdge)('yields ServerError on 503 (sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(503, {
-      statusCode: 503,
-      error: 'Service Unavailable',
-      message: 'Some internal error occurred',
-    })
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({
+        status: 503,
+        body: {
+          statusCode: 503,
+          error: 'Service Unavailable',
+          message: 'Some internal error occurred',
+        },
+      })
     const client = createClient({
       useCdn: true,
       apiVersion: '1',
@@ -160,7 +175,10 @@ describe('http errors', async () => {
   })
 
   test.skipIf(isEdge)('yields ClientError on 400 (non-sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(400, 'Bad Request')
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({status: 400, body: 'Bad Request'})
 
     const client = createClient({
       useCdn: true,
@@ -174,18 +192,24 @@ describe('http errors', async () => {
     expect(err).toBeInstanceOf(Error)
     expect(err).toBeInstanceOf(ClientError)
     expect(err.constructor.name).toBe('ClientError')
-    expect(err.message).toContain('400 (Bad Request)')
+    expect(err.message).toContain('HTTP 400 Bad Request')
     expect(err).toHaveProperty('statusCode', 400)
 
     expect(isHttpError(err)).toBe(true)
   })
 
   test.skipIf(isEdge)('yields ClientError on 400 (sanity api response)', async () => {
-    nock(`https://${apiHost}`).get('/v1/projects/n1f7y').reply(400, {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Invalid request parameters',
-    })
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({
+        status: 400,
+        body: {
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'Invalid request parameters',
+        },
+      })
 
     const client = createClient({
       useCdn: true,

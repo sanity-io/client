@@ -1,10 +1,65 @@
-import type {HttpContext} from 'get-it'
-
 import type {ActionError, Any, ErrorProps, MutationError, QueryParseError} from '../types'
 import {codeFrame} from '../util/codeFrame'
 import {isRecord} from '../util/isRecord'
 
 const MAX_ITEMS_IN_ERROR_MESSAGE = 5
+
+/**
+ * Canonical HTTP response shape used internally to build {@link ClientError}
+ * and {@link ServerError}. Decouples the error layer from any particular
+ * transport library — adapters in the HTTP layer (e.g. `httpResponseFromGetIt`)
+ * project transport-specific response shapes into this stable form before
+ * constructing errors.
+ *
+ * Matches the public {@link HttpError.response} shape so consumers see no
+ * difference in error properties when the underlying transport changes.
+ *
+ * @internal
+ */
+export interface CanonicalHttpResponse {
+  statusCode: number
+  statusMessage: string | null
+  headers: Record<string, string>
+  body: unknown
+  url: string
+  method: string
+}
+
+/**
+ * Adapter for buffered responses from get-it v9 (`BufferedResponse`-shaped).
+ *
+ * The URL and method aren't on the response itself in v9, so the request
+ * options must be passed alongside.
+ *
+ * @internal
+ */
+export function httpResponseFromFetch(
+  res: {
+    status: number
+    statusText: string
+    headers: Headers
+    body: unknown
+  },
+  reqUrl: string,
+  reqMethod: string,
+): CanonicalHttpResponse {
+  return {
+    statusCode: res.status,
+    statusMessage: res.statusText || null,
+    headers: headersToRecord(res.headers),
+    body: res.body,
+    url: reqUrl,
+    method: reqMethod,
+  }
+}
+
+function headersToRecord(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    out[key] = value
+  })
+  return out
+}
 
 /**
  * Shared properties for HTTP errors (eg both ClientError and ServerError)
@@ -67,8 +122,8 @@ export class ClientError extends Error {
   traceId: ErrorProps['traceId']
   details: ErrorProps['details']
 
-  constructor(res: Any, context?: HttpContext) {
-    const props = extractErrorProps(res, context)
+  constructor(res: Any, tag?: string) {
+    const props = extractErrorProps(res, tag)
     super(props.message)
     Object.assign(this, props)
   }
@@ -89,7 +144,7 @@ export class ServerError extends Error {
   }
 }
 
-function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
+function extractErrorProps(res: Any, tag?: string): ErrorProps {
   const body = res.body
   const props = {
     response: res,
@@ -144,7 +199,6 @@ function extractErrorProps(res: Any, context?: HttpContext): ErrorProps {
 
   // Query parse errors
   if (isQueryParseError(error)) {
-    const tag = context?.options?.query?.tag
     props.message = formatQueryParseError(error, tag, props.traceId)
     props.details = body.error
     return props

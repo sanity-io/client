@@ -1,9 +1,9 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
-import {from, type MonoTypeOperatorFunction, Observable, of} from 'rxjs'
-import {combineLatestWith, concatMap, filter, map, reduce} from 'rxjs/operators'
+import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
+import {filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
-import {requestOptions} from '../http/requestOptions'
+import {type FetchRequest, requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
 import type {
@@ -18,7 +18,6 @@ import type {
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
   HttpRequest,
-  HttpRequestEvent,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
   InitializedStegaConfig,
@@ -30,11 +29,11 @@ import type {
   RawQueryResponse,
   ReplaceVersionAction,
   RequestObservableOptions,
-  RequestOptions,
   SanityDocument,
   SingleActionResult,
   SingleMutationResult,
   UnpublishVersionAction,
+  UploadEvent,
 } from '../types'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
@@ -66,9 +65,6 @@ const getMutationQuery = (options: BaseMutationOptions = {}) => {
   }
 }
 
-const isResponse = (event: Any) => event.type === 'response'
-const getBody = (event: Any) => event.body
-
 const indexBy = (docs: Any[], attr: Any) =>
   docs.reduce((indexed, doc) => {
     indexed[attr(doc)] = doc
@@ -77,15 +73,18 @@ const indexBy = (docs: Any[], attr: Any) =>
 
 const getQuerySizeLimit = 11264
 
-/** @internal */
-export function _fetch<R, Q>(
-  client: Client,
-  httpRequest: HttpRequest,
+/**
+ * Resolve the effective stega config, cleaned params, response mapper and
+ * transport request options for a `fetch()` call. Shared by the observable and
+ * promise paths.
+ *
+ * @internal
+ */
+function _fetchRequest<Q>(
   _stega: InitializedStegaConfig,
-  query: string,
-  _params: Q = {} as Q,
-  options: QueryOptions = {},
-): Observable<RawQueryResponse<R> | R> {
+  _params: Q,
+  options: QueryOptions,
+): {stega: InitializedStegaConfig; params: Q; mapResponse: (res: Any) => Any; reqOpts: Any} {
   const stega =
     'stega' in options
       ? {
@@ -113,55 +112,128 @@ export function _fetch<R, Q>(
       ? {...opts, fetch: {cache, next}}
       : opts
 
-  const $request = _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts)
-  return stega.enabled
-    ? $request.pipe(
-        combineLatestWith(
-          from(
-            import('../stega/stegaEncodeSourceMap').then(
-              ({stegaEncodeSourceMap}) => stegaEncodeSourceMap,
-            ),
-          ),
-        ),
-        map(
-          ([res, stegaEncodeSourceMap]: [
-            Any,
-            (typeof import('../stega/stegaEncodeSourceMap'))['stegaEncodeSourceMap'],
-          ]) => {
-            const result = stegaEncodeSourceMap(res.result, res.resultSourceMap, stega)
-            return mapResponse({...res, result})
-          },
-        ),
-      )
-    : $request.pipe(map(mapResponse))
+  return {stega, params, mapResponse, reqOpts}
 }
 
 /** @internal */
-export function _getDocument<R extends Record<string, Any>>(
+export function _fetchObservable<R, Q>(
+  client: Client,
+  httpRequest: HttpRequest,
+  _stega: InitializedStegaConfig,
+  query: string,
+  _params: Q = {} as Q,
+  options: QueryOptions = {},
+): Observable<RawQueryResponse<R> | R> {
+  return _observe(options.signal, (signal) =>
+    _fetch<R, Q>(client, httpRequest, _stega, query, _params, {...options, signal}),
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _fetchObservable}.
+ *
+ * @internal
+ */
+export function _fetch<R, Q>(
+  client: Client,
+  httpRequest: HttpRequest,
+  _stega: InitializedStegaConfig,
+  query: string,
+  _params: Q = {} as Q,
+  options: QueryOptions = {},
+): Promise<RawQueryResponse<R> | R> {
+  const {stega, params, mapResponse, reqOpts} = _fetchRequest(_stega, _params, options)
+
+  // Kick off the request synchronously (not in an `async` body) so option
+  // validation - e.g. an invalid request tag or a missing dataset - throws
+  // synchronously at call time, matching the rest of the promise surface.
+  const request = _dataRequest(client, httpRequest, 'query', {query, params}, reqOpts)
+  if (!stega.enabled) {
+    return request.then(mapResponse)
+  }
+  return Promise.all([request, import('../stega/stegaEncodeSourceMap')]).then(
+    ([res, {stegaEncodeSourceMap}]) => {
+      const result = stegaEncodeSourceMap(res.result, res.resultSourceMap, stega)
+      return mapResponse({...res, result})
+    },
+  )
+}
+
+/** @internal */
+export function _getDocumentObservable<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions: true},
 ): Observable<SanityDocument<R>[]>
 /** @internal */
-export function _getDocument<R extends Record<string, Any>>(
+export function _getDocumentObservable<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
   opts?: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: false},
 ): Observable<SanityDocument<R> | undefined>
 /** @internal */
-export function _getDocument<R extends Record<string, Any>>(
+export function _getDocumentObservable<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   id: string,
   opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
 ): Observable<SanityDocument<R> | undefined | SanityDocument<R>[]> {
-  const getDocId = () => {
-    if (!opts.releaseId) {
-      return id
-    }
+  return _observe(opts.signal, (signal) =>
+    _request<{documents?: SanityDocument<R>[]}>(
+      client,
+      httpRequest,
+      _getDocumentOptions(client, id, {...opts, signal}),
+    ).then((body) => _mapGetDocument<R>(body, opts.includeAllVersions)),
+  )
+}
 
+/**
+ * Promise-based sibling of {@link _getDocumentObservable}.
+ *
+ * @internal
+ */
+export function _getDocument<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  id: string,
+  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions: true},
+): Promise<SanityDocument<R>[]>
+/** @internal */
+export function _getDocument<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  id: string,
+  opts?: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: false},
+): Promise<SanityDocument<R> | undefined>
+/** @internal */
+export function _getDocument<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  id: string,
+  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean} = {},
+): Promise<SanityDocument<R> | undefined | SanityDocument<R>[]> {
+  const options = _getDocumentOptions(client, id, opts)
+  return _request<{documents?: SanityDocument<R>[]}>(client, httpRequest, options).then((body) =>
+    _mapGetDocument<R>(body, opts.includeAllVersions),
+  )
+}
+
+/**
+ * Resolve the document id (honoring `releaseId`) and build the transport
+ * request options for {@link _getDocumentObservable}. Shared by the observable and
+ * promise paths.
+ *
+ * @internal
+ */
+function _getDocumentOptions(
+  client: Client,
+  id: string,
+  opts: {signal?: AbortSignal; tag?: string; releaseId?: string; includeAllVersions?: boolean},
+): Any {
+  let docId = id
+  if (opts.releaseId) {
     const versionId = getVersionFromId(id)
     if (!versionId) {
       if (isDraftId(id)) {
@@ -169,23 +241,16 @@ export function _getDocument<R extends Record<string, Any>>(
           `The document ID (\`${id}\`) is a draft, but \`options.releaseId\` is set as \`${opts.releaseId}\``,
         )
       }
-
-      return getVersionId(id, opts.releaseId)
-    }
-
-    if (versionId !== opts.releaseId) {
+      docId = getVersionId(id, opts.releaseId)
+    } else if (versionId !== opts.releaseId) {
       throw new Error(
         `The document ID (\`${id}\`) is already a version of \`${versionId}\` release, but this does not match the provided \`options.releaseId\` (\`${opts.releaseId}\`)`,
       )
     }
-
-    return id
   }
-  const docId = getDocId()
 
-  const options = {
-    uri: _getDataUrl(client, 'doc', docId),
-    json: true,
+  return {
+    url: _getDataUrl(client, 'doc', docId),
     tag: opts.tag,
     signal: opts.signal,
     query:
@@ -193,96 +258,144 @@ export function _getDocument<R extends Record<string, Any>>(
         ? {includeAllVersions: opts.includeAllVersions}
         : undefined,
   }
-  return _requestObservable<SanityDocument<R> | undefined | SanityDocument<R>[]>(
-    client,
-    httpRequest,
-    options,
-  ).pipe(
-    filter(isResponse),
-    map((event) => {
-      const documents = event.body.documents
-      if (!documents) {
-        return opts.includeAllVersions ? [] : undefined
-      }
-      return opts.includeAllVersions ? documents : documents[0]
-    }),
-  )
+}
+
+function _mapGetDocument<R extends Record<string, Any>>(
+  body: {documents?: SanityDocument<R>[]},
+  includeAllVersions?: boolean,
+): SanityDocument<R> | undefined | SanityDocument<R>[] {
+  const documents = body.documents
+  if (!documents) {
+    return includeAllVersions ? [] : undefined
+  }
+  return includeAllVersions ? documents : documents[0]
 }
 
 /** @internal */
-export function _getDocuments<R extends Record<string, Any>>(
+export function _getDocumentsObservable<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<(SanityDocument<R> | null)[]> {
-  const options = {
-    uri: _getDataUrl(client, 'doc', ids.join(',')),
-    json: true,
+  return _observe(opts.signal, (signal) =>
+    _getDocuments<R>(client, httpRequest, ids, {...opts, signal}),
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _getDocumentsObservable}.
+ *
+ * @internal
+ */
+export function _getDocuments<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  ids: string[],
+  opts: {signal?: AbortSignal; tag?: string} = {},
+): Promise<(SanityDocument<R> | null)[]> {
+  const options = _getDocumentsOptions(client, ids, opts)
+  return _request<{documents?: SanityDocument<R>[]}>(client, httpRequest, options).then((body) =>
+    _mapGetDocuments<R>(body, ids),
+  )
+}
+
+function _getDocumentsOptions(
+  client: Client,
+  ids: string[],
+  opts: {signal?: AbortSignal; tag?: string},
+): Any {
+  return {
+    url: _getDataUrl(client, 'doc', ids.join(',')),
     tag: opts.tag,
     signal: opts.signal,
   }
-  return _requestObservable<(SanityDocument<R> | null)[]>(client, httpRequest, options).pipe(
-    filter(isResponse),
-    map((event: Any) => {
-      const indexed = indexBy(event.body.documents || [], (doc: Any) => doc._id)
-      return ids.map((id) => indexed[id] || null)
-    }),
-  )
+}
+
+function _mapGetDocuments<R extends Record<string, Any>>(
+  body: {documents?: SanityDocument<R>[]},
+  ids: string[],
+): (SanityDocument<R> | null)[] {
+  const indexed = indexBy(body.documents || [], (doc: Any) => doc._id)
+  return ids.map((id) => indexed[id] || null)
 }
 
 const DOCUMENTS_EXISTS_BATCH_SIZE = 100
 
 /** @internal */
-export function _documentsExists(
+export function _documentsExistsObservable(
   client: Client,
   httpRequest: HttpRequest,
   ids: string[],
   opts: {signal?: AbortSignal; tag?: string} = {},
 ): Observable<Set<string>> {
-  if (ids.length === 0) {
-    return of(new Set<string>())
-  }
-
-  const batches: string[][] = []
-  for (let i = 0; i < ids.length; i += DOCUMENTS_EXISTS_BATCH_SIZE) {
-    batches.push(ids.slice(i, i + DOCUMENTS_EXISTS_BATCH_SIZE))
-  }
-
-  const fetchBatch = (batchIds: string[]) =>
-    _requestObservable<Any>(client, httpRequest, {
-      uri: _getDataUrl(client, 'doc', batchIds.map(encodeURIComponent).join(',')),
-      tag: opts.tag,
-      signal: opts.signal,
-      query: {excludeContent: true},
-    }).pipe(
-      filter(isResponse),
-      map((event: Any) => {
-        const missing = new Set<string>()
-        for (const omitted of event.body.omitted || []) {
-          if (omitted.reason !== 'existence') continue
-          missing.add(omitted.id)
-        }
-        return new Set(batchIds.filter((id) => !missing.has(id)))
-      }),
-    )
-
-  return from(batches).pipe(
-    concatMap(fetchBatch),
-    reduce((acc, set) => {
-      for (const id of set) acc.add(id)
-      return acc
-    }, new Set<string>()),
+  return _observe(opts.signal, (signal) =>
+    _documentsExists(client, httpRequest, ids, {...opts, signal}),
   )
 }
 
+/**
+ * Promise-based sibling of {@link _documentsExistsObservable}. Checks document
+ * existence in batches, resolving to the set of IDs that exist.
+ *
+ * @internal
+ */
+export async function _documentsExists(
+  client: Client,
+  httpRequest: HttpRequest,
+  ids: string[],
+  opts: {signal?: AbortSignal; tag?: string} = {},
+): Promise<Set<string>> {
+  const existing = new Set<string>()
+  if (ids.length === 0) {
+    return existing
+  }
+
+  for (let i = 0; i < ids.length; i += DOCUMENTS_EXISTS_BATCH_SIZE) {
+    const batchIds = ids.slice(i, i + DOCUMENTS_EXISTS_BATCH_SIZE)
+    const body = await _request<{omitted?: {id: string; reason: string}[]}>(client, httpRequest, {
+      url: _getDataUrl(client, 'doc', batchIds.map(encodeURIComponent).join(',')),
+      tag: opts.tag,
+      signal: opts.signal,
+      query: {excludeContent: true},
+    })
+
+    const missing = new Set<string>()
+    for (const omitted of body.omitted || []) {
+      if (omitted.reason !== 'existence') continue
+      missing.add(omitted.id)
+    }
+    for (const id of batchIds) {
+      if (!missing.has(id)) existing.add(id)
+    }
+  }
+
+  return existing
+}
+
 /** @internal */
-export function _getReleaseDocuments<R extends Record<string, Any>>(
+export function _getReleaseDocumentsObservable<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   releaseId: string,
   opts: BaseMutationOptions = {},
 ): Observable<RawQueryResponse<SanityDocument<R>[]>> {
+  return _observe(opts.signal, (signal) =>
+    _getReleaseDocuments<R>(client, httpRequest, releaseId, {...opts, signal}),
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _getReleaseDocumentsObservable}.
+ *
+ * @internal
+ */
+export function _getReleaseDocuments<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  releaseId: string,
+  opts: BaseMutationOptions = {},
+): Promise<RawQueryResponse<SanityDocument<R>[]>> {
   return _dataRequest(
     client,
     httpRequest,
@@ -298,6 +411,410 @@ export function _getReleaseDocuments<R extends Record<string, Any>>(
 }
 
 /** @internal */
+export function _createIfNotExistsObservable<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  options?:
+    | AllDocumentIdsMutationOptions
+    | AllDocumentsMutationOptions
+    | BaseMutationOptions
+    | FirstDocumentIdMutationOptions
+    | FirstDocumentMutationOptions,
+): Observable<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  return _observe(options?.signal, (signal) =>
+    _createIfNotExists<R>(client, httpRequest, doc, {...options, signal}),
+  )
+}
+
+/** @internal */
+export function _createOrReplaceObservable<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  options?:
+    | AllDocumentIdsMutationOptions
+    | AllDocumentsMutationOptions
+    | BaseMutationOptions
+    | FirstDocumentIdMutationOptions
+    | FirstDocumentMutationOptions,
+): Observable<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  return _observe(options?.signal, (signal) =>
+    _createOrReplace<R>(client, httpRequest, doc, {...options, signal}),
+  )
+}
+
+/** @internal */
+export function _createVersionObservable<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  publishedId: string,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  return _observe(options?.signal, (signal) =>
+    _createVersion<R>(client, httpRequest, doc, publishedId, {...options, signal}),
+  )
+}
+
+/** @internal */
+export function _createVersionFromBaseObservable(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  publishedId?: string,
+  baseId?: string,
+  releaseId?: string,
+  ifBaseRevisionId?: string,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  return _observe(options?.signal, (signal) =>
+    _createVersionFromBase(client, httpRequest, publishedId, baseId, releaseId, ifBaseRevisionId, {
+      ...options,
+      signal,
+    }),
+  )
+}
+
+/** @internal */
+export function _deleteObservable<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  selection: string | MutationSelection,
+  options?:
+    | AllDocumentIdsMutationOptions
+    | AllDocumentsMutationOptions
+    | BaseMutationOptions
+    | FirstDocumentIdMutationOptions
+    | FirstDocumentMutationOptions,
+): Observable<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  return _observe(options?.signal, (signal) =>
+    _delete<R>(client, httpRequest, selection, {...options, signal}),
+  )
+}
+
+/** @internal */
+export function _discardVersionObservable(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  versionId: string,
+  purge: boolean = false,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  return _observe(options?.signal, (signal) =>
+    _discardVersion(client, httpRequest, versionId, purge, {...options, signal}),
+  )
+}
+
+/** @internal */
+export function _replaceVersionObservable<R extends Record<string, Any>>(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  doc: IdentifiedSanityDocumentStub<R>,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  return _observe(options?.signal, (signal) =>
+    _replaceVersion<R>(client, httpRequest, doc, {...options, signal}),
+  )
+}
+
+/** @internal */
+export function _unpublishVersionObservable(
+  client: ObservableSanityClient | SanityClient,
+  httpRequest: HttpRequest,
+  versionId: string,
+  publishedId: string,
+  options?: BaseActionOptions,
+): Observable<SingleActionResult> {
+  return _observe(options?.signal, (signal) =>
+    _unpublishVersion(client, httpRequest, versionId, publishedId, {
+      ...options,
+      signal,
+    }),
+  )
+}
+
+/** @internal */
+export function _mutateObservable<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
+  options?:
+    | AllDocumentIdsMutationOptions
+    | AllDocumentsMutationOptions
+    | BaseMutationOptions
+    | FirstDocumentIdMutationOptions
+    | FirstDocumentMutationOptions,
+): Observable<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  return _observe(options?.signal, (signal) =>
+    _mutate<R>(client, httpRequest, mutations, {...options, signal}),
+  )
+}
+
+/**
+ * @internal
+ */
+export function _actionObservable(
+  client: Client,
+  httpRequest: HttpRequest,
+  actions: Action | Action[],
+  options?: BaseActionOptions,
+): Observable<SingleActionResult | MultipleActionResult> {
+  return _observe(options?.signal, (signal) =>
+    _action(client, httpRequest, actions, {...options, signal}),
+  )
+}
+
+/**
+ * Build the transport request options for a data endpoint (`query` / `mutate`
+ * / `actions`). Shared by the observable and promise request paths.
+ *
+ * @internal
+ */
+function _dataRequestOptions(
+  client: Client,
+  endpoint: string,
+  body: Any,
+  options: Any = {},
+): {reqOptions: Any; isMutation: boolean; returnFirst: boolean} {
+  const isMutation = endpoint === 'mutate'
+  const isAction = endpoint === 'actions'
+  const isQuery = endpoint === 'query'
+
+  // Check if the query string is within a configured threshold,
+  // in which case we can use GET. Otherwise, use POST.
+  const strQuery = isMutation || isAction ? '' : encodeQueryString(body)
+  const useGet = !isMutation && !isAction && strQuery.length < getQuerySizeLimit
+  const stringQuery = useGet ? strQuery : ''
+  const returnFirst = options.returnFirst
+  const {timeout, token, tag, headers, returnQuery, lastLiveEventId, cacheMode} = options
+
+  const url = _getDataUrl(client, endpoint, stringQuery)
+
+  const reqOptions = {
+    method: useGet ? 'GET' : 'POST',
+    url,
+    body: useGet ? undefined : body,
+    query: isMutation && getMutationQuery(options),
+    timeout,
+    headers,
+    token,
+    tag,
+    returnQuery,
+    perspective: options.perspective,
+    variant: options.variant,
+    resultSourceMap: options.resultSourceMap,
+    lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
+    cacheMode: cacheMode,
+    canUseCdn: isQuery,
+    signal: options.signal,
+    fetch: options.fetch,
+    useAbortSignal: options.useAbortSignal,
+    useCdn: options.useCdn,
+  }
+
+  return {reqOptions, isMutation, returnFirst}
+}
+
+/**
+ * Shape the raw response body of a data request. For mutations this reduces
+ * the API response to documents or ids; everything else passes through. Pure
+ * function shared by the observable and promise request paths.
+ *
+ * @internal
+ */
+function _mapDataResponse(
+  res: Any,
+  isMutation: boolean,
+  returnFirst: boolean,
+  returnDocuments: boolean,
+): Any {
+  if (!isMutation) {
+    return res
+  }
+
+  // Should we return documents?
+  const results = res.results || []
+  if (returnDocuments) {
+    return returnFirst ? results[0] && results[0].document : results.map((mut: Any) => mut.document)
+  }
+
+  // Return a reduced subset
+  const key = returnFirst ? 'documentId' : 'documentIds'
+  const ids = returnFirst ? results[0] && results[0].id : results.map((mut: Any) => mut.id)
+  return {
+    transactionId: res.transactionId,
+    results: results,
+    [key]: ids,
+  }
+}
+
+/**
+ * @internal
+ */
+export function _dataRequestObservable(
+  client: Client,
+  httpRequest: HttpRequest,
+  endpoint: string,
+  body: Any,
+  options: Any = {},
+): Observable<Any> {
+  return _observe(options.signal, (signal) =>
+    _dataRequest(client, httpRequest, endpoint, body, {...options, signal}),
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _dataRequestObservable}.
+ *
+ * @internal
+ */
+export function _dataRequest(
+  client: Client,
+  httpRequest: HttpRequest,
+  endpoint: string,
+  body: Any,
+  options: Any = {},
+): Promise<Any> {
+  const {reqOptions, isMutation, returnFirst} = _dataRequestOptions(client, endpoint, body, options)
+  return _request(client, httpRequest, reqOptions).then((res: Any) =>
+    _mapDataResponse(res, isMutation, returnFirst, options.returnDocuments),
+  )
+}
+
+/**
+ * @internal
+ */
+export function _createObservable<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  doc: Any,
+  op: Any,
+  options: Any = {},
+): Observable<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  return _observe(options.signal, (signal) =>
+    _create<R>(client, httpRequest, doc, op, {...options, signal}),
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _createObservable}.
+ *
+ * @internal
+ */
+export function _create<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  doc: Any,
+  op: Any,
+  options: Any = {},
+): Promise<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  const mutation = {[op]: doc}
+  const opts = Object.assign({returnFirst: true, returnDocuments: true}, options)
+  return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
+}
+
+/**
+ * Promise-based sibling of {@link _actionObservable}.
+ *
+ * @internal
+ */
+export function _action(
+  client: Client,
+  httpRequest: HttpRequest,
+  actions: Action | Action[],
+  options?: BaseActionOptions,
+): Promise<SingleActionResult | MultipleActionResult> {
+  const acts = Array.isArray(actions) ? actions : [actions]
+  const transactionId = (options && options.transactionId) || undefined
+  const skipCrossDatasetReferenceValidation =
+    (options && options.skipCrossDatasetReferenceValidation) || undefined
+  const dryRun = (options && options.dryRun) || undefined
+
+  return _dataRequest(
+    client,
+    httpRequest,
+    'actions',
+    {actions: acts, transactionId, skipCrossDatasetReferenceValidation, dryRun},
+    options,
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _mutateObservable}.
+ *
+ * @internal
+ */
+export function _mutate<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
+  options?:
+    | AllDocumentIdsMutationOptions
+    | AllDocumentsMutationOptions
+    | BaseMutationOptions
+    | FirstDocumentIdMutationOptions
+    | FirstDocumentMutationOptions,
+): Promise<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  let mut: Mutation | Mutation[]
+  if (mutations instanceof Patch || mutations instanceof ObservablePatch) {
+    mut = {patch: mutations.serialize()}
+  } else if (mutations instanceof Transaction || mutations instanceof ObservableTransaction) {
+    mut = mutations.serialize()
+  } else {
+    mut = mutations
+  }
+
+  const muts = Array.isArray(mut) ? mut : [mut]
+  const transactionId = (options && options.transactionId) || undefined
+  return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
+}
+
+/**
+ * Promise-based sibling of {@link _deleteObservable}.
+ *
+ * @internal
+ */
+export function _delete<R extends Record<string, Any>>(
+  client: Client,
+  httpRequest: HttpRequest,
+  selection: string | MutationSelection,
+  options?:
+    | AllDocumentIdsMutationOptions
+    | AllDocumentsMutationOptions
+    | BaseMutationOptions
+    | FirstDocumentIdMutationOptions
+    | FirstDocumentMutationOptions,
+): Promise<
+  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
+> {
+  return _dataRequest(
+    client,
+    httpRequest,
+    'mutate',
+    {mutations: [{delete: getSelection(selection)}]},
+    options,
+  )
+}
+
+/**
+ * Promise-based sibling of {@link _createIfNotExistsObservable}.
+ *
+ * @internal
+ */
 export function _createIfNotExists<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
@@ -308,14 +825,18 @@ export function _createIfNotExists<R extends Record<string, Any>>(
     | BaseMutationOptions
     | FirstDocumentIdMutationOptions
     | FirstDocumentMutationOptions,
-): Observable<
+): Promise<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   validators.requireDocumentId('createIfNotExists', doc)
   return _create<R>(client, httpRequest, doc, 'createIfNotExists', options)
 }
 
-/** @internal */
+/**
+ * Promise-based sibling of {@link _createOrReplaceObservable}.
+ *
+ * @internal
+ */
 export function _createOrReplace<R extends Record<string, Any>>(
   client: Client,
   httpRequest: HttpRequest,
@@ -326,21 +847,25 @@ export function _createOrReplace<R extends Record<string, Any>>(
     | BaseMutationOptions
     | FirstDocumentIdMutationOptions
     | FirstDocumentMutationOptions,
-): Observable<
+): Promise<
   SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
 > {
   validators.requireDocumentId('createOrReplace', doc)
   return _create<R>(client, httpRequest, doc, 'createOrReplace', options)
 }
 
-/** @internal */
+/**
+ * Promise-based sibling of {@link _createVersionObservable}.
+ *
+ * @internal
+ */
 export function _createVersion<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   publishedId: string,
   options?: BaseActionOptions,
-): Observable<SingleActionResult> {
+): Promise<SingleActionResult> {
   validators.requireDocumentId('createVersion', doc)
   validators.requireDocumentType('createVersion', doc)
   printCreateVersionWithBaseIdWarning()
@@ -354,7 +879,11 @@ export function _createVersion<R extends Record<string, Any>>(
   return _action(client, httpRequest, createVersionAction, options)
 }
 
-/** @internal */
+/**
+ * Promise-based sibling of {@link _createVersionFromBaseObservable}.
+ *
+ * @internal
+ */
 export function _createVersionFromBase(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
@@ -363,7 +892,7 @@ export function _createVersionFromBase(
   releaseId?: string,
   ifBaseRevisionId?: string,
   options?: BaseActionOptions,
-): Observable<SingleActionResult> {
+): Promise<SingleActionResult> {
   if (!baseId) {
     throw new Error('`createVersion()` requires `baseId` when no `document` is provided')
   }
@@ -386,37 +915,18 @@ export function _createVersionFromBase(
   return _action(client, httpRequest, createVersionAction, options)
 }
 
-/** @internal */
-export function _delete<R extends Record<string, Any>>(
-  client: Client,
-  httpRequest: HttpRequest,
-  selection: string | MutationSelection,
-  options?:
-    | AllDocumentIdsMutationOptions
-    | AllDocumentsMutationOptions
-    | BaseMutationOptions
-    | FirstDocumentIdMutationOptions
-    | FirstDocumentMutationOptions,
-): Observable<
-  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
-> {
-  return _dataRequest(
-    client,
-    httpRequest,
-    'mutate',
-    {mutations: [{delete: getSelection(selection)}]},
-    options,
-  )
-}
-
-/** @internal */
+/**
+ * Promise-based sibling of {@link _discardVersionObservable}.
+ *
+ * @internal
+ */
 export function _discardVersion(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   versionId: string,
   purge: boolean = false,
   options?: BaseActionOptions,
-): Observable<SingleActionResult> {
+): Promise<SingleActionResult> {
   const discardVersionAction: DiscardVersionAction = {
     actionType: 'sanity.action.document.version.discard',
     versionId,
@@ -426,13 +936,17 @@ export function _discardVersion(
   return _action(client, httpRequest, discardVersionAction, options)
 }
 
-/** @internal */
+/**
+ * Promise-based sibling of {@link _replaceVersionObservable}.
+ *
+ * @internal
+ */
 export function _replaceVersion<R extends Record<string, Any>>(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   doc: IdentifiedSanityDocumentStub<R>,
   options?: BaseActionOptions,
-): Observable<SingleActionResult> {
+): Promise<SingleActionResult> {
   validators.requireDocumentId('replaceVersion', doc)
   validators.requireDocumentType('replaceVersion', doc)
 
@@ -444,14 +958,18 @@ export function _replaceVersion<R extends Record<string, Any>>(
   return _action(client, httpRequest, replaceVersionAction, options)
 }
 
-/** @internal */
+/**
+ * Promise-based sibling of {@link _unpublishVersionObservable}.
+ *
+ * @internal
+ */
 export function _unpublishVersion(
   client: ObservableSanityClient | SanityClient,
   httpRequest: HttpRequest,
   versionId: string,
   publishedId: string,
   options?: BaseActionOptions,
-): Observable<SingleActionResult> {
+): Promise<SingleActionResult> {
   const unpublishVersionAction: UnpublishVersionAction = {
     actionType: 'sanity.action.document.version.unpublish',
     versionId,
@@ -459,150 +977,6 @@ export function _unpublishVersion(
   }
 
   return _action(client, httpRequest, unpublishVersionAction, options)
-}
-
-/** @internal */
-export function _mutate<R extends Record<string, Any>>(
-  client: Client,
-  httpRequest: HttpRequest,
-  mutations: Mutation<R>[] | Patch | ObservablePatch | Transaction | ObservableTransaction,
-  options?:
-    | AllDocumentIdsMutationOptions
-    | AllDocumentsMutationOptions
-    | BaseMutationOptions
-    | FirstDocumentIdMutationOptions
-    | FirstDocumentMutationOptions,
-): Observable<
-  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
-> {
-  let mut: Mutation | Mutation[]
-  if (mutations instanceof Patch || mutations instanceof ObservablePatch) {
-    mut = {patch: mutations.serialize()}
-  } else if (mutations instanceof Transaction || mutations instanceof ObservableTransaction) {
-    mut = mutations.serialize()
-  } else {
-    mut = mutations
-  }
-
-  const muts = Array.isArray(mut) ? mut : [mut]
-  const transactionId = (options && options.transactionId) || undefined
-  return _dataRequest(client, httpRequest, 'mutate', {mutations: muts, transactionId}, options)
-}
-
-/**
- * @internal
- */
-export function _action(
-  client: Client,
-  httpRequest: HttpRequest,
-  actions: Action | Action[],
-  options?: BaseActionOptions,
-): Observable<SingleActionResult | MultipleActionResult> {
-  const acts = Array.isArray(actions) ? actions : [actions]
-  const transactionId = (options && options.transactionId) || undefined
-  const skipCrossDatasetReferenceValidation =
-    (options && options.skipCrossDatasetReferenceValidation) || undefined
-  const dryRun = (options && options.dryRun) || undefined
-
-  return _dataRequest(
-    client,
-    httpRequest,
-    'actions',
-    {actions: acts, transactionId, skipCrossDatasetReferenceValidation, dryRun},
-    options,
-  )
-}
-
-/**
- * @internal
- */
-export function _dataRequest(
-  client: Client,
-  httpRequest: HttpRequest,
-  endpoint: string,
-  body: Any,
-  options: Any = {},
-): Any {
-  const isMutation = endpoint === 'mutate'
-  const isAction = endpoint === 'actions'
-  const isQuery = endpoint === 'query'
-
-  // Check if the query string is within a configured threshold,
-  // in which case we can use GET. Otherwise, use POST.
-  const strQuery = isMutation || isAction ? '' : encodeQueryString(body)
-  const useGet = !isMutation && !isAction && strQuery.length < getQuerySizeLimit
-  const stringQuery = useGet ? strQuery : ''
-  const returnFirst = options.returnFirst
-  const {timeout, token, tag, headers, returnQuery, lastLiveEventId, cacheMode} = options
-
-  const uri = _getDataUrl(client, endpoint, stringQuery)
-
-  const reqOptions = {
-    method: useGet ? 'GET' : 'POST',
-    uri: uri,
-    json: true,
-    body: useGet ? undefined : body,
-    query: isMutation && getMutationQuery(options),
-    timeout,
-    headers,
-    token,
-    tag,
-    returnQuery,
-    perspective: options.perspective,
-    variant: options.variant,
-    resultSourceMap: options.resultSourceMap,
-    lastLiveEventId: Array.isArray(lastLiveEventId) ? lastLiveEventId[0] : lastLiveEventId,
-    cacheMode: cacheMode,
-    canUseCdn: isQuery,
-    signal: options.signal,
-    fetch: options.fetch,
-    useAbortSignal: options.useAbortSignal,
-    useCdn: options.useCdn,
-  }
-
-  return _requestObservable(client, httpRequest, reqOptions).pipe(
-    filter(isResponse),
-    map(getBody),
-    map((res) => {
-      if (!isMutation) {
-        return res
-      }
-
-      // Should we return documents?
-      const results = res.results || []
-      if (options.returnDocuments) {
-        return returnFirst
-          ? results[0] && results[0].document
-          : results.map((mut: Any) => mut.document)
-      }
-
-      // Return a reduced subset
-      const key = returnFirst ? 'documentId' : 'documentIds'
-      const ids = returnFirst ? results[0] && results[0].id : results.map((mut: Any) => mut.id)
-      return {
-        transactionId: res.transactionId,
-        results: results,
-        [key]: ids,
-      }
-    }),
-  )
-}
-
-/**
- * @internal
- */
-export function _create<R extends Record<string, Any>>(
-  client: Client,
-  httpRequest: HttpRequest,
-  doc: Any,
-  op: Any,
-  options: Any = {},
-): Observable<
-  SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
-> {
-  const mutation = {[op]: doc}
-  const opts = Object.assign({returnFirst: true, returnDocuments: true}, options)
-  return _dataRequest(client, httpRequest, 'mutate', {mutations: [mutation]}, opts)
 }
 
 const hasDataConfig = (client: Client) => {
@@ -637,19 +1011,16 @@ const isData = (client: Client, uri: string) =>
   isHistory(client, uri)
 
 /**
+ * Build the final request options (URL, headers, query params, etc.) used by
+ * both the regular request pipeline and the asset upload path.
+ *
  * @internal
  */
-export function _requestObservable<R>(
-  client: Client,
-  httpRequest: HttpRequest,
-  options: RequestObservableOptions,
-): Observable<HttpRequestEvent<R>> {
-  // Capture the call-site error here, where the caller's code is still
-  // on the synchronous call stack, and pass it through to get-it so errors
-  // include the originating call site rather than just internal plumbing.
-  const callSiteStack = new Error()
-
-  const uri = options.url || (options.uri as string)
+export function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
+  const uri = options.url
+  if (typeof uri !== 'string') {
+    throw new TypeError('Request options must include a `url`')
+  }
   const config = client.config()
 
   // If the `canUseCdn`-option is not set we detect it automatically based on the method + URL.
@@ -744,31 +1115,115 @@ export function _requestObservable<R>(
     }
   }
 
-  const reqOptions = requestOptions(
+  return requestOptions(
     config,
     Object.assign({}, options, {
       url: _getUrl(client, uri, useCdn),
-      callSiteStack,
     }),
-  ) as RequestOptions
-
-  const request = new Observable<HttpRequestEvent<R>>((subscriber) =>
-    httpRequest(reqOptions, config.requester!).subscribe(subscriber),
   )
-
-  return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
 }
 
 /**
+ * Wrap a promise-returning request in a cold, single-value Observable.
+ *
+ * Each subscription invokes `run` with a fresh `AbortSignal` that is aborted
+ * when the subscriber unsubscribes — so unsubscribing cancels the in-flight
+ * `fetch`. A caller-supplied `userSignal` is chained in too, so the request
+ * still aborts when the caller's own signal fires. The single resolved value
+ * (or rejection) is forwarded to the subscriber.
+ *
+ * This is the bridge that lets the observable client surface reuse the exact
+ * same promise implementations as the promise client surface, with no
+ * duplicated request logic.
+ *
  * @internal
  */
-export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Observable<R> {
-  const observable = _requestObservable<R>(client, httpRequest, options).pipe(
-    filter((event: Any) => event.type === 'response'),
-    map((event: Any) => event.body),
-  )
+export function _observe<R>(
+  userSignal: AbortSignal | undefined,
+  run: (signal: AbortSignal) => Promise<R>,
+): Observable<R> {
+  return new Observable<R>((subscriber) => {
+    const controller = new AbortController()
+    // `AbortSignal.any` rather than an `addEventListener` on the caller's
+    // signal: that signal can be long-lived and reused across many requests,
+    // and a listener per subscription would accumulate there (`{once: true}`
+    // only cleans up if the signal actually fires).
+    const signal = userSignal ? AbortSignal.any([userSignal, controller.signal]) : controller.signal
+    run(signal).then(
+      (value) => {
+        subscriber.next(value)
+        subscriber.complete()
+      },
+      (err) => subscriber.error(err),
+    )
+    return () => controller.abort()
+  })
+}
 
-  return observable
+/**
+ * Promise-based sibling of {@link _requestObservable}. Resolves directly to
+ * the parsed response body without ever constructing an Observable. The abort
+ * signal is honored by the underlying `fetch` (it is threaded onto the request
+ * options), so no RxJS-level teardown is required.
+ *
+ * @internal
+ */
+export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
+  const reqOptions = _prepareRequest(client, options)
+  return httpRequest(reqOptions).then((body) => body as R)
+}
+
+/**
+ * Execute an HTTP request through the regular pipeline and resolve to the
+ * parsed response body. Observable wrapper over {@link _request}.
+ *
+ * @internal
+ */
+export function _requestObservable<R>(
+  client: Client,
+  httpRequest: HttpRequest,
+  options: Any,
+): Observable<R> {
+  return _observe(options.signal, (signal) =>
+    _request<R>(client, httpRequest, {...options, signal}),
+  )
+}
+
+/**
+ * Execute an asset upload through the underlying requester directly,
+ * exposing the full upload event stream (progress + response).
+ *
+ * Bypasses the body-only `HttpRequest` boundary so progress events from the
+ * transport layer can surface to consumers, reading the resolved requester
+ * straight off the initialized config.
+ *
+ * @internal
+ */
+export function _uploadObservable<T>(
+  client: Client,
+  options: RequestObservableOptions,
+): Observable<UploadEvent<T>> {
+  const reqOptions = _prepareRequest(client, options)
+  const requester = client.config().requester
+  const request = new Observable<Any>((subscriber) =>
+    requester(reqOptions).subscribe(subscriber),
+  ).pipe(
+    filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
+    map(
+      (event: Any): UploadEvent<T> =>
+        event.type === 'progress'
+          ? {
+              type: 'progress',
+              stage: event.stage,
+              percent: event.percent,
+              total: event.total,
+              loaded: event.loaded,
+              lengthComputable: event.lengthComputable,
+            }
+          : {type: 'response', body: event.body as T},
+    ),
+  )
+  return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
 }
 
 /**
@@ -819,30 +1274,14 @@ function _withAbortSignal<T>(signal: AbortSignal): MonoTypeOperatorFunction<T> {
     })
   }
 }
-// DOMException is supported on most modern browsers and Node.js 18+.
-// @see https://developer.mozilla.org/en-US/docs/Web/API/DOMException#browser_compatibility
-const isDomExceptionSupported = Boolean(globalThis.DOMException)
-
 /**
+ * `DOMException` is globally available in every supported runtime
+ * (Node 22.12+ and all modern browsers), so we can construct one directly.
+ *
  * @internal
- * @param signal - The abort signal to use.
- * Original source copied from https://github.com/sindresorhus/ky/blob/740732c78aad97e9aec199e9871bdbf0ae29b805/source/errors/DOMException.ts
- * TODO: When targeting Node.js 18, use `signal.throwIfAborted()` (https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/throwIfAborted)
  */
-function _createAbortError(signal?: AbortSignal) {
-  /*
-  NOTE: Use DomException with AbortError name as specified in MDN docs (https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort)
-  > When abort() is called, the fetch() promise rejects with an Error of type DOMException, with name AbortError.
-  */
-  if (isDomExceptionSupported) {
-    return new DOMException(signal?.reason ?? 'The operation was aborted.', 'AbortError')
-  }
-
-  // DOMException not supported. Fall back to use of error and override name.
-  const error = new Error(signal?.reason ?? 'The operation was aborted.')
-  error.name = 'AbortError'
-
-  return error
+function _createAbortError(signal?: AbortSignal): DOMException {
+  return new DOMException(signal?.reason ?? 'The operation was aborted.', 'AbortError')
 }
 
 const resourceDataBase = (config: InitializedClientConfig): string => {

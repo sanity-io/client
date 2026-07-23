@@ -1,13 +1,14 @@
 import defineCreateClientExports, {type ClientConfig, SanityClient} from './defineCreateClient'
 import {defineDeprecatedCreateClient} from './defineDeprecatedCreateClient'
-import envMiddleware from './http/nodeMiddleware'
+import environment from './http/browserMiddleware'
+import type {Requester} from './types'
 
 export * from './defineCreateClient'
 
-const exp = defineCreateClientExports<SanityClient, ClientConfig>(envMiddleware, SanityClient)
+const exp = defineCreateClientExports<SanityClient, ClientConfig>(environment, SanityClient)
 
 /** @public */
-export const requester = exp.requester
+export const requester: Requester = exp.requester
 
 /**
  * @remarks

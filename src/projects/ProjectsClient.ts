@@ -1,6 +1,6 @@
-import {lastValueFrom, type Observable} from 'rxjs'
+import {type Observable} from 'rxjs'
 
-import {_request} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, SanityProject} from '../types'
 
@@ -37,7 +37,7 @@ export class ObservableProjectsClient {
     options?: T,
   ): Observable<Omit<SanityProject, OmittedProjectFields<T>>[]> {
     const query: Record<string, string> = {}
-    const uri = '/projects'
+    const url = '/projects'
     if (options?.includeMembers === false) {
       query.includeMembers = 'false'
     }
@@ -51,9 +51,10 @@ export class ObservableProjectsClient {
       query.onlyExplicitMembership = 'true'
     }
 
-    return _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query}) as Observable<
-      Omit<SanityProject, OmittedProjectFields<T>>[]
-    >
+    return _requestObservable<SanityProject[]>(this.#client, this.#httpRequest, {
+      url,
+      query,
+    }) as Observable<Omit<SanityProject, OmittedProjectFields<T>>[]>
   }
 
   /**
@@ -62,7 +63,9 @@ export class ObservableProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Observable<SanityProject> {
-    return _request<SanityProject>(this.#client, this.#httpRequest, {uri: `/projects/${projectId}`})
+    return _requestObservable<SanityProject>(this.#client, this.#httpRequest, {
+      url: `/projects/${projectId}`,
+    })
   }
 }
 
@@ -88,7 +91,7 @@ export class ProjectsClient {
     options?: T,
   ): Promise<Omit<SanityProject, OmittedProjectFields<T>>[]> {
     const query: Record<string, string> = {}
-    const uri = '/projects'
+    const url = '/projects'
     if (options?.includeMembers === false) {
       query.includeMembers = 'false'
     }
@@ -101,11 +104,10 @@ export class ProjectsClient {
     if (options?.onlyExplicitMembership) {
       query.onlyExplicitMembership = 'true'
     }
-    return lastValueFrom(
-      _request<SanityProject[]>(this.#client, this.#httpRequest, {uri, query}) as Observable<
-        Omit<SanityProject, OmittedProjectFields<T>>[]
-      >,
-    )
+    return _request<SanityProject[]>(this.#client, this.#httpRequest, {
+      url,
+      query,
+    }) as Promise<Omit<SanityProject, OmittedProjectFields<T>>[]>
   }
 
   /**
@@ -114,8 +116,8 @@ export class ProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Promise<SanityProject> {
-    return lastValueFrom(
-      _request<SanityProject>(this.#client, this.#httpRequest, {uri: `/projects/${projectId}`}),
-    )
+    return _request<SanityProject>(this.#client, this.#httpRequest, {
+      url: `/projects/${projectId}`,
+    })
   }
 }

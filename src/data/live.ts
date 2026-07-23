@@ -1,9 +1,11 @@
+import {EventSource} from 'eventsource'
 import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
+  InitializedClientConfig,
   LiveEvent,
   LiveEventGoAway,
   LiveEventMessage,
@@ -15,8 +17,8 @@ import type {
 import {shareReplayLatest} from '../util/shareReplayLatest'
 import {_getDataUrl} from './dataMethods'
 import {connectEventSource} from './eventsource'
-import {eventSourcePolyfill} from './eventsourcePolyfill'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
+import {resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
 
@@ -50,6 +52,7 @@ export class LiveClient {
      */
     waitFor?: 'function'
   } = {}): Observable<LiveEvent> {
+    const config = this.#client.config()
     const {
       projectId,
       apiVersion: _apiVersion,
@@ -57,7 +60,7 @@ export class LiveClient {
       withCredentials,
       requestTagPrefix,
       headers: configHeaders,
-    } = this.#client.config()
+    } = config
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
       throw new Error(
@@ -83,36 +86,39 @@ export class LiveClient {
     if (waitFor) {
       url.searchParams.set('waitFor', waitFor)
     }
-    const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
-    if (includeDrafts && withCredentials) {
-      esOptions.withCredentials = true
+    const eventSourceHeaders: Record<string, string> = {}
+    if (includeDrafts && token) {
+      eventSourceHeaders.Authorization = `Bearer ${token}`
     }
-
-    if ((includeDrafts && token) || configHeaders) {
-      esOptions.headers = {}
-
-      if (includeDrafts && token) {
-        esOptions.headers.Authorization = `Bearer ${token}`
-      }
-
-      if (configHeaders) {
-        Object.assign(esOptions.headers, configHeaders)
-      }
+    if (configHeaders) {
+      Object.assign(eventSourceHeaders, configHeaders)
     }
+    const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
-    const key = `${url.href}::${JSON.stringify(esOptions)}`
-    const existing = eventsCache.get(key)
+    let transportCache = eventsCache.get(config.resolveFetch)
+    if (!transportCache) {
+      transportCache = new Map()
+      eventsCache.set(config.resolveFetch, transportCache)
+    }
+    const cacheKey = JSON.stringify([
+      url.href,
+      typeof config.proxy === 'string' ? config.proxy : null,
+      eventSourceHeaders,
+      eventSourceWithCredentials,
+    ])
+    const existing = transportCache.get(cacheKey)
 
     if (existing) {
       return existing
     }
 
     const initEventSource = () =>
-      // use polyfill if there is no global EventSource or if we need to set headers
-      (typeof EventSource === 'undefined' || esOptions.headers
-        ? eventSourcePolyfill
-        : of(EventSource)
-      ).pipe(map((EventSource) => new EventSource(url.href, esOptions)))
+      new EventSource(url.href, {
+        fetch: resolveEventSourceFetch(config, {
+          headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
+          withCredentials: eventSourceWithCredentials,
+        }),
+      })
 
     const events = connectEventSource(initEventSource, [
       'message',
@@ -125,7 +131,7 @@ export class LiveClient {
     const checkCors = checkCorsObservable(
       new URL(this.#client.getUrl('/check/cors', false)),
       projectId,
-      esOptions.withCredentials === true,
+      eventSourceWithCredentials,
     )
 
     const observable = events
@@ -162,12 +168,15 @@ export class LiveClient {
         }),
       )
       .pipe(
-        finalize(() => eventsCache.delete(key)),
+        finalize(() => {
+          transportCache.delete(cacheKey)
+          if (transportCache.size === 0) eventsCache.delete(config.resolveFetch)
+        }),
         shareReplayLatest({
           predicate: (event) => event.type === 'welcome',
         }),
       )
-    eventsCache.set(key, observable)
+    transportCache.set(cacheKey, observable)
     return observable
   }
 }
@@ -262,4 +271,12 @@ function checkCorsObservable(
   })
 }
 
-const eventsCache = new Map<string, Observable<LiveEvent>>()
+/**
+ * Cached observables capture their transport (`initEventSource` closes over
+ * `config.resolveFetch` and `config.proxy`), so the cache is scoped per
+ * resolver — `undefined` covers the `globalThis.fetch` fallback.
+ */
+const eventsCache = new Map<
+  InitializedClientConfig['resolveFetch'],
+  Map<string, Observable<LiveEvent>>
+>()

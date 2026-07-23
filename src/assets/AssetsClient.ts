@@ -1,18 +1,19 @@
-import {lastValueFrom, type Observable} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
+import {defer, lastValueFrom, type Observable} from 'rxjs'
+import {filter, map, mergeAll} from 'rxjs/operators'
 
-import {_requestObservable} from '../data/dataMethods'
+import {_prepareRequest, _uploadObservable} from '../data/dataMethods'
+import type {FetchRequest} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   Any,
   HttpRequest,
-  HttpRequestEvent,
   InitializedClientConfig,
-  ResponseEvent,
   SanityAssetDocument,
   SanityImageAssetDocument,
   UploadBody,
   UploadClientConfig,
+  UploadEvent,
+  UploadResponseEvent,
 } from '../types'
 import * as validators from '../validators'
 
@@ -36,7 +37,7 @@ export class ObservableAssetsClient {
     assetType: 'file',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityAssetDocument}>>
 
   /**
    * Uploads an image asset to the configured dataset
@@ -49,7 +50,7 @@ export class ObservableAssetsClient {
     assetType: 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityImageAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityImageAssetDocument}>>
   /**
    * Uploads a file or an image asset to the configured dataset
    *
@@ -61,12 +62,12 @@ export class ObservableAssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
 }
@@ -121,27 +122,24 @@ export class AssetsClient {
     body: UploadBody,
     options?: UploadClientConfig,
   ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
-    const observable = _upload(this.#client, this.#httpRequest, assetType, body, options)
+    type Doc = {document: SanityAssetDocument | SanityImageAssetDocument}
+    const observable = _upload<Doc>(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
-        filter((event: Any) => event.type === 'response'),
-        map(
-          (event) =>
-            (event as ResponseEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>)
-              .body.document,
-        ),
+        filter((event): event is UploadResponseEvent<Doc> => event.type === 'response'),
+        map((event) => event.body.document),
       ),
     )
   }
 }
 
-function _upload(
+function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>(
   client: SanityClient | ObservableSanityClient,
-  httpRequest: HttpRequest,
+  _httpRequest: HttpRequest,
   assetType: 'image' | 'file',
   body: UploadBody,
   opts: UploadClientConfig = {},
-): Observable<HttpRequestEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+): Observable<UploadEvent<T>> {
   validators.validateAssetType(assetType)
 
   // If an empty array is given, explicitly set `none` to override API defaults
@@ -180,15 +178,65 @@ function _upload(
     query.sourceUrl = source.url
   }
 
-  return _requestObservable(client, httpRequest, {
+  const headers: Record<string, string> = options.contentType
+    ? {'Content-Type': options.contentType}
+    : {}
+  const baseRequest = {
     tag,
     method: 'POST',
+    // Uploads have NO timeout unless the caller opts in — uploads can
+    // legitimately be slow. `0` translates to "disabled" at the request
+    // boundary, which also shields uploads from get-it's default timeout.
     timeout: options.timeout || 0,
-    uri: buildAssetUploadUrl(config, assetType),
-    headers: options.contentType ? {'Content-Type': options.contentType} : {},
+    url: buildAssetUploadUrl(config, assetType),
+    headers,
     query,
     body,
-  })
+  }
+
+  // In browsers, run uploads through `XMLHttpRequest` so we can surface
+  // per-chunk upload progress events — fetch (and therefore get-it v9) has no
+  // equivalent hook. Outside the browser (Node, edge runtimes), we fall back
+  // to the regular fetch-based path which only emits the terminal `response`
+  // event.
+  if (typeof XMLHttpRequest !== 'undefined') {
+    return defer(async () => {
+      const {uploadWithProgress} = await import('../http/browserUpload')
+      // Build the request the same way the fetch path does, so the request
+      // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
+      // credentials and timeout are identical across both upload transports.
+      // The XHR API needs the query baked into the URL, though.
+      const req = _prepareRequest(client, {...baseRequest})
+      return uploadWithProgress<T>({
+        url: appendQuery(req.url, req.query),
+        method: req.method ?? 'POST',
+        headers: req.headers,
+        body,
+        withCredentials: req.credentials === 'include',
+        // XHR only has a single total-deadline timer, so a structured
+        // get-it timeout collapses to its `total` component here.
+        timeout: typeof req.timeout === 'object' ? req.timeout.total : req.timeout,
+        signal: req.signal,
+      })
+    }).pipe(mergeAll())
+  }
+
+  return _uploadObservable<T>(client, baseRequest)
+}
+
+function appendQuery(url: string, query: FetchRequest['query']): string {
+  if (!query) return url
+  const params =
+    query instanceof URLSearchParams
+      ? query
+      : new URLSearchParams(
+          Object.entries(query).flatMap(([key, value]) =>
+            value === undefined || value === null ? [] : [[key, `${value}`]],
+          ),
+        )
+  const qs = params.toString()
+  if (!qs) return url
+  return url + (url.includes('?') ? '&' : '?') + qs
 }
 
 function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image' | 'file'): string {
