@@ -2,8 +2,8 @@
   "imports": {
     "debug": "https://esm.sh/debug@^4.4.0",
     "eventsource": "https://esm.sh/eventsource@^4.1.0",
-    "get-it": "https://esm.sh/get-it@^9.0.1/dist/index.js?bundle-deps&target=es2022",
-    "get-it/middleware": "https://esm.sh/get-it@^9.0.1/dist/middleware.js?bundle-deps&target=es2022",
+    "get-it": "https://esm.sh/get-it@^9.3.0/dist/index.js?bundle-deps&target=es2022",
+    "get-it/middleware": "https://esm.sh/get-it@^9.3.0/dist/middleware.js?bundle-deps&target=es2022",
     "nanoid": "https://esm.sh/nanoid@^3.3.11",
     "rxjs": "https://esm.sh/rxjs@^7.0.0",
     "rxjs/operators": "https://esm.sh/rxjs@^7.0.0/operators"
