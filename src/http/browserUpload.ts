@@ -2,6 +2,8 @@ import createDebugLogger from 'debug'
 import {Observable} from 'rxjs'
 
 import type {UploadEvent} from '../types'
+import {ClientError, httpResponseFromFetch, ServerError} from './errors'
+import {parseJsonText} from './request'
 
 const log = createDebugLogger('sanity:client')
 
@@ -59,7 +61,23 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
       log('[%d] %s %s — %d', requestId, method, url, xhr.status)
 
       if (xhr.status >= 400) {
-        subscriber.error(new Error(`XHR upload failed with status ${xhr.status}`))
+        // Same typed errors as the fetch transport, so consumers can keep
+        // detecting `ClientError`/`ServerError` and reading `statusCode`,
+        // `responseBody` and the structured API `details` on failed uploads.
+        const errorHeaders = parseXhrResponseHeaders(xhr.getAllResponseHeaders())
+        const canonical = httpResponseFromFetch(
+          {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            headers: errorHeaders,
+            body: parseJsonText(xhr.responseText, errorHeaders),
+          },
+          url,
+          method,
+        )
+        subscriber.error(
+          xhr.status >= 500 ? new ServerError(canonical) : new ClientError(canonical),
+        )
         return
       }
 
@@ -94,4 +112,23 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
 
     xhr.send(body as XMLHttpRequestBodyInit)
   })
+}
+
+/**
+ * Parse `XMLHttpRequest.getAllResponseHeaders()` output (CRLF-separated
+ * `name: value` lines) into a `Headers` instance.
+ */
+function parseXhrResponseHeaders(raw: string): Headers {
+  const headers = new Headers()
+  for (const line of raw.split('\r\n')) {
+    const separator = line.indexOf(':')
+    if (separator <= 0) continue
+    try {
+      headers.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim())
+    } catch {
+      // Skip header lines the Headers constructor rejects — better a partial
+      // header record on the error than no error details at all.
+    }
+  }
+  return headers
 }
