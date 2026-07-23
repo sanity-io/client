@@ -10,7 +10,7 @@ import {encode} from 'eventsource-encoder'
 import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
 import {afterEach, describe, expect, test, vitest} from 'vitest'
 
-import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
+import {getActiveFetch, getActiveMock, testResolveFetch} from './helpers/mockFetch'
 import {createSseServer, type OnRequest} from './helpers/sseServer'
 
 // Mock-backed tests create clients through this shim, which injects the
@@ -599,6 +599,57 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(msg2a).toEqual(msg2b)
       expect(msg1a).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
       expect(msg2a).toEqual({id: 'NjI0MTk4MzExfHFkS2twak9CcjRF', type: 'message', tags: []})
+    })
+
+    test('does not share EventSource instances across different transports', async () => {
+      expect.assertions(4)
+
+      const body = encode({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', event: 'welcome', data: '{}'})
+      const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+      // One handler per expected connection - handlers are one-shot.
+      scope.on('GET', '/v2021-03-26/data/live/events/transports').respond({
+        status: 200,
+        body,
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+      scope.on('GET', '/v2021-03-26/data/live/events/transports').respond({
+        status: 200,
+        body,
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+      const config = {
+        projectId: 'abc123',
+        dataset: 'transports',
+        useCdn: false,
+        apiVersion: '2021-03-26',
+      }
+      const client1 = createClient(config)
+      // Same URL, headers and credentials, but a different transport: a spy
+      // fetch that delegates to the active mock. Before transport identity
+      // was part of the events-cache key, this client would silently reuse
+      // client1's cached observable and the spy would never be hit.
+      let spiedRequests = 0
+      const client2 = createCoreClient({
+        ...config,
+        resolveFetch: () => (url, init) => {
+          spiedRequests++
+          return getActiveFetch()(url, init)
+        },
+      })
+
+      const [welcome1, welcome2] = await Promise.all([
+        firstValueFrom(client1.live.events()),
+        firstValueFrom(client2.live.events()),
+      ])
+
+      expect(welcome1).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
+      expect(welcome2).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
+      expect(spiedRequests, 'second client should connect through its own transport').toBe(1)
+      expect(
+        getActiveMock().getRequests().length,
+        'each transport should open its own EventSource',
+      ).toBe(2)
     })
 
     test('works with global API endpoints', async () => {
