@@ -10,11 +10,26 @@ const testCert = {
   cert: readFileSync(joinPath(__dirname, 'certs', 'cert.pem')),
 }
 
-import {createClient} from '@sanity/client'
+import {createClient as createCoreClient} from '@sanity/client'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {requestOptions} from '../src/http/requestOptions'
-import {getActiveMock} from './helpers/mockFetch'
+import {getActiveFetch, getActiveMock} from './helpers/mockFetch'
+
+// Proxied requests must reach the real local CONNECT proxy, everything else
+// goes through the per-test mock - mirroring how the environment's own
+// resolver treats an explicit proxy URL. The env resolver is grabbed from an
+// uninjected client's config.
+const envResolveFetch = createCoreClient({projectId: 'proxyenv', dataset: 'proxyenv'}).config()
+  .resolveFetch
+const createClient: typeof createCoreClient = (config) =>
+  createCoreClient({
+    resolveFetch: (proxyUrl) =>
+      typeof proxyUrl === 'string' && envResolveFetch
+        ? envResolveFetch(proxyUrl)
+        : getActiveFetch(),
+    ...config,
+  })
 
 describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefined')(
   'proxy configuration',

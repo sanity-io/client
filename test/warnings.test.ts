@@ -1,8 +1,14 @@
 import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {testResolveFetch} from './helpers/mockFetch'
+
 describe('Client config warnings', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
-  const {createClient} = await import(isEdge ? '../dist/index.js' : '../src')
+  const {createClient: createCoreClient} = await import(isEdge ? '../dist/index.js' : '../src')
+  // Clients in this suite go through the per-test mock, injected via the
+  // public `resolveFetch` config option.
+  const createClient: typeof createCoreClient = (config) =>
+    createCoreClient({resolveFetch: testResolveFetch, ...config})
 
   const warn = vi.spyOn(console, 'warn')
   beforeEach(() => {

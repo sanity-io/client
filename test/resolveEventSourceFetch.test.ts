@@ -1,9 +1,7 @@
 import {createClient} from '@sanity/client'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveEventSourceFetch} from '../src/data/resolveEventSourceFetch'
-
-type TestFetchGlobal = {__sanityTestFetch?: typeof fetch}
 
 const spyFetch = () =>
   vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(''))
@@ -11,29 +9,12 @@ const spyFetch = () =>
 describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefined')(
   'resolveEventSourceFetch',
   () => {
-    // The suite-wide setup installs a mock `__sanityTestFetch` per test; these
-    // tests exercise the resolution order below that hook, so remove it.
-    beforeEach(() => {
-      delete (globalThis as TestFetchGlobal).__sanityTestFetch
-    })
     afterEach(() => {
       vi.unstubAllGlobals()
     })
 
     const getConfig = () =>
       createClient({projectId: 'abc123', dataset: 'foo', useCdn: false, apiVersion: '1'}).config()
-
-    test('the test fetch override wins over everything', async () => {
-      const testFetch = spyFetch()
-      const envFetch = spyFetch()
-      ;(globalThis as TestFetchGlobal).__sanityTestFetch = testFetch
-      const config = {...getConfig(), resolveFetch: () => envFetch}
-
-      await resolveEventSourceFetch(config)('https://example.com/sse')
-
-      expect(testFetch).toHaveBeenCalledTimes(1)
-      expect(envFetch).not.toHaveBeenCalled()
-    })
 
     test('uses the environment fetch, not globalThis.fetch', async () => {
       // EventSource must use the same fetch implementation as regular

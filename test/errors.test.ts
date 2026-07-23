@@ -1,4 +1,4 @@
-import {createClient} from '@sanity/client'
+import {createClient as createCoreClient} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {
@@ -8,6 +8,12 @@ import {
   isHttpError,
   ServerError,
 } from '../src/http/errors'
+import {testResolveFetch} from './helpers/mockFetch'
+
+// Clients in this suite go through the per-test mock, injected via the
+// public `resolveFetch` config option.
+const createClient: typeof createCoreClient = (config) =>
+  createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 const apiHost = 'api.sanity.url'
 

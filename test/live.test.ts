@@ -4,21 +4,28 @@ import {
   type ClientConfig,
   ConnectionFailedError,
   CorsOriginError,
-  createClient,
+  createClient as createCoreClient,
 } from '@sanity/client'
 import {encode} from 'eventsource-encoder'
 import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
 import {afterEach, describe, expect, test, vitest} from 'vitest'
 
-import {getActiveMock} from './helpers/mockFetch'
+import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
 import {createSseServer, type OnRequest} from './helpers/sseServer'
+
+// Mock-backed tests create clients through this shim, which injects the
+// per-test `get-it/mock` transport via the public `resolveFetch` config
+// option. The real-SSE-server tests (`testSse`/`getClient`) use the core
+// `createClient` and therefore the real network stack.
+const createClient: typeof createCoreClient = (config) =>
+  createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 /**
  * `live.events()` makes two kinds of requests:
  *
  *  - the EventSource connection to `/data/live/events/...`, which is routed
- *    through `globalThis.__sanityTestFetch` (the get-it mock) and is therefore
- *    registered via {@link getActiveMock}; and
+ *    through the injected mock transport and is therefore registered via
+ *    {@link getActiveMock}; and
  *  - a `/check/cors` probe (only on connection error) made with the bare
  *    `globalThis.fetch`, expecting a real `Response` it can call `.json()` on.
  *
@@ -43,7 +50,7 @@ const corsJson = (result: {allowed?: boolean; withCredentials?: boolean}): Respo
   Response.json({result})
 
 const getClient = (options: ClientConfig & {port: number}) =>
-  createClient({
+  createCoreClient({
     dataset: 'prod',
     apiHost: `http://127.0.0.1:${options.port}`,
     useProjectHostname: false,
@@ -53,9 +60,6 @@ const getClient = (options: ClientConfig & {port: number}) =>
   })
 
 const testSse = async (onRequest: OnRequest, options: ClientConfig = {}) => {
-  // These tests talk to a real local SSE server, so the EventSource fetch
-  // needs to bypass the global mock fetch installed by the test setup.
-  delete (globalThis as {__sanityTestFetch?: unknown}).__sanityTestFetch
   const server = await createSseServer(onRequest)
   const client = getClient({port: (server!.address() as AddressInfo).port, ...options})
   return {server, client}

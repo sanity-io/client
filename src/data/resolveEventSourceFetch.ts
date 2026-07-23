@@ -28,21 +28,17 @@ export interface EventSourceFetchOptions {
  *
  * Resolution order on each request:
  *
- *   1. `globalThis.__sanityTestFetch` if set (test mock fetch — keeps
- *      the listener/live tests on the same shim as the rest of the
- *      suite). Read per-call so each request honours the currently
- *      installed mock.
- *   2. `config.resolveFetch(config.proxy)` if set — the environment's
- *      fetch, so SSE uses the same transport as regular requests: custom
- *      fetch variants, undici configuration, an explicit `proxy` config,
- *      and env-proxy support all apply to SSE too. The Node entry
- *      supplies get-it's undici-backed fetch (threading the resolver
- *      through the env instead of importing `get-it/node` directly keeps
- *      `undici` out of the browser/UMD bundle); the browser entry leaves
- *      it unset.
- *   3. `globalThis.fetch`. Note that Node's global fetch does NOT read
+ *   1. `config.resolveFetch(config.proxy)` if set — the client's fetch
+ *      resolver, so SSE uses the same transport as regular requests:
+ *      custom fetch variants (incl. the test suite's injected mock),
+ *      undici configuration, an explicit `proxy` config, and env-proxy
+ *      support all apply to SSE too. The Node entry supplies get-it's
+ *      undici-backed fetch (threading the resolver through the env
+ *      instead of importing `get-it/node` directly keeps `undici` out of
+ *      the browser/UMD bundle); the browser entry leaves it unset.
+ *   2. `globalThis.fetch`. Note that Node's global fetch does NOT read
  *      proxy env vars (that is opt-in via `NODE_USE_ENV_PROXY`), which
- *      is one of the reasons step 2 exists.
+ *      is one of the reasons step 1 exists.
  *
  * The returned fetch always merges `options.headers` into the outgoing
  * request, regardless of which underlying fetch was picked.
@@ -91,8 +87,6 @@ export type EventSourceFetch = (
 ) => Promise<FetchLikeResponse>
 
 function pickBaseFetch(config: InitializedClientConfig): FetchFunction {
-  const testFetch = (globalThis as {__sanityTestFetch?: FetchFunction}).__sanityTestFetch
-  if (testFetch) return testFetch
   if (config.resolveFetch) {
     return config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
   }
