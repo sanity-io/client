@@ -1,5 +1,6 @@
 import {
   createRequester,
+  type FetchFunction,
   HttpError as GetItHttpError,
   type RequestOptions as FetchRequestOptions,
   type TransformMiddleware,
@@ -191,7 +192,7 @@ export interface EnvironmentOptions {
    * `get-it/node` (which transitively pulls in `undici`) never ends up in the
    * browser/UMD bundle, even via rollup's inlined dynamic imports.
    */
-  resolveFetch?: (proxyUrl?: string) => typeof fetch
+  resolveFetch?: (proxyUrl?: string) => FetchFunction
 }
 
 async function executeRequest(

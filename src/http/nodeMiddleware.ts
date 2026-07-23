@@ -1,6 +1,7 @@
 import {Readable} from 'node:stream'
 
 import createDebugLogger from 'debug'
+import type {FetchFunction} from 'get-it'
 import {debug} from 'get-it/middleware'
 import {createNodeFetch} from 'get-it/node'
 
@@ -45,12 +46,12 @@ let envDefaultFetch: ReturnType<typeof createNodeFetch> | undefined
  *
  * @internal
  */
-function resolveFetch(proxyUrl?: string): typeof fetch {
+function resolveFetch(proxyUrl?: string): FetchFunction {
   if (typeof proxyUrl === 'string') {
-    return getProxyFetch(proxyUrl) as unknown as typeof fetch
+    return getProxyFetch(proxyUrl)
   }
   envDefaultFetch ??= createNodeFetch()
-  return envDefaultFetch as unknown as typeof fetch
+  return envDefaultFetch
 }
 
 const middleware: LegacyMiddleware[] = [

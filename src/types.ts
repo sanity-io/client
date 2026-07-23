@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-empty-interface
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
+import type {FetchFunction} from 'get-it'
 import type {Observable} from 'rxjs'
 
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
@@ -225,16 +226,21 @@ export interface ClientConfig {
    * bundle; the browser entry leaves it unset (the global fetch IS the
    * environment's fetch there).
    *
+   * Returns get-it's minimal `FetchFunction` contract rather than the full
+   * `typeof fetch` — that is what the environments actually provide, and
+   * every consumer (the transport, the EventSource fetch resolver) only
+   * needs that subset.
+   *
    * @internal
    */
-  resolveFetch?: (proxyUrl?: string) => typeof fetch
+  resolveFetch?: (proxyUrl?: string) => FetchFunction
 
   /**
    * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
    */
   resultSourceMap?: boolean | 'withKeyArraySelector'
   /**
-   *@deprecated set `cache` and `next` options on `client.fetch` instead
+   * @deprecated set `cache` and `next` options on `client.fetch` instead
    */
   fetch?:
     | {
