@@ -200,6 +200,25 @@ describe('uploadWithProgress', () => {
     expect(instances[0].aborted, 'unsubscribing must abort the XHR').toBe(true)
   })
 
+  test('detaches its abort listener from the caller signal once the upload settles', async () => {
+    stubXhr(successResponse)
+    const controller = new AbortController()
+    const added = vi.spyOn(controller.signal, 'addEventListener')
+    const removed = vi.spyOn(controller.signal, 'removeEventListener')
+
+    await lastValueFrom(upload({signal: controller.signal}))
+    await lastValueFrom(upload({signal: controller.signal}))
+
+    // A long-lived caller signal must not accumulate listeners: every abort
+    // listener added has to be removed again on teardown, handler-for-handler.
+    const addedAbort = added.mock.calls.filter(([type]) => type === 'abort')
+    const removedAbort = removed.mock.calls.filter(([type]) => type === 'abort')
+    expect(addedAbort).toHaveLength(2)
+    expect(removedAbort.map(([, handler]) => handler)).toEqual(
+      addedAbort.map(([, handler]) => handler),
+    )
+  })
+
   test('errors immediately when given an already-aborted signal', async () => {
     const instances = stubXhr(successResponse)
     const controller = new AbortController()
