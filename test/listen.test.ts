@@ -52,6 +52,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
           query: '*[_type == "beer" && title == $beerName]',
           $beerName: '"Headroom Double IPA"',
           includeResult: 'true',
+          enableResume: 'true',
         })
         expect(request.url, 'url should be correct').toEqual(`/v1/data/listen/prod?${searchParams}`)
 
@@ -261,17 +262,11 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       })
 
       const events = await lastValueFrom(
-        client
-          .listen(
-            '*',
-            {},
-            {enableResume: true, events: ['reconnect', 'mutation', 'welcome', 'welcomeback']},
-          )
-          .pipe(
-            take(5),
-            catchError((err) => of(err)),
-            toArray(),
-          ),
+        client.listen('*', {}, {events: ['reconnect', 'mutation', 'welcome', 'welcomeback']}).pipe(
+          take(5),
+          catchError((err) => of(err)),
+          toArray(),
+        ),
       )
       expect(events).toEqual([
         {type: 'welcome', listenerName: 'foo1'},
@@ -309,7 +304,6 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
             '*',
             {},
             {
-              enableResume: true,
               events: ['reconnect', 'mutation', 'welcome', 'welcomeback', 'reset'],
             },
           )
