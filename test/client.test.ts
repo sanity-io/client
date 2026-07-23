@@ -26,6 +26,7 @@ import {
   type VideoPlaybackInfoSigned,
 } from '@sanity/client'
 import {encode} from 'eventsource-encoder'
+import type {FetchFunction} from 'get-it'
 import {firstValueFrom, lastValueFrom, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'
 import {describe, expect, expectTypeOf, test, vi} from 'vitest'
@@ -1027,15 +1028,56 @@ describe('client', async () => {
       expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 1)
     })
 
-    test('the raw requester export requires a `url` (the v8 `uri` alias is gone)', () => {
-      let error: unknown
-      try {
-        requester({uri: `https://${apiHost}/v1/projects/n1f7y`, fetch: getActiveFetch()})
-      } catch (err) {
-        error = err
-      }
+    test('the raw requester export requires a `url` (the v8 `uri` alias is gone)', async () => {
+      const error: unknown = await firstValueFrom(
+        requester({uri: `https://${apiHost}/v1/projects/n1f7y`, fetch: getActiveFetch()}),
+      ).then(
+        () => undefined,
+        (err) => err,
+      )
       expect(error).toBeInstanceOf(TypeError)
       expect(error).toMatchObject({message: 'Request options must include a `url`'})
+    })
+
+    test('the raw requester export is lazy and cold', async () => {
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
+        .respond({status: 200, body: {pong: true}})
+
+      const req = requester({url: `https://${apiHost}/v1/ping`, fetch: getActiveFetch()})
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 0)
+
+      await firstValueFrom(req)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 1)
+
+      await firstValueFrom(req)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 2)
+    })
+
+    test('the raw requester export aborts the request on unsubscribe', async () => {
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}, delay: 100})
+
+      const signals: AbortSignal[] = []
+      const fetchWithSpy: FetchFunction = (url, init) => {
+        if (init?.signal) signals.push(init.signal)
+        return getActiveFetch()(url, init)
+      }
+
+      const subscription = requester({
+        url: `https://${apiHost}/v1/ping`,
+        fetch: fetchWithSpy,
+      }).subscribe()
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      subscription.unsubscribe()
+
+      expect(signals).toHaveLength(1)
+      await vi.waitFor(() => expect(signals[0].aborted).toBe(true))
     })
 
     test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {
@@ -4899,24 +4941,34 @@ describe('client', async () => {
       getActiveMock()
         .scope(projectHost())
         .on('POST', '/v1/assets/images/foo', {body: bodyBytes(fs.readFileSync(fixturePath))})
-        .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
+        .respond({
+          status: 201,
+          body: {document: {url: 'https://some.asset.url'}},
+          delay: 150,
+        })
 
-      // Timing out an upload is opt-in (uploads can legitimately be slow), so
-      // the fetch init must carry NO abort signal: neither the client-level
-      // timeout nor get-it's default timeout may reach the upload request.
+      // Timing out an upload is opt-in (uploads can legitimately be slow):
+      // neither the client-level timeout nor get-it's default timeout may
+      // abort the upload request. The init's signal is the transport's
+      // unsubscribe/caller-abort controller, so it must not fire mid-upload —
+      // even once the upload has outlasted the client-level timeout — and the
+      // upload must complete.
       const inits: Array<{signal?: AbortSignal}> = []
       const client = getClient({
-        timeout: 30000,
+        timeout: 50,
         resolveFetch: () => (url, init) => {
           if (typeof init === 'object' && init !== null) inits.push(init)
           return getActiveFetch()(url, init)
         },
       })
 
-      await client.assets.upload('image', fs.createReadStream(fixturePath))
-
+      const upload = client.assets.upload('image', fs.createReadStream(fixturePath))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       expect(inits).toHaveLength(1)
-      expect(inits[0].signal, 'no timeout signal on uploads by default').toBeUndefined()
+      expect(inits[0].signal?.aborted, 'no timeout abort mid-upload').not.toBe(true)
+
+      const document = await upload
+      expect(document.url).toEqual('https://some.asset.url')
     })
 
     test('uploads images with request tag if given', async () => {

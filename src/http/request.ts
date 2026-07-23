@@ -83,7 +83,9 @@ export interface HttpRequestConfig {
 /**
  * Build both the observable and promise transport forms from a single get-it
  * requester. The promise form is the primitive (`executeRequest` is already
- * promise-based); the observable form simply wraps it with `from()`.
+ * promise-based); the observable form wraps it lazily so each subscription
+ * starts its own request (cold), and unsubscribing aborts the in-flight
+ * fetch — the same contract as the get-it v8 observable adapter.
  *
  * @internal
  */
@@ -144,10 +146,30 @@ export function defineRequester(
     return executeRequest(requester, fetchOptions)
   }
 
-  return {
-    promise,
-    observable: (options: Any) => from(promise(options)),
-  }
+  // Same per-subscription AbortController pattern as `_observe` in
+  // dataMethods: chain any caller-supplied signal in, so the request aborts
+  // both on the caller's signal and on unsubscribe.
+  const observable: LegacyRequester = (options: Any) =>
+    new Observable<ResponseEvent>((subscriber) => {
+      const controller = new AbortController()
+      const userSignal: AbortSignal | undefined = options.signal
+      if (userSignal) {
+        if (userSignal.aborted) {
+          controller.abort()
+        } else {
+          userSignal.addEventListener('abort', () => controller.abort(), {once: true})
+        }
+      }
+      const subscription = from(promise({...options, signal: controller.signal})).subscribe(
+        subscriber,
+      )
+      return () => {
+        subscription.unsubscribe()
+        controller.abort()
+      }
+    })
+
+  return {promise, observable}
 }
 
 /** @internal */
