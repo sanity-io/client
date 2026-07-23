@@ -5,6 +5,7 @@ import {finalize, map} from 'rxjs/operators'
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
+  InitializedClientConfig,
   LiveEvent,
   LiveEventGoAway,
   LiveEventMessage,
@@ -94,8 +95,18 @@ export class LiveClient {
     }
     const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
-    const cacheKey = `${url.href}::${JSON.stringify({headers: eventSourceHeaders, withCredentials: eventSourceWithCredentials})}`
-    const existing = eventsCache.get(cacheKey)
+    let transportCache = eventsCache.get(config.resolveFetch)
+    if (!transportCache) {
+      transportCache = new Map()
+      eventsCache.set(config.resolveFetch, transportCache)
+    }
+    const cacheKey = JSON.stringify([
+      url.href,
+      typeof config.proxy === 'string' ? config.proxy : null,
+      eventSourceHeaders,
+      eventSourceWithCredentials,
+    ])
+    const existing = transportCache.get(cacheKey)
 
     if (existing) {
       return existing
@@ -157,12 +168,15 @@ export class LiveClient {
         }),
       )
       .pipe(
-        finalize(() => eventsCache.delete(cacheKey)),
+        finalize(() => {
+          transportCache.delete(cacheKey)
+          if (transportCache.size === 0) eventsCache.delete(config.resolveFetch)
+        }),
         shareReplayLatest({
           predicate: (event) => event.type === 'welcome',
         }),
       )
-    eventsCache.set(cacheKey, observable)
+    transportCache.set(cacheKey, observable)
     return observable
   }
 }
@@ -257,4 +271,12 @@ function checkCorsObservable(
   })
 }
 
-const eventsCache = new Map<string, Observable<LiveEvent>>()
+/**
+ * Cached observables capture their transport (`initEventSource` closes over
+ * `config.resolveFetch` and `config.proxy`), so the cache is scoped per
+ * resolver — `undefined` covers the `globalThis.fetch` fallback.
+ */
+const eventsCache = new Map<
+  InitializedClientConfig['resolveFetch'],
+  Map<string, Observable<LiveEvent>>
+>()
