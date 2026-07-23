@@ -208,13 +208,20 @@ export interface ClientConfig {
   useProjectHostname?: boolean
 
   /**
-   * Set internally by the environment-specific entry point so the EventSource
-   * fetch helper can build a proxy-aware fetch without itself importing
-   * `get-it/node` (which would pull `undici` into the browser bundle).
+   * Set internally by the environment-specific entry point so EventSource
+   * connections use the same fetch implementation as regular requests,
+   * rather than whatever `globalThis.fetch` happens to be. This keeps every
+   * aspect of the environment's transport — custom fetch variants, undici
+   * configuration, an explicit `proxy` config (passed as the argument),
+   * env-proxy support (`HTTP_PROXY` et al, which Node's global fetch
+   * ignores) — applying to SSE too. Resolved via the entry point instead of
+   * a direct import so `get-it/node`/`undici` stays out of the browser
+   * bundle; the browser entry leaves it unset (the global fetch IS the
+   * environment's fetch there).
    *
    * @internal
    */
-  resolveProxyFetch?: (proxyUrl: string) => typeof fetch
+  resolveFetch?: (proxyUrl?: string) => typeof fetch
 
   /**
    * Adds a `resultSourceMap` key to the API response, with the type `ContentSourceMap`
