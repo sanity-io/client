@@ -8,6 +8,19 @@ import {
 } from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
 
+describe('client.request', () => {
+  const client = createClient({})
+  test('`url` is required, and the v8 `uri` alias is gone', async () => {
+    expectTypeOf(await client.request({url: '/ping'})).toMatchTypeOf<any>()
+    // @ts-expect-error -- should fail: `url` is required
+    await client.request({})
+    // @ts-expect-error -- should fail: `uri` was removed in favor of `url`
+    await client.request({uri: '/ping'})
+    // @ts-expect-error -- should fail: `uri` was removed in favor of `url`
+    client.observable.request({uri: '/ping'})
+  })
+})
+
 describe('client.fetch', () => {
   const client = createClient({})
   test('params', async () => {
