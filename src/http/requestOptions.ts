@@ -16,7 +16,7 @@ export type FetchRequest = Omit<GetItRequestOptions, 'headers'> & {
 }
 
 /**
- * Project the public request options (`uri`, `timeout: 0` to disable,
+ * Project the public request options (`timeout: 0` to disable,
  * `withCredentials`, `maxRedirects`, the function/object-form `fetch`, ...)
  * plus the client config into a get-it v9 fetch-shaped request. This is the
  * single translation boundary between the client's public option names and
@@ -44,7 +44,7 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
   }
 
   const request: FetchRequest = {
-    url: overrides.url ?? overrides.uri,
+    url: overrides.url,
     headers: Object.assign(headers, overrides.headers || {}),
   }
 

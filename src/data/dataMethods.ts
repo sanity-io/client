@@ -250,7 +250,7 @@ function _getDocumentOptions(
   }
 
   return {
-    uri: _getDataUrl(client, 'doc', docId),
+    url: _getDataUrl(client, 'doc', docId),
     tag: opts.tag,
     signal: opts.signal,
     query:
@@ -306,7 +306,7 @@ function _getDocumentsOptions(
   opts: {signal?: AbortSignal; tag?: string},
 ): Any {
   return {
-    uri: _getDataUrl(client, 'doc', ids.join(',')),
+    url: _getDataUrl(client, 'doc', ids.join(',')),
     tag: opts.tag,
     signal: opts.signal,
   }
@@ -354,7 +354,7 @@ export async function _documentsExists(
   for (let i = 0; i < ids.length; i += DOCUMENTS_EXISTS_BATCH_SIZE) {
     const batchIds = ids.slice(i, i + DOCUMENTS_EXISTS_BATCH_SIZE)
     const body = await _request<{omitted?: {id: string; reason: string}[]}>(client, httpRequest, {
-      uri: _getDataUrl(client, 'doc', batchIds.map(encodeURIComponent).join(',')),
+      url: _getDataUrl(client, 'doc', batchIds.map(encodeURIComponent).join(',')),
       tag: opts.tag,
       signal: opts.signal,
       query: {excludeContent: true},
@@ -596,11 +596,11 @@ function _dataRequestOptions(
   const returnFirst = options.returnFirst
   const {timeout, token, tag, headers, returnQuery, lastLiveEventId, cacheMode} = options
 
-  const uri = _getDataUrl(client, endpoint, stringQuery)
+  const url = _getDataUrl(client, endpoint, stringQuery)
 
   const reqOptions = {
     method: useGet ? 'GET' : 'POST',
-    uri: uri,
+    url,
     body: useGet ? undefined : body,
     query: isMutation && getMutationQuery(options),
     timeout,
@@ -1017,7 +1017,10 @@ const isData = (client: Client, uri: string) =>
  * @internal
  */
 export function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
-  const uri = options.url || (options.uri as string)
+  const uri = options.url
+  if (typeof uri !== 'string') {
+    throw new TypeError('Request options must include a `url`')
+  }
   const config = client.config()
 
   // If the `canUseCdn`-option is not set we detect it automatically based on the method + URL.

@@ -339,7 +339,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         })
 
         await client.request({
-          uri: '/users/me',
+          url: '/users/me',
           // @ts-expect-error -- the per-request `proxy` option was removed
           proxy: `http://127.0.0.1:${proxyPort}`,
         })

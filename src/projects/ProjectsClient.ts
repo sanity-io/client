@@ -37,7 +37,7 @@ export class ObservableProjectsClient {
     options?: T,
   ): Observable<Omit<SanityProject, OmittedProjectFields<T>>[]> {
     const query: Record<string, string> = {}
-    const uri = '/projects'
+    const url = '/projects'
     if (options?.includeMembers === false) {
       query.includeMembers = 'false'
     }
@@ -52,7 +52,7 @@ export class ObservableProjectsClient {
     }
 
     return _requestObservable<SanityProject[]>(this.#client, this.#httpRequest, {
-      uri,
+      url,
       query,
     }) as Observable<Omit<SanityProject, OmittedProjectFields<T>>[]>
   }
@@ -64,7 +64,7 @@ export class ObservableProjectsClient {
    */
   getById(projectId: string): Observable<SanityProject> {
     return _requestObservable<SanityProject>(this.#client, this.#httpRequest, {
-      uri: `/projects/${projectId}`,
+      url: `/projects/${projectId}`,
     })
   }
 }
@@ -91,7 +91,7 @@ export class ProjectsClient {
     options?: T,
   ): Promise<Omit<SanityProject, OmittedProjectFields<T>>[]> {
     const query: Record<string, string> = {}
-    const uri = '/projects'
+    const url = '/projects'
     if (options?.includeMembers === false) {
       query.includeMembers = 'false'
     }
@@ -105,7 +105,7 @@ export class ProjectsClient {
       query.onlyExplicitMembership = 'true'
     }
     return _request<SanityProject[]>(this.#client, this.#httpRequest, {
-      uri,
+      url,
       query,
     }) as Promise<Omit<SanityProject, OmittedProjectFields<T>>[]>
   }
@@ -117,7 +117,7 @@ export class ProjectsClient {
    */
   getById(projectId: string): Promise<SanityProject> {
     return _request<SanityProject>(this.#client, this.#httpRequest, {
-      uri: `/projects/${projectId}`,
+      url: `/projects/${projectId}`,
     })
   }
 }

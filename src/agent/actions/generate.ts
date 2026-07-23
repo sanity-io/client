@@ -302,7 +302,7 @@ export function _generateObservable<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _requestObservable(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/generate/${dataset}`,
+    url: `/agent/action/generate/${dataset}`,
     body: request,
   })
 }
@@ -319,7 +319,7 @@ export function _generate<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/generate/${dataset}`,
+    url: `/agent/action/generate/${dataset}`,
     body: request,
   })
 }

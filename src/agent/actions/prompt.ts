@@ -133,7 +133,7 @@ export function _promptObservable<const DocumentShape extends Record<string, Any
   const dataset = hasDataset(client.config())
   return _requestObservable(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/prompt/${dataset}`,
+    url: `/agent/action/prompt/${dataset}`,
     body: request,
   })
 }
@@ -146,7 +146,7 @@ export function _prompt<const DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/prompt/${dataset}`,
+    url: `/agent/action/prompt/${dataset}`,
     body: request,
   })
 }

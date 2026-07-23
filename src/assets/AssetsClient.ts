@@ -188,7 +188,7 @@ function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>
     // legitimately be slow. `0` translates to "disabled" at the request
     // boundary, which also shields uploads from get-it's default timeout.
     timeout: options.timeout || 0,
-    uri: buildAssetUploadUrl(config, assetType),
+    url: buildAssetUploadUrl(config, assetType),
     headers,
     query,
     body,

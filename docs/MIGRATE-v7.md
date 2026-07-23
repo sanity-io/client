@@ -95,6 +95,30 @@ If you relied on `_requestHandler` for cross-cutting concerns (logging,
 injecting headers, token refresh, rate limiting), move that logic into a
 `get-it` middleware, or wrap the client methods you call.
 
+## The `uri` request option is removed — use `url`
+
+Request options no longer accept the legacy `uri` alias. `client.request()`,
+`client.observable.request()`, and the raw `requester` export all require
+`url`, and a request without one throws
+``TypeError: Request options must include a `url` ``.
+
+Before:
+
+```ts
+client.request({uri: '/ping'})
+```
+
+After:
+
+```ts
+client.request({url: '/ping'})
+```
+
+`url` takes the same API-relative path `uri` did (an absolute URL for the raw
+`requester` export), so this is a rename — no other change is needed. The
+`uri` property is also gone from the `RawRequestOptions` and
+`RequestObservableOptions` types.
+
 ## Proxying is configured per client, not per request
 
 The `proxy` option can no longer be passed with individual request options.

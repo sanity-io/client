@@ -42,12 +42,12 @@ export class ObservableMediaLibraryVideoClient {
       )
     }
 
-    const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
+    const url = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
     return _requestObservable<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
       method: 'GET',
-      uri,
+      url,
       query: queryParams,
     })
   }
@@ -85,12 +85,12 @@ export class MediaLibraryVideoClient {
       )
     }
 
-    const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
+    const url = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
     return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
       method: 'GET',
-      uri,
+      url,
       query: queryParams,
     })
   }

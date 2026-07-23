@@ -281,7 +281,18 @@ describe('client', async () => {
         .on('GET', '/v1/ping')
         .respond({status: 200, body: {pong: true}})
 
-      await expect(getClient().request({uri: '/ping'})).resolves.toMatchObject({pong: true})
+      await expect(getClient().request({url: '/ping'})).resolves.toMatchObject({pong: true})
+    })
+
+    test('request() rejects options without a `url` (the v8 `uri` alias is gone)', () => {
+      let error: unknown
+      try {
+        getClient().request({})
+      } catch (err) {
+        error = err
+      }
+      expect(error).toBeInstanceOf(TypeError)
+      expect(error).toMatchObject({message: 'Request options must include a `url`'})
     })
 
     test.skipIf(isEdge)(
@@ -293,7 +304,7 @@ describe('client', async () => {
           .respond({status: 200, body: {pong: true}})
 
         await expect(
-          getClient({apiVersion: '2019-01-29'}).request({uri: '/ping'}),
+          getClient({apiVersion: '2019-01-29'}).request({url: '/ping'}),
         ).resolves.toMatchObject({pong: true})
       },
     )
@@ -306,7 +317,7 @@ describe('client', async () => {
         .on('GET', '/v1/ping')
         .respond({status: 200, body: {pong: true}})
 
-      const req = getClient().observable.request({uri: '/ping'})
+      const req = getClient().observable.request({url: '/ping'})
       await new Promise((resolve) => setTimeout(resolve, 1))
 
       await new Promise<void>((resolve, reject) => {
@@ -330,7 +341,7 @@ describe('client', async () => {
         .respond({status: 200, body: {pong: true}})
         .respond({status: 200, body: {pong: true}})
 
-      const req = getClient().observable.request({uri: '/ping'})
+      const req = getClient().observable.request({url: '/ping'})
 
       await new Promise<void>((resolve, reject) => {
         expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 0)
@@ -979,7 +990,7 @@ describe('client', async () => {
         .respondPersist({status: 503, body: {}})
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
 
-      await expect(client.request({uri: '/projects/n1f7y', maxRetries: 0})).rejects.toBeDefined()
+      await expect(client.request({url: '/projects/n1f7y', maxRetries: 0})).rejects.toBeDefined()
       expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 1)
     })
 
@@ -990,7 +1001,7 @@ describe('client', async () => {
         .respondPersist({status: 503, body: {}})
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
 
-      await expect(client.request({uri: '/projects/n1f7y', maxRetries: 2})).rejects.toBeDefined()
+      await expect(client.request({url: '/projects/n1f7y', maxRetries: 2})).rejects.toBeDefined()
       expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 3)
     })
 
@@ -1014,6 +1025,17 @@ describe('client', async () => {
         ),
       ).rejects.toBeDefined()
       expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 1)
+    })
+
+    test('the raw requester export requires a `url` (the v8 `uri` alias is gone)', () => {
+      let error: unknown
+      try {
+        requester({uri: `https://${apiHost}/v1/projects/n1f7y`, fetch: getActiveFetch()})
+      } catch (err) {
+        error = err
+      }
+      expect(error).toBeInstanceOf(TypeError)
+      expect(error).toMatchObject({message: 'Request options must include a `url`'})
     })
 
     test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {

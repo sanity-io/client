@@ -132,7 +132,7 @@ export function defineRequester(
     // Options arrive fetch-shaped from `requestOptions` — the single
     // translation boundary between public option names and the transport.
     if (typeof options.url !== 'string') {
-      throw new TypeError('Request options must include a `url` or `uri`')
+      throw new TypeError('Request options must include a `url`')
     }
     // The raw `requester` export accepts the v8-style top-level `maxRetries`;
     // normalize it into `meta` where the retry predicate can see it. (The
