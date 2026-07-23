@@ -1144,14 +1144,12 @@ export function _observe<R>(
 ): Observable<R> {
   return new Observable<R>((subscriber) => {
     const controller = new AbortController()
-    if (userSignal) {
-      if (userSignal.aborted) {
-        controller.abort()
-      } else {
-        userSignal.addEventListener('abort', () => controller.abort(), {once: true})
-      }
-    }
-    run(controller.signal).then(
+    // `AbortSignal.any` rather than an `addEventListener` on the caller's
+    // signal: that signal can be long-lived and reused across many requests,
+    // and a listener per subscription would accumulate there (`{once: true}`
+    // only cleans up if the signal actually fires).
+    const signal = userSignal ? AbortSignal.any([userSignal, controller.signal]) : controller.signal
+    run(signal).then(
       (value) => {
         subscriber.next(value)
         subscriber.complete()

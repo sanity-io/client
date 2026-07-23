@@ -311,6 +311,26 @@ describe('client', async () => {
       },
     )
 
+    test.runIf(isNode)(
+      'observable requests leave no listeners on a reused caller signal',
+      async () => {
+        getActiveMock()
+          .scope(projectHost())
+          .on('GET', '/v1/ping')
+          .respondPersist({status: 200, body: {pong: true}})
+
+        const controller = new AbortController()
+        for (let i = 0; i < 3; i++) {
+          await firstValueFrom(
+            getClient().observable.request({url: '/ping', signal: controller.signal}),
+          )
+        }
+
+        const {default: nodeEvents} = await import('node:events')
+        expect(nodeEvents.getEventListeners(controller.signal, 'abort')).toHaveLength(0)
+      },
+    )
+
     test.skipIf(isEdge)('observable requests are lazy', async () => {
       expect.assertions(2)
 
@@ -1039,6 +1059,30 @@ describe('client', async () => {
       expect(error).toBeInstanceOf(TypeError)
       expect(error).toMatchObject({message: 'Request options must include a `url`'})
     })
+
+    test.runIf(isNode)(
+      'the raw requester export leaves no listeners on a reused caller signal',
+      async () => {
+        getActiveMock()
+          .scope(`https://${apiHost}`)
+          .on('GET', '/v1/ping')
+          .respondPersist({status: 200, body: {pong: true}})
+
+        const controller = new AbortController()
+        for (let i = 0; i < 3; i++) {
+          await firstValueFrom(
+            requester({
+              url: `https://${apiHost}/v1/ping`,
+              signal: controller.signal,
+              fetch: getActiveFetch(),
+            }),
+          )
+        }
+
+        const {default: nodeEvents} = await import('node:events')
+        expect(nodeEvents.getEventListeners(controller.signal, 'abort')).toHaveLength(0)
+      },
+    )
 
     test('the raw requester export is lazy and cold', async () => {
       getActiveMock()

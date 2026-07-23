@@ -118,6 +118,7 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
       subscriber.error(new DOMException('Upload aborted', 'AbortError'))
     }
 
+    const onSignalAbort = () => xhr.abort()
     if (signal) {
       if (signal.aborted) {
         // `xhr.abort()` before `send()` fires no `abort` event per spec, so
@@ -125,14 +126,17 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
         subscriber.error(new DOMException('Upload aborted', 'AbortError'))
         return undefined
       }
-      signal.addEventListener('abort', () => xhr.abort(), {once: true})
+      signal.addEventListener('abort', onSignalAbort, {once: true})
     }
 
     xhr.send(body as XMLHttpRequestBodyInit)
 
     // Unsubscribing cancels the in-flight upload, mirroring how the fetch
-    // path aborts its request (`_observe`). After settle this is a no-op.
+    // path aborts its request (`_observe`). After settle this is a no-op —
+    // except for detaching from the caller's signal, which may be long-lived
+    // and must not accumulate a listener per upload.
     return () => {
+      signal?.removeEventListener('abort', onSignalAbort)
       xhr.abort()
     }
   })
