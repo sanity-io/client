@@ -62,6 +62,24 @@ describe('pkg.exports - worker/edge resolution guard', () => {
     })
   }
 
+  // Node must resolve its own build for BOTH module systems. `require(esm)`
+  // activates `require` (not `import`), so the `node` branch needs a
+  // catch-all `default` — with only an `import` key, resolution backtracks
+  // out of the `node` branch and hands CommonJS consumers the fetch build,
+  // silently skipping the Node middleware (Readable body conversion, explicit
+  // proxy support, lineage/User-Agent headers).
+  const nodeRuntimes = {
+    'node (esm import)': ['node', 'import', 'module'],
+    'node (require / require(esm))': ['node', 'require'],
+  } as const
+
+  for (const [runtime, conditions] of Object.entries(nodeRuntimes)) {
+    test(`${runtime} resolves the Node (undici) build for "."`, () => {
+      const resolved = resolveExport(pkg.exports['.'], new Set(conditions))
+      expect(resolved).toBe(NODE_BUILD)
+    })
+  }
+
   test('the resolver is non-vacuous: a node-first map DOES hand workers the undici build', () => {
     // A hand-authored node-first shape - the bug this guard exists to catch.
     // If our resolver could not detect it, the assertions above would be

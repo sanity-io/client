@@ -35,7 +35,8 @@
       "worker": "./dist/index.js",
       "node": {
         "source": "./src/index.node.ts",
-        "import": "./dist/index.node.js"
+        "import": "./dist/index.node.js",
+        "default": "./dist/index.node.js"
       },
       "import": "./dist/index.js",
       "default": "./dist/index.js"

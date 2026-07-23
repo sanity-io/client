@@ -28,6 +28,14 @@ test('CommonJS interop via require(esm)', async (t) => {
     assert.equal(typeof version, 'string')
   })
 
+  await t.test('require() resolves the Node build, not the fetch build', () => {
+    // The `node` exports branch must catch the `require` condition too —
+    // otherwise CommonJS consumers silently get the platform-neutral build
+    // and lose the Node middleware (Readable upload bodies, explicit proxy
+    // support, lineage/User-Agent headers).
+    assert.match(require.resolve('@sanity/client'), /index\.node\.js$/)
+  })
+
   await t.test('the same named exports are exposed via require and import', async () => {
     // Node adds an `__esModule` interop flag to the CJS view of any ESM
     // module loaded via `require(esm)` — that's expected, so we ignore it.
