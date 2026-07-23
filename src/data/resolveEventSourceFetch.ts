@@ -1,3 +1,6 @@
+import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
+import type {FetchFunction, FetchInit} from 'get-it'
+
 import type {InitializedClientConfig} from '../types'
 
 /** @internal */
@@ -49,16 +52,17 @@ export interface EventSourceFetchOptions {
 export function resolveEventSourceFetch(
   config: InitializedClientConfig,
   options: EventSourceFetchOptions = {},
-): typeof fetch {
+): EventSourceFetch {
   const extraHeaders = options.headers
-  const credentials: RequestCredentials | undefined = options.withCredentials
-    ? 'include'
-    : undefined
+  const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
 
-  return function eventSourceFetch(input, init) {
+  return function eventSourceFetch(url, init) {
     const baseFetch = pickBaseFetch(config)
 
-    const mergedInit: RequestInit = {...init}
+    // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
+    // declare (`mode`, `cache`) survive the spread and reach whichever
+    // fetch implementation is effective.
+    const mergedInit: FetchInit = {...init}
     if (extraHeaders) {
       const headers = new Headers(init?.headers)
       for (const [key, value] of Object.entries(extraHeaders)) {
@@ -69,12 +73,25 @@ export function resolveEventSourceFetch(
     if (credentials !== undefined) {
       mergedInit.credentials = credentials
     }
-    return baseFetch(input, mergedInit)
+    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
   }
 }
 
-function pickBaseFetch(config: InitializedClientConfig): typeof fetch {
-  const testFetch = (globalThis as {__sanityTestFetch?: typeof fetch}).__sanityTestFetch
+/**
+ * The fetch shape handed to the `eventsource` package: accepts what its
+ * `FetchLike` passes in, requires only what get-it's `FetchFunction`
+ * guarantees back — the full `typeof fetch` contract is not needed anywhere
+ * in this chain.
+ *
+ * @internal
+ */
+export type EventSourceFetch = (
+  url: string | URL,
+  init?: EventSourceFetchInit,
+) => Promise<FetchLikeResponse>
+
+function pickBaseFetch(config: InitializedClientConfig): FetchFunction {
+  const testFetch = (globalThis as {__sanityTestFetch?: FetchFunction}).__sanityTestFetch
   if (testFetch) return testFetch
   if (config.resolveFetch) {
     return config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)

@@ -97,7 +97,7 @@ const upload = (options: {timeout?: number | false; signal?: AbortSignal} = {}) 
     url: 'https://abc123.api.sanity.io/v1/assets/images/foo',
     method: 'POST',
     headers: {'Content-Type': 'image/jpeg'},
-    body: new Uint8Array([1, 2, 3]),
+    body: Buffer.from([1, 2, 3]),
     withCredentials: false,
     ...options,
   })
@@ -241,7 +241,7 @@ describe('assets.upload() through the XHR path', () => {
 
     const events = await lastValueFrom(
       client.observable.assets
-        .upload('image', new Uint8Array([1, 2, 3]), {tag: 'asset', timeout: 4321})
+        .upload('image', Buffer.from([1, 2, 3]), {tag: 'asset', timeout: 4321})
         .pipe(toArray()),
     )
 
@@ -266,7 +266,7 @@ describe('assets.upload() through the XHR path', () => {
       timeout: 30000,
     })
 
-    await lastValueFrom(client.observable.assets.upload('image', new Uint8Array([1, 2, 3])))
+    await lastValueFrom(client.observable.assets.upload('image', Buffer.from([1, 2, 3])))
 
     expect(instances).toHaveLength(1)
     expect(instances[0].timeout, 'xhr.timeout must stay disabled (0)').toBe(0)

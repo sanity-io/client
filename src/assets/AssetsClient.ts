@@ -213,7 +213,9 @@ function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>
         headers: req.headers,
         body,
         withCredentials: req.credentials === 'include',
-        timeout: req.timeout,
+        // XHR only has a single total-deadline timer, so a structured
+        // get-it timeout collapses to its `total` component here.
+        timeout: typeof req.timeout === 'object' ? req.timeout.total : req.timeout,
         signal: req.signal,
       })
     }).pipe(mergeAll())
