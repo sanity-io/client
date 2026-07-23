@@ -144,7 +144,14 @@ export function defineRequester(
     if (typeof options.url !== 'string') {
       throw new TypeError('Request options must include a `url` or `uri`')
     }
-    return executeRequest(requester, options)
+    // The raw `requester` export accepts the v8-style top-level `maxRetries`;
+    // normalize it into `meta` where the retry predicate can see it. (The
+    // client path already does this in `requestOptions`.)
+    const fetchOptions =
+      typeof options.maxRetries === 'number' && typeof options.meta?.maxRetries !== 'number'
+        ? {...options, meta: {...options.meta, maxRetries: options.maxRetries}}
+        : options
+    return executeRequest(requester, fetchOptions)
   }
 
   return {
@@ -312,6 +319,13 @@ function headersToRecord(headers: Headers): Record<string, string> {
 }
 
 function shouldRetryRequest(err: unknown, attempt: number, options: FetchRequestOptions): boolean {
+  // Per-request retry cap/opt-out, v8 parity: both the raw `requester`
+  // export and `client.request()` accept a per-request `maxRetries`, carried
+  // in `meta` (see `requestOptions` and `defineRequester`). It can cap below,
+  // but not extend beyond, the client-level maximum.
+  const perRequestMax = options.meta?.maxRetries
+  if (typeof perRequestMax === 'number' && attempt >= perRequestMax) return false
+
   // HTTP errors aren't usually retryable, but Content Lake gives us a few
   // status codes where retrying *is* the right move.
   if (err instanceof GetItHttpError) {

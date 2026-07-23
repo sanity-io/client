@@ -18,6 +18,7 @@ import {
   Patch,
   type PublishAction,
   type ReplaceDraftAction,
+  requester,
   type SanityProject,
   ServerError,
   Transaction,
@@ -955,6 +956,42 @@ describe('client', async () => {
       })
 
       await expect(client.projects.getById('n1f7y')).rejects.toBeDefined()
+    })
+
+    test('a per-request maxRetries of 0 disables retries', async () => {
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respondPersist({status: 503, body: {}})
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+
+      await expect(client.request({uri: '/projects/n1f7y', maxRetries: 0})).rejects.toBeDefined()
+      expect(getActiveMock().getRequests()).toHaveLength(1)
+    })
+
+    test('a per-request maxRetries caps retries below the client maximum', async () => {
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respondPersist({status: 503, body: {}})
+      const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+
+      await expect(client.request({uri: '/projects/n1f7y', maxRetries: 2})).rejects.toBeDefined()
+      expect(getActiveMock().getRequests()).toHaveLength(3)
+    })
+
+    test('the raw requester export honors a per-request maxRetries', async () => {
+      // The named `requester` never sees client config, so the per-request
+      // option is its only retry opt-out (it accepted this on get-it v8 too).
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respondPersist({status: 503, body: {}})
+
+      await expect(
+        firstValueFrom(requester({url: `https://${apiHost}/v1/projects/n1f7y`, maxRetries: 0})),
+      ).rejects.toBeDefined()
+      expect(getActiveMock().getRequests()).toHaveLength(1)
     })
 
     test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {
