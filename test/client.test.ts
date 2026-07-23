@@ -288,6 +288,7 @@ describe('client', async () => {
     test('request() rejects options without a `url` (the v8 `uri` alias is gone)', () => {
       let error: unknown
       try {
+        // @ts-expect-error -- `url` is required in the types; this simulates a JS caller omitting it
         getClient().request({})
       } catch (err) {
         error = err

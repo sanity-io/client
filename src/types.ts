@@ -490,7 +490,7 @@ export type HttpRequest = {
 
 /** @internal */
 export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
-  url?: string
+  url: string
   canUseCdn?: boolean
   useCdn?: boolean
   tag?: string
@@ -1619,7 +1619,7 @@ export interface MultipleActionResult {
 
 /** @internal */
 export interface RawRequestOptions {
-  url?: string
+  url: string
   method?: string
   token?: string
   /** @deprecated has no effect — response parsing is driven by the response `content-type` */

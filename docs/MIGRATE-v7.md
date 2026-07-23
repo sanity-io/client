@@ -117,7 +117,7 @@ client.request({url: '/ping'})
 `url` takes the same API-relative path `uri` did (an absolute URL for the raw
 `requester` export), so this is a rename — no other change is needed. The
 `uri` property is also gone from the `RawRequestOptions` and
-`RequestObservableOptions` types.
+`RequestObservableOptions` types, and `url` is now required in both.
 
 ## Proxying is configured per client, not per request
 
