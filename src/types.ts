@@ -475,7 +475,7 @@ export interface ErrorProps {
  * @internal
  */
 export type HttpRequest = {
-  (options: RequestOptions): Promise<unknown>
+  (options: Any): Promise<unknown>
 }
 
 /** @internal */
@@ -1614,6 +1614,7 @@ export interface RawRequestOptions {
   uri?: string
   method?: string
   token?: string
+  /** @deprecated has no effect — response parsing is driven by the response `content-type` */
   json?: boolean
   tag?: string
   useGlobalApi?: boolean

@@ -7458,7 +7458,9 @@ describe('client', async () => {
       const client = getClient({lineage: 'my-lineage-id'})
       getActiveMock()
         .scope(projectHost())
-        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false', {
+          headers: {'x-sanity-lineage': 'my-lineage-id'},
+        })
         .respond({status: 200, body: {result: []}})
 
       await expect(client.fetch('*')).resolves.not.toThrow()
@@ -7475,6 +7477,7 @@ describe('client', async () => {
         .scope(projectHost())
         .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
           body: expectedBody,
+          headers: {'x-sanity-lineage': 'env-lineage-id'},
         })
         .respond({
           status: 200,

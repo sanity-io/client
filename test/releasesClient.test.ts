@@ -32,6 +32,7 @@ vi.mock('../src/util/createVersionId', () => ({
 
 const TEST_PROJECT_ID = 'test123'
 const TEST_DATASET = 'test-dataset'
+const TEST_API_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
 const TEST_PROJECT_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
 const TEST_RELEASE_ID = 'release123'
 const TEST_METADATA = {
@@ -99,7 +100,7 @@ const createTestActionMethod = (httpRequest: ReturnType<typeof vi.fn>) => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
   }
@@ -155,7 +156,9 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toEqual(`/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
+      expect(requestArgs.url).toEqual(
+        `${TEST_API_HOST}/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`,
+      )
     })
 
     test('returns undefined when release does not exist', async () => {
@@ -173,7 +176,9 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.uri).toEqual(`/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
+      expect(requestArgs.url).toEqual(
+        `${TEST_API_HOST}/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`,
+      )
     })
 
     test('forwards signal and tag options', async () => {
@@ -190,7 +195,7 @@ describe('ReleasesClient', () => {
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
       expect(requestArgs.signal).toEqual(options.signal)
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
     })
   })
 
@@ -317,7 +322,7 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
     })
 
@@ -358,7 +363,7 @@ describe('ReleasesClient', () => {
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
       const action = requestArgs.body.actions[0]
@@ -454,8 +459,8 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(decodeURIComponent(requestArgs.uri)).toEqual(
-        '/data/query/test-dataset?query=*[sanity::partOfRelease($releaseId)]&$releaseId="release123"',
+      expect(decodeURIComponent(requestArgs.url)).toEqual(
+        `${TEST_API_HOST}/v1/data/query/test-dataset?query=*[sanity::partOfRelease($releaseId)]&$releaseId="release123"`,
       )
 
       expect(result).toEqual({result: documents})
@@ -473,7 +478,7 @@ describe('ReleasesClient', () => {
 
       expect(httpRequest).toHaveBeenCalledTimes(1)
       const requestArgs = httpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.signal).toEqual(options.signal)
     })
   })
@@ -754,7 +759,7 @@ describe('ObservableReleasesClient', () => {
       expect(observableHttpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = observableHttpRequest.mock.calls[0][0]
-      expect(requestArgs.tag).toEqual(options.tag)
+      expect(requestArgs.query).toMatchObject({tag: options.tag})
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
       const action = requestArgs.body.actions[0]

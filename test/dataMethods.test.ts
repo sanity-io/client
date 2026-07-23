@@ -145,7 +145,7 @@ const testTagOption = <T = unknown>(
 
     return assertObservable(observable, () => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1)
-      expect(mockHttpRequest.mock.calls[0][0].tag).toEqual('test-tag')
+      expect(mockHttpRequest.mock.calls[0][0].query).toMatchObject({tag: 'test-tag'})
     })
   })
 }
@@ -219,7 +219,9 @@ describe('dataMethods', async () => {
       return assertObservable(observable, (document) => {
         expect(document).toEqual(mockDoc)
         expect(mockHttpRequest).toHaveBeenCalledTimes(1)
-        expect(mockHttpRequest.mock.calls[0][0].uri).toEqual(`/data/doc/foo/${docId}`)
+        expect(mockHttpRequest.mock.calls[0][0].url).toEqual(
+          `${projectHost()}/v1/data/doc/foo/${docId}`,
+        )
       })
     })
 
@@ -246,8 +248,8 @@ describe('dataMethods', async () => {
       })
 
       return assertObservable(observable, () => {
-        expect(mockHttpRequest.mock.calls[0][0].uri).toEqual(
-          `/data/doc/foo/versions.${releaseId}.${docId}`,
+        expect(mockHttpRequest.mock.calls[0][0].url).toEqual(
+          `${projectHost()}/v1/data/doc/foo/versions.${releaseId}.${docId}`,
         )
       })
     })
@@ -276,8 +278,8 @@ describe('dataMethods', async () => {
       })
 
       return assertObservable(observable, () => {
-        expect(mockHttpRequest.mock.calls[0][0].uri).toEqual(
-          `/data/doc/foo/versions.${releaseId}.${docId}`,
+        expect(mockHttpRequest.mock.calls[0][0].url).toEqual(
+          `${projectHost()}/v1/data/doc/foo/versions.${releaseId}.${docId}`,
         )
       })
     })
@@ -439,7 +441,9 @@ describe('dataMethods', async () => {
       return assertObservable(observable, (documents) => {
         expect(documents).toEqual(mockDocs)
         expect(mockHttpRequest).toHaveBeenCalledTimes(1)
-        expect(mockHttpRequest.mock.calls[0][0].uri).toEqual('/data/doc/foo/doc1,doc2,doc3')
+        expect(mockHttpRequest.mock.calls[0][0].url).toEqual(
+          `${projectHost()}/v1/data/doc/foo/doc1,doc2,doc3`,
+        )
       })
     })
 
@@ -470,8 +474,8 @@ describe('dataMethods', async () => {
 
       return assertObservable(observable, (documents) => {
         expect(documents).toEqual(versionDocs)
-        expect(mockHttpRequest.mock.calls[0][0].uri).toEqual(
-          `/data/doc/foo/versions.${releaseId}.doc1,versions.${releaseId}.doc2,versions.${releaseId}.doc3`,
+        expect(mockHttpRequest.mock.calls[0][0].url).toEqual(
+          `${projectHost()}/v1/data/doc/foo/versions.${releaseId}.doc1,versions.${releaseId}.doc2,versions.${releaseId}.doc3`,
         )
       })
     })
@@ -518,7 +522,7 @@ describe('dataMethods', async () => {
         expect(mockHttpRequest).toHaveBeenCalledTimes(1)
 
         const request = mockHttpRequest.mock.calls[0][0]
-        const uri = decodeURIComponent(request.uri)
+        const uri = decodeURIComponent(request.url)
 
         expect(uri).toContain('/data/query/foo')
         expect(uri).toContain('query=*[sanity::partOfRelease($releaseId)]')
@@ -544,7 +548,7 @@ describe('dataMethods', async () => {
         expect(response.result).toEqual([])
 
         const request = mockHttpRequest.mock.calls[0][0]
-        const uri = decodeURIComponent(request.uri)
+        const uri = decodeURIComponent(request.url)
 
         expect(uri).toContain('query=*[sanity::partOfRelease($releaseId)]')
         expect(uri).toContain(`$releaseId="${releaseId}"`)
@@ -588,7 +592,7 @@ describe('dataMethods', async () => {
         expect(mockHttpRequest).toHaveBeenCalledTimes(1)
 
         const request = mockHttpRequest.mock.calls[0][0]
-        expect(request.uri).toEqual('/data/actions/foo')
+        expect(request.url).toEqual(`${projectHost()}/v1/data/actions/foo`)
         expect(request.body).toEqual({
           actions: [expectedAction],
         })

@@ -127,7 +127,7 @@ export function defineRequester(
     httpErrors: true,
     middleware: [
       retry({
-        shouldRetry: legacyShouldRetry,
+        shouldRetry: shouldRetryRequest,
         maxRetries: config.maxRetries ?? 5,
         ...(config.retryDelay ? {retryDelay: config.retryDelay} : {}),
       }),
@@ -139,8 +139,12 @@ export function defineRequester(
   })
 
   const promise: PromiseRequester = (options: Any) => {
-    const fetchOptions = adaptToFetchOptions(options)
-    return executeRequest(requester, fetchOptions, options)
+    // Options arrive fetch-shaped from `requestOptions` — the single
+    // translation boundary between public option names and the transport.
+    if (typeof options.url !== 'string') {
+      throw new TypeError('Request options must include a `url` or `uri`')
+    }
+    return executeRequest(requester, options)
   }
 
   return {
@@ -186,7 +190,6 @@ export interface EnvironmentOptions {
 async function executeRequest(
   requester: ReturnType<typeof createRequester>,
   fetchOptions: FetchRequestOptions,
-  legacyOptions: Any,
 ): Promise<ResponseEvent> {
   const url = fetchOptions.url
   const method = (fetchOptions.method ?? 'GET').toUpperCase()
@@ -211,7 +214,7 @@ async function executeRequest(
         url,
         method,
       )
-      const tag = typeof legacyOptions.query?.tag === 'string' ? legacyOptions.query.tag : undefined
+      const tag = extractRequestTag(fetchOptions.query)
       if (canonical.statusCode >= 500) {
         throw new ServerError(canonical)
       }
@@ -233,8 +236,18 @@ async function executeRequest(
 }
 
 /**
+ * Extract the GROQ request tag (used for error messages) from the query.
+ */
+function extractRequestTag(query: FetchRequestOptions['query']): string | undefined {
+  if (!query) return undefined
+  if (query instanceof URLSearchParams) return query.get('tag') ?? undefined
+  const tag = query.tag
+  return typeof tag === 'string' ? tag : undefined
+}
+
+/**
  * Enforce a rejection-only timeout for requests that must not carry an abort
- * signal (see the `useAbortSignal` handling in `adaptToFetchOptions`). The
+ * signal (see the `useAbortSignal` handling in `requestOptions`). The
  * underlying request is left running when the timeout wins — the same
  * trade-off the get-it v8 fetch transport made — so a memoizing fetch
  * implementation (React/Next.js) can still settle the shared promise for
@@ -290,106 +303,7 @@ function headersToRecord(headers: Headers): Record<string, string> {
   return out
 }
 
-function adaptToFetchOptions(options: Any): FetchRequestOptions {
-  const url: string = options.url ?? options.uri
-  if (typeof url !== 'string') {
-    throw new TypeError('Request options must include a `url` or `uri`')
-  }
-
-  const fetchOptions: FetchRequestOptions = {url}
-
-  if (options.method) fetchOptions.method = options.method
-  if (options.body !== undefined) fetchOptions.body = options.body
-  if (options.headers) fetchOptions.headers = options.headers
-  if (options.query) fetchOptions.query = adaptQuery(options.query)
-  if (options.signal) fetchOptions.signal = options.signal
-
-  // Timeout: legacy used `0` to disable; v9 uses `false`. Anything else is ms.
-  if (options.timeout !== undefined) {
-    fetchOptions.timeout = options.timeout === 0 ? false : options.timeout
-  }
-
-  // `useAbortSignal: false` is set by the query path when the caller provided
-  // no signal of their own, and means no AbortSignal may reach the fetch init:
-  // Next.js' patched fetch opts a request out of React Request Memoization
-  // whenever `init.signal` is present (next/dist/server/lib/dedupe-fetch.js),
-  // and get-it v9 implements timeouts via `AbortSignal.timeout()` — including
-  // a 120s default when no timeout is given. Disable the transport timeout
-  // and let `executeRequest` enforce it as a rejection-only "soft" timeout
-  // instead, mirroring the get-it v8 fetch transport (which likewise never
-  // aborted the underlying request when `useAbortSignal` was false).
-  if (options.useAbortSignal === false && !fetchOptions.signal) {
-    const softTimeout = fetchOptions.timeout
-    fetchOptions.timeout = false
-    if (typeof softTimeout === 'number' && softTimeout > 0) {
-      fetchOptions.meta = {...fetchOptions.meta, softTimeout}
-    }
-  }
-
-  if (options.withCredentials) fetchOptions.credentials = 'include'
-
-  // Legacy callers pass `maxRedirects: 0` to opt out of redirects.
-  if (options.maxRedirects === 0) fetchOptions.redirect = 'manual'
-
-  // The legacy `fetch` option is either a custom fetch implementation
-  // (function) or a bag of extra `RequestInit` fields (object) — Next.js App
-  // Router's `cache`/`next` caching options arrive as the latter, via
-  // `client.fetch(query, params, {cache, next})`. get-it v9's `fetch` option
-  // only accepts a function, so the init extras travel in `meta` and are
-  // merged into the effective fetch by the `applyFetchInit` middleware.
-  // (A boolean `fetch` was v8's "force the fetch transport" switch — a no-op
-  // now that fetch is the only transport.)
-  if (typeof options.fetch === 'function') {
-    fetchOptions.fetch = options.fetch
-  } else if (typeof options.fetch === 'object' && options.fetch !== null) {
-    fetchOptions.meta = {...fetchOptions.meta, fetchInit: options.fetch}
-  }
-
-  // An explicit `proxy` from the client config arrives pre-resolved as the
-  // internal `proxyFetch` (see `requestOptions`). Resolved from the live
-  // config on every request, so replacing the proxy via `client.config()` or
-  // `withConfig()` applies to subsequent requests. A caller-supplied `fetch`
-  // function wins over it.
-  if (!fetchOptions.fetch && typeof options.proxyFetch === 'function') {
-    fetchOptions.fetch = options.proxyFetch
-  }
-
-  return fetchOptions
-}
-
-/**
- * Expand array-valued query params into repeated keys.
- *
- * get-it v9 stringifies a plain object's values directly, so passing
- * `{meta: ['palette', 'location']}` would produce `?meta=palette,location`
- * — which Content Lake doesn't recognise. v8 expanded arrays into
- * `?meta=palette&meta=location`; we restore that shape via `URLSearchParams`.
- *
- * @internal
- */
-function adaptQuery(query: Any): FetchRequestOptions['query'] {
-  if (query instanceof URLSearchParams) return query
-  if (!query || typeof query !== 'object') return query
-  if (!Object.values(query).some(Array.isArray)) return query
-
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null) continue
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (item !== undefined && item !== null) params.append(key, `${item}`)
-      }
-    } else {
-      params.append(key, `${value}`)
-    }
-  }
-  return params
-}
-
-function legacyShouldRetry(err: unknown, attempt: number, options: FetchRequestOptions): boolean {
-  // Allow opting out of retries via meta
-  if (options.meta && (options.meta as Any).maxRetries === 0) return false
-
+function shouldRetryRequest(err: unknown, attempt: number, options: FetchRequestOptions): boolean {
   // HTTP errors aren't usually retryable, but Content Lake gives us a few
   // status codes where retrying *is* the right move.
   if (err instanceof GetItHttpError) {

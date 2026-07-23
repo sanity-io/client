@@ -57,13 +57,14 @@ const middleware: LegacyMiddleware[] = [
   debug({log: (message, ...args) => log(message, ...args), verbose: true}),
 
   // Lineage is used for recursion control/tracing and can be passed either
-  // through client constructor or through environment variable. Not used in
+  // through the client config (arrives as `meta.lineage`, set by
+  // `requestOptions`) or through an environment variable. Not used in
   // browser environments.
   {
     beforeRequest(opts) {
+      const configLineage = typeof opts.meta?.lineage === 'string' ? opts.meta.lineage : undefined
       const lineage =
-        (typeof process !== 'undefined' && process.env.X_SANITY_LINEAGE) ||
-        (opts as {lineage?: string}).lineage
+        (typeof process !== 'undefined' && process.env.X_SANITY_LINEAGE) || configLineage
       if (!lineage) return opts
       const headers = new Headers(opts.headers)
       headers.set('x-sanity-lineage', lineage)

@@ -3,7 +3,7 @@ import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
-import {requestOptions} from '../http/requestOptions'
+import {type FetchRequest, requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean} from '../stega/stegaClean'
 import type {
@@ -29,7 +29,6 @@ import type {
   RawQueryResponse,
   ReplaceVersionAction,
   RequestObservableOptions,
-  RequestOptions,
   SanityDocument,
   SingleActionResult,
   SingleMutationResult,
@@ -252,7 +251,6 @@ function _getDocumentOptions(
 
   return {
     uri: _getDataUrl(client, 'doc', docId),
-    json: true,
     tag: opts.tag,
     signal: opts.signal,
     query:
@@ -309,7 +307,6 @@ function _getDocumentsOptions(
 ): Any {
   return {
     uri: _getDataUrl(client, 'doc', ids.join(',')),
-    json: true,
     tag: opts.tag,
     signal: opts.signal,
   }
@@ -604,7 +601,6 @@ function _dataRequestOptions(
   const reqOptions = {
     method: useGet ? 'GET' : 'POST',
     uri: uri,
-    json: true,
     body: useGet ? undefined : body,
     query: isMutation && getMutationQuery(options),
     timeout,
@@ -1020,10 +1016,7 @@ const isData = (client: Client, uri: string) =>
  *
  * @internal
  */
-function _prepareRequest(
-  client: Client,
-  options: RequestObservableOptions,
-): RequestOptions & {url: string} {
+function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
   const uri = options.url || (options.uri as string)
   const config = client.config()
 
@@ -1124,7 +1117,7 @@ function _prepareRequest(
     Object.assign({}, options, {
       url: _getUrl(client, uri, useCdn),
     }),
-  ) as RequestOptions & {url: string}
+  )
 }
 
 /**

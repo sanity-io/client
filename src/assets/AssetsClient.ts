@@ -203,13 +203,13 @@ function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>
         ...baseRequest,
         url: _getUrl(client, baseRequest.uri, false),
       })
-      const finalUrl = appendQuery(reqOpts.url as string, query)
+      const finalUrl = appendQuery(reqOpts.url, query)
       return uploadWithProgress<T>({
         url: finalUrl,
         method: 'POST',
-        headers: (reqOpts.headers ?? {}) as Record<string, string>,
+        headers: reqOpts.headers,
         body,
-        withCredentials: reqOpts.credentials === 'include' || Boolean(reqOpts.withCredentials),
+        withCredentials: reqOpts.credentials === 'include',
       })
     }).pipe(mergeAll())
   }
