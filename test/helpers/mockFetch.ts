@@ -17,9 +17,11 @@
  *
  * Network errors (`.respondWithError()`), delayed responses (the `delay`
  * response option), query-param coercion, request-header matching (the
- * `headers` match option) and binary/streamed request bodies (recorded as
- * `Uint8Array`, matched with `bodyBytes()`) are all handled natively by
- * `get-it/mock` (9.2.0 and later), so this module only layers on the
+ * `headers` match option), binary/streamed request bodies (recorded as
+ * `Uint8Array`, matched with `bodyBytes()`) and streaming response bodies
+ * (`streamBody()` with `streamDelay`/`streamStall`/`streamError` directives —
+ * used to model long-lived SSE connections) are all handled natively by
+ * `get-it/mock` (9.3.0 and later), so this module only layers on the
  * transport wiring the suite needs.
  *
  * @internal
@@ -37,6 +39,10 @@ export {
   bodyBytes,
   objectContaining,
   queryContaining,
+  streamBody,
+  streamDelay,
+  streamError,
+  streamStall,
   stringMatching,
 } from 'get-it/mock'
 

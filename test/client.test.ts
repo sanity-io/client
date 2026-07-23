@@ -65,12 +65,24 @@ describe('client', async () => {
   let bodyBytes: typeof import('./helpers/mockFetch').bodyBytes = () => {
     throw new Error('Not supported in EdgeRuntime')
   }
+  let streamBody: typeof import('./helpers/mockFetch').streamBody = () => {
+    throw new Error('Not supported in EdgeRuntime')
+  }
+  let streamStall: typeof import('./helpers/mockFetch').streamStall = () => {
+    throw new Error('Not supported in EdgeRuntime')
+  }
+  let streamError: typeof import('./helpers/mockFetch').streamError = () => {
+    throw new Error('Not supported in EdgeRuntime')
+  }
   if (!isEdge) {
     const mod = await import('./helpers/mockFetch')
     getActiveMock = mod.getActiveMock
     objectContaining = mod.objectContaining
     anyValue = mod.anyValue
     bodyBytes = mod.bodyBytes
+    streamBody = mod.streamBody
+    streamStall = mod.streamStall
+    streamError = mod.streamError
   }
 
   const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
@@ -701,13 +713,14 @@ describe('client', async () => {
         async () => {
           expect.assertions(1)
 
-          const response =
+          const response = streamBody(
             encode({
               event: 'welcome',
               data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'}),
-            }) +
-            encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
-            encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
+            }),
+            encode({event: 'mutation', data: JSON.stringify({result: doc})}),
+            streamStall(),
+          )
 
           getActiveMock()
             .scope(`https://${apiHost}`)
@@ -4660,10 +4673,14 @@ describe('client', async () => {
       expect.assertions(1)
 
       const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-      const response =
-        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
-        encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
-        encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
+      // `streamStall()` keeps the SSE body open like a real listener
+      // connection - no need to end the stream with a synthetic `disconnect`
+      // event to stop the EventSource from reconnecting into a spent mock.
+      const response = streamBody(
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}),
+        encode({event: 'mutation', data: JSON.stringify({result: doc})}),
+        streamStall(),
+      )
 
       getActiveMock()
         .scope(projectHost())
@@ -4686,10 +4703,11 @@ describe('client', async () => {
       expect.assertions(1)
 
       const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-      const response =
-        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
-        encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
-        encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
+      const response = streamBody(
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}),
+        encode({event: 'mutation', data: JSON.stringify({result: doc})}),
+        streamStall(),
+      )
 
       getActiveMock()
         .scope(projectHost())
@@ -4717,10 +4735,11 @@ describe('client', async () => {
       expect.assertions(1)
 
       const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
-      const response =
-        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}) +
-        encode({event: 'mutation', data: JSON.stringify({result: doc})}) +
-        encode({event: 'disconnect', data: JSON.stringify({reason: 'forcefully closed'})})
+      const response = streamBody(
+        encode({event: 'welcome', data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'})}),
+        encode({event: 'mutation', data: JSON.stringify({result: doc})}),
+        streamStall(),
+      )
 
       getActiveMock()
         .scope(projectHost())
@@ -4801,6 +4820,82 @@ describe('client', async () => {
       expect(getActiveMock().getRequests().length).toBe(1)
       await firstValueFrom(req)
       expect(getActiveMock().getRequests().length).toBe(2)
+    })
+
+    test('unsubscribing aborts the underlying SSE connection', async () => {
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .respond({
+          status: 200,
+          // The body stalls open like a real listener connection; only an
+          // abort from the client side can end it.
+          body: streamBody(
+            encode({
+              event: 'welcome',
+              data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'}),
+            }),
+            streamStall(),
+          ),
+          headers: {'content-type': 'text/event-stream; charset=utf-8'},
+        })
+
+      const g = globalThis as {
+        __sanityTestFetch?: (url: string, init?: {signal?: AbortSignal}) => unknown
+      }
+      const baseFetch = g.__sanityTestFetch
+      if (!baseFetch) throw new Error('mock fetch not installed')
+      const signals: AbortSignal[] = []
+      g.__sanityTestFetch = (url, init) => {
+        if (init?.signal) signals.push(init.signal)
+        return baseFetch(url, init)
+      }
+
+      try {
+        await firstValueFrom(getClient().listen('foo.bar', {}, {events: ['welcome']}))
+      } finally {
+        g.__sanityTestFetch = baseFetch
+      }
+
+      // `firstValueFrom` unsubscribes after the first event; the EventSource
+      // must be closed with it, aborting the still-stalled connection rather
+      // than leaking it.
+      expect(signals).toHaveLength(1)
+      await vi.waitFor(() => expect(signals[0].aborted).toBe(true))
+    })
+
+    test('reconnects when the connection drops mid-stream', async () => {
+      const doc = {_id: 'mooblah', _type: 'foo.bar', prop: 'value'}
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/data/listen/foo?query=foo.bar&includeResult=true')
+        .respond({
+          status: 200,
+          // The `retry` field makes the EventSource attempt its reconnect
+          // quickly; the stream then dies mid-connection - a scenario only
+          // the real-SSE-server tests could model before `streamError()`.
+          body: streamBody(
+            encode({retry: 25}),
+            encode({
+              event: 'welcome',
+              data: JSON.stringify({listenerName: 'LGFXwOqrf1GHawAjZRnhd6'}),
+            }),
+            streamError(new Error('connection reset')),
+          ),
+          headers: {'content-type': 'text/event-stream; charset=utf-8'},
+        })
+        .respond({
+          status: 200,
+          body: streamBody(
+            encode({event: 'mutation', data: JSON.stringify({result: doc})}),
+            streamStall(),
+          ),
+          headers: {'content-type': 'text/event-stream; charset=utf-8'},
+        })
+
+      const evt = await firstValueFrom(getClient().listen('foo.bar'))
+      expect(evt.result).toEqual(doc)
+      expect(getActiveMock().getRequests()).toHaveLength(2)
     })
   })
 
