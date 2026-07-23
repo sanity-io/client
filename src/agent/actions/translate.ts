@@ -161,7 +161,7 @@ export function _translateObservable<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _requestObservable(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/translate/${dataset}`,
+    url: `/agent/action/translate/${dataset}`,
     body: request,
   })
 }
@@ -178,7 +178,7 @@ export function _translate<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/translate/${dataset}`,
+    url: `/agent/action/translate/${dataset}`,
     body: request,
   })
 }

@@ -24,7 +24,7 @@ export class ObservableUsersClient {
     return _requestObservable<T extends 'me' ? CurrentSanityUser : SanityUser>(
       this.#client,
       this.#httpRequest,
-      {uri: `/users/${id}`},
+      {url: `/users/${id}`},
     )
   }
 }
@@ -49,7 +49,7 @@ export class UsersClient {
     return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
       this.#client,
       this.#httpRequest,
-      {uri: `/users/${id}`},
+      {url: `/users/${id}`},
     )
   }
 }

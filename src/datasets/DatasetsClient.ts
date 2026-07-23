@@ -64,13 +64,13 @@ export class ObservableDatasetsClient {
     validate.resourceGuard('dataset', this.#client.config())
     const config = this.#client.config()
     const projectId = config.projectId
-    let uri = '/datasets'
+    let url = '/datasets'
     if (config.useProjectHostname === false) {
-      uri = `/projects/${projectId}/datasets`
+      url = `/projects/${projectId}/datasets`
     }
 
     return _requestObservable<DatasetsResponse>(this.#client, this.#httpRequest, {
-      uri,
+      url,
       tag: null,
     })
   }
@@ -84,7 +84,7 @@ export class ObservableDatasetsClient {
     validate.resourceGuard('dataset', this.#client.config())
     validate.dataset(name)
     return _requestObservable<EmbeddingsSettings>(this.#client, this.#httpRequest, {
-      uri: _embeddingsSettingsUri(this.#client, name),
+      url: _embeddingsSettingsUri(this.#client, name),
       tag: null,
     })
   }
@@ -100,7 +100,7 @@ export class ObservableDatasetsClient {
     validate.dataset(name)
     return _requestObservable<void>(this.#client, this.#httpRequest, {
       method: 'PUT',
-      uri: _embeddingsSettingsUri(this.#client, name),
+      url: _embeddingsSettingsUri(this.#client, name),
       body: settings,
       tag: null,
     })
@@ -155,13 +155,13 @@ export class DatasetsClient {
     validate.resourceGuard('dataset', this.#client.config())
     const config = this.#client.config()
     const projectId = config.projectId
-    let uri = '/datasets'
+    let url = '/datasets'
     if (config.useProjectHostname === false) {
-      uri = `/projects/${projectId}/datasets`
+      url = `/projects/${projectId}/datasets`
     }
 
     return _request<DatasetsResponse>(this.#client, this.#httpRequest, {
-      uri,
+      url,
       tag: null,
     })
   }
@@ -175,7 +175,7 @@ export class DatasetsClient {
     validate.resourceGuard('dataset', this.#client.config())
     validate.dataset(name)
     return _request<EmbeddingsSettings>(this.#client, this.#httpRequest, {
-      uri: _embeddingsSettingsUri(this.#client, name),
+      url: _embeddingsSettingsUri(this.#client, name),
       tag: null,
     })
   }
@@ -191,7 +191,7 @@ export class DatasetsClient {
     validate.dataset(name)
     return _request<void>(this.#client, this.#httpRequest, {
       method: 'PUT',
-      uri: _embeddingsSettingsUri(this.#client, name),
+      url: _embeddingsSettingsUri(this.#client, name),
       body: settings,
       tag: null,
     })
@@ -221,7 +221,7 @@ function _modifyObservable<R = unknown>(
 
   return _requestObservable<R>(client, httpRequest, {
     method,
-    uri: `/datasets/${name}`,
+    url: `/datasets/${name}`,
     body: options,
     tag: null,
   })
@@ -239,7 +239,7 @@ function _modify<R = unknown>(
 
   return _request<R>(client, httpRequest, {
     method,
-    uri: `/datasets/${name}`,
+    url: `/datasets/${name}`,
     body: options,
     tag: null,
   })

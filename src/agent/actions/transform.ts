@@ -336,7 +336,7 @@ export function _transformObservable<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _requestObservable(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/transform/${dataset}`,
+    url: `/agent/action/transform/${dataset}`,
     body: request,
   })
 }
@@ -353,7 +353,7 @@ export function _transform<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/transform/${dataset}`,
+    url: `/agent/action/transform/${dataset}`,
     body: request,
   })
 }

@@ -127,7 +127,7 @@ export function _patchObservable<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _requestObservable(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/patch/${dataset}`,
+    url: `/agent/action/patch/${dataset}`,
     body: request,
   })
 }
@@ -144,7 +144,7 @@ export function _patch<DocumentShape extends Record<string, Any>>(
   const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/patch/${dataset}`,
+    url: `/agent/action/patch/${dataset}`,
     body: request,
   })
 }
