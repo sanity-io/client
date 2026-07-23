@@ -1,4 +1,4 @@
-import {ClientError, ServerError} from '@sanity/client'
+import {ClientError, createClient, ServerError} from '@sanity/client'
 import {lastValueFrom, toArray} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -11,14 +11,25 @@ interface FakeXhrResponse {
   responseText: string
 }
 
+interface FakeXhrBehavior {
+  progressEvents?: Array<{loaded: number; total: number}>
+  /** Never respond — only fire `ontimeout` when a timeout is configured. */
+  hang?: boolean
+}
+
+interface FakeXhrInstance {
+  method: string
+  url: string
+  timeout: number
+}
+
 /**
  * Install a minimal `XMLHttpRequest` double that answers every request with
- * the given response, optionally emitting upload progress events first.
+ * the given response. Returns the created instances so tests can assert on
+ * what the client handed the XHR.
  */
-function stubXhr(
-  response: FakeXhrResponse,
-  progressEvents: Array<{loaded: number; total: number}> = [],
-) {
+function stubXhr(response: FakeXhrResponse, behavior: FakeXhrBehavior = {}): FakeXhrInstance[] {
+  const instances: FakeXhrInstance[] = []
   class FakeXhr {
     upload: {
       onprogress: ((e: {lengthComputable: boolean; loaded: number; total: number}) => void) | null
@@ -26,11 +37,20 @@ function stubXhr(
     onload: (() => void) | null = null
     onerror: (() => void) | null = null
     onabort: (() => void) | null = null
+    ontimeout: (() => void) | null = null
     withCredentials = false
+    timeout = 0
     status = 0
     statusText = ''
     responseText = ''
-    open() {}
+    #record: FakeXhrInstance = {method: '', url: '', timeout: 0}
+    constructor() {
+      instances.push(this.#record)
+    }
+    open(method: string, url: string) {
+      this.#record.method = method
+      this.#record.url = url
+    }
     setRequestHeader() {}
     abort() {
       this.onabort?.()
@@ -39,8 +59,13 @@ function stubXhr(
       return response.headers
     }
     send() {
+      this.#record.timeout = this.timeout
       queueMicrotask(() => {
-        for (const event of progressEvents) {
+        if (behavior.hang) {
+          if (this.timeout > 0) this.ontimeout?.()
+          return
+        }
+        for (const event of behavior.progressEvents ?? []) {
           this.upload.onprogress?.({lengthComputable: true, ...event})
         }
         this.status = response.status
@@ -51,15 +76,24 @@ function stubXhr(
     }
   }
   vi.stubGlobal('XMLHttpRequest', FakeXhr)
+  return instances
 }
 
-const upload = () =>
+const successResponse: FakeXhrResponse = {
+  status: 201,
+  statusText: 'Created',
+  headers: 'content-type: application/json',
+  responseText: JSON.stringify({document: {url: 'https://some.asset.url'}}),
+}
+
+const upload = (options: {timeout?: number | false} = {}) =>
   uploadWithProgress<{document: {url: string}}>({
     url: 'https://abc123.api.sanity.io/v1/assets/images/foo',
     method: 'POST',
     headers: {'Content-Type': 'image/jpeg'},
     body: new Uint8Array([1, 2, 3]),
     withCredentials: false,
+    ...options,
   })
 
 const errorOf = (observable: ReturnType<typeof upload>) =>
@@ -76,18 +110,12 @@ describe('uploadWithProgress', () => {
   })
 
   test('emits progress events and the parsed response on success', async () => {
-    stubXhr(
-      {
-        status: 201,
-        statusText: 'Created',
-        headers: 'content-type: application/json',
-        responseText: JSON.stringify({document: {url: 'https://some.asset.url'}}),
-      },
-      [
+    stubXhr(successResponse, {
+      progressEvents: [
         {loaded: 50, total: 100},
         {loaded: 100, total: 100},
       ],
-    )
+    })
 
     const events = await lastValueFrom(upload().pipe(toArray()))
     expect(events).toEqual([
@@ -152,5 +180,46 @@ describe('uploadWithProgress', () => {
     expect(error.message).toContain('HTTP 503 Service Unavailable')
     expect(error.message).toContain('upstream capacity exceeded')
     expect(error.responseBody).toBe('upstream capacity exceeded')
+  })
+
+  test('honors the timeout and rejects with a TimeoutError', async () => {
+    const instances = stubXhr(successResponse, {hang: true})
+
+    const error = await errorOf(upload({timeout: 4321}))
+    expect(error).toBeInstanceOf(DOMException)
+    expect(error.name).toBe('TimeoutError')
+    expect(error.message).toContain('timed out after 4321ms')
+    expect(instances[0].timeout).toBe(4321)
+  })
+})
+
+describe('assets.upload() through the XHR path', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  test('applies the request tag (incl. requestTagPrefix) and timeout', async () => {
+    const instances = stubXhr(successResponse)
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      apiVersion: '1',
+      useCdn: false,
+      requestTagPrefix: 'studio',
+    })
+
+    const events = await lastValueFrom(
+      client.observable.assets
+        .upload('image', new Uint8Array([1, 2, 3]), {tag: 'asset', timeout: 4321})
+        .pipe(toArray()),
+    )
+
+    expect(events.at(-1)).toMatchObject({type: 'response'})
+    expect(instances).toHaveLength(1)
+    const requestUrl = new URL(instances[0].url)
+    expect(requestUrl.pathname).toBe('/v1/assets/images/foo')
+    expect(requestUrl.searchParams.get('tag')).toBe('studio.asset')
+    expect(instances[0].timeout).toBe(4321)
   })
 })

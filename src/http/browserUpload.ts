@@ -20,6 +20,8 @@ export interface BrowserUploadOptions {
   headers: Record<string, string>
   body: unknown
   withCredentials: boolean
+  /** Milliseconds before the upload is aborted; `false` and `0` both disable the timeout. */
+  timeout?: number | false
   signal?: AbortSignal
 }
 
@@ -35,12 +37,15 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
   return new Observable<UploadEvent<T>>((subscriber) => {
     const xhr = new XMLHttpRequest()
     const requestId = nextRequestId++
-    const {url, method, headers, body, withCredentials, signal} = options
+    const {url, method, headers, body, withCredentials, timeout, signal} = options
 
     log('[%d] %s %s (XHR upload with progress)', requestId, method, url)
 
     xhr.open(method, url)
     xhr.withCredentials = withCredentials
+    if (typeof timeout === 'number' && timeout > 0) {
+      xhr.timeout = timeout
+    }
 
     for (const [key, value] of Object.entries(headers)) {
       xhr.setRequestHeader(key, value)
@@ -96,6 +101,17 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
     xhr.onerror = () => {
       log('[%d] %s %s — network error', requestId, method, url)
       subscriber.error(new Error('XHR upload network error'))
+    }
+
+    xhr.ontimeout = () => {
+      log('[%d] %s %s — timed out after %dms', requestId, method, url, timeout)
+      // Same error shape as the fetch transport's timeout rejection.
+      subscriber.error(
+        new DOMException(
+          `The operation timed out after ${timeout}ms while attempting to reach ${url}`,
+          'TimeoutError',
+        ),
+      )
     }
 
     xhr.onabort = () => {
