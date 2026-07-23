@@ -115,9 +115,18 @@ function lowercaseHeaders(fetch: MockFetch['fetch']): MockFetch['fetch'] {
   }
 }
 
-/** Tear down the mock installed by installMock(). */
+/**
+ * Tear down the mock installed by installMock(), first asserting that every
+ * registered one-shot response was consumed - a mock a test registers but
+ * never hits is a bug in the test. Responses that may legitimately go
+ * unserved (e.g. "responds this way no matter how often it's asked") should
+ * be registered with `respondPersist()`, which never counts as unconsumed.
+ */
 export function uninstallMock(): void {
-  if (activeMock) activeMock.clear()
+  if (activeMock) {
+    activeMock.assertAllConsumed()
+    activeMock.clear()
+  }
   activeMock = null
   activeFetch = null
 }

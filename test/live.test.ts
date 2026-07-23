@@ -551,8 +551,8 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       await firstValueFrom(client.live.events(), {defaultValue: null})
 
-      const requests = getActiveMock().getRequests()
-      expect(requests[0].headers.get('x-custom-header')).toBe('custom-value')
+      const [request] = getActiveMock().getRequests()
+      expect(request).toHaveHeader('x-custom-header', 'custom-value')
     })
 
     test('deduplicates EventSource instances for same URL and options', async () => {
@@ -591,10 +591,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const [msg1a, msg1b, msg2a, msg2b] = await Promise.all([first1, first2, last1, last2])
 
-      expect(
-        getActiveMock().getRequests().length,
-        'should create only one EventSource instance',
-      ).toBe(1)
+      // Should create only one EventSource instance
+      expect(getActiveMock()).toHaveReceivedRequestTimes(
+        'GET',
+        '/v2021-03-26/data/live/events/dedupe',
+        1,
+      )
       expect(msg1a).toEqual(msg1b)
       expect(msg2a).toEqual(msg2b)
       expect(msg1a).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
@@ -646,10 +648,12 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(welcome1).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
       expect(welcome2).toEqual({id: 'NjA5MDk3MTQ0fFduQzE3KzVTTTBv', type: 'welcome'})
       expect(spiedRequests, 'second client should connect through its own transport').toBe(1)
-      expect(
-        getActiveMock().getRequests().length,
-        'each transport should open its own EventSource',
-      ).toBe(2)
+      // Each transport should open its own EventSource
+      expect(getActiveMock()).toHaveReceivedRequestTimes(
+        'GET',
+        '/v2021-03-26/data/live/events/transports',
+        2,
+      )
     })
 
     test('works with global API endpoints', async () => {
