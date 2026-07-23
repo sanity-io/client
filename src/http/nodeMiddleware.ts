@@ -27,15 +27,30 @@ function getProxyFetch(proxyUrl: string): ReturnType<typeof createNodeFetch> {
   return fetch
 }
 
+// The environment's default fetch, shared by all SSE connections that have no
+// explicit proxy configured. Built lazily so clients that never use
+// `listen()`/`live.events()` don't pay for the dispatcher.
+let envDefaultFetch: ReturnType<typeof createNodeFetch> | undefined
+
 /**
- * Exposed via `EnvironmentOptions.resolveProxyFetch` so the env-agnostic
- * EventSource fetch resolver can reach a proxy-aware fetch without itself
- * importing `get-it/node` — keeps `undici` out of the browser bundle.
+ * Exposed via `EnvironmentOptions.resolveFetch` so EventSource connections
+ * use the same transport as regular requests instead of falling back to
+ * `globalThis.fetch`. Everything get-it's Node fetch provides then applies
+ * to SSE too: the undici dispatcher configuration, an explicit `proxy`
+ * config (pass the URL), and env-proxy support
+ * (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`, which Node's own global fetch does
+ * not read — that is opt-in via `NODE_USE_ENV_PROXY`, and not on our 22.12
+ * floor). Reached via the env rather than a direct import so `get-it/node`
+ * (and with it `undici`) stays out of the browser bundle.
  *
  * @internal
  */
-function resolveProxyFetch(proxyUrl: string): typeof fetch {
-  return getProxyFetch(proxyUrl) as unknown as typeof fetch
+function resolveFetch(proxyUrl?: string): typeof fetch {
+  if (typeof proxyUrl === 'string') {
+    return getProxyFetch(proxyUrl) as unknown as typeof fetch
+  }
+  envDefaultFetch ??= createNodeFetch()
+  return envDefaultFetch as unknown as typeof fetch
 }
 
 const middleware: LegacyMiddleware[] = [
@@ -90,7 +105,7 @@ const middleware: LegacyMiddleware[] = [
 const environment: EnvironmentOptions = {
   headers: {'User-Agent': `${name} ${version}`},
   middleware,
-  resolveProxyFetch,
+  resolveFetch,
 }
 
 export default environment

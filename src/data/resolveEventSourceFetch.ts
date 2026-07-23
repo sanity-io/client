@@ -29,14 +29,17 @@ export interface EventSourceFetchOptions {
  *      the listener/live tests on the same shim as the rest of the
  *      suite). Read per-call so each request honours the currently
  *      installed mock.
- *   2. `config.resolveProxyFetch(proxy)` if both are set. The Node entry
- *      point supplies `resolveProxyFetch`; the browser entry point does
- *      not. Threading the resolver through the env (instead of importing
- *      `get-it/node` directly) keeps `undici` out of the browser/UMD
- *      bundle, including the inlined-dynamic-import variant.
- *   3. `globalThis.fetch` (no extra dispatcher — Node's default fetch
- *      already honours `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` env
- *      vars via undici's `EnvHttpProxyAgent`).
+ *   2. `config.resolveFetch(config.proxy)` if set — the environment's
+ *      fetch, so SSE uses the same transport as regular requests: custom
+ *      fetch variants, undici configuration, an explicit `proxy` config,
+ *      and env-proxy support all apply to SSE too. The Node entry
+ *      supplies get-it's undici-backed fetch (threading the resolver
+ *      through the env instead of importing `get-it/node` directly keeps
+ *      `undici` out of the browser/UMD bundle); the browser entry leaves
+ *      it unset.
+ *   3. `globalThis.fetch`. Note that Node's global fetch does NOT read
+ *      proxy env vars (that is opt-in via `NODE_USE_ENV_PROXY`), which
+ *      is one of the reasons step 2 exists.
  *
  * The returned fetch always merges `options.headers` into the outgoing
  * request, regardless of which underlying fetch was picked.
@@ -73,8 +76,8 @@ export function resolveEventSourceFetch(
 function pickBaseFetch(config: InitializedClientConfig): typeof fetch {
   const testFetch = (globalThis as {__sanityTestFetch?: typeof fetch}).__sanityTestFetch
   if (testFetch) return testFetch
-  if (typeof config.proxy === 'string' && config.resolveProxyFetch) {
-    return config.resolveProxyFetch(config.proxy)
+  if (config.resolveFetch) {
+    return config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
   }
   return globalThis.fetch.bind(globalThis)
 }

@@ -64,13 +64,13 @@ export default function defineCreateClientExports<
     }
     // Populate `requester` on the initialized config so internal paths
     // (e.g. the asset upload event stream) can reach the underlying transport.
-    // `resolveProxyFetch` is threaded onto the config so EventSource fetches
-    // can reach a proxy-aware fetch without importing `get-it/node` from a
+    // `resolveFetch` is threaded onto the config so EventSource fetches can
+    // reach the environment's fetch without importing `get-it/node` from a
     // browser-shared module (would leak `undici` into the browser bundle).
     const resolvedConfig = {
       ...config,
       requester: clientRequester,
-      resolveProxyFetch: envOptions.resolveProxyFetch,
+      resolveFetch: envOptions.resolveFetch,
     }
     return new ClassConstructor(httpRequest, resolvedConfig)
   }
