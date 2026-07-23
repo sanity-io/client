@@ -310,10 +310,10 @@ describe('client', async () => {
       await new Promise((resolve) => setTimeout(resolve, 1))
 
       await new Promise<void>((resolve, reject) => {
-        expect(getActiveMock().getRequests().length).toBe(0)
+        expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 0)
         req.subscribe({
           next: () => {
-            expect(getActiveMock().getRequests().length).toBe(1)
+            expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 1)
           },
           error: reject,
           complete: resolve,
@@ -333,13 +333,13 @@ describe('client', async () => {
       const req = getClient().observable.request({uri: '/ping'})
 
       await new Promise<void>((resolve, reject) => {
-        expect(getActiveMock().getRequests().length).toBe(0)
+        expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 0)
         req.subscribe({
           next: () => {
-            expect(getActiveMock().getRequests().length).toBe(1)
+            expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 1)
             req.subscribe({
               next: () => {
-                expect(getActiveMock().getRequests().length).toBe(2)
+                expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/ping', 2)
               },
               error: reject,
               complete: resolve,
@@ -550,23 +550,6 @@ describe('client', async () => {
 
                 test.skipIf(!isNode)('uploads images using resource config', async () => {
                   const fixturePath = fixture('horsehead-nebula.jpg')
-                  const isImage = bodyBytes(fs.readFileSync(fixturePath))
-
-                  if (resource.type === 'media-library') {
-                    getActiveMock()
-                      .scope(`https://${apiHost}`)
-                      .on('POST', `/v${apiVersion || '1'}${resource.baseUrl}/upload`, {
-                        body: isImage,
-                      })
-                      .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
-                  } else {
-                    getActiveMock()
-                      .scope(`https://${apiHost}`)
-                      .on('POST', `/v${apiVersion || '1'}${resource.baseUrl}/assets/images`, {
-                        body: isImage,
-                      })
-                      .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
-                  }
 
                   const config: ClientConfig = {
                     apiHost: `https://${apiHost}`,
@@ -576,17 +559,29 @@ describe('client', async () => {
                     config.apiVersion = apiVersion
                   }
                   const assetsClient = getClient(config).assets
+
                   if (resource.type === 'dataset') {
+                    // Rejected client-side - no request is made, so no mock is needed.
                     expect(() =>
                       assetsClient.upload('image', fs.createReadStream(fixturePath)),
                     ).toThrow(/Assets are not supported for dataset/i)
-                  } else {
-                    const document = await assetsClient.upload(
-                      'image',
-                      fs.createReadStream(fixturePath),
-                    )
-                    expect(document.url).toEqual('https://some.asset.url')
+                    return
                   }
+
+                  const uploadPath =
+                    resource.type === 'media-library'
+                      ? `/v${apiVersion || '1'}${resource.baseUrl}/upload`
+                      : `/v${apiVersion || '1'}${resource.baseUrl}/assets/images`
+                  getActiveMock()
+                    .scope(`https://${apiHost}`)
+                    .on('POST', uploadPath, {body: bodyBytes(fs.readFileSync(fixturePath))})
+                    .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
+
+                  const document = await assetsClient.upload(
+                    'image',
+                    fs.createReadStream(fixturePath),
+                  )
+                  expect(document.url).toEqual('https://some.asset.url')
                 })
 
                 test('users: me', async () => {
@@ -922,13 +917,11 @@ describe('client', async () => {
           },
         ],
       }
+      // Chained responses are consumed in order: one failure, then success.
       getActiveMock()
         .scope(`https://${apiHost}`)
         .on('GET', '/v1/projects/n1f7y')
         .respond({status: code, body: {}})
-      getActiveMock()
-        .scope(`https://${apiHost}`)
-        .on('GET', '/v1/projects/n1f7y')
         .respond({status: 200, body: doc})
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
       const project = await client.projects.getById('n1f7y')
@@ -987,7 +980,7 @@ describe('client', async () => {
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
 
       await expect(client.request({uri: '/projects/n1f7y', maxRetries: 0})).rejects.toBeDefined()
-      expect(getActiveMock().getRequests()).toHaveLength(1)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 1)
     })
 
     test('a per-request maxRetries caps retries below the client maximum', async () => {
@@ -998,7 +991,7 @@ describe('client', async () => {
       const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
 
       await expect(client.request({uri: '/projects/n1f7y', maxRetries: 2})).rejects.toBeDefined()
-      expect(getActiveMock().getRequests()).toHaveLength(3)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 3)
     })
 
     test('the raw requester export honors a per-request maxRetries', async () => {
@@ -1020,32 +1013,14 @@ describe('client', async () => {
           }),
         ),
       ).rejects.toBeDefined()
-      expect(getActiveMock().getRequests()).toHaveLength(1)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 1)
     })
 
     test.each([429, 502, 503])('eventually gives up on retrying %d', async (code) => {
-      for (let i = 0; i < 5; i++) {
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v1/projects/n1f7y')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v1/projects/n1f7y')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v1/projects/n1f7y')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v1/projects/n1f7y')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v1/projects/n1f7y')
-          .respond({status: code, body: {}})
-      }
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v1/projects/n1f7y')
+        .respondPersist({status: code, body: {}})
 
       const client = createClient({
         useProjectHostname: false,
@@ -1065,28 +1040,15 @@ describe('client', async () => {
         email: 'some@email.com',
       }
 
-      for (let i = 0; i < 5; i++) {
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v2023-03-25/users/me')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v2023-03-25/users/me')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v2023-03-25/users/me')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v2023-03-25/users/me')
-          .respond({status: code, body: {}})
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('GET', '/v2023-03-25/users/me')
-          .respond({status: 200, body: userObj})
-      }
+      // Chained responses are consumed in order: four failures, then success.
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('GET', '/v2023-03-25/users/me')
+        .respond({status: code, body: {}})
+        .respond({status: code, body: {}})
+        .respond({status: code, body: {}})
+        .respond({status: code, body: {}})
+        .respond({status: 200, body: userObj})
 
       const fn = vi.fn().mockReturnValue(100)
       const client = createClient({
@@ -1139,7 +1101,7 @@ describe('client', async () => {
       const client = getClient({useProjectHostname: false})
       await expect(client.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
 
-      expect(() => getActiveMock().assertAllConsumed()).not.toThrow() // all expectations satisfied
+      expect(getActiveMock()).toHaveConsumedAllMocks() // all expectations satisfied
     })
 
     test.skipIf(isEdge)('can create dataset with embeddings config', async () => {
@@ -1155,7 +1117,7 @@ describe('client', async () => {
         }),
       ).resolves.toEqual({datasetName: 'bar', aclMode: 'public'})
 
-      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
+      expect(getActiveMock()).toHaveConsumedAllMocks()
     })
 
     test.skipIf(isEdge)('can get embeddings settings', async () => {
@@ -1170,7 +1132,7 @@ describe('client', async () => {
         .respond({status: 200, body: settings})
 
       await expect(dsClient.datasets.getEmbeddingsSettings('foo')).resolves.toEqual(settings)
-      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
+      expect(getActiveMock()).toHaveConsumedAllMocks()
     })
 
     test.skipIf(isEdge)('can get embeddings settings with useProjectHostname=false', async () => {
@@ -1186,7 +1148,7 @@ describe('client', async () => {
 
       const client = getClient({useProjectHostname: false})
       await expect(client.datasets.getEmbeddingsSettings('foo')).resolves.toEqual(settings)
-      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
+      expect(getActiveMock()).toHaveConsumedAllMocks()
     })
 
     test.skipIf(isEdge)('can edit embeddings settings', async () => {
@@ -1206,7 +1168,7 @@ describe('client', async () => {
           projection: 'myProjection',
         }),
       ).resolves.not.toThrow()
-      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
+      expect(getActiveMock()).toHaveConsumedAllMocks()
     })
 
     test.skipIf(isEdge)('can edit embeddings settings with useProjectHostname=false', async () => {
@@ -1224,7 +1186,7 @@ describe('client', async () => {
       await expect(
         client.datasets.editEmbeddingsSettings('foo', {enabled: false}),
       ).resolves.not.toThrow()
-      expect(() => getActiveMock().assertAllConsumed()).not.toThrow()
+      expect(getActiveMock()).toHaveConsumedAllMocks()
     })
 
     test('throws when trying to get embeddings settings with invalid dataset name', () => {
@@ -1888,11 +1850,7 @@ describe('client', async () => {
       getActiveMock()
         .scope(projectHost())
         .on('GET', '/v1/data/query/foo?query=area51&returnQuery=false')
-        .respond({status: 403, body: response})
-        .respond({status: 403, body: response})
-        .respond({status: 403, body: response})
-        .respond({status: 403, body: response})
-        .respond({status: 403, body: response})
+        .respondPersist({status: 403, body: response})
 
       try {
         await getClient().fetch('area51')
@@ -2540,11 +2498,7 @@ describe('client', async () => {
       getActiveMock()
         .scope(projectHost())
         .on('GET', '/v1/data/doc/foo/abc123')
-        .respond({status: 400, body: 'Some Weird Error'})
-        .respond({status: 400, body: 'Some Weird Error'})
-        .respond({status: 400, body: 'Some Weird Error'})
-        .respond({status: 400, body: 'Some Weird Error'})
-        .respond({status: 400, body: 'Some Weird Error'})
+        .respondPersist({status: 400, body: 'Some Weird Error'})
 
       try {
         await getClient().getDocument('abc123')
@@ -3347,10 +3301,6 @@ describe('client', async () => {
         .scope(projectHost())
         .on('POST', '/v1/data/query/foo?returnQuery=false', {body: expectedBody})
         .respond({status: code, body: {}})
-
-      getActiveMock()
-        .scope(projectHost())
-        .on('POST', '/v1/data/query/foo?returnQuery=false', {body: expectedBody})
         .respond({
           status: 200,
           body: {
@@ -4802,9 +4752,9 @@ describe('client', async () => {
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
       await new Promise((resolve) => setTimeout(resolve, 10))
 
-      expect(getActiveMock().getRequests().length).toBe(0)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/data/listen/foo', 0)
       await firstValueFrom(req)
-      expect(getActiveMock().getRequests().length).toBe(1)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/data/listen/foo', 1)
     })
 
     test('listener requests are cold', async () => {
@@ -4831,11 +4781,11 @@ describe('client', async () => {
 
       const req = getClient().listen('foo.bar', {}, {events: ['welcome']})
 
-      expect(getActiveMock().getRequests().length).toBe(0)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/data/listen/foo', 0)
       await firstValueFrom(req)
-      expect(getActiveMock().getRequests().length).toBe(1)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/data/listen/foo', 1)
       await firstValueFrom(req)
-      expect(getActiveMock().getRequests().length).toBe(2)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/data/listen/foo', 2)
     })
 
     test('unsubscribing aborts the underlying SSE connection', async () => {
@@ -4904,7 +4854,7 @@ describe('client', async () => {
 
       const evt = await firstValueFrom(getClient().listen('foo.bar'))
       expect(evt.result).toEqual(doc)
-      expect(getActiveMock().getRequests()).toHaveLength(2)
+      expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/data/listen/foo', 2)
     })
   })
 
@@ -7126,9 +7076,9 @@ describe('client', async () => {
     await expect(client.fetch('empty-test')).resolves.not.toThrow()
 
     const [mutateReq, fetchReq, emptyReq] = getActiveMock().getRequests()
-    expect(mutateReq.headers.get('X-Custom-Header')).toBe('mutation-test')
-    expect(fetchReq.headers.get('X-Custom-Header')).toBe('new-value')
-    expect(emptyReq.headers.get('X-Custom-Header')).toBeNull()
+    expect(mutateReq).toHaveHeader('X-Custom-Header', 'mutation-test')
+    expect(fetchReq).toHaveHeader('X-Custom-Header', 'new-value')
+    expect(emptyReq.headers.get('X-Custom-Header'), 'header must be dropped').toBeNull()
   })
 
   test.skipIf(isEdge)('will use live API if withCredentials is set to true', async () => {

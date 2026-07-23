@@ -24,7 +24,6 @@ import type {
   UnscheduleReleaseAction,
 } from '../src/types'
 import * as createVersionIdModule from '../src/util/createVersionId'
-import {getActiveMock} from './helpers/mockFetch'
 
 vi.mock('../src/util/createVersionId', () => ({
   generateReleaseId: vi.fn().mockReturnValue('generatedReleaseId'),
@@ -33,7 +32,6 @@ vi.mock('../src/util/createVersionId', () => ({
 const TEST_PROJECT_ID = 'test123'
 const TEST_DATASET = 'test-dataset'
 const TEST_API_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
-const TEST_PROJECT_HOST = `https://${TEST_PROJECT_ID}.api.sanity.io`
 const TEST_RELEASE_ID = 'release123'
 const TEST_METADATA = {
   releaseType: 'scheduled' as ReleaseType,
@@ -144,11 +142,6 @@ describe('ReleasesClient', () => {
         _updatedAt: '2023-01-01T00:00:00.000Z',
       }
 
-      getActiveMock()
-        .scope(TEST_PROJECT_HOST)
-        .on('GET', `/v1/data/doc/${TEST_DATASET}/_.releases.${TEST_RELEASE_ID}`)
-        .respond({status: 200, body: {documents: [releaseDocument]}})
-
       mockHttpDocumentResponse(httpRequest, releaseDocument as Partial<ReleaseDocument>)
 
       const result = await releasesClient.get({releaseId: TEST_RELEASE_ID})
@@ -163,11 +156,6 @@ describe('ReleasesClient', () => {
 
     test('returns undefined when release does not exist', async () => {
       const releaseId = 'nonexistent'
-
-      getActiveMock()
-        .scope(TEST_PROJECT_HOST)
-        .on('GET', `/v1/data/doc/${TEST_DATASET}/_.releases.${releaseId}`)
-        .respond({status: 200, body: {documents: []}})
 
       httpRequest.mockResolvedValueOnce({documents: []})
 
