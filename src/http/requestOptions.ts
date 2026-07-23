@@ -109,6 +109,12 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     request.fetch = config.resolveFetch(config.proxy)
   }
 
+  // A per-request retry cap/opt-out (`maxRetries: 0`) travels in `meta`,
+  // where the retry middleware's predicate reads it.
+  if (typeof overrides.maxRetries === 'number') {
+    request.meta = {...request.meta, maxRetries: overrides.maxRetries}
+  }
+
   // Lineage travels in `meta`; the Node middleware projects it onto the
   // `x-sanity-lineage` header (merged with the `X_SANITY_LINEAGE` env var).
   if (typeof config.lineage === 'string' && config.lineage) {
