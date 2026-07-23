@@ -8,7 +8,7 @@ import {
   type ClientPerspective,
   type ContentSourceMap,
   type CreateAction,
-  createClient,
+  createClient as createCoreClient,
   type DatasetsResponse,
   type DeleteAction,
   type DiscardAction,
@@ -29,6 +29,14 @@ import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, toArray} from 'rxjs'
 import {filter} from 'rxjs/operators'
 import {describe, expect, expectTypeOf, test, vi} from 'vitest'
+
+import {getActiveFetch, testResolveFetch} from './helpers/mockFetch'
+
+// Every client created in this suite talks to the per-test `get-it/mock`
+// transport, injected through the public `resolveFetch` config option. Tests
+// that need a different transport pass their own `resolveFetch` in the config.
+const createClient: typeof createCoreClient = (config) =>
+  createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 const apiHost = 'api.sanity.url'
 const defaultProjectId = 'bf1942'
@@ -996,13 +1004,21 @@ describe('client', async () => {
     test('the raw requester export honors a per-request maxRetries', async () => {
       // The named `requester` never sees client config, so the per-request
       // option is its only retry opt-out (it accepted this on get-it v8 too).
+      // Same for the transport: with no config to resolve a fetch from, the
+      // mock is injected as a per-request `fetch`.
       getActiveMock()
         .scope(`https://${apiHost}`)
         .on('GET', '/v1/projects/n1f7y')
         .respondPersist({status: 503, body: {}})
 
       await expect(
-        firstValueFrom(requester({url: `https://${apiHost}/v1/projects/n1f7y`, maxRetries: 0})),
+        firstValueFrom(
+          requester({
+            url: `https://${apiHost}/v1/projects/n1f7y`,
+            maxRetries: 0,
+            fetch: getActiveFetch(),
+          }),
+        ),
       ).rejects.toBeDefined()
       expect(getActiveMock().getRequests()).toHaveLength(1)
     })
@@ -4840,22 +4856,15 @@ describe('client', async () => {
           headers: {'content-type': 'text/event-stream; charset=utf-8'},
         })
 
-      const g = globalThis as {
-        __sanityTestFetch?: (url: string, init?: {signal?: AbortSignal}) => unknown
-      }
-      const baseFetch = g.__sanityTestFetch
-      if (!baseFetch) throw new Error('mock fetch not installed')
       const signals: AbortSignal[] = []
-      g.__sanityTestFetch = (url, init) => {
-        if (init?.signal) signals.push(init.signal)
-        return baseFetch(url, init)
-      }
+      const client = getClient({
+        resolveFetch: () => (url, init) => {
+          if (init?.signal) signals.push(init.signal)
+          return getActiveFetch()(url, init)
+        },
+      })
 
-      try {
-        await firstValueFrom(getClient().listen('foo.bar', {}, {events: ['welcome']}))
-      } finally {
-        g.__sanityTestFetch = baseFetch
-      }
+      await firstValueFrom(client.listen('foo.bar', {}, {events: ['welcome']}))
 
       // `firstValueFrom` unsubscribes after the first event; the EventSource
       // must be closed with it, aborting the still-stalled connection rather
@@ -4923,20 +4932,16 @@ describe('client', async () => {
       // Timing out an upload is opt-in (uploads can legitimately be slow), so
       // the fetch init must carry NO abort signal: neither the client-level
       // timeout nor get-it's default timeout may reach the upload request.
-      const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
-      const baseFetch = g.__sanityTestFetch
-      if (!baseFetch) throw new Error('mock fetch not installed')
       const inits: Array<{signal?: AbortSignal}> = []
-      g.__sanityTestFetch = (url, init) => {
-        if (typeof init === 'object' && init !== null) inits.push(init)
-        return baseFetch(url, init)
-      }
+      const client = getClient({
+        timeout: 30000,
+        resolveFetch: () => (url, init) => {
+          if (typeof init === 'object' && init !== null) inits.push(init)
+          return getActiveFetch()(url, init)
+        },
+      })
 
-      try {
-        await getClient({timeout: 30000}).assets.upload('image', fs.createReadStream(fixturePath))
-      } finally {
-        g.__sanityTestFetch = baseFetch
-      }
+      await client.assets.upload('image', fs.createReadStream(fixturePath))
 
       expect(inits).toHaveLength(1)
       expect(inits[0].signal, 'no timeout signal on uploads by default').toBeUndefined()
@@ -6103,28 +6108,19 @@ describe('client', async () => {
         // `cache`/`next` are consumed by framework-patched fetch implementations
         // (Next.js App Router), so they must survive all the way to the actual
         // fetch call. The mock only records standard request fields, so capture
-        // the raw init by wrapping the installed test fetch.
-        const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
-        const baseFetch = g.__sanityTestFetch
-        if (!baseFetch) throw new Error('mock fetch not installed')
+        // the raw init by wrapping the injected transport.
         const inits: unknown[] = []
-        g.__sanityTestFetch = (url, init) => {
-          inits.push(init)
-          return baseFetch(url, init)
-        }
+        const client = getClient({
+          resolveFetch: () => (url, init) => {
+            inits.push(init)
+            return getActiveFetch()(url, init)
+          },
+        })
 
-        try {
-          // `cache`/`next` only type-check with Next.js' `RequestInit`
-          // augmentation (see test-next/); runtime support must work regardless.
-          // @ts-expect-error -- see above
-          await getClient().fetch(
-            '*',
-            {},
-            {cache: 'no-store', next: {revalidate: 60, tags: ['sanity']}},
-          )
-        } finally {
-          g.__sanityTestFetch = baseFetch
-        }
+        // `cache`/`next` only type-check with Next.js' `RequestInit`
+        // augmentation (see test-next/); runtime support must work regardless.
+        // @ts-expect-error -- see above
+        await client.fetch('*', {}, {cache: 'no-store', next: {revalidate: 60, tags: ['sanity']}})
 
         expect(inits).toHaveLength(1)
         expect(inits[0]).toMatchObject({
@@ -6142,26 +6138,18 @@ describe('client', async () => {
           .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
           .respond({status: 200, body: {result: []}})
 
-        const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
-        const baseFetch = g.__sanityTestFetch
-        if (!baseFetch) throw new Error('mock fetch not installed')
         const inits: unknown[] = []
-        g.__sanityTestFetch = (url, init) => {
-          inits.push(init)
-          return baseFetch(url, init)
-        }
-
-        try {
-          const client = getClient({
-            // @ts-expect-error -- `cache`/`next` only type-check with Next.js'
-            // `RequestInit` augmentation (see test-next/); runtime support must
-            // work regardless.
-            fetch: {cache: 'no-store', next: {revalidate: 60}},
-          })
-          await client.fetch('*')
-        } finally {
-          g.__sanityTestFetch = baseFetch
-        }
+        const client = getClient({
+          resolveFetch: () => (url, init) => {
+            inits.push(init)
+            return getActiveFetch()(url, init)
+          },
+          // @ts-expect-error -- `cache`/`next` only type-check with Next.js'
+          // `RequestInit` augmentation (see test-next/); runtime support must
+          // work regardless.
+          fetch: {cache: 'no-store', next: {revalidate: 60}},
+        })
+        await client.fetch('*')
 
         expect(inits).toHaveLength(1)
         expect(inits[0]).toMatchObject({cache: 'no-store', next: {revalidate: 60}})
@@ -6181,23 +6169,20 @@ describe('client', async () => {
           .respond({status: 200, body: {result: []}})
           .respond({status: 200, body: {result: []}})
 
-        const g = globalThis as {__sanityTestFetch?: (url: string, init?: unknown) => unknown}
-        const baseFetch = g.__sanityTestFetch
-        if (!baseFetch) throw new Error('mock fetch not installed')
         const inits: Array<{signal?: AbortSignal}> = []
-        g.__sanityTestFetch = (url, init) => {
+        const capturingResolveFetch: typeof testResolveFetch = () => (url, init) => {
           if (typeof init === 'object' && init !== null) inits.push(init)
-          return baseFetch(url, init)
+          return getActiveFetch()(url, init)
         }
 
-        try {
-          await getClient().fetch('*')
-          // A caller-provided signal is the documented opt-out: it must still
-          // reach the fetch init untouched.
-          await getClient().fetch('*', {}, {signal: new AbortController().signal})
-        } finally {
-          g.__sanityTestFetch = baseFetch
-        }
+        await getClient({resolveFetch: capturingResolveFetch}).fetch('*')
+        // A caller-provided signal is the documented opt-out: it must still
+        // reach the fetch init untouched.
+        await getClient({resolveFetch: capturingResolveFetch}).fetch(
+          '*',
+          {},
+          {signal: new AbortController().signal},
+        )
 
         expect(inits).toHaveLength(2)
         expect(inits[0].signal, 'no signal without caller signal').toBeUndefined()

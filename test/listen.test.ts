@@ -2,16 +2,10 @@ import type {AddressInfo} from 'node:net'
 
 import {type ClientConfig, ConnectionFailedError, createClient} from '@sanity/client'
 import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
-import {beforeEach, describe, expect, test, vitest} from 'vitest'
+import {describe, expect, test, vitest} from 'vitest'
 
-import {installMock} from './helpers/mockFetch'
+import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
 import {createSseServer, type OnRequest} from './helpers/sseServer'
-
-// These tests talk to a real local SSE server, so they need the real
-// `fetch` rather than the global mock fetch the setup file installs.
-beforeEach(() => {
-  delete (globalThis as {__sanityTestFetch?: unknown}).__sanityTestFetch
-})
 
 const getClient = (options: ClientConfig & {port: number}) =>
   createClient({
@@ -140,11 +134,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       // Simulate an auth rejection, e.g. an expired or revoked token. Unlike a
       // transient 5xx, the server will keep rejecting — reconnecting forever
-      // would hammer the API once per second. The EventSource connection is
-      // routed through the mock fetch, which the file-level `beforeEach`
-      // unhooked — re-install it for this test.
-      const mock = installMock()
-      mock
+      // would hammer the API once per second. Unlike the rest of this file
+      // (which talks to a real local SSE server), this test uses the per-test
+      // mock, injected via `resolveFetch`.
+      getActiveMock()
         .scope('https://abc123.api.sanity.io')
         .on('GET', '/v1/data/listen/prod')
         .respondPersist({status: 401, body: 'Unauthorized'})
@@ -155,6 +148,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         useCdn: false,
         apiVersion: '1',
         token: 'expired-token',
+        resolveFetch: testResolveFetch,
       })
 
       const event = await firstValueFrom(
@@ -175,8 +169,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       // `reconnectOnConnectionFailure` classify it (non-4xx → reconnect).
       expect.assertions(1)
 
-      const mock = installMock()
-      mock
+      getActiveMock()
         .scope('https://abc123.api.sanity.io')
         .on('GET', '/v1/data/listen/prod')
         .respondPersist({status: 501, body: 'Not Implemented'})
@@ -187,6 +180,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         useCdn: false,
         apiVersion: '1',
         token: 'some-token',
+        resolveFetch: testResolveFetch,
       })
 
       const subscription = client
@@ -197,7 +191,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         // The reconnect delay is 1s; two attempts within 2.5s proves the
         // connection is retried rather than silently dead after the first
         await new Promise((resolve) => setTimeout(resolve, 2500))
-        expect(mock.getRequests().length).toBeGreaterThanOrEqual(2)
+        expect(getActiveMock().getRequests().length).toBeGreaterThanOrEqual(2)
       } finally {
         subscription.unsubscribe()
       }

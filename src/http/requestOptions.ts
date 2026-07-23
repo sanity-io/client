@@ -102,11 +102,13 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     request.meta = {...request.meta, fetchInit: fetchOption}
   }
 
-  // An explicit `proxy` config is resolved against the environment's fetch.
-  // A caller-supplied `fetch` function wins over it. There is deliberately
-  // no per-request proxy.
-  if (!request.fetch && typeof config.proxy === 'string' && config.resolveFetch) {
-    request.fetch = config.resolveFetch(config.proxy)
+  // The config's fetch resolver supplies the transport for every request —
+  // the environment's own fetch by default, a proxy-configured one when an
+  // explicit `proxy` is set, or a caller-supplied resolver (the test suite
+  // injects its mock this way). A per-request `fetch` function wins over it.
+  // There is deliberately no per-request proxy.
+  if (!request.fetch && config.resolveFetch) {
+    request.fetch = config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
   }
 
   // A per-request retry cap/opt-out (`maxRetries: 0`) travels in `meta`,

@@ -215,16 +215,17 @@ export interface ClientConfig {
   useProjectHostname?: boolean
 
   /**
-   * Set internally by the environment-specific entry point so EventSource
-   * connections use the same fetch implementation as regular requests,
-   * rather than whatever `globalThis.fetch` happens to be. This keeps every
-   * aspect of the environment's transport — custom fetch variants, undici
-   * configuration, an explicit `proxy` config (passed as the argument),
-   * env-proxy support (`HTTP_PROXY` et al, which Node's global fetch
-   * ignores) — applying to SSE too. Resolved via the entry point instead of
-   * a direct import so `get-it/node`/`undici` stays out of the browser
-   * bundle; the browser entry leaves it unset (the global fetch IS the
-   * environment's fetch there).
+   * Resolves the fetch implementation every request (including EventSource
+   * connections) goes through. Defaults to the environment entry point's
+   * fetch — the Node entry supplies get-it's undici-backed fetch (resolved
+   * via the entry point instead of a direct import so `get-it/node`/`undici`
+   * stays out of the browser bundle), the browser entry leaves it unset (the
+   * global fetch IS the environment's fetch there). Receives the explicit
+   * `proxy` config, when set, as its argument.
+   *
+   * Supplying it in the client config replaces the transport wholesale —
+   * custom fetch variants, alternative undici configurations, or a mock
+   * (the test suite injects `get-it/mock` this way).
    *
    * Returns get-it's minimal `FetchFunction` contract rather than the full
    * `typeof fetch` — that is what the environments actually provide, and

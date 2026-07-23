@@ -3,12 +3,13 @@
  *
  * `@sanity/client` v9 routes everything through get-it's `fetch()`, which
  * undici implements on its own dispatcher. Rather than intercept at the
- * `http.request` level, the test suite installs a `get-it/mock` fetch into
- * `globalThis.__sanityTestFetch` (read by `src/http/request.ts` and
- * `src/data/resolveEventSourceFetch.ts`) and registers handlers directly via
- * the `get-it/mock` API:
+ * `http.request` level, tests inject the mock through the client's
+ * `resolveFetch` config option — the supported way to replace the client's
+ * transport (see {@link testResolveFetch}) — and register handlers directly
+ * via the `get-it/mock` API:
  *
  * ```ts
+ * const client = createClient({...config, resolveFetch: testResolveFetch})
  * getActiveMock()
  *   .scope('https://abc123.api.sanity.io')
  *   .on('GET', '/v1/users/me')
@@ -27,6 +28,7 @@
  * @internal
  */
 
+import type {FetchFunction} from 'get-it'
 import {createMockFetch, type MockFetch} from 'get-it/mock'
 
 export type {AsymmetricMatcher, MockFetch, MockResponseDef, MockScope} from 'get-it/mock'
@@ -47,6 +49,7 @@ export {
 } from 'get-it/mock'
 
 let activeMock: MockFetch | null = null
+let activeFetch: FetchFunction | null = null
 
 /** Returns the mock installed for the current test, throwing if there is none. */
 export function getActiveMock(): MockFetch {
@@ -59,12 +62,37 @@ export function getActiveMock(): MockFetch {
   return activeMock
 }
 
+/**
+ * The active mock's fetch (happy-dom-normalized). Useful for delegation when
+ * a test wraps the transport with a spy.
+ */
+export function getActiveFetch(): FetchFunction {
+  if (!activeFetch) {
+    throw new Error(
+      'getActiveFetch() used outside of a mock-aware test context. ' +
+        'Make sure the vitest setup file (setupMockFetch.ts) is wired up.',
+    )
+  }
+  return activeFetch
+}
+
+/**
+ * Drop-in `resolveFetch` for client configs: routes the client's requests
+ * (including EventSource connections) through the currently active mock.
+ * Reads the active mock per call, so a client created in one test keeps
+ * working when the next test's mock is installed.
+ *
+ * ```ts
+ * const client = createClient({...config, resolveFetch: testResolveFetch})
+ * ```
+ */
+export const testResolveFetch: (proxyUrl?: string) => FetchFunction = () => getActiveFetch()
+
 /** Create a fresh mock for one test and install it as active. */
 export function installMock(): MockFetch {
   const mock = createMockFetch()
   activeMock = mock
-  ;(globalThis as {__sanityTestFetch?: typeof mock.fetch}).__sanityTestFetch =
-    'happyDOM' in globalThis ? lowercaseHeaders(mock.fetch) : mock.fetch
+  activeFetch = 'happyDOM' in globalThis ? lowercaseHeaders(mock.fetch) : mock.fetch
   return mock
 }
 
@@ -91,5 +119,5 @@ function lowercaseHeaders(fetch: MockFetch['fetch']): MockFetch['fetch'] {
 export function uninstallMock(): void {
   if (activeMock) activeMock.clear()
   activeMock = null
-  delete (globalThis as {__sanityTestFetch?: unknown}).__sanityTestFetch
+  activeFetch = null
 }

@@ -80,16 +80,6 @@ export interface HttpRequestConfig {
   retryDelay?: (attemptNumber: number) => number
 }
 
-// Test-only escape hatch: if a global mock fetch has been registered
-// (typically by `test/helpers/setupMockFetch.ts`), route requests through
-// it. Lets the test suite swap out the underlying transport without each
-// test having to thread `fetch: ...` into every `createClient` call.
-const testFetchOverride: WrappingMiddleware = async (opts, next) => {
-  const globalFetch = (globalThis as {__sanityTestFetch?: typeof opts.fetch}).__sanityTestFetch
-  if (typeof globalFetch !== 'function' || opts.fetch) return next(opts)
-  return next({...opts, fetch: globalFetch})
-}
-
 /**
  * Build both the observable and promise transport forms from a single get-it
  * requester. The promise form is the primitive (`executeRequest` is already
@@ -133,7 +123,6 @@ export function defineRequester(
         ...(config.retryDelay ? {retryDelay: config.retryDelay} : {}),
       }),
       ...envOptions.middleware,
-      testFetchOverride,
       applyFetchInit,
       printWarnings(config),
     ],

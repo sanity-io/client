@@ -61,13 +61,16 @@ export default function defineCreateClientExports<
     }
     // Populate `requester` on the initialized config so internal paths
     // (e.g. the asset upload event stream) can reach the underlying transport.
-    // `resolveFetch` is threaded onto the config so EventSource fetches can
-    // reach the environment's fetch without importing `get-it/node` from a
-    // browser-shared module (would leak `undici` into the browser bundle).
+    // `resolveFetch` is threaded onto the config so request building and
+    // EventSource fetches can reach the environment's fetch without importing
+    // `get-it/node` from a browser-shared module (would leak `undici` into
+    // the browser bundle). A caller-supplied `resolveFetch` wins over the
+    // environment's — that is the supported way to swap the transport (the
+    // test suite injects its mock fetch through it).
     const resolvedConfig = {
       ...config,
       requester: clientRequester,
-      resolveFetch: envOptions.resolveFetch,
+      resolveFetch: config.resolveFetch ?? envOptions.resolveFetch,
     }
     return new ClassConstructor(httpRequest, resolvedConfig)
   }

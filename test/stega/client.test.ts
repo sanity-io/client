@@ -1,4 +1,9 @@
-import {type ClientConfig, type ContentSourceMap, createClient, SanityClient} from '@sanity/client'
+import {
+  type ClientConfig,
+  type ContentSourceMap,
+  createClient as createCoreClient,
+  SanityClient,
+} from '@sanity/client'
 import {
   vercelStegaCombine,
   vercelStegaDecode,
@@ -6,6 +11,13 @@ import {
   vercelStegaSplit,
 } from '@vercel/stega'
 import {beforeEach, describe, expect, test} from 'vitest'
+
+import {testResolveFetch} from '../helpers/mockFetch'
+
+// Clients in this suite go through the per-test mock, injected via the
+// public `resolveFetch` config option.
+const createClient: typeof createCoreClient = (config) =>
+  createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 const apiHost = 'api.sanity.url'
 const defaultProjectId = 'bf1942'
