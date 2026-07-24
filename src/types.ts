@@ -89,6 +89,12 @@ type ClientConfigResource =
 export interface ClientConfig {
   projectId?: string
   dataset?: string
+  /**
+   * Organization ID, required by organization-scoped APIs such as `client.collaboration.comments`
+   *
+   * @alpha
+   */
+  organizationId?: string
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
@@ -1924,6 +1930,21 @@ export type {
   TranslateTarget,
   TranslateTargetInclude,
 } from './agent/actions/translate'
+export type {
+  CollaborationCommentCreate,
+  CollaborationCommentDocument,
+  CollaborationCommentMessage,
+  CollaborationCommentPortableTextBlock,
+  CollaborationCommentReactionShortName,
+  CollaborationCommentsListenOptions,
+  CollaborationCommentsRequestOptions,
+  CollaborationCommentsStructuredFetchOptions,
+  CollaborationCommentsStructuredListenOptions,
+  CollaborationCommentStatus,
+  CollaborationCommentsWriteOptions,
+  CollaborationCommentTarget,
+  CollaborationCommentUpdate,
+} from './collaboration/types'
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,

@@ -28,9 +28,11 @@ import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 // Limit is 16K for a _request_, eg including headers. Have to account for an
 // unknown range of headers, but an average EventSource request from Chrome seems
 // to have around 700 bytes of cruft, so let us account for 1.2K to be "safe"
-const MAX_URL_LENGTH = 16000 - 1200
+/** @internal */
+export const MAX_URL_LENGTH = 16000 - 1200
 
-const possibleOptions = [
+/** @internal */
+export const possibleOptions = [
   'includePreviousRevision',
   'includeResult',
   'includeMutations',
@@ -41,7 +43,8 @@ const possibleOptions = [
   'tag',
 ]
 
-const defaultOptions = {
+/** @internal */
+export const defaultOptions = {
   includeResult: true,
 }
 
@@ -135,7 +138,7 @@ export function _listen<
   params?: ListenParams,
   opts: Opts = {} as Opts,
 ): Observable<ListenEventFromOptions<R, Opts>> {
-  const {url, token, withCredentials, requestTagPrefix, headers: configHeaders} = this.config()
+  const {url, requestTagPrefix} = this.config()
   const tag = opts.tag && requestTagPrefix ? [requestTagPrefix, opts.tag].join('.') : opts.tag
   const options = {...defaults(opts, defaultOptions), tag}
   const listenOpts = pick(options, possibleOptions)
@@ -147,6 +150,17 @@ export function _listen<
   }
 
   const listenFor = (options.events ? options.events : ['mutation']) satisfies Opts['events']
+
+  return _connectListenEventSource<ListenEventFromOptions<R, Opts>>(this, uri, listenFor)
+}
+
+/** @internal */
+export function _connectListenEventSource<TEvent extends {type: string}>(
+  client: SanityClient | ObservableSanityClient,
+  uri: string,
+  listenFor: string[],
+): Observable<TEvent> {
+  const {token, withCredentials, headers: configHeaders} = client.config()
 
   const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
   if (withCredentials) {
@@ -179,5 +193,5 @@ export function _listen<
       type: event.type,
       ...('data' in event ? (event.data as object) : {}),
     })),
-  ) as Observable<ListenEventFromOptions<R, Opts>>
+  ) as Observable<TEvent>
 }

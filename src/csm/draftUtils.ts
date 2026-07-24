@@ -1,3 +1,5 @@
+import {getPublishedId as getPublishedIdImpl} from '../util/getPublishedId'
+
 // nominal/opaque type hack
 type Opaque<T, K> = T & {__opaqueId__: K}
 
@@ -68,14 +70,5 @@ export function getVersionFromId(id: string): string | undefined {
 
 /** @internal */
 export function getPublishedId(id: string): PublishedId {
-  if (isVersionId(id)) {
-    // make sure to only remove the versions prefix and the bundle name
-    return id.split(PATH_SEPARATOR).slice(2).join(PATH_SEPARATOR) as PublishedId as PublishedId
-  }
-
-  if (isDraftId(id)) {
-    return id.slice(DRAFTS_PREFIX.length) as PublishedId
-  }
-
-  return id as PublishedId
+  return getPublishedIdImpl(id) as PublishedId
 }
