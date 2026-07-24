@@ -75,7 +75,7 @@ export class ObservableCollaborationCommentsClient {
    * Create a comment or reply on the configured resource.
    *
    * A top-level comment requires `target`; a reply requires `parentCommentId` (never both).
-   * Replies inherit target, status and thread from the parent comment.
+   * Replies inherit `target`, `status`, and `threadId` from the parent comment.
    *
    * @param body - Comment to create
    * @param options - Optional request options
@@ -222,7 +222,7 @@ export class CollaborationCommentsClient {
    * Create a comment or reply on the configured resource.
    *
    * A top-level comment requires `target`; a reply requires `parentCommentId` (never both).
-   * Replies inherit target, status and thread from the parent comment.
+   * Replies inherit `target`, `status`, and `threadId` from the parent comment.
    *
    * @param body - Comment to create
    * @param options - Optional request options

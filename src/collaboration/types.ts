@@ -170,8 +170,38 @@ export interface CollaborationCommentDocument extends SanityDocument {
 }
 
 /**
+ * Target for a top-level comment. Inline selections require both `path` and
+ * `range`; field-level comments may set `path` alone.
+ *
+ * @alpha
+ */
+export type CollaborationCommentTarget = {
+  documentId: string
+  documentType: string
+  documentRevisionId?: string
+} & (
+  | {
+      /** Path to the field containing the inline comment selection */
+      path: string
+      /**
+       * Inline text selection within `path`.
+       * Each endpoint identifies a keyed Portable Text child and a character offset.
+       */
+      range: {
+        start: {_key: string; offset: number}
+        end: {_key: string; offset: number}
+      }
+    }
+  | {
+      /** Path to the commented field */
+      path?: string
+      range?: never
+    }
+)
+
+/**
  * A top-level comment requires `target`; a reply requires `parentCommentId` (never both).
- * Replies inherit target, status and thread from the parent comment.
+ * Replies inherit `target`, `status`, and `threadId` from the parent comment.
  *
  * ### Examples
  *
@@ -201,21 +231,7 @@ export type CollaborationCommentCreate = {
   context?: Record<string, unknown>
 } & (
   | {
-      target: {
-        documentId: string
-        documentType: string
-        documentRevisionId?: string
-        /** Path to the field containing the inline comment selection */
-        path?: string
-        /**
-         * Inline text selection within `path`. Requires `path`.
-         * Each endpoint identifies a keyed Portable Text child and a character offset.
-         */
-        range?: {
-          start: {_key: string; offset: number}
-          end: {_key: string; offset: number}
-        }
-      }
+      target: CollaborationCommentTarget
       threadId?: string
       parentCommentId?: never
     }

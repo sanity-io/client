@@ -1942,6 +1942,7 @@ export type {
   CollaborationCommentsStructuredListenOptions,
   CollaborationCommentStatus,
   CollaborationCommentsWriteOptions,
+  CollaborationCommentTarget,
   CollaborationCommentUpdate,
 } from './collaboration/types'
 export type {
