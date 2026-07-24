@@ -145,6 +145,7 @@
     "@sanity/pkg-utils": "^7.2.2",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.9.0",
+    "@types/react": "^19.2.17",
     "@typescript-eslint/eslint-plugin": "^8.29.1",
     "@typescript-eslint/parser": "^8.29.1",
     "@vercel/stega": "1.1.0",

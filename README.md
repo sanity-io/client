@@ -77,6 +77,7 @@ export async function updateDocumentTitle(_id, title) {
     - [`raw`](#raw)
   - [Fetching Content Source Maps](#fetching-content-source-maps)
     - [Using Visual editing with steganography](#using-visual-editing-with-steganography)
+    - [Catching unsafe string comparisons at compile time](#catching-unsafe-string-comparisons-at-compile-time)
     - [Creating Studio edit intent links](#creating-studio-edit-intent-links)
   - [Listening to queries](#listening-to-queries)
   - [Fetch a single document](#fetch-a-single-document)
@@ -891,6 +892,46 @@ const result = await client.fetch('*[_type == "video"][0]')
 // Remove stega from the payload sent to a third party library
 const videoAsset = stegaClean(result.videoAsset)
 ```
+
+#### Catching unsafe string comparisons at compile time
+
+Strings with stega payloads contain invisible characters, so comparing them against string literals fails in surprising ways: `imageLocation === 'left'` is `false` even though `imageLocation` looks exactly like `'left'` when logged. The branded types available on `@sanity/client/stega` turn these bugs into compile errors.
+
+If you use [Sanity TypeGen](https://www.sanity.io/docs/sanity-typegen), pass `ClientReturnStega` as the first generic to `client.fetch` and every string in the result that may contain stega payloads is branded as `StegaString`:
+
+```ts
+import {createClient} from '@sanity/client'
+import {type ClientReturnStega, stegaClean} from '@sanity/client/stega'
+
+const query = `*[_type == "post"][0]{title, imageLocation, "slug": slug.current}`
+const post = await client.fetch<ClientReturnStega<typeof query>>(query)
+
+// Rendering strings is allowed, stega payloads are meant to end up in text nodes
+document.querySelector('h1')!.textContent = post.title
+
+// Comparing against literals without cleaning is now a compile error:
+// "This comparison appears to be unintentional because the types have no overlap"
+if (post.imageLocation === 'left') {
+}
+
+// Cleaning the value removes the brand and recovers the original type, e.g. 'left' | 'right'
+if (stegaClean(post.imageLocation) === 'left') {
+}
+```
+
+Properties that are never stega encoded keep their plain string types: keys starting with `_` (`_id`, `_type`, `_createdAt`, `_updatedAt`, `_key`, `_ref` and friends, so narrowing unions on `_type` keeps working), `slug.current` patterns, and Portable Text properties like `style`, `listItem` and `marks`. Everything else is assumed to be "poisoned", even if the stega `filter` skips it at runtime (URLs, dates and such), as a redundant `stegaClean` is harmless while a missing one is a bug.
+
+If you type your query results manually, brand them with the `StegaBranded` helper type, or re-type already fetched data with the `stegaBrand` identity function:
+
+```ts
+import {type StegaBranded, stegaBrand} from '@sanity/client/stega'
+
+const post = await client.fetch<StegaBranded<Post>>(query)
+// or
+const branded = stegaBrand(await loadQuery<Post>(query))
+```
+
+Note that branded strings stay assignable to `string`, that's what keeps JSX text nodes, template literals and string methods working, so props typed as plain `string` (like `className` or `href`) still accept them. The brand catches comparisons, `switch` cases and assignments to literal unions.
 
 #### Creating Studio edit intent links
 
