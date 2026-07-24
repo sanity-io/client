@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.25.0](https://github.com/sanity-io/client/compare/v7.24.0...v7.25.0) (2026-07-24)
+
+
+### Features
+
+* **stega:** add branded string types for stega encoded results ([#1234](https://github.com/sanity-io/client/issues/1234)) ([c3ea109](https://github.com/sanity-io/client/commit/c3ea109e2ea5650046a2cc89160388605d7eacce))
+
 ## [7.24.0](https://github.com/sanity-io/client/compare/v7.23.2...v7.24.0) (2026-07-20)
 
 
