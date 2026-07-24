@@ -895,7 +895,7 @@ const videoAsset = stegaClean(result.videoAsset)
 
 #### Catching unsafe string comparisons at compile time
 
-Strings with stega payloads contain invisible characters, so comparing them against string literals fails in surprising ways: `imageLocation === 'left'` is `false` even though `imageLocation` looks exactly like `'left'` when logged. The branded types available on [`@sanity/client/stega`] turn these bugs into compile errors.
+Strings with stega payloads contain invisible characters, so comparing them against string literals fails in surprising ways: `imageLocation === 'left'` is `false` even though `imageLocation` looks exactly like `'left'` when logged. The branded types available on `@sanity/client/stega` turn these bugs into compile errors.
 
 If you use [Sanity TypeGen](https://www.sanity.io/docs/sanity-typegen), pass `ClientReturnStega` as the first generic to `client.fetch` and every string in the result that may contain stega payloads is branded as `StegaString`:
 

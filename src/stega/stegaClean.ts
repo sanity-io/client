@@ -3,7 +3,7 @@ import {vercelStegaClean} from '@vercel/stega'
 /**
  * The result of removing stega-encoded data from a value with `stegaClean()`: strings that were
  * branded as `StegaString` are returned to their original type, everything else is left as-is.
- * @beta
+ * @public
  */
 export type StegaCleaned<T> = 0 extends 1 & T
   ? T
