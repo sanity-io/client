@@ -1463,45 +1463,63 @@ describe('client', async () => {
       'setting a variant condition on client.fetch supersedes the config',
       async () => {
         nock(projectHost())
-          .get(`/vX/data/query/foo?query=*&returnQuery=false&variantCondition=market%3Aeu`)
+          .get(
+            `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu`,
+          )
           .reply(200, {
             ms: 123,
             result,
           })
 
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const client = getClient({
+          apiVersion: 'X',
+          variant: {
+            market: 'us',
+          },
+        })
 
-        try {
-          const client = getClient({
-            apiVersion: 'X',
+        const res = await client.fetch(
+          '*',
+          {},
+          {
             variant: {
-              market: 'us',
+              market: 'eu',
+              currency: 'gbp',
+              audience: 'musicians',
             },
-          })
+          },
+        )
 
-          const res = await client.fetch(
-            '*',
-            {},
-            {
-              variant: {
-                market: 'eu',
-                currency: 'gbp',
-                audience: 'musicians',
-              },
-            },
-          )
-
-          expect(res.length, 'length should match').toBe(1)
-          expect(res[0].rating, 'data should match').toBe(5)
-
-          expect(warn).toHaveBeenCalledWith(
-            expect.stringContaining('Dropped: "currency" and "audience"'),
-          )
-        } finally {
-          warn.mockRestore()
-        }
+        expect(res.length, 'length should match').toBe(1)
+        expect(res[0].rating, 'data should match').toBe(5)
       },
     )
+
+    test.skipIf(isEdge)('sends multiple variant conditions ordered lexicographically', async () => {
+      const scope = nock(projectHost())
+        .get(
+          `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu`,
+        )
+        .reply(200, {
+          ms: 123,
+          result,
+        })
+
+      const client = getClient({
+        apiVersion: 'X',
+        variant: {
+          market: 'eu',
+          audience: 'musicians',
+          currency: 'gbp',
+        },
+      })
+
+      const res = await client.fetch('*', {})
+
+      expect(res.length, 'length should match').toBe(1)
+      expect(res[0].rating, 'data should match').toBe(5)
+      expect(scope.isDone(), 'expected sorted variantCondition params').toBe(true)
+    })
 
     test.skipIf(isEdge)(
       'setting a variant id on client.fetch supersedes a variant condition from the config',
