@@ -13,6 +13,7 @@ import type {
   Any,
   BaseActionOptions,
   BaseMutationOptions,
+  ClientVariantConditions,
   CreateVersionAction,
   DiscardVersionAction,
   FirstDocumentIdMutationOptions,
@@ -703,31 +704,17 @@ export function _requestObservable<R>(
 
     const variantOption = options.variant || config.variant
 
-    if (typeof variantOption !== 'undefined') {
-      if (typeof variantOption === 'string') {
-        options.query = {
-          variant: variantOption,
-          ...options.query,
-        }
+    if (typeof variantOption === 'string') {
+      options.query = {
+        variant: variantOption,
+        ...options.query,
       }
+    }
 
-      if (typeof variantOption === 'object') {
-        const variantConditions = Object.entries(variantOption)
-        const searchParams = variantConditionPairsToSearchParams(variantConditions).slice(0, 1)
-
-        if (variantConditions.length > 1) {
-          const formatter = new Intl.ListFormat('en')
-
-          // eslint-disable-next-line no-console -- will be removed in an upcoming version; it's better this behaviour is noisy and obvious
-          console.warn(
-            `The Sanity client's beta \`variant\` option currently only supports one condition. Dropped: ${formatter.format(variantConditions.slice(1).map(([subject]) => JSON.stringify(subject)))}.`,
-          )
-        }
-
-        options.query = {
-          ...Object.fromEntries(searchParams),
-          ...options.query,
-        }
+    if (typeof variantOption === 'object') {
+      options.query = {
+        variantCondition: variantConditionsToQueryArray(variantOption),
+        ...options.query,
       }
     }
 
@@ -875,11 +862,10 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
   }
 }
 
-function variantConditionPairsToSearchParams(
-  variantConditionPairs: string[][],
-): ['variantCondition', `${string}:${string}`][] {
-  return variantConditionPairs.map(([condition, value]) => [
-    'variantCondition',
-    `${condition}:${value}`,
-  ])
+function variantConditionsToQueryArray(
+  variantConditions: ClientVariantConditions,
+): `${string}:${string}`[] {
+  return Object.entries(variantConditions)
+    .map<`${string}:${string}`>(([condition, value]) => `${condition}:${value}`)
+    .toSorted()
 }
