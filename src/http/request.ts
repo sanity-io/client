@@ -136,14 +136,7 @@ export function defineRequester(
     if (typeof options.url !== 'string') {
       throw new TypeError('Request options must include a `url`')
     }
-    // The raw `requester` export accepts the v8-style top-level `maxRetries`;
-    // normalize it into `meta` where the retry predicate can see it. (The
-    // client path already does this in `requestOptions`.)
-    const fetchOptions =
-      typeof options.maxRetries === 'number' && typeof options.meta?.maxRetries !== 'number'
-        ? {...options, meta: {...options.meta, maxRetries: options.maxRetries}}
-        : options
-    return executeRequest(requester, fetchOptions)
+    return executeRequest(requester, options)
   }
 
   // Same per-subscription AbortController pattern as `_observe` in
@@ -213,7 +206,7 @@ async function executeRequest(
 
   let response
   try {
-    response = await withSoftTimeout(requester(fetchOptions), fetchOptions, url)
+    response = await requester(fetchOptions)
   } catch (err) {
     if (err instanceof GetItHttpError) {
       // `err.body` is the response body as a string (get-it v9 stores the
@@ -262,39 +255,6 @@ function extractRequestTag(query: FetchRequestOptions['query']): string | undefi
   return typeof tag === 'string' ? tag : undefined
 }
 
-/**
- * Enforce a rejection-only timeout for requests that must not carry an abort
- * signal (see the `useAbortSignal` handling in `requestOptions`). The
- * underlying request is left running when the timeout wins — the same
- * trade-off the get-it v8 fetch transport made — so a memoizing fetch
- * implementation (React/Next.js) can still settle the shared promise for
- * other consumers.
- */
-function withSoftTimeout<T>(
-  pending: Promise<T>,
-  fetchOptions: FetchRequestOptions,
-  url: string,
-): Promise<T> {
-  const softTimeout = fetchOptions.meta?.softTimeout
-  if (typeof softTimeout !== 'number' || softTimeout <= 0) return pending
-
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      reject(
-        new DOMException(
-          `The operation timed out after ${softTimeout}ms while attempting to reach ${url}`,
-          'TimeoutError',
-        ),
-      )
-    }, softTimeout)
-  })
-  // If the timeout wins, the still-running request must not surface as an
-  // unhandled rejection when it eventually settles.
-  pending.catch(() => {})
-  return Promise.race([pending, timeout]).finally(() => clearTimeout(timer))
-}
-
 function parseJsonBody(response: {headers: Headers; text(): string}): unknown {
   return parseJsonText(response.text(), response.headers)
 }
@@ -329,13 +289,6 @@ function headersToRecord(headers: Headers): Record<string, string> {
 }
 
 function shouldRetryRequest(err: unknown, attempt: number, options: FetchRequestOptions): boolean {
-  // Per-request retry cap/opt-out, v8 parity: both the raw `requester`
-  // export and `client.request()` accept a per-request `maxRetries`, carried
-  // in `meta` (see `requestOptions` and `defineRequester`). It can cap below,
-  // but not extend beyond, the client-level maximum.
-  const perRequestMax = options.meta?.maxRetries
-  if (typeof perRequestMax === 'number' && attempt >= perRequestMax) return false
-
   // HTTP errors aren't usually retryable, but Content Lake gives us a few
   // status codes where retrying *is* the right move.
   if (err instanceof GetItHttpError) {

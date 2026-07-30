@@ -1608,7 +1608,7 @@ export interface RawRequestOptions {
   timeout?: number
   body?: Any
   maxRedirects?: number
-  /** Cap the number of retries for this request; `0` disables retries. Cannot extend the client-level maximum. */
+  /** Max retries for this request; `0` disables retries. Overrides the client-level maximum in both directions. */
   maxRetries?: number
   signal?: AbortSignal
 }

@@ -63,8 +63,8 @@ export function getActiveMock(): MockFetch {
 }
 
 /**
- * The active mock's fetch (happy-dom-normalized). Useful for delegation when
- * a test wraps the transport with a spy.
+ * The active mock's fetch. Useful for delegation when a test wraps the
+ * transport with a spy.
  */
 export function getActiveFetch(): FetchFunction {
   if (!activeFetch) {
@@ -92,27 +92,8 @@ export const testResolveFetch: (proxyUrl?: string) => FetchFunction = () => getA
 export function installMock(): MockFetch {
   const mock = createMockFetch()
   activeMock = mock
-  activeFetch = 'happyDOM' in globalThis ? lowercaseHeaders(mock.fetch) : mock.fetch
+  activeFetch = mock.fetch
   return mock
-}
-
-/**
- * happy-dom's `Headers` iterates names with their original casing, violating
- * the fetch spec (header names must iterate lowercased). `get-it/mock` builds
- * its header-match record from that iteration, so mixed-case names like
- * `Authorization` would never match in the browser test environment.
- * Normalizes to a lowercased plain record before handing off to the mock.
- * See https://github.com/capricorn86/happy-dom/issues/2249
- */
-function lowercaseHeaders(fetch: MockFetch['fetch']): MockFetch['fetch'] {
-  return (url, init) => {
-    if (!init?.headers) return fetch(url, init)
-    const headers: Record<string, string> = {}
-    new Headers(init.headers).forEach((value, key) => {
-      headers[key.toLowerCase()] = value
-    })
-    return fetch(url, {...init, headers})
-  }
 }
 
 /**

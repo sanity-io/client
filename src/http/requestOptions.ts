@@ -75,14 +75,16 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
   // no signal of their own, and means no AbortSignal may reach the fetch
   // init: Next.js' patched fetch opts a request out of React Request
   // Memoization whenever `init.signal` is present, and get-it v9 implements
-  // timeouts via `AbortSignal.timeout()`. Disable the transport timeout and
-  // let the transport enforce it as a rejection-only "soft" timeout instead
-  // (see `withSoftTimeout` in `http/request.ts`).
+  // timeouts via `AbortSignal.timeout()`. Switch to get-it's rejection-only
+  // timeout mode (`{signal: false}`): the deadline still rejects, but no
+  // signal reaches the fetch init and the underlying request is left running,
+  // so a memoizing fetch can still settle the shared promise for other
+  // consumers.
   if (overrides.useAbortSignal === false && !request.signal) {
-    if (typeof request.timeout === 'number' && request.timeout > 0) {
-      request.meta = {...request.meta, softTimeout: request.timeout}
-    }
-    request.timeout = false
+    request.timeout =
+      typeof request.timeout === 'number' && request.timeout > 0
+        ? {total: request.timeout, signal: false}
+        : false
   }
 
   // The public `fetch` option is either a custom fetch implementation
@@ -111,10 +113,11 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     request.fetch = config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
   }
 
-  // A per-request retry cap/opt-out (`maxRetries: 0`) travels in `meta`,
-  // where the retry middleware's predicate reads it.
+  // Per-request retry cap/opt-out (`maxRetries: 0` disables retries) —
+  // honored natively by get-it's retry middleware, overriding the
+  // client-level maximum in both directions.
   if (typeof overrides.maxRetries === 'number') {
-    request.meta = {...request.meta, maxRetries: overrides.maxRetries}
+    request.maxRetries = overrides.maxRetries
   }
 
   // Lineage travels in `meta`; the Node middleware projects it onto the

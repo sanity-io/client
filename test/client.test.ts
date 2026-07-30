@@ -6195,23 +6195,17 @@ describe('client', async () => {
 
         // `cache`/`next` are consumed by framework-patched fetch implementations
         // (Next.js App Router), so they must survive all the way to the actual
-        // fetch call. The mock only records standard request fields, so capture
-        // the raw init by wrapping the injected transport.
-        const inits: unknown[] = []
-        const client = getClient({
-          resolveFetch: () => (url, init) => {
-            inits.push(init)
-            return getActiveFetch()(url, init)
-          },
-        })
+        // fetch call — asserted via the raw init the mock records verbatim.
+        const client = getClient()
 
         // `cache`/`next` only type-check with Next.js' `RequestInit`
         // augmentation (see test-next/); runtime support must work regardless.
         // @ts-expect-error -- see above
         await client.fetch('*', {}, {cache: 'no-store', next: {revalidate: 60, tags: ['sanity']}})
 
-        expect(inits).toHaveLength(1)
-        expect(inits[0]).toMatchObject({
+        const requests = getActiveMock().getRequests()
+        expect(requests).toHaveLength(1)
+        expect(requests[0].init).toMatchObject({
           cache: 'no-store',
           next: {revalidate: 60, tags: ['sanity']},
         })
@@ -6226,12 +6220,7 @@ describe('client', async () => {
           .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
           .respond({status: 200, body: {result: []}})
 
-        const inits: unknown[] = []
         const client = getClient({
-          resolveFetch: () => (url, init) => {
-            inits.push(init)
-            return getActiveFetch()(url, init)
-          },
           // @ts-expect-error -- `cache`/`next` only type-check with Next.js'
           // `RequestInit` augmentation (see test-next/); runtime support must
           // work regardless.
@@ -6239,8 +6228,9 @@ describe('client', async () => {
         })
         await client.fetch('*')
 
-        expect(inits).toHaveLength(1)
-        expect(inits[0]).toMatchObject({cache: 'no-store', next: {revalidate: 60}})
+        const requests = getActiveMock().getRequests()
+        expect(requests).toHaveLength(1)
+        expect(requests[0].init).toMatchObject({cache: 'no-store', next: {revalidate: 60}})
       },
     )
 
@@ -6257,24 +6247,17 @@ describe('client', async () => {
           .respond({status: 200, body: {result: []}})
           .respond({status: 200, body: {result: []}})
 
-        const inits: Array<{signal?: AbortSignal}> = []
-        const capturingResolveFetch: typeof testResolveFetch = () => (url, init) => {
-          if (typeof init === 'object' && init !== null) inits.push(init)
-          return getActiveFetch()(url, init)
-        }
-
-        await getClient({resolveFetch: capturingResolveFetch}).fetch('*')
+        await getClient().fetch('*')
         // A caller-provided signal is the documented opt-out: it must still
         // reach the fetch init untouched.
-        await getClient({resolveFetch: capturingResolveFetch}).fetch(
-          '*',
-          {},
-          {signal: new AbortController().signal},
-        )
+        await getClient().fetch('*', {}, {signal: new AbortController().signal})
 
-        expect(inits).toHaveLength(2)
-        expect(inits[0].signal, 'no signal without caller signal').toBeUndefined()
-        expect(inits[1].signal, 'caller signal must be forwarded').toBeInstanceOf(AbortSignal)
+        const requests = getActiveMock().getRequests()
+        expect(requests).toHaveLength(2)
+        expect(requests[0].init?.signal, 'no signal without caller signal').toBeUndefined()
+        expect(requests[1].init?.signal, 'caller signal must be forwarded').toBeInstanceOf(
+          AbortSignal,
+        )
       },
     )
 
@@ -6291,9 +6274,10 @@ describe('client', async () => {
           () => null,
           (err) => err,
         )
+        // get-it's rejection-only timeout mode ({signal: false}) rejects with
+        // the same TimeoutError DOMException as its signal-attached timeouts.
         expect(error).toBeInstanceOf(Error)
         expect(error.name).toBe('TimeoutError')
-        expect(error.message).toContain('timed out after 25ms')
       },
     )
 
