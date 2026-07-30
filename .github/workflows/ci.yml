@@ -29,12 +29,12 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm ci
-      # `--mode ideal` reads engines requirements from package.json instead of
-      # walking the installed node_modules tree. The installed tree includes
-      # every transitive of every dev dep regardless of `--dev=false`, which
-      # surfaces engines conflicts from dev-only deps (e.g. msw → @inquirer/*)
-      # that don't actually constrain published consumers.
-      - run: npx ls-engines --mode ideal
+      # Dev-only deps don't constrain published consumers, so exclude them
+      # with `--no-dev`. That flag is only honored when walking a real tree:
+      # `--mode virtual` (the lockfile) prunes dev deps properly, while
+      # `--mode ideal` (package.json) ignores `--no-dev` and still surfaces
+      # engines conflicts from dev-only deps (e.g. vitest).
+      - run: npx ls-engines --mode virtual --no-dev
       - run: npm run prepublishOnly
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
@@ -97,12 +97,12 @@ jobs:
           cache: npm
           node-version: ${{ matrix.node }}
       - run: npm install
-      # `--mode ideal` reads engines requirements from package.json instead of
-      # walking the installed node_modules tree. The installed tree includes
-      # every transitive of every dev dep regardless of `--dev=false`, which
-      # surfaces engines conflicts from dev-only deps (e.g. msw → @inquirer/*)
-      # that don't actually constrain published consumers.
-      - run: npx ls-engines --mode ideal
+      # Dev-only deps don't constrain published consumers, so exclude them
+      # with `--no-dev`. That flag is only honored when walking a real tree:
+      # `--mode virtual` (the lockfile) prunes dev deps properly, while
+      # `--mode ideal` (package.json) ignores `--no-dev` and still surfaces
+      # engines conflicts from dev-only deps (e.g. vitest).
+      - run: npx ls-engines --mode virtual --no-dev
       - run: npm test
 
   prod-deps:
