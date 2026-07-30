@@ -1827,14 +1827,13 @@ describe('client', async () => {
     )
 
     test.skipIf(isEdge)('sends multiple variant conditions ordered lexicographically', async () => {
-      const scope = nock(projectHost())
-        .get(
+      getActiveMock()
+        .scope(projectHost())
+        .on(
+          'GET',
           `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu`,
         )
-        .reply(200, {
-          ms: 123,
-          result,
-        })
+        .respond({status: 200, body: {ms: 123, result}})
 
       const client = getClient({
         apiVersion: 'X',
@@ -1849,7 +1848,12 @@ describe('client', async () => {
 
       expect(res.length, 'length should match').toBe(1)
       expect(res[0].rating, 'data should match').toBe(5)
-      expect(scope.isDone(), 'expected sorted variantCondition params').toBe(true)
+      // The mock matches query params order-insensitively, so assert the
+      // lexicographic ordering on the raw URL that was requested.
+      const [request] = getActiveMock().getRequests()
+      expect(request.fullUrl, 'expected sorted variantCondition params').toContain(
+        'variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu',
+      )
     })
 
     test.skipIf(isEdge)(

@@ -5,7 +5,7 @@ import {filter, map} from 'rxjs/operators'
 import {validateApiPerspective} from '../config'
 import {type FetchRequest, requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import {stegaClean} from '../stega/stegaClean'
+import {stegaClean, type StegaCleaned} from '../stega/stegaClean'
 import type {
   Action,
   AllDocumentIdsMutationOptions,
@@ -85,7 +85,13 @@ function _fetchRequest<Q>(
   _stega: InitializedStegaConfig,
   _params: Q,
   options: QueryOptions,
-): {stega: InitializedStegaConfig; params: Q; mapResponse: (res: Any) => Any; reqOpts: Any} {
+): {
+  stega: InitializedStegaConfig
+  // Stega-enabled requests send the cleaned (brand-stripped) params.
+  params: Q | StegaCleaned<Q>
+  mapResponse: (res: Any) => Any
+  reqOpts: Any
+} {
   const stega =
     'stega' in options
       ? {
