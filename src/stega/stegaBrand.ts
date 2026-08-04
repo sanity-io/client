@@ -35,6 +35,8 @@ export type StegaString<T extends string = string> =
  * - Portable Text internals: the encoder only visits `children` of `_type: 'block'` objects and
  *   `text` of `_type: 'span'` objects, so properties like `style`, `listItem` and `marks` stay
  *   plain
+ * - symbol-keyed properties (like TypeGen's `internalGroqTypeReferenceTo` reference marker): JSON
+ *   can't contain symbol keys, so they only exist in the type system and are never encoded
  *
  * Every other string is assumed to be "poisoned", even if the runtime `filter` happens to skip it
  * (URLs, dates, keys ending in `Id`, denylisted keys). Being conservative is safe: the worst case
@@ -54,7 +56,7 @@ export type StegaBranded<
   : T extends string
     ? T extends {readonly ' stegaBrand': string}
       ? T
-      : Key extends `_${string}` | 'slug'
+      : Key extends `_${string}` | 'slug' | symbol
         ? T
         : Key extends 'current'
           ? ParentKey extends 'slug'
