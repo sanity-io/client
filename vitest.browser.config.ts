@@ -11,6 +11,20 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'happy-dom',
+      environmentOptions: {
+        happyDOM: {
+          // happy-dom v20 enforces the CORS same-origin policy and issues preflight
+          // `OPTIONS` requests for cross-origin fetches. The test suite mocks the API
+          // with nock (which only intercepts the real requests, not the preflights),
+          // so disable the same-origin policy to keep the simulated browser behavior
+          // aligned with what these tests expect.
+          settings: {
+            fetch: {
+              disableSameOriginPolicy: true,
+            },
+          },
+        },
+      },
       alias: {
         '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
         '@sanity/client/stega': new URL(pkg.exports['./stega'].browser.source, import.meta.url)
