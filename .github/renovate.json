@@ -8,6 +8,10 @@
       "semanticCommitType": "fix",
       "groupName": null,
       "groupSlug": null
+    },
+    {
+      "matchPackageNames": ["vitest", "@vitest/**"],
+      "groupName": "vitest"
     }
   ],
   "bun": {
