@@ -38,7 +38,7 @@ jobs:
       # Publish to NPM on new releases
       - uses: actions/checkout@v7
         if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: ${{ steps.release.outputs.release_created || github.event.inputs.publish == 'true' }}
         with:
           cache: npm
