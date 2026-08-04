@@ -147,8 +147,7 @@ export type TranslateDocumentAsync = TranslateRequestBase & AgentActionAsync
 
 /** @beta */
 export type TranslateDocument<T extends Record<string, Any> = Record<string, Any>> =
-  | TranslateDocumentSync<T>
-  | TranslateDocumentAsync
+  TranslateDocumentSync<T> | TranslateDocumentAsync
 
 export function _translate<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,

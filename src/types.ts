@@ -49,11 +49,7 @@ export type StackablePerspective = ('published' | 'drafts' | string) & {}
 
 /** @public */
 export type ClientPerspective =
-  | DeprecatedPreviewDrafts
-  | 'published'
-  | 'drafts'
-  | 'raw'
-  | StackablePerspective[]
+  DeprecatedPreviewDrafts | 'published' | 'drafts' | 'raw' | StackablePerspective[]
 
 /**
  * @public
@@ -284,14 +280,7 @@ export interface InitializedClientConfig extends ClientConfig {
 
 /** @public */
 export type AssetMetadataType =
-  | 'location'
-  | 'exif'
-  | 'image'
-  | 'palette'
-  | 'lqip'
-  | 'blurhash'
-  | 'thumbhash'
-  | 'none'
+  'location' | 'exif' | 'image' | 'palette' | 'lqip' | 'blurhash' | 'thumbhash' | 'none'
 
 /** @public */
 export interface UploadClientConfig {
@@ -663,9 +652,7 @@ export type IdentifiedSanityDocumentStub<T extends Record<string, Any> = Record<
 
 /** @internal */
 export type InsertPatch =
-  | {before: string; items: Any[]}
-  | {after: string; items: Any[]}
-  | {replace: string; items: Any[]}
+  {before: string; items: Any[]} | {after: string; items: Any[]} | {replace: string; items: Any[]}
 
 // Note: this is actually incorrect/invalid, but implemented as-is for backwards compatibility
 /** @internal */
@@ -735,8 +722,7 @@ export type QueryWithoutParams = Record<string, never> | undefined
 export type MutationSelectionQueryParams = {[key: string]: Any}
 /** @internal */
 export type MutationSelection =
-  | {query: string; params?: MutationSelectionQueryParams}
-  | {id: string | string[]}
+  {query: string; params?: MutationSelectionQueryParams} | {id: string | string[]}
 /** @internal */
 export type PatchSelection = string | string[] | MutationSelection
 /** @internal */
@@ -764,10 +750,7 @@ export type ReleaseAction =
 
 /** @public */
 export type VersionAction =
-  | CreateVersionAction
-  | DiscardVersionAction
-  | ReplaceVersionAction
-  | UnpublishVersionAction
+  CreateVersionAction | DiscardVersionAction | ReplaceVersionAction | UnpublishVersionAction
 
 /** @public */
 export type Action =
@@ -1313,12 +1296,7 @@ export type ResetEvent = {
 
 /** @public */
 export type ListenEvent<R extends Record<string, Any> = Record<string, Any>> =
-  | MutationEvent<R>
-  | ReconnectEvent
-  | WelcomeBackEvent
-  | ResetEvent
-  | WelcomeEvent
-  | OpenEvent
+  MutationEvent<R> | ReconnectEvent | WelcomeBackEvent | ResetEvent | WelcomeEvent | OpenEvent
 
 /** @public */
 export type ListenEventName =
@@ -1498,9 +1476,7 @@ export interface UnfilteredResponseWithoutQuery extends ResponseQueryOptions {
 
 /** @public */
 export type QueryOptions =
-  | FilteredResponseQueryOptions
-  | UnfilteredResponseQueryOptions
-  | UnfilteredResponseWithoutQuery
+  FilteredResponseQueryOptions | UnfilteredResponseQueryOptions | UnfilteredResponseWithoutQuery
 
 /** @public */
 export interface RawQueryResponse<R> {
@@ -1829,8 +1805,7 @@ export interface ContentSourceMapRemoteDocument extends ContentSourceMapDocument
 
 /** @public */
 export type ContentSourceMapDocuments = (
-  | ContentSourceMapDocument
-  | ContentSourceMapRemoteDocument
+  ContentSourceMapDocument | ContentSourceMapRemoteDocument
 )[]
 
 /** @public */
@@ -1876,11 +1851,7 @@ export interface LiveEventGoAway {
 }
 /** @public */
 export type LiveEvent =
-  | LiveEventRestart
-  | LiveEventReconnect
-  | LiveEventMessage
-  | LiveEventWelcome
-  | LiveEventGoAway
+  LiveEventRestart | LiveEventReconnect | LiveEventMessage | LiveEventWelcome | LiveEventGoAway
 
 /** @public */
 export interface SanityQueries {}

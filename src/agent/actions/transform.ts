@@ -322,8 +322,7 @@ export type TransformDocumentAsync = TransformRequestBase & AgentActionAsync
 
 /** @beta */
 export type TransformDocument<T extends Record<string, Any> = Record<string, Any>> =
-  | TransformDocumentSync<T>
-  | TransformDocumentAsync
+  TransformDocumentSync<T> | TransformDocumentAsync
 
 export function _transform<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,

@@ -271,24 +271,21 @@ interface GenerateTargetDocumentRequest<T extends Record<string, Any> = Record<s
 
 /** @beta */
 export type GenerateSyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
-  | GenerateExistingDocumentRequest
-  | GenerateTargetDocumentRequest<T>
+  GenerateExistingDocumentRequest | GenerateTargetDocumentRequest<T>
 ) &
   GenerateRequestBase &
   AgentActionSync
 
 /** @beta */
 export type GenerateAsyncInstruction<T extends Record<string, Any> = Record<string, Any>> = (
-  | GenerateExistingDocumentRequest
-  | GenerateTargetDocumentRequest<T>
+  GenerateExistingDocumentRequest | GenerateTargetDocumentRequest<T>
 ) &
   GenerateRequestBase &
   AgentActionAsync
 
 /** @beta */
 export type GenerateInstruction<T extends Record<string, Any> = Record<string, Any>> =
-  | GenerateSyncInstruction<T>
-  | GenerateAsyncInstruction<T>
+  GenerateSyncInstruction<T> | GenerateAsyncInstruction<T>
 
 export function _generate<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,

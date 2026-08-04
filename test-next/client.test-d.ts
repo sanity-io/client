@@ -14,9 +14,9 @@ describe('client.fetch', () => {
   test('params', async () => {
     // Detect if there are any QueryOptions that are not handled by QueryParams
     type QueryParamsKeys = {
-      [K in keyof QueryOptions as QueryParams[K] extends never
-        ? K
-        : never]-?: QueryParams[K] extends never ? true : never
+      [
+        K in keyof QueryOptions as QueryParams[K] extends never ? K : never
+      ]-?: QueryParams[K] extends never ? true : never
     }
     expectTypeOf<QueryParamsKeys>().toMatchTypeOf<Record<string, never>>()
     // Any params not conflicting with QueryOptions should be allowed

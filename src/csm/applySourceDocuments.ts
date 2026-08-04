@@ -24,9 +24,7 @@ export function applySourceDocuments<Result = unknown>(
   getCachedDocument: (
     sourceDocument: ContentSourceMapDocuments[number],
   ) =>
-    | (Partial<SanityDocument> & Required<Pick<SanityDocument, '_id' | '_type'>>)
-    | null
-    | undefined,
+    (Partial<SanityDocument> & Required<Pick<SanityDocument, '_id' | '_type'>>) | null | undefined,
   updateFn: ApplySourceDocumentsUpdateFunction,
   perspective: Exclude<ClientPerspective, 'raw'>,
 ): Result {
