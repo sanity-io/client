@@ -5,6 +5,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [7.26.1](https://github.com/sanity-io/client/compare/v7.26.0...v7.26.1) (2026-08-04)
+
+
+### Bug Fixes
+
+* **stega:** keep symbol-keyed properties unbranded in StegaBranded ([#1241](https://github.com/sanity-io/client/issues/1241)) ([a36eebb](https://github.com/sanity-io/client/commit/a36eebb7976e3732a5ac101be6241ecaee77a6af))
+
 ## [7.26.0](https://github.com/sanity-io/client/compare/v7.25.0...v7.26.0) (2026-07-29)
 
 
