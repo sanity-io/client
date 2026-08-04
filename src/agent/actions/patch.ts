@@ -99,24 +99,21 @@ interface PatchTargetDocumentRequest<T extends Record<string, Any> = Record<stri
 
 /** @beta */
 export type PatchDocumentSync<T extends Record<string, Any> = Record<string, Any>> = (
-  | PatchExistingDocumentRequest
-  | PatchTargetDocumentRequest<T>
+  PatchExistingDocumentRequest | PatchTargetDocumentRequest<T>
 ) &
   PatchRequestBase &
   AgentActionSync
 
 /** @beta */
 export type PatchDocumentAsync<T extends Record<string, Any> = Record<string, Any>> = (
-  | PatchExistingDocumentRequest
-  | PatchTargetDocumentRequest<T>
+  PatchExistingDocumentRequest | PatchTargetDocumentRequest<T>
 ) &
   PatchRequestBase &
   AgentActionAsync
 
 /** @beta */
 export type PatchDocument<T extends Record<string, Any> = Record<string, Any>> =
-  | PatchDocumentSync<T>
-  | PatchDocumentAsync<T>
+  PatchDocumentSync<T> | PatchDocumentAsync<T>
 
 export function _patch<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,

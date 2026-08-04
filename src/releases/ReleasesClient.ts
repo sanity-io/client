@@ -133,8 +133,7 @@ export class ObservableReleasesClient {
   ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   create(
     releaseOrOptions?:
-      | {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>}
-      | BaseActionOptions,
+      {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>} | BaseActionOptions,
     maybeOptions?: BaseActionOptions,
   ): Observable<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
     const {action, options} = createRelease(releaseOrOptions, maybeOptions)
@@ -463,8 +462,7 @@ export class ReleasesClient {
   ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}>
   async create(
     releaseOrOptions?:
-      | {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>}
-      | BaseActionOptions,
+      {releaseId?: string; metadata?: Partial<ReleaseDocument['metadata']>} | BaseActionOptions,
     maybeOptions?: BaseActionOptions,
   ): Promise<SingleActionResult & {releaseId: string; metadata: ReleaseDocument['metadata']}> {
     const {action, options} = createRelease(releaseOrOptions, maybeOptions)

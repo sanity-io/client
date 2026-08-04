@@ -120,8 +120,7 @@ interface PromptTextResponse {
 
 /** @beta */
 export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> = (
-  | PromptTextResponse
-  | PromptJsonResponse<T>
+  PromptTextResponse | PromptJsonResponse<T>
 ) &
   PromptRequestBase
 

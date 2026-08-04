@@ -20,8 +20,7 @@ export type {ContentSourceMap, ResolveStudioUrl}
 
 /** @public */
 export type ContentSourceMapQueryResponse =
-  | RawQueryResponse<unknown>
-  | Pick<RawQueryResponse<unknown>, 'result' | 'resultSourceMap'>
+  RawQueryResponse<unknown> | Pick<RawQueryResponse<unknown>, 'result' | 'resultSourceMap'>
 
 /** @public */
 export interface StegaConfig {
