@@ -174,7 +174,7 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
-      - uses: denoland/setup-deno@v1
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
         with:
           deno-version: 1.46.3
       - run: npm run test:deno
