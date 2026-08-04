@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.settings",
-  "include": ["./src", "./modules.d.ts"]
+  "include": ["./src", "./modules.d.ts"],
+  "compilerOptions": {
+    "types": ["node"]
+  }
 }
