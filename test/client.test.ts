@@ -6410,8 +6410,8 @@ describe('client', async () => {
 
     // Don't rely on this unless you're working at Sanity Inc ;)
     test('exposes default requester', async () => {
-      const {requester} = await import('../src')
-      expect(typeof requester).toEqual('function')
+      const {requester: exportedRequester} = await import('../src')
+      expect(typeof exportedRequester).toEqual('function')
     })
 
     test.runIf(isNode)('handles HTTP errors gracefully', async () => {
