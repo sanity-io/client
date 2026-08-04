@@ -1,4 +1,4 @@
-import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
+import type {EventSourceFetchInit, FetchLikeResponse, ReaderLike} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
 import type {InitializedClientConfig} from '../types'
@@ -69,7 +69,39 @@ export function resolveEventSourceFetch(
     if (credentials !== undefined) {
       mergedInit.credentials = credentials
     }
-    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
+    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit).then(toFetchLikeResponse)
+  }
+}
+
+/**
+ * Project a get-it response onto the `eventsource` package's
+ * `FetchLikeResponse`. The `eventsource` package only reads the body through
+ * its structural `{getReader()}` shape, but TypeScript 5.9's DOM lib types
+ * `read()`'s done-result as `{done: true, value: T | undefined}`, which no
+ * longer satisfies the package's stricter `ReaderLike` done-branch
+ * (`{done: true, value?: undefined}`) — adapt the reader explicitly.
+ */
+function toFetchLikeResponse(res: Awaited<ReturnType<FetchFunction>>): FetchLikeResponse {
+  const body = res.body
+  return {
+    body: body ? {getReader: () => toReaderLike(body.getReader())} : null,
+    url: res.url,
+    status: res.status,
+    redirected: res.redirected,
+    headers: res.headers,
+  }
+}
+
+function toReaderLike(reader: ReadableStreamDefaultReader<Uint8Array>): ReaderLike {
+  return {
+    async read() {
+      const result = await reader.read()
+      if (result.done) {
+        return {done: true}
+      }
+      return {done: false, value: result.value}
+    },
+    cancel: () => reader.cancel(),
   }
 }
 
