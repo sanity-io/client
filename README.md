@@ -919,7 +919,7 @@ if (stegaClean(post.imageLocation) === 'left') {
 }
 ```
 
-Properties that are never stega encoded keep their plain string types: keys starting with `_` (`_id`, `_type`, `_createdAt`, `_updatedAt`, `_key`, `_ref` and friends, so narrowing unions on `_type` keeps working), `slug.current` patterns, and Portable Text properties like `style`, `listItem` and `marks`. Everything else is assumed to be "poisoned", even if the stega `filter` skips it at runtime (URLs, dates and such), as a redundant `stegaClean` is harmless while a missing one is a bug.
+Properties that are never stega encoded keep their plain string types: keys starting with `_` (`_id`, `_type`, `_createdAt`, `_updatedAt`, `_key`, `_ref` and friends, so narrowing unions on `_type` keeps working), `slug.current` patterns, Portable Text properties like `style`, `listItem` and `marks`, and symbol-keyed properties (like TypeGen's `internalGroqTypeReferenceTo` reference marker, which only exists in the type system since JSON can't contain symbol keys). Everything else is assumed to be "poisoned", even if the stega `filter` skips it at runtime (URLs, dates and such), as a redundant `stegaClean` is harmless while a missing one is a bug.
 
 If you type your query results manually, brand them with the `StegaBranded` helper type, or re-type already fetched data with the `stegaBrand` identity function:
 
