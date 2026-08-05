@@ -59,6 +59,32 @@ describe('Client config warnings', async () => {
     })
   })
 
+  // Deprecation printers are `once`-wrapped at module scope, so this has to be
+  // the only test in the file that touches the `uri` option.
+  test.skipIf(isEdge)('warns once when the deprecated `uri` request option is used', async () => {
+    const {getActiveMock} = await import('./helpers/mockFetch')
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/ping')
+      .respond({status: 200, body: {}})
+      .respond({status: 200, body: {}})
+      .respond({status: 200, body: {}})
+
+    const client = createClient({projectId: 'abc123', useCdn: false, apiVersion: '1'})
+
+    await client.request({url: '/ping'})
+    expect(warn).not.toHaveBeenCalled()
+
+    await client.request({uri: '/ping'})
+    await client.request({uri: '/ping'})
+
+    expect(warn).toHaveBeenCalledWith(
+      'The `uri` request option has been renamed to `url`. Please update your code to use `url` instead. Support for `uri` will be removed in a future version.',
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
   test.skipIf(isEdge)('warns if server sends warning back', async () => {
     expect.assertions(1)
 

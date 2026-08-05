@@ -51,6 +51,11 @@ export const printCreateVersionWithBaseIdWarning = createWarningPrinter([
   'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `releaseId` instead.',
 ])
 
+export const printDeprecatedUriOptionWarning = createWarningPrinter([
+  'The `uri` request option has been renamed to `url`.',
+  'Please update your code to use `url` instead. Support for `uri` will be removed in a future version.',
+])
+
 export const printDeprecatedResourceConfigWarning = createWarningPrinter([
   'The `~experimental_resource` configuration property has been renamed to `resource`.',
   'Please update your client configuration to use `resource` instead. Support for `~experimental_resource` will be removed in a future version.',

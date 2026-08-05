@@ -42,6 +42,7 @@ import * as validators from '../validators'
 import {
   printCdnPreviewDraftsWarning,
   printCreateVersionWithBaseIdWarning,
+  printDeprecatedUriOptionWarning,
   printPreviewDraftsDeprecationWarning,
 } from '../warnings'
 import {encodeQueryString} from './encodeQueryString'
@@ -1024,7 +1025,14 @@ const isData = (client: Client, uri: string) =>
  * @internal
  */
 export function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
-  const uri = options.url
+  if (options.uri !== undefined) {
+    printDeprecatedUriOptionWarning()
+  }
+
+  // `uri` takes precedence over `url` to match the v8 behaviour this alias
+  // restores. The types make passing both an error, so this only matters to
+  // untyped callers.
+  const uri = options.uri || options.url
   if (typeof uri !== 'string') {
     throw new TypeError('Request options must include a `url`')
   }

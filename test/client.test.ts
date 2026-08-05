@@ -285,7 +285,7 @@ describe('client', async () => {
       await expect(getClient().request({url: '/ping'})).resolves.toMatchObject({pong: true})
     })
 
-    test('request() rejects options without a `url` (the v8 `uri` alias is gone)', () => {
+    test('request() rejects options with neither `url` nor `uri`', () => {
       let error: unknown
       try {
         // @ts-expect-error -- `url` is required in the types; this simulates a JS caller omitting it
@@ -295,6 +295,40 @@ describe('client', async () => {
       }
       expect(error).toBeInstanceOf(TypeError)
       expect(error).toMatchObject({message: 'Request options must include a `url`'})
+    })
+
+    test.skipIf(isEdge)('can use the deprecated `uri` alias for `url`', async () => {
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
+
+      await expect(getClient().request({uri: '/ping'})).resolves.toMatchObject({pong: true})
+    })
+
+    test.skipIf(isEdge)('observable request() accepts the deprecated `uri` alias', async () => {
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
+
+      await expect(
+        firstValueFrom(getClient().observable.request({uri: '/ping'})),
+      ).resolves.toMatchObject({pong: true})
+    })
+
+    test.skipIf(isEdge)('`uri` wins over `url` when both are given, as in v8', async () => {
+      // Only `/v1/ping` is mocked - if `url` took precedence the request would
+      // go to `/v1/pong` and the mock would reject it.
+      getActiveMock()
+        .scope(projectHost())
+        .on('GET', '/v1/ping')
+        .respond({status: 200, body: {pong: true}})
+
+      await expect(
+        // @ts-expect-error -- mutually exclusive in the types; this simulates a JS caller passing both
+        getClient().request({url: '/pong', uri: '/ping'}),
+      ).resolves.toMatchObject({pong: true})
     })
 
     test.skipIf(isEdge)(

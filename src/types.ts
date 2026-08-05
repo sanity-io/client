@@ -477,22 +477,38 @@ export type HttpRequest = {
   (options: Any): Promise<unknown>
 }
 
+/**
+ * Target URL for a request. Exactly one of `url` or the deprecated `uri` alias
+ * must be given.
+ *
+ * @internal
+ */
+export type RequestUrlOptions =
+  | {url: string; uri?: never}
+  | {
+      /**
+       * @deprecated Use `url` instead. Support for `uri` will be removed in a future version.
+       */
+      uri: string
+      url?: never
+    }
+
 /** @internal */
-export interface RequestObservableOptions extends Omit<RequestOptions, 'url'> {
-  url: string
-  canUseCdn?: boolean
-  useCdn?: boolean
-  tag?: string
-  returnQuery?: boolean
-  resultSourceMap?: boolean | 'withKeyArraySelector'
-  perspective?: ClientPerspective
-  /**
-   * @beta
-   */
-  variant?: ClientVariant
-  lastLiveEventId?: string
-  cacheMode?: 'noStale'
-}
+export type RequestObservableOptions = RequestUrlOptions &
+  Omit<RequestOptions, 'url'> & {
+    canUseCdn?: boolean
+    useCdn?: boolean
+    tag?: string
+    returnQuery?: boolean
+    resultSourceMap?: boolean | 'withKeyArraySelector'
+    perspective?: ClientPerspective
+    /**
+     * @beta
+     */
+    variant?: ClientVariant
+    lastLiveEventId?: string
+    cacheMode?: 'noStale'
+  }
 
 /** @public */
 export interface UploadProgressEvent {
@@ -1594,8 +1610,7 @@ export interface MultipleActionResult {
 }
 
 /** @internal */
-export interface RawRequestOptions {
-  url: string
+export type RawRequestOptions = RequestUrlOptions & {
   method?: string
   token?: string
   /** @deprecated has no effect — response parsing is driven by the response `content-type` */
