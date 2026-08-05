@@ -3,6 +3,8 @@ import {defineConfig} from '@sanity/pkg-utils'
 export default defineConfig({
   tsconfig: 'tsconfig.dist.json',
 
+  rollup: {hashChunkFileNames: true},
+
   external: (prev) => prev.filter((id) => id !== '@vercel/stega'),
 
   extract: {
