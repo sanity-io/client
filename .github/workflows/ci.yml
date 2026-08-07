@@ -176,7 +176,7 @@ jobs:
           name: build-output-${{ github.run_id }}
       - uses: denoland/setup-deno@v1
         with:
-          deno-version: 1.46.3
+          deno-version: 2.9.5
       - run: npm run test:deno
 
   bun-runtime:
