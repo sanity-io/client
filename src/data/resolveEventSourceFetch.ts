@@ -69,22 +69,9 @@ export function resolveEventSourceFetch(
     if (credentials !== undefined) {
       mergedInit.credentials = credentials
     }
-    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit).then(toFetchLikeResponse)
-  }
-}
-
-/**
- * Project a get-it response onto the `eventsource` package's
- * `FetchLikeResponse`, which only declares the members the package actually
- * reads.
- */
-function toFetchLikeResponse(res: Awaited<ReturnType<FetchFunction>>): FetchLikeResponse {
-  return {
-    body: res.body,
-    url: res.url,
-    status: res.status,
-    redirected: res.redirected,
-    headers: res.headers,
+    // get-it's `FetchResponse` is a structural superset of the package's
+    // `FetchLikeResponse`, so it can be handed over as-is.
+    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
   }
 }
 
