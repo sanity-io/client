@@ -1,4 +1,5 @@
-import {assert} from 'https://deno.land/std@0.171.0/testing/asserts.ts'
+import assert from 'node:assert/strict'
+
 import {createClient} from '../../dist/index.js'
 
 const projectId = '81pocpw8'

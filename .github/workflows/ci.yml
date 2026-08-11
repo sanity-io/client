@@ -195,9 +195,9 @@ jobs:
           # The archive is rooted at `dist/` (`upload-artifact` strips the least
           # common ancestor of its paths), so extract it back into place.
           path: dist/
-      - uses: denoland/setup-deno@v1
+      - uses: denoland/setup-deno@v2
         with:
-          deno-version: 1.46.3
+          deno-version: v2.x
       - run: npm run test:deno
 
   bun-runtime:
