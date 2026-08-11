@@ -1,4 +1,4 @@
-# 📓 Changelog
+# @sanity/client
 
 ## [7.26.2](https://github.com/sanity-io/client/compare/v7.26.1...v7.26.2) (2026-08-04)
 
