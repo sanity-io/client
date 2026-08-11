@@ -10,8 +10,8 @@ coverage
 # Dependency directories
 node_modules
 
-# UMD bundle
-umd
+# Deno cache lockfile (created by `npm run test:deno`)
+deno.lock
 
 # MacOS
 .DS_Store

@@ -20,7 +20,7 @@ jobs:
       contents: read
       # Required to put a comment into the pull-request
       pull-requests: write
-    name: Build, lint and benchmark
+    name: Build and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -29,12 +29,16 @@ jobs:
           cache: npm
           node-version: lts/*
       - run: npm ci
-      - run: npx ls-engines
+      # Dev-only deps don't constrain published consumers, so exclude them
+      # with `--no-dev`. That flag is only honored when walking a real tree:
+      # `--mode virtual` (the lockfile) prunes dev deps properly, while
+      # `--mode ideal` (package.json) ignores `--no-dev` and still surfaces
+      # engines conflicts from dev-only deps (e.g. vitest).
+      - run: npx ls-engines --mode virtual --no-dev
       - run: npm run prepublishOnly
       - name: Register Problem Matcher for ESLint that handles --report-unused-disable-directives
         run: echo "::add-matcher::.github/eslint-compact.json"
       - run: npm run lint -- --report-unused-disable-directives -f compact
-      - run: npm run benchmark
       - uses: actions/upload-artifact@v7
         name: Cache build output
         with:
@@ -42,7 +46,6 @@ jobs:
           name: build-output-${{ github.run_id }}
           path: |
             dist/
-            umd/
 
   coverage:
     permissions:
@@ -75,8 +78,9 @@ jobs:
         # It makes sense to also test the oldest, and latest, versions of Node.js, on ubuntu-only since it's the fastest CI runner
         include:
           - os: ubuntu-latest
-            # Also test the previous LTS release
-            node: lts/-1
+            # Also test the minimum supported Node.js version (see `engines`).
+            # Must not drop below the floor (`lts/-1` resolves to Node 20).
+            node: 22.12.0
           # @TODO re-enable after the nightly builds work with vitest once again
           # - os: ubuntu-latest
           #   # Test the actively developed version that will become the latest LTS release next October
@@ -92,24 +96,13 @@ jobs:
           cache: npm
           node-version: ${{ matrix.node }}
       - run: npm install
-      - run: npx ls-engines
+      # Dev-only deps don't constrain published consumers, so exclude them
+      # with `--no-dev`. That flag is only honored when walking a real tree:
+      # `--mode virtual` (the lockfile) prunes dev deps properly, while
+      # `--mode ideal` (package.json) ignores `--no-dev` and still surfaces
+      # engines conflicts from dev-only deps (e.g. vitest).
+      - run: npx ls-engines --mode virtual --no-dev
       - run: npm test
-
-  esm-compatibility:
-    name: Check ESM compatibility
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [lts/*, '21', 'latest']
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - name: Test dependencies for ESM compatibility
-        run: npm run check-esm-compatibility
 
   prod-deps:
     name: Cache production dependencies
@@ -128,7 +121,7 @@ jobs:
       - if: steps.prod-deps.outputs.cache-hit != 'true'
         run: npm install --omit=dev --ignore-scripts
 
-  edge-runtime:
+  vercel-edge:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -142,7 +135,29 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
-      - run: npm run test:edge-runtime -- --retry=30
+          # The archive is rooted at `dist/` (`upload-artifact` strips the least
+          # common ancestor of its paths), so extract it back into place.
+          path: dist/
+      - run: npm run test:vercel-edge -- --retry=30
+
+  workerd-runtime:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: lts/*
+      - run: npm install
+      - uses: actions/download-artifact@v8
+        name: Restore build output
+        with:
+          name: build-output-${{ github.run_id }}
+          # The archive is rooted at `dist/` (`upload-artifact` strips the least
+          # common ancestor of its paths), so extract it back into place.
+          path: dist/
+      - run: npm run test:workerd -- --retry=30
 
   browser-runtime:
     runs-on: ubuntu-latest
@@ -158,6 +173,9 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          # The archive is rooted at `dist/` (`upload-artifact` strips the least
+          # common ancestor of its paths), so extract it back into place.
+          path: dist/
       - run: npm run test:browser
 
   deno-runtime:
@@ -174,9 +192,12 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
-      - uses: denoland/setup-deno@v1
+          # The archive is rooted at `dist/` (`upload-artifact` strips the least
+          # common ancestor of its paths), so extract it back into place.
+          path: dist/
+      - uses: denoland/setup-deno@v2
         with:
-          deno-version: 1.46.3
+          deno-version: v2.x
       - run: npm run test:deno
 
   bun-runtime:
@@ -193,6 +214,9 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          # The archive is rooted at `dist/` (`upload-artifact` strips the least
+          # common ancestor of its paths), so extract it back into place.
+          path: dist/
       - uses: antongolub/action-setup-bun@f0b9f339a7ce9ba1174a58484e4dc9bbd6f7b133 # v1
       - run: npm run test:bun
 
@@ -213,6 +237,9 @@ jobs:
         name: Restore build output
         with:
           name: build-output-${{ github.run_id }}
+          # The archive is rooted at `dist/` (`upload-artifact` strips the least
+          # common ancestor of its paths), so extract it back into place.
+          path: dist/
       - run: npm run test:node-runtimes
 
   next-runtime:

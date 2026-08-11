@@ -8,6 +8,20 @@ import {
 } from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
 
+describe('client.request', () => {
+  const client = createClient({})
+  test('exactly one of `url` or the deprecated `uri` alias is required', async () => {
+    expectTypeOf(await client.request({url: '/ping'})).toMatchTypeOf<any>()
+    expectTypeOf(await client.request({uri: '/ping'})).toMatchTypeOf<any>()
+    client.observable.request({url: '/ping'})
+    client.observable.request({uri: '/ping'})
+    // @ts-expect-error -- should fail: one of `url` or `uri` is required
+    await client.request({})
+    // @ts-expect-error -- should fail: `url` and `uri` are mutually exclusive
+    await client.request({url: '/ping', uri: '/ping'})
+  })
+})
+
 describe('client.fetch', () => {
   const client = createClient({})
   test('params', async () => {

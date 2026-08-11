@@ -29,7 +29,7 @@ jobs:
           path: node_modules/.cache/prettier/.prettier-cache
           key: prettier-${{ hashFiles('package-lock.json') }}-${{ hashFiles('.gitignore') }}
       - run: npx prettier --ignore-path .gitignore --cache --write .
-      - run: git restore .github/workflows CHANGELOG.md runtimes/deno/import_map.json
+      - run: git restore .github/workflows CHANGELOG.md
       - uses: actions/create-github-app-token@v3
         id: app-token
         with:

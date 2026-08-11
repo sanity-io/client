@@ -1,6 +1,6 @@
-import {lastValueFrom, type Observable} from 'rxjs'
+import {type Observable} from 'rxjs'
 
-import {_request} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {CurrentSanityUser, HttpRequest, SanityUser} from '../types'
 
@@ -21,10 +21,10 @@ export class ObservableUsersClient {
   getById<T extends 'me' | string>(
     id: T,
   ): Observable<T extends 'me' ? CurrentSanityUser : SanityUser> {
-    return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
+    return _requestObservable<T extends 'me' ? CurrentSanityUser : SanityUser>(
       this.#client,
       this.#httpRequest,
-      {uri: `/users/${id}`},
+      {url: `/users/${id}`},
     )
   }
 }
@@ -46,10 +46,10 @@ export class UsersClient {
   getById<T extends 'me' | string>(
     id: T,
   ): Promise<T extends 'me' ? CurrentSanityUser : SanityUser> {
-    return lastValueFrom(
-      _request<T extends 'me' ? CurrentSanityUser : SanityUser>(this.#client, this.#httpRequest, {
-        uri: `/users/${id}`,
-      }),
+    return _request<T extends 'me' ? CurrentSanityUser : SanityUser>(
+      this.#client,
+      this.#httpRequest,
+      {url: `/users/${id}`},
     )
   }
 }
