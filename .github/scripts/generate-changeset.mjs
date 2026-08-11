@@ -77,7 +77,9 @@ async function getChangedFiles() {
       `/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}`,
     )
     if (data.length === 0) break
-    files.push(...data.map((f) => f.filename))
+    // Keep `status`: a file the PR deletes still shows up here, and the two callers below
+    // want different things from that.
+    files.push(...data.map((f) => ({path: f.filename, status: f.status})))
     page++
   }
 
@@ -107,13 +109,21 @@ const existingChangeset = await getExistingChangeset()
 // wrote ours: a contributor can run `pnpm changeset` after the bot has committed, and if we
 // only looked when ours was absent both files would survive and the release would carry two
 // entries for the same PR.
-const manualChangesets = prChangedFiles.filter(
-  (f) =>
-    f.startsWith('.changeset/') &&
-    f.endsWith('.md') &&
-    f !== '.changeset/README.md' &&
-    f !== CHANGESET_FILE,
-)
+//
+// Only count changesets that still exist on the head commit. A PR that deletes an unreleased
+// changeset from the base branch also lists it here, and treating that as "the contributor
+// wrote their own" would make us delete our file and then skip forever, leaving the PR with
+// no changeset at all.
+const manualChangesets = prChangedFiles
+  .filter((f) => f.status !== 'removed')
+  .map((f) => f.path)
+  .filter(
+    (p) =>
+      p.startsWith('.changeset/') &&
+      p.endsWith('.md') &&
+      p !== '.changeset/README.md' &&
+      p !== CHANGESET_FILE,
+  )
 
 // Ours, but edited by hand - the marker is gone, so stop touching it.
 if (existingChangeset !== null && !existingChangeset.startsWith(AUTO_GENERATED_MARKER)) {
@@ -165,8 +175,9 @@ if (!bump) {
 // 3. Preserve the full conventional commit title so the changelog function can parse type and scope
 const releaseNotes = PR_TITLE
 
-// 4. Only generate a changeset when the published package is affected
-const affectsPackage = prChangedFiles.some((file) =>
+// 4. Only generate a changeset when the published package is affected. Deletions count here:
+// removing a source file changes what consumers receive just as much as adding one.
+const affectsPackage = prChangedFiles.some(({path: file}) =>
   RELEVANT_PATHS.some((path) => (path.endsWith('/') ? file.startsWith(path) : file === path)),
 )
 
