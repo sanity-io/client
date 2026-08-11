@@ -36,7 +36,7 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
     ? studioPath.toString(jsonPathToStudioPath(path))
     : path
 
-  // eslint-disable-next-line no-warning-comments
+  // oxlint-disable-next-line no-warning-comments
   // @TODO Using searchParams as a temporary workaround until `@sanity/overlays` can decode state from the path reliably
   const searchParams = new URLSearchParams({
     baseUrl,

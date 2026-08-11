@@ -108,7 +108,7 @@ describe('pkg.exports["."]', () => {
     const node = await import('../src/index.node')
     expect(Object.keys(source)).toEqual(Object.keys(node))
   })
-  // eslint-disable-next-line no-warning-comments
+  // oxlint-disable-next-line no-warning-comments
   // @TODO disabling this test until we no longer have the migrationNotice.ts
   test.skip('default exports should not be used', async () => {
     await expect(

@@ -33,7 +33,9 @@ export type ContentSourceMapParsedPathKeyedSegment = {_key: string; _index: numb
 
 /** @alpha */
 export type ContentSourceMapParsedPath = (
-  string | number | ContentSourceMapParsedPathKeyedSegment
+  | string
+  | number
+  | ContentSourceMapParsedPathKeyedSegment
 )[]
 
 /** @alpha */

@@ -151,8 +151,10 @@ function connectWithESInstance<EventTypeName extends string>(
         const [parseError, event] = parseEvent(evt as MessageEvent)
         observer.error(
           parseError
-            ? new MessageParseError('Unable to parse EventSource error message', {cause: event})
-            : new MessageError((event?.data as {message: string}).message, event),
+            ? new MessageParseError('Unable to parse EventSource error message', {
+                cause: parseError,
+              })
+            : new MessageError((event.data as {message: string}).message, event),
         )
         return
       }

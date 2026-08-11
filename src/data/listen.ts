@@ -58,7 +58,8 @@ const defaultOptions = {
 export type MapListenEventNamesToListenEvents<
   R extends Record<string, Any> = Record<string, Any>,
   Events extends (ResumableListenEventNames | ListenEventName)[] = (
-    ResumableListenEventNames | ListenEventName
+    | ResumableListenEventNames
+    | ListenEventName
   )[],
 > = Events extends (infer E)[]
   ? E extends 'welcome'

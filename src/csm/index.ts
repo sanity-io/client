@@ -1,5 +1,5 @@
-import * as studioPath from './studioPath'
-export {studioPath}
+/** @alpha */
+export * as studioPath from './studioPath'
 export * from './applySourceDocuments'
 export {createEditUrl} from './createEditUrl'
 export {

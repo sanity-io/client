@@ -96,7 +96,7 @@ function _fetchRequest<Q>(
   const stega =
     'stega' in options
       ? {
-          ...(_stega || {}),
+          ..._stega,
           ...(typeof options.stega === 'boolean' ? {enabled: options.stega} : options.stega || {}),
         }
       : _stega

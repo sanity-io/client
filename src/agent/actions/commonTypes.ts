@@ -135,7 +135,8 @@ export interface GroqAgentActionParam {
 
 /**  @beta */
 export type AgentActionTypeConfig =
-  {include: string[]; exclude?: never} | {exclude: string[]; include?: never}
+  | {include: string[]; exclude?: never}
+  | {exclude: string[]; include?: never}
 
 /**  @beta */
 export type AgentActionPathSegment = string | {_key: string}

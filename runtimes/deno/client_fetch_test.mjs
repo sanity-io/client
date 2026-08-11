@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 
-import {createClient} from '../../dist/index.js'
+import {createClient} from '@sanity/client'
 
 const projectId = '81pocpw8'
 const dataset = 'production'

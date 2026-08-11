@@ -324,7 +324,7 @@ function printWarnings(config: HttpRequestConfig): TransformMiddleware {
       for (const msg of header.split(',').map((m) => m.trim())) {
         if (!msg || seen[msg] || shouldIgnore(msg)) continue
         seen[msg] = true
-        // eslint-disable-next-line no-console
+        // oxlint-disable-next-line no-console
         console.warn(msg)
       }
       return response

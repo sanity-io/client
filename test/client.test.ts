@@ -94,7 +94,7 @@ describe('client', async () => {
     streamError = mod.streamError
   }
 
-  const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
+  const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...conf})
 
   describe('BASE CLIENT', () => {
     test('can create a client', () => {
@@ -4493,7 +4493,7 @@ describe('client', async () => {
       await expect(getClient().mutate(patch)).resolves.not.toThrow()
     })
 
-    // eslint-disable-next-line no-warning-comments
+    // oxlint-disable-next-line no-warning-comments
     // @TODO investigate why this fails on Edge Runtime
     test.skipIf(isEdge)('can manually call clone on patch', () => {
       const patch1 = getClient().patch('abc123').inc({count: 1})
@@ -4731,7 +4731,7 @@ describe('client', async () => {
       ).toThrow(/contains an ID/)
     })
 
-    // eslint-disable-next-line no-warning-comments
+    // oxlint-disable-next-line no-warning-comments
     // @TODO investigate why this fails on Edge Runtime
     test.skipIf(isEdge)('can manually call clone on transaction', () => {
       const trans1 = getClient().transaction().delete('foo.bar')

@@ -40,7 +40,7 @@ describe('@sanity/client/stega', async () => {
     getActiveMock = mod.getActiveMock
   }
 
-  const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...(conf || {})})
+  const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...conf})
 
   const result = [{_id: 'njgNkngskjg', title: 'IPA', rating: 4, country: 'Norway'}]
   const resultSourceMap = {

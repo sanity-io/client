@@ -138,7 +138,7 @@ export interface TranslateTarget extends AgentActionTarget {
 
 /** @beta */
 // need the generics to hold optional call-site response generics
-// eslint-disable-next-line unused-imports/no-unused-vars
+// oxlint-disable-next-line no-unused-vars
 export type TranslateDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
   TranslateRequestBase & AgentActionSync
 
@@ -147,7 +147,8 @@ export type TranslateDocumentAsync = TranslateRequestBase & AgentActionAsync
 
 /** @beta */
 export type TranslateDocument<T extends Record<string, Any> = Record<string, Any>> =
-  TranslateDocumentSync<T> | TranslateDocumentAsync
+  | TranslateDocumentSync<T>
+  | TranslateDocumentAsync
 
 export function _translateObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,

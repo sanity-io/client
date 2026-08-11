@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "bracketSpacing": false,
+  "printWidth": 100,
+  "semi": false,
+  "singleQuote": true,
+  "sortImports": true,
+  "sortPackageJson": true,
+  "ignorePatterns": ["dist", "coverage", "runtimes/deno", "runtimes/node", "CHANGELOG.md"]
+}
