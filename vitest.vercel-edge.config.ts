@@ -13,7 +13,7 @@ export default defineConfig({
     typecheck: {enabled: false},
   },
   resolve: {
-    // https://github.com/vercel/next.js/blob/95322649/packages/next/src/build/webpack-config.ts#L1079-L1084
+    // https://github.com/vercel/next.js/blob/95322649ffb2ad0d6423481faed188dd7b1f7ff2/packages/next/src/build/webpack-config.ts#L1079-L1084
     conditions: ['edge-light', 'worker', 'browser', 'module', 'import', 'node'],
   },
 })

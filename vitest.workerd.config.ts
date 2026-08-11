@@ -1,3 +1,8 @@
+// Runs a smoke suite inside Cloudflare's workerd runtime (via miniflare) to
+// verify the client works *out of the box* on bare workerd: i.e. WITHOUT the
+// `nodejs_compat` flag, so it never reaches for get-it's Node (undici) build
+// or any `node:*` API.
+
 import {cloudflareTest} from '@cloudflare/vitest-pool-workers'
 import {defineConfig} from 'vitest/config'
 
@@ -13,6 +18,9 @@ export default defineConfig({
   ],
   test: {
     include: ['runtimes/workerd/**/*.test.ts'],
+    // Mirror the other runtime suites: resolve `@sanity/client` to source so we
+    // don't depend on `npm run build`. The real `exports` map is exercised by
+    // the packaging-resolution guard in `test/exports.test.ts` instead.
     alias: sourceAlias('default'),
     server: {
       deps: {
