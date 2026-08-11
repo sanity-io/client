@@ -5,6 +5,23 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [8.0.0](https://github.com/sanity-io/client/compare/v7.26.2...v8.0.0) (2026-08-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* upgrade @sanity/pkg-utils to v12, swap eslint/prettier for oxlint/oxfmt ([#1260](https://github.com/sanity-io/client/issues/1260))
+* The `main` and `module` package fields are removed. Consumers must resolve the package through `exports`.
+
+### Features
+
+* require node 22.12 or higher, use fetch ([#1217](https://github.com/sanity-io/client/issues/1217)) ([3d78c84](https://github.com/sanity-io/client/commit/3d78c845c996833ec9d160cc4e5d6e6eda27a6ce))
+
+
+### Build System
+
+* upgrade @sanity/pkg-utils to v12, swap eslint/prettier for oxlint/oxfmt ([#1260](https://github.com/sanity-io/client/issues/1260)) ([51b55f8](https://github.com/sanity-io/client/commit/51b55f86b4dfaf4cf1f7a65a0f14735eeaf2973d))
+
 ## [7.26.2](https://github.com/sanity-io/client/compare/v7.26.1...v7.26.2) (2026-08-04)
 
 
