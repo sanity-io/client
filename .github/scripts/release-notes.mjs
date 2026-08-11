@@ -20,22 +20,53 @@ const changelog = await readFile('CHANGELOG.md', 'utf8')
 // Changesets writes `## 7.26.3`; the release-please entries already in the file are linked, as in
 // `## [7.26.2](https://github.com/sanity-io/client/compare/v7.26.1...v7.26.2) (2026-08-04)`, so
 // match on the first token of the heading with any link syntax stripped.
-const isHeading = (line) => line.startsWith('## ')
-
 function headingVersion(line) {
   const [token] = line.slice(3).trim().split(/\s+/)
   return token.replace(/^\[/, '').replace(/\].*$/, '')
 }
 
 const lines = changelog.split('\n')
-const start = lines.findIndex((line) => isHeading(line) && headingVersion(line) === version)
+
+// A `## ` line inside a fenced code block is not a heading. `changesets/action` parses the
+// changelog as markdown and gets this for free; here the fences are tracked by hand, otherwise
+// an entry containing a code sample with a markdown heading in it would cut the notes short.
+let openFence = null
+const isHeading = lines.map((line) => {
+  const fenceMatch = line.match(/^ {0,3}(`{3,}|~{3,})/)
+  if (openFence !== null) {
+    if (
+      fenceMatch &&
+      fenceMatch[1][0] === openFence[0] &&
+      fenceMatch[1].length >= openFence.length
+    ) {
+      openFence = null
+    }
+    return false
+  }
+  if (fenceMatch) {
+    openFence = fenceMatch[1]
+    return false
+  }
+  return line.startsWith('## ')
+})
+
+const start = lines.findIndex((line, i) => isHeading[i] && headingVersion(line) === version)
 
 if (start === -1) {
   throw new Error(`Could not find a changelog entry for ${version} in CHANGELOG.md`)
 }
 
-const rest = lines.slice(start + 1)
-const end = rest.findIndex(isHeading)
-const body = (end === -1 ? rest : rest.slice(0, end)).join('\n').trim()
+let end = lines.length
+for (let i = start + 1; i < lines.length; i++) {
+  if (isHeading[i]) {
+    end = i
+    break
+  }
+}
 
-console.log(body)
+console.log(
+  lines
+    .slice(start + 1, end)
+    .join('\n')
+    .trim(),
+)
