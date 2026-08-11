@@ -8,7 +8,7 @@ import {
 } from '@sanity/client'
 import {encode} from 'eventsource-encoder'
 import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
-import {afterEach, describe, expect, test, vitest} from 'vitest'
+import {describe, expect, test, vitest} from 'vitest'
 
 import {getActiveFetch, getActiveMock, testResolveFetch} from './helpers/mockFetch'
 import {createSseServer, type OnRequest} from './helpers/sseServer'
@@ -21,33 +21,12 @@ const createClient: typeof createCoreClient = (config) =>
   createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 /**
- * `live.events()` makes two kinds of requests:
+ * `live.events()` makes two kinds of requests, both routed through the
+ * injected mock transport and therefore registered via {@link getActiveMock}:
  *
- *  - the EventSource connection to `/data/live/events/...`, which is routed
- *    through the injected mock transport and is therefore registered via
- *    {@link getActiveMock}; and
- *  - a `/check/cors` probe (only on connection error) made with the bare
- *    `globalThis.fetch`, expecting a real `Response` it can call `.json()` on.
- *
- * The get-it mock response is intentionally minimal (no `.json()`), so the
- * CORS probe is stubbed separately with a real `Response` via this helper.
- * Returns a counter of how many times `/check/cors` was hit.
+ *  - the EventSource connection to `/data/live/events/...`; and
+ *  - a `/check/cors` probe, made only on connection error.
  */
-function stubCorsCheck(respond: (url: URL) => Response): {hits: number} {
-  const state = {hits: 0}
-  vitest.stubGlobal('fetch', (input: string | URL): Promise<Response> => {
-    const url = typeof input === 'string' ? new URL(input) : input
-    if (url.pathname.endsWith('/check/cors')) {
-      state.hits++
-      return Promise.resolve(respond(url))
-    }
-    return Promise.reject(new Error(`Unexpected global fetch to ${url.toString()}`))
-  })
-  return state
-}
-
-const corsJson = (result: {allowed?: boolean; withCredentials?: boolean}): Response =>
-  Response.json({result})
 
 const getClient = (options: ClientConfig & {port: number}) =>
   createCoreClient({
@@ -68,10 +47,6 @@ const testSse = async (onRequest: OnRequest, options: ClientConfig = {}) => {
 describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefined')(
   '.live.events()',
   () => {
-    afterEach(() => {
-      vitest.unstubAllGlobals()
-    })
-
     test('allows apiVersion vX', () => {
       const client = getClient({apiVersion: 'vX', port: 1234})
       expect(() => client.live.events()).not.toThrow()
@@ -222,17 +197,40 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
+    test('the CORS probe goes through the configured transport, not global fetch', async () => {
+      const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+      // The events connection fails, which triggers the probe.
+      scope
+        .on('GET', '/v2021-03-26/data/live/events/prod')
+        .respondPersist({status: 403, body: 'Forbidden'})
+      scope.on('GET', '/v2021-03-26/check/cors').respond({
+        status: 200,
+        body: {result: {allowed: false, withCredentials: false}},
+      })
+
+      const client = createClient({
+        projectId: 'abc123',
+        dataset: 'prod',
+        useCdn: false,
+        apiVersion: '2021-03-26',
+        resolveFetch: testResolveFetch,
+      })
+
+      const error = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
+      expect(error).toBeInstanceOf(CorsOriginError)
+      expect(getActiveMock()).toHaveReceivedRequest('GET', '/v2021-03-26/check/cors')
+    })
+
     test('handles CORS errors', async () => {
       expect.assertions(3)
 
-      // The /check/cors probe is hit through the bare global `fetch`. Use
-      // distinct projectIds so the cors-check URL differs between the two
-      // clients: no-cors reports `allowed: false`, cors reports `allowed: true`.
-      stubCorsCheck((url) =>
-        url.hostname.startsWith('no-cors')
-          ? corsJson({allowed: false, withCredentials: false})
-          : corsJson({allowed: true, withCredentials: false}),
-      )
+      // Use distinct projectIds so the cors-check URL differs between the two
+      // clients: no-cors reports `allowed: false`. The cors client's
+      // connection succeeds outright below, so its probe is never triggered.
+      getActiveMock()
+        .scope('https://no-cors.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: false, withCredentials: false}}})
 
       // The EventSource connection goes through the get-it mock. For the
       // no-cors project, simulate a 403 (the typical CORS-rejection response)
@@ -284,7 +282,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('handles non-CORS reconnect errors correctly', async () => {
       expect.assertions(1)
 
-      stubCorsCheck(() => corsJson({allowed: true, withCredentials: false}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
 
       // Simulate 500 server error (not CORS)
       getActiveMock()
@@ -307,7 +308,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('keeps reconnecting when the connection is rejected with a 429 (rate limited)', async () => {
       expect.assertions(1)
 
-      stubCorsCheck(() => corsJson({allowed: true, withCredentials: false}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
 
       // Rate limiting is transient — unlike other 4xx rejections it must keep
       // the reconnect behavior so listeners recover when the throttle lifts
@@ -333,7 +337,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('stops reconnecting and surfaces the error when the connection is rejected with a 4xx', async () => {
       expect.assertions(2)
 
-      stubCorsCheck(() => corsJson({allowed: true, withCredentials: false}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
 
       // Simulate an auth rejection, e.g. an expired or revoked token. Unlike a
       // transient 5xx, the server will keep rejecting — reconnecting forever
@@ -360,11 +367,14 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
     test('does not report CorsOriginError when /check/cors returns a non-2xx response', async () => {
       // Regression: a non-2xx response from /check/cors is not a confirmed
-      // CORS rejection (the probe never reaches `response.json()` in this
+      // CORS rejection (the probe never reaches `response.text()` in this
       // case). The original underlying error must propagate instead.
       expect.assertions(2)
 
-      stubCorsCheck(() => new Response('boom', {status: 500}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 500, body: 'boom'})
 
       getActiveMock()
         .scope('https://abc123.api.sanity.io')
@@ -390,7 +400,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       // error path), not the `!response.ok` short-circuit.
       expect.assertions(2)
 
-      stubCorsCheck(() => new Response('not json at all', {status: 200}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: 'not json at all'})
 
       getActiveMock()
         .scope('https://abc123.api.sanity.io')
@@ -412,7 +425,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('uses non-project hostname for /check/cors when useProjectHostname is false', async () => {
       expect.assertions(2)
 
-      const cors = stubCorsCheck(() => corsJson({allowed: false, withCredentials: false}))
+      getActiveMock()
+        .scope('https://api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: false, withCredentials: false}}})
 
       getActiveMock()
         .scope('https://api.sanity.io')
@@ -429,7 +445,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const error = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
       expect(error).toBeInstanceOf(CorsOriginError)
-      expect(cors.hits).toBeGreaterThan(0)
+      expect(getActiveMock()).toHaveReceivedRequest('GET', '/vX/check/cors')
     })
 
     test('reports CorsOriginError when EventSource needs credentials but /check/cors reports withCredentials: false', async () => {
@@ -441,7 +457,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       // pre-selects "Allow credentials" in the management form.
       expect.assertions(3)
 
-      stubCorsCheck(() => corsJson({allowed: true, withCredentials: false}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
 
       getActiveMock()
         .scope('https://abc123.api.sanity.io')
@@ -464,9 +483,9 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       // assert the `credentials=` query param ends up on the deep-link.
       vitest.stubGlobal('location', {origin: 'https://example.com'})
       try {
-        const error = (await firstValueFrom(
+        const error = await firstValueFrom(
           client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
-        )) as CorsOriginError
+        )
         expect(error).toBeInstanceOf(CorsOriginError)
         expect(error.addOriginUrl?.searchParams.get('credentials')).toBe('')
         expect(error.addOriginUrl?.searchParams.get('origin')).toBe('https://example.com')
@@ -478,7 +497,10 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     test('does not report CorsOriginError when /check/cors reports allowed: true, withCredentials: true and the EventSource needs credentials', async () => {
       expect.assertions(2)
 
-      stubCorsCheck(() => corsJson({allowed: true, withCredentials: true}))
+      getActiveMock()
+        .scope('https://abc123.api.sanity.io')
+        .on('GET', '/vX/check/cors')
+        .respond({status: 200, body: {result: {allowed: true, withCredentials: true}}})
 
       getActiveMock()
         .scope('https://abc123.api.sanity.io')
