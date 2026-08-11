@@ -1,28 +1,19 @@
-// Run tests in the Vercel Edge Runtime, and using its resolution algorithm that
-// chooses worker exports if they exist, if not it tries to look for browser exports.
+// Vercel Edge Runtime, using its resolution order: worker exports if present,
+// otherwise browser exports.
+import {defineConfig} from 'vitest/config'
 
-import {defineConfig, mergeConfig} from 'vitest/config'
+import {nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
 
-import pkg from './package.json'
-import viteConfig from './vite.config'
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'edge-runtime',
-      alias: {
-        '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
-        '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
-        '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
-      },
-      typecheck: {
-        enabled: false,
-      },
-    },
-    resolve: {
-      // https://github.com/vercel/next.js/blob/95322649ffb2ad0d6423481faed188dd7b1f7ff2/packages/next/src/build/webpack-config.ts#L1079-L1084
-      conditions: ['edge-light', 'worker', 'browser', 'module', 'import', 'node'],
-    },
-  }),
-)
+export default defineConfig({
+  test: {
+    ...sharedConfig,
+    exclude: nonNodeExclude,
+    environment: 'edge-runtime',
+    alias: sourceAlias('default'),
+    typecheck: {enabled: false},
+  },
+  resolve: {
+    // https://github.com/vercel/next.js/blob/95322649/packages/next/src/build/webpack-config.ts#L1079-L1084
+    conditions: ['edge-light', 'worker', 'browser', 'module', 'import', 'node'],
+  },
+})

@@ -1,27 +1,15 @@
-// Simulates a browser environment until `@vitest/browser` is ready for production and
-// we can run the tests in a real browser
+// Simulated browser environment. Phase 4 replaces this with real browsers.
+import {defineConfig} from 'vitest/config'
 
-import {defineConfig, mergeConfig} from 'vitest/config'
+import {nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
 
-import pkg from './package.json'
-import viteConfig from './vite.config'
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'happy-dom',
-      alias: {
-        '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
-        '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
-        '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
-      },
-      typecheck: {
-        enabled: false,
-      },
-    },
-    resolve: {
-      conditions: ['browser', 'module', 'import'],
-    },
-  }),
-)
+export default defineConfig({
+  test: {
+    ...sharedConfig,
+    exclude: nonNodeExclude,
+    environment: 'happy-dom',
+    alias: sourceAlias('default'),
+    typecheck: {enabled: false},
+  },
+  resolve: {conditions: ['browser', 'module', 'import']},
+})
