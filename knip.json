@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["test/**/*.test.ts", "test/**/*.test-d.ts", "test-next/**/*.test-d.ts", "runtimes/**"],
+  "project": ["src/**", "test/**"],
+  // `vercelStegaCleanAll` is a deliberate `@deprecated` alias of `stegaClean`
+  // (see src/stega/stegaClean.ts), re-exported publicly from src/stega/index.ts.
+  // It is not a real duplicate, so scope the ignore to that one file rather
+  // than turning the `duplicates` rule off project-wide.
+  "ignoreIssues": {
+    "src/stega/stegaClean.ts": ["duplicates"]
+  },
+  // `exports` and `types` are downgraded to "warn" (reported, exit 0) rather
+  // than "off" because there are 10 known-but-deferred findings: internal
+  // exports in src/ (7 unused exports, 3 unused exported types) that are not
+  // referenced from test/ or any public entry point. They are kept exported
+  // because Task 6 of this test-suite-cleanup plan may re-export some of
+  // them (_observe, _dataRequestObservable, defineHttpRequest are candidates)
+  // so tests can call the internals directly with real inputs. Task 15
+  // re-runs knip after the test restructure to either remove what's still
+  // unused or promote these two rules back to "error".
+  "rules": {
+    "exports": "warn",
+    "types": "warn"
+  }
+}

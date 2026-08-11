@@ -95,7 +95,9 @@
     "test:vercel-edge": "vitest run --config ./vitest.vercel-edge.config.ts",
     "test:workerd": "vitest run --config ./vitest.workerd.config.ts",
     "format": "oxfmt",
-    "format:check": "oxfmt --check"
+    "format:check": "oxfmt --check",
+    "knip": "knip",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "eventsource": "^5.0.0",
@@ -118,6 +120,7 @@
     "eventsource-encoder": "^1.0.2",
     "happy-dom": "^20.11.1",
     "json-diff": "^1.0.6",
+    "knip": "^6.32.1",
     "ls-engines": "^0.10.1",
     "next": "^16.3.0",
     "oxfmt": "^0.63.0",
