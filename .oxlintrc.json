@@ -1,6 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "options": {
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
+  },
   "categories": {
     "correctness": "error"
   },
@@ -19,7 +23,16 @@
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
-    "typescript/no-explicit-any": "error"
+    "typescript/no-explicit-any": "error",
+
+    "typescript/await-thenable": "error",
+    "typescript/no-duplicate-type-constituents": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-redundant-type-constituents": "error",
+    "typescript/no-unnecessary-type-parameters": "error",
+
+    "typescript/no-base-to-string": "off",
+    "typescript/restrict-template-expressions": "off"
   },
   "overrides": [
     {
@@ -27,6 +40,23 @@
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off"
+      }
+    },
+    {
+      // Type-level assertions reference methods without calling them by design.
+      "files": ["**/*.test-d.ts"],
+      "rules": {
+        "typescript/unbound-method": "off"
+      }
+    },
+    {
+      // The `fetch` overloads declare `Q` for callers who pass explicit type arguments
+      // (`fetch<R, Q>(...)`), so it is public API rather than a redundant parameter. An inline
+      // directive cannot suppress it: the diagnostic is reported against the closing `>(...)`
+      // line, and a comment inside a multi-line type parameter list is not picked up.
+      "files": ["src/SanityClient.ts"],
+      "rules": {
+        "typescript/no-unnecessary-type-parameters": "off"
       }
     }
   ]

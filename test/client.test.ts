@@ -289,7 +289,7 @@ describe('client', async () => {
       let error: unknown
       try {
         // @ts-expect-error -- `url` is required in the types; this simulates a JS caller omitting it
-        getClient().request({})
+        void getClient().request({})
       } catch (err) {
         error = err
       }
@@ -1946,7 +1946,7 @@ describe('client', async () => {
 
     test.skipIf(isEdge)('throws on invalid request tag on request', () => {
       expect(() => {
-        getClient().fetch('*', {}, {tag: 'mycompany syncjob ok'})
+        void getClient().fetch('*', {}, {tag: 'mycompany syncjob ok'})
       }).toThrow(/tag can only contain alphanumeric/i)
     })
 
