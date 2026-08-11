@@ -1,0 +1,12 @@
+# Dependencies allowed to run install scripts. pnpm blocks these by default.
+# - esbuild: links its platform binary, pulled in transitively by vitest and next
+# - sharp: next's image optimizer, pulled in by the next type tests
+# - workerd: unpacks the Cloudflare Workers runtime binary used by the workerd test suite
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+# pnpm holds back releases younger than its minimum release age. Entries here have been
+# reviewed and are allowed through.
+minimumReleaseAgeExclude:
+  - eventsource@5.0.0

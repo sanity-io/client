@@ -1,0 +1,106 @@
+name: Generate changeset from PR
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  generate-changeset:
+    name: Generate changeset
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login != 'squiggler-app[bot]'
+    steps:
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+
+      - name: Checkout base branch scripts
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          sparse-checkout: .github/scripts
+          path: base-scripts
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Analyze PR and generate changeset
+        id: analyze
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ ! -f base-scripts/.github/scripts/generate-changeset.mjs ]; then
+            echo "Base branch '${{ github.event.pull_request.base.ref }}' has no generate-changeset script, skipping"
+            echo "action=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node base-scripts/.github/scripts/generate-changeset.mjs
+
+      - name: Checkout PR branch
+        if: steps.analyze.outputs.action == 'write' || steps.analyze.outputs.action == 'remove'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ steps.generate_token.outputs.token }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Configure git
+        if: steps.analyze.outputs.action == 'write' || steps.analyze.outputs.action == 'remove'
+        env:
+          GH_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          git config user.name 'squiggler-app[bot]'
+          git config user.email '265501495+squiggler-app[bot]@users.noreply.github.com'
+          git remote set-url origin "https://x-access-token:${GH_APP_TOKEN}@github.com/${PR_HEAD_REPO}.git"
+
+      - name: Write changeset and push
+        if: steps.analyze.outputs.action == 'write'
+        env:
+          CHANGESET_CONTENT: ${{ steps.analyze.outputs.changeset_content }}
+          CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p "$(dirname "$CHANGESET_FILE")"
+          printf '%s' "$CHANGESET_CONTENT" > "$CHANGESET_FILE"
+          git add "$CHANGESET_FILE"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update auto-generated changeset for PR #${{ github.event.pull_request.number }}"
+            git push --force-with-lease="${PR_HEAD_REF}:${PR_HEAD_SHA}" origin "HEAD:${PR_HEAD_REF}"
+          else
+            echo "No changes to changeset file"
+          fi
+
+      - name: Remove changeset and push
+        if: steps.analyze.outputs.action == 'remove'
+        env:
+          CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f "$CHANGESET_FILE" ]; then
+            git rm "$CHANGESET_FILE"
+            git commit -m "chore: remove auto-generated changeset for PR #${{ github.event.pull_request.number }}"
+            git push --force-with-lease="${PR_HEAD_REF}:${PR_HEAD_SHA}" origin "HEAD:${PR_HEAD_REF}"
+          fi

@@ -19,12 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          cache: npm
+          cache: pnpm
           node-version: lts/*
-      - run: npm ci --ignore-scripts --only-dev
-      - run: npm run format
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run format
       - run: git restore .github/workflows
       - uses: actions/create-github-app-token@v3
         id: app-token
@@ -33,7 +34,7 @@ jobs:
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
-          body: I ran `npm run format` 🧑‍💻
+          body: I ran `pnpm run format` 🧑‍💻
           branch: actions/format
           commit-message: 'chore(format): 🤖 ✨'
           labels: 🤖 bot

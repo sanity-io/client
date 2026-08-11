@@ -14,10 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: lts/*
-      - run: npx update-browserslist-db@latest
+      - run: pnpm dlx update-browserslist-db@latest
       - uses: actions/create-github-app-token@v3
         id: app-token
         with:
@@ -25,7 +26,7 @@ jobs:
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
-          body: I ran `npx update-browserslist-db@latest` 🧑‍💻
+          body: I ran `pnpm dlx update-browserslist-db@latest` 🧑‍💻
           branch: actions/update-browserslist-database-if-needed
           commit-message: 'chore: update browserslist db'
           labels: 🤖 bot
