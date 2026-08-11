@@ -93,10 +93,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
+      # pnpm 11 requires Node >= 22.13, but `engines.node` is >= 22.12 and this matrix
+      # deliberately tests that floor. Install under a Node that pnpm can run on, then
+      # switch to the matrix version and run the suite without going through pnpm. What
+      # we are testing is that the library works on the minimum Node, not that pnpm does.
       - uses: actions/setup-node@v7
         with:
           cache: pnpm
-          node-version: ${{ matrix.node }}
+          node-version: lts/*
       - run: pnpm install --frozen-lockfile
       # Dev-only deps don't constrain published consumers, so exclude them
       # with `--no-dev`. That flag is only honored when walking a real tree.
@@ -105,7 +109,11 @@ jobs:
       # installed tree instead. `--mode ideal` would ignore `--no-dev` and
       # still surface engines conflicts from dev-only deps (e.g. vitest).
       - run: pnpm exec ls-engines --mode actual --no-dev
-      - run: pnpm test
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Run tests on Node ${{ matrix.node }}
+        run: npx vitest run
 
   vercel-edge:
     runs-on: ubuntu-latest
@@ -177,9 +185,11 @@ jobs:
         with:
           cache: pnpm
           node-version: lts/*
-      # Production dependencies only, so that a devDependency leaking into the
-      # published entry points fails here instead of in consumers' projects.
-      - run: pnpm install --frozen-lockfile --prod --ignore-scripts
+      # Unlike the bun and node runtime jobs, this one needs a full install: `deno test`
+      # type-checks the suite and resolves `@types/node`, which is a devDependency.
+      # npm's flat node_modules happened to expose it even under `--omit=dev`; pnpm's
+      # isolated layout does not.
+      - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v8
         name: Restore build output
         with:
