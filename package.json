@@ -81,9 +81,7 @@
     }
   },
   "scripts": {
-    "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict",
-    "clean": "npx rimraf dist coverage",
     "coverage": "vitest run --coverage",
     "lint": "oxlint",
     "prepublishOnly": "npm run build",
@@ -124,7 +122,6 @@
     "oxfmt": "^0.63.0",
     "oxlint": "^1.78.0",
     "pkg-pr-new": "^0.0.86",
-    "rimraf": "^5.0.7",
     "typescript": "7.0.2",
     "vitest": "^4.1.10"
   },

@@ -3,6 +3,9 @@ import {defineConfig} from '@sanity/pkg-utils'
 export default defineConfig({
   tsconfig: 'tsconfig.dist.json',
 
+  // `dist` is cleaned by default; list it alongside `coverage` to keep both.
+  clean: ['dist', 'coverage'],
+
   deps: {alwaysBundle: ['@vercel/stega']},
 
   // pkg-utils v12 only emits `import` under the `node` condition. `require(esm)` activates
