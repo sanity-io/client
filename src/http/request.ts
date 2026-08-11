@@ -192,7 +192,7 @@ export interface EnvironmentOptions {
    *
    * Looked up via the env rather than imported directly so that the Node-only
    * `get-it/node` (which transitively pulls in `undici`) never ends up in the
-   * browser/UMD bundle, even via rollup's inlined dynamic imports.
+   * browser bundle, even via rollup's inlined dynamic imports.
    */
   resolveFetch?: (proxyUrl?: string) => FetchFunction
 }

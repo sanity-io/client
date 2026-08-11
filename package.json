@@ -58,37 +58,18 @@
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "unpkg": "umd/sanityClient.min.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "csm": [
-        "./dist/csm.d.ts"
-      ],
-      "stega": [
-        "./dist/stega.d.ts"
-      ],
-      "media-library": [
-        "./dist/media-library.d.ts"
-      ]
-    }
-  },
   "files": [
     "dist",
-    "src",
-    "umd"
+    "src"
   ],
   "scripts": {
     "prebuild": "npm run clean",
-    "build": "pkg build --strict && pkg --strict && npm run rollup && npm run minify",
-    "clean": "npx rimraf dist coverage umd/*.js",
+    "build": "pkg build --strict && pkg --strict",
+    "clean": "npx rimraf dist coverage",
     "coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
-    "minify": "terser -c -m -- umd/sanityClient.js > umd/sanityClient.min.js",
     "prepublishOnly": "npm run build",
-    "rollup": "NODE_ENV=production rollup -c rollup.config.cjs",
     "test": "vitest",
     "test:browser": "vitest run --config ./vitest.browser.config.ts",
     "test:bun": "bun test runtimes/bun",
@@ -122,8 +103,6 @@
     "@edge-runtime/vm": "^5.0.0",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^9.39.5",
-    "@rollup/plugin-commonjs": "^28.0.9",
-    "@rollup/plugin-node-resolve": "^16.0.3",
     "@sanity/pkg-utils": "^10.5.0",
     "@types/debug": "^4.1.12",
     "@types/json-diff": "^1.0.3",
@@ -150,8 +129,6 @@
     "prettier": "^3.9.6",
     "prettier-plugin-packagejson": "^2.5.22",
     "rimraf": "^5.0.7",
-    "rollup": "^4.62.4",
-    "terser": "^5.49.0",
     "typescript": "5.9.3",
     "vitest": "^4.1.10"
   },

@@ -23,7 +23,7 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ['**/dist', '**/umd', '**/coverage', 'runtimes/deno', 'runtimes/node'],
+    ignores: ['**/dist', '**/coverage', 'runtimes/deno', 'runtimes/node'],
   },
   ...compat.extends(
     'eslint:recommended',

@@ -13,9 +13,6 @@ node_modules
 # Deno cache lockfile (created by `npm run test:deno`)
 deno.lock
 
-# UMD bundle
-umd
-
 # MacOS
 .DS_Store
 tsconfig.vitest-temp.json

@@ -46,7 +46,6 @@ jobs:
           name: build-output-${{ github.run_id }}
           path: |
             dist/
-            umd/
 
   coverage:
     permissions:

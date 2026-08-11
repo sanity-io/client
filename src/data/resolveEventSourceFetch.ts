@@ -35,7 +35,7 @@ export interface EventSourceFetchOptions {
  *      support all apply to SSE too. The Node entry supplies get-it's
  *      undici-backed fetch (threading the resolver through the env
  *      instead of importing `get-it/node` directly keeps `undici` out of
- *      the browser/UMD bundle); the browser entry leaves it unset.
+ *      the browser bundle); the browser entry leaves it unset.
  *   2. `globalThis.fetch`. Note that Node's global fetch does NOT read
  *      proxy env vars (that is opt-in via `NODE_USE_ENV_PROXY`), which
  *      is one of the reasons step 1 exists.

@@ -66,7 +66,6 @@ export async function updateDocumentTitle(_id, title) {
     - [Deno](#deno)
     - [Edge Runtime](#edge-runtime)
     - [Browser ESM CDN](#browser-esm-cdn)
-    - [UMD](#umd)
   - [Specifying API version](#specifying-api-version)
   - [Request tags](#request-tags)
   - [Performing queries](#performing-queries)
@@ -400,51 +399,6 @@ const client = createClient({
 
 const data = await client.fetch(`count(*)`)
 console.log(`Number of documents: ${data}`)
-```
-
-#### [UMD][unpkg-dist]
-
-Loading the UMD script creates a `SanityClient` global that have the same exports as `import * as SanityClient from '@sanity/client'`:
-
-```html
-<script src="https://unpkg.com/@sanity/client"></script>
-<!-- Unminified build for debugging -->
-<!--<script src="https://unpkg.com/@sanity/client/umd/sanityClient.js"></script>-->
-<script>
-  const {createClient} = SanityClient
-
-  const client = createClient({
-    projectId: 'your-project-id',
-    dataset: 'your-dataset-name',
-    useCdn: true, // set to `false` to bypass the edge cache
-    apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
-  })
-
-  client.fetch(`count(*)`).then((data) => console.log(`Number of documents: ${data}`))
-</script>
-```
-
-The `require-unpkg` library lets you consume `npm` packages from `unpkg.com` similar to how `esm.sh` lets you `import()` anything:
-
-```html
-<div id="results"></div>
-<script src="https://unpkg.com/require-unpkg"></script>
-<script>
-  ;(async () => {
-    // const {createClient} = await require('@sanity/client')
-    const [$, {createClient}] = await require(['jquery', '@sanity/client'])
-
-    const client = createClient({
-      projectId: 'your-project-id',
-      dataset: 'your-dataset-name',
-      useCdn: true, // set to `false` to bypass the edge cache
-      apiVersion: '2025-02-06', // use current date (YYYY-MM-DD) to target the latest API version. Note: this should always be hard coded. Setting API version based on a dynamic value (e.g. new Date()) may break your application at a random point in the future.
-    })
-
-    const data = await client.fetch(`count(*)`)
-    $('#results').text(`Number of documents: ${data}`)
-  })()
-</script>
 ```
 
 ### Specifying API version
@@ -2511,7 +2465,6 @@ Migration guides for major version upgrades:
 [Bun]: https://bun.sh/
 [gzip-badge]: https://img.shields.io/bundlephobia/minzip/@sanity/client?label=gzip%20size&style=flat-square
 [size-badge]: https://img.shields.io/bundlephobia/min/@sanity/client?label=size&style=flat-square
-[unpkg-dist]: https://unpkg.com/@sanity/client/umd/
 [bundlephobia]: https://bundlephobia.com/package/@sanity/client
 [esm.sh]: https://esm.sh
 [Node.js]: https://nodejs.org/en/
