@@ -10,3 +10,9 @@ allowBuilds:
 # reviewed and are allowed through.
 minimumReleaseAgeExclude:
   - eventsource@5.0.0
+  - '@sanity/parse-package-json@2.3.1'
+  - '@sanity/pkg-utils@12.1.2'
+  - '@sanity/tsdown-config@0.24.1'
+  - '@sanity/vanilla-extract-integration@0.1.12'
+  - '@sanity/vanilla-extract-rolldown-plugin@0.4.1'
+  - '@sanity/vanilla-extract-tsdown-plugin@0.3.1'
