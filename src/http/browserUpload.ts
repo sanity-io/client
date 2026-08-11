@@ -1,11 +1,11 @@
-import createDebugLogger from 'debug'
+import {createDebug} from 'obug'
 import {Observable} from 'rxjs'
 
 import type {UploadEvent} from '../types'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
 import {parseJsonText} from './request'
 
-const log = createDebugLogger('sanity:client')
+const log = createDebug('sanity:client')
 
 let nextRequestId = 1
 
