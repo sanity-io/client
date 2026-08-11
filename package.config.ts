@@ -8,20 +8,6 @@ export default defineConfig({
 
   deps: {alwaysBundle: ['@vercel/stega']},
 
-  // pkg-utils v12 only emits `import` under the `node` condition. `require(esm)` activates
-  // `require`, so without this the CJS side of Node backtracks out of the `node` branch and
-  // gets the platform-neutral fetch build, silently skipping the Node middleware.
-  // Guarded by test/exports.test.ts.
-  exports: (prev) =>
-    Object.fromEntries(
-      Object.entries(prev).map(([path, entry]) => [
-        path,
-        entry.node?.import && !entry.node.require
-          ? {...entry, node: {...entry.node, require: entry.node.import}}
-          : entry,
-      ]),
-    ),
-
   tsdoc: {
     rules: {
       'ae-incompatible-release-tags': 'off',

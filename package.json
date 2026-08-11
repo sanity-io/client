@@ -41,7 +41,7 @@
       "node": {
         "source": "./src/index.node.ts",
         "import": "./dist/index.node.js",
-        "require": "./dist/index.node.js"
+        "default": "./dist/index.node.js"
       },
       "default": "./dist/index.js"
     },
@@ -70,7 +70,7 @@
         "worker": "./dist/index.js",
         "node": {
           "import": "./dist/index.node.js",
-          "require": "./dist/index.node.js"
+          "default": "./dist/index.node.js"
         },
         "default": "./dist/index.js"
       },
@@ -107,7 +107,7 @@
     "@cloudflare/vitest-pool-workers": "^0.20.1",
     "@edge-runtime/types": "^4.0.0",
     "@edge-runtime/vm": "^5.0.0",
-    "@sanity/pkg-utils": "^12.1.0",
+    "@sanity/pkg-utils": "^12.1.2",
     "@types/debug": "^4.1.12",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.20.1",
