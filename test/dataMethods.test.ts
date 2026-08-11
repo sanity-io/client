@@ -127,7 +127,7 @@ const assertObservableError = <T>(
   })
 }
 
-const testTagOption = <T = unknown>(
+const testTagOption = (
   methodName: string,
   methodFn: (typeof dataMethods)[keyof typeof dataMethods],
   args: readonly unknown[] = [],
@@ -140,7 +140,7 @@ const testTagOption = <T = unknown>(
 
     const client = getClient()
     const options = {tag: 'test-tag'}
-    const typedMethodFn = methodFn as unknown as DataMethodFn<T>
+    const typedMethodFn = methodFn as unknown as DataMethodFn<unknown>
     const observable = typedMethodFn(client, mockHttpRequest, ...args, options)
 
     return assertObservable(observable, () => {
@@ -150,7 +150,7 @@ const testTagOption = <T = unknown>(
   })
 }
 
-const testSignalOption = <T = unknown>(
+const testSignalOption = (
   methodName: string,
   methodFn: (typeof dataMethods)[keyof typeof dataMethods],
   args: readonly unknown[] = [],
@@ -164,7 +164,7 @@ const testSignalOption = <T = unknown>(
     const client = getClient()
     const controller = new AbortController()
     const signal = controller.signal
-    const typedMethodFn = methodFn as unknown as DataMethodFn<T>
+    const typedMethodFn = methodFn as unknown as DataMethodFn<unknown>
     const observable = typedMethodFn(client, mockHttpRequest, ...args, {signal})
 
     return assertObservable(observable, () => {

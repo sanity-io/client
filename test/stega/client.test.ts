@@ -297,7 +297,7 @@ describe('@sanity/client', () => {
     })
 
     test('allows passing stega: undefined', async () => {
-      await expect(
+      expect(
         async () =>
           await client.fetch(
             '*',
@@ -309,7 +309,7 @@ describe('@sanity/client', () => {
       ).not.toThrow()
     })
     test('allows passing stega: false', async () => {
-      await expect(
+      expect(
         async () =>
           await client.fetch(
             '*',

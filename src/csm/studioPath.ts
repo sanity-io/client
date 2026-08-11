@@ -45,6 +45,7 @@ export function isIndexTuple(segment: PathSegment): segment is IndexTuple {
 }
 
 /** @internal */
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- caller-supplied return type; removing it breaks `get<Result>(...)` call sites
 export function get<Result = unknown, Fallback = unknown>(
   obj: unknown,
   path: Path | string,
@@ -55,7 +56,7 @@ export function get<Result = unknown, Fallback = unknown>(
     throw new Error('Path must be an array or a string')
   }
 
-  let acc: unknown | undefined = obj
+  let acc: unknown = obj
   for (let i = 0; i < select.length; i++) {
     const segment = select[i]
     if (isIndexSegment(segment)) {

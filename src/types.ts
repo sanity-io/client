@@ -57,7 +57,7 @@ export type ReleaseId = `r${string}`
 type DeprecatedPreviewDrafts = 'previewDrafts'
 
 /** @public */
-export type StackablePerspective = ('published' | 'drafts' | string) & {}
+export type StackablePerspective = 'published' | 'drafts' | (string & {})
 
 /** @public */
 export type ClientPerspective =

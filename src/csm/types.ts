@@ -39,7 +39,11 @@ export type ContentSourceMapParsedPath = (
 )[]
 
 /** @alpha */
-export type StudioBaseUrl = `/${string}` | `${string}.sanity.studio` | `https://${string}` | string
+export type StudioBaseUrl =
+  | `/${string}`
+  | `${string}.sanity.studio`
+  | `https://${string}`
+  | (string & {})
 
 /** @alpha */
 export type StudioBaseRoute = {baseUrl: StudioBaseUrl; workspace?: string; tool?: string}
