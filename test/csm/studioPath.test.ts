@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import {describe, expect, test} from 'vitest'
 
 import {jsonPathToStudioPath} from '../../src/csm/jsonPath'

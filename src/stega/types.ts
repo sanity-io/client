@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type {ClientConfig, InitializedClientConfig, RawQueryResponse} from '@sanity/client'
 import type {
   ContentSourceMap,
@@ -20,7 +19,8 @@ export type {ContentSourceMap, ResolveStudioUrl}
 
 /** @public */
 export type ContentSourceMapQueryResponse =
-  RawQueryResponse<unknown> | Pick<RawQueryResponse<unknown>, 'result' | 'resultSourceMap'>
+  | RawQueryResponse<unknown>
+  | Pick<RawQueryResponse<unknown>, 'result' | 'resultSourceMap'>
 
 /** @public */
 export interface StegaConfig {

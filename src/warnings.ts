@@ -3,7 +3,7 @@ import {type Any} from './types'
 import {once} from './util/once'
 
 const createWarningPrinter = (message: string[]) =>
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   once((...args: Any[]) => console.warn(message.join(' '), ...args))
 
 export const printCdnAndWithCredentialsWarning = createWarningPrinter([

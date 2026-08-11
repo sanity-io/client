@@ -16,7 +16,7 @@ import type {AgentActionAsync, AgentActionSchema, AgentActionSync} from './commo
 /**  @beta */
 export type PatchOperation = 'set' | 'append' | 'mixed' | 'unset'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type AnyNonNullable = Exclude<any, null | undefined>
 
 /**  @beta */
@@ -99,21 +99,24 @@ interface PatchTargetDocumentRequest<T extends Record<string, Any> = Record<stri
 
 /** @beta */
 export type PatchDocumentSync<T extends Record<string, Any> = Record<string, Any>> = (
-  PatchExistingDocumentRequest | PatchTargetDocumentRequest<T>
+  | PatchExistingDocumentRequest
+  | PatchTargetDocumentRequest<T>
 ) &
   PatchRequestBase &
   AgentActionSync
 
 /** @beta */
 export type PatchDocumentAsync<T extends Record<string, Any> = Record<string, Any>> = (
-  PatchExistingDocumentRequest | PatchTargetDocumentRequest<T>
+  | PatchExistingDocumentRequest
+  | PatchTargetDocumentRequest<T>
 ) &
   PatchRequestBase &
   AgentActionAsync
 
 /** @beta */
 export type PatchDocument<T extends Record<string, Any> = Record<string, Any>> =
-  PatchDocumentSync<T> | PatchDocumentAsync<T>
+  | PatchDocumentSync<T>
+  | PatchDocumentAsync<T>
 
 export function _patchObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,

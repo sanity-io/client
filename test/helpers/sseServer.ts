@@ -73,7 +73,7 @@ export const createSseServer = (onRequest: OnRequest): Promise<http.Server> =>
       // Respond to the CORS-check endpoint with a permissive `allowed: true` so
       // tests that trigger reconnect/error paths in `live.events()` don't hang
       // on a missing `/check/cors` handler.
-      if (/\/check\/cors$/.test(request?.url || '')) {
+      if ((request?.url || '').endsWith('/check/cors')) {
         response.writeHead(200, {'content-type': 'application/json'})
         response.end(JSON.stringify({result: {allowed: true, withCredentials: false}}))
         return

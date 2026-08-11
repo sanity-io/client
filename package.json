@@ -3,27 +3,32 @@
   "version": "7.26.2",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
-    "sanity",
+    "api",
+    "client",
     "cms",
+    "content",
+    "fetch",
     "headless",
     "realtime",
-    "content",
-    "client",
-    "fetch",
-    "api"
+    "sanity"
   ],
   "homepage": "https://www.sanity.io/",
   "bugs": {
     "url": "https://github.com/sanity-io/client/issues"
   },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanity-io/client.git"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
-  "sideEffects": false,
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/index.ts",
@@ -36,39 +41,51 @@
       "node": {
         "source": "./src/index.node.ts",
         "import": "./dist/index.node.js",
-        "default": "./dist/index.node.js"
+        "require": "./dist/index.node.js"
       },
-      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./csm": {
       "source": "./src/csm/index.ts",
-      "import": "./dist/csm.js",
       "default": "./dist/csm.js"
     },
     "./stega": {
       "source": "./src/stega/index.ts",
-      "import": "./dist/stega.js",
       "default": "./dist/stega.js"
     },
     "./media-library": {
       "source": "./src/media-library.ts",
-      "import": "./dist/media-library.js",
       "default": "./dist/media-library.js"
     },
     "./package.json": "./package.json"
   },
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "src"
-  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "react-server": "./dist/index.js",
+        "sanity-function": "./dist/index.js",
+        "deno": "./dist/index.js",
+        "bun": "./dist/index.js",
+        "workerd": "./dist/index.js",
+        "worker": "./dist/index.js",
+        "node": {
+          "import": "./dist/index.node.js",
+          "require": "./dist/index.node.js"
+        },
+        "default": "./dist/index.js"
+      },
+      "./csm": "./dist/csm.js",
+      "./stega": "./dist/stega.js",
+      "./media-library": "./dist/media-library.js",
+      "./package.json": "./package.json"
+    }
+  },
   "scripts": {
     "prebuild": "npm run clean",
     "build": "pkg build --strict && pkg --strict",
     "clean": "npx rimraf dist coverage",
     "coverage": "vitest run --coverage",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "oxlint",
     "prepublishOnly": "npm run build",
     "test": "vitest",
     "test:browser": "vitest run --config ./vitest.browser.config.ts",
@@ -77,17 +94,9 @@
     "test:next": "vitest run --config ./vitest.next.config.ts",
     "test:node-runtimes": "(cd runtimes/node && node --test)",
     "test:vercel-edge": "vitest run --config ./vitest.vercel-edge.config.ts",
-    "test:workerd": "vitest run --config ./vitest.workerd.config.ts"
-  },
-  "browserslist": "extends @sanity/browserslist-config",
-  "prettier": {
-    "bracketSpacing": false,
-    "plugins": [
-      "prettier-plugin-packagejson"
-    ],
-    "printWidth": 100,
-    "semi": false,
-    "singleQuote": true
+    "test:workerd": "vitest run --config ./vitest.workerd.config.ts",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "debug": "^4.4.0",
@@ -100,39 +109,31 @@
     "@cloudflare/vitest-pool-workers": "^0.20.1",
     "@edge-runtime/types": "^4.0.0",
     "@edge-runtime/vm": "^5.0.0",
-    "@eslint/eslintrc": "^3.3.6",
-    "@eslint/js": "^9.39.5",
-    "@sanity/pkg-utils": "^10.5.0",
+    "@sanity/pkg-utils": "^12.1.0",
     "@types/debug": "^4.1.12",
     "@types/json-diff": "^1.0.3",
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
-    "@typescript-eslint/eslint-plugin": "^8.66.0",
-    "@typescript-eslint/parser": "^8.66.0",
     "@vercel/stega": "1.1.0",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^9.39.5",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-formatter-compact": "^8.40.0",
-    "eslint-plugin-prettier": "^5.5.6",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
-    "eslint-plugin-tsdoc": "^0.5.2",
-    "eslint-plugin-unused-imports": "^4.4.1",
     "eventsource-encoder": "^1.0.2",
-    "globals": "^16.5.0",
     "happy-dom": "^20.11.1",
     "json-diff": "^1.0.6",
     "ls-engines": "^0.10.1",
     "next": "^16.3.0",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
     "pkg-pr-new": "^0.0.86",
-    "prettier": "^3.9.6",
-    "prettier-plugin-packagejson": "^2.5.22",
     "rimraf": "^5.0.7",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vitest": "^4.1.10"
   },
-  "packageManager": "npm@11.4.1",
+  "browserslist": "extends @sanity/browserslist-config",
   "engines": {
     "node": ">=22.12.0"
+  },
+  "packageManager": "npm@11.4.1",
+  "inlinedDependencies": {
+    "@vercel/stega": "1.1.0"
   }
 }

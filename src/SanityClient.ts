@@ -154,7 +154,7 @@ export class ObservableSanityClient {
       ...thisConfig,
       ...newConfig,
       stega: {
-        ...(thisConfig.stega || {}),
+        ...thisConfig.stega,
         ...(typeof newConfig?.stega === 'boolean'
           ? {enabled: newConfig.stega}
           : newConfig?.stega || {}),
@@ -1232,7 +1232,7 @@ export class SanityClient {
       ...thisConfig,
       ...newConfig,
       stega: {
-        ...(thisConfig.stega || {}),
+        ...thisConfig.stega,
         ...(typeof newConfig?.stega === 'boolean'
           ? {enabled: newConfig.stega}
           : newConfig?.stega || {}),

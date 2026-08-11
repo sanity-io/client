@@ -101,7 +101,7 @@ export interface PromptRequestBase {
  * @beta
  */
 // need the unused generic here to allow for optional callsite casting
-// eslint-disable-next-line unused-imports/no-unused-vars
+// oxlint-disable-next-line no-unused-vars
 interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>> {
   /**
    *
@@ -120,7 +120,8 @@ interface PromptTextResponse {
 
 /** @beta */
 export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> = (
-  PromptTextResponse | PromptJsonResponse<T>
+  | PromptTextResponse
+  | PromptJsonResponse<T>
 ) &
   PromptRequestBase
 

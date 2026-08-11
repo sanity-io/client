@@ -313,7 +313,7 @@ export interface TransformTarget extends AgentActionTarget {
 
 /** @beta */
 // need the generics to hold optional call-site response generics
-// eslint-disable-next-line unused-imports/no-unused-vars
+// oxlint-disable-next-line no-unused-vars
 export type TransformDocumentSync<T extends Record<string, Any> = Record<string, Any>> =
   TransformRequestBase & AgentActionSync
 
@@ -322,7 +322,8 @@ export type TransformDocumentAsync = TransformRequestBase & AgentActionAsync
 
 /** @beta */
 export type TransformDocument<T extends Record<string, Any> = Record<string, Any>> =
-  TransformDocumentSync<T> | TransformDocumentAsync
+  | TransformDocumentSync<T>
+  | TransformDocumentAsync
 
 export function _transformObservable<DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
