@@ -128,7 +128,7 @@
     "prettier": "^3.9.6",
     "prettier-plugin-packagejson": "^2.5.22",
     "rimraf": "^5.0.7",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vitest": "^4.1.10"
   },
   "packageManager": "npm@11.4.1",
