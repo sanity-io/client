@@ -99,31 +99,41 @@ async function getExistingChangeset() {
 
 // --- Main ---
 
-// 0. Check for existing changesets using marker-based logic
+// 0. Work out whether the bot still owns this PR's changeset.
 const prChangedFiles = await getChangedFiles()
 const existingChangeset = await getExistingChangeset()
 
-if (existingChangeset === null) {
-  const manualChangesets = prChangedFiles.filter(
-    (f) =>
-      f.startsWith('.changeset/') &&
-      f.endsWith('.md') &&
-      f !== '.changeset/README.md' &&
-      f !== CHANGESET_FILE,
-  )
-  if (manualChangesets.length > 0) {
-    const names = manualChangesets.map((f) => f.replace('.changeset/', ''))
-    console.log(`Skipping: found manual changeset(s) in PR: ${names.join(', ')}`)
+// A changeset written by hand always wins. Check for one regardless of whether we already
+// wrote ours: a contributor can run `pnpm changeset` after the bot has committed, and if we
+// only looked when ours was absent both files would survive and the release would carry two
+// entries for the same PR.
+const manualChangesets = prChangedFiles.filter(
+  (f) =>
+    f.startsWith('.changeset/') &&
+    f.endsWith('.md') &&
+    f !== '.changeset/README.md' &&
+    f !== CHANGESET_FILE,
+)
+
+// Ours, but edited by hand - the marker is gone, so stop touching it.
+if (existingChangeset !== null && !existingChangeset.startsWith(AUTO_GENERATED_MARKER)) {
+  console.log('Skipping: changeset was manually edited (marker removed)')
+  setOutput('action', 'skip')
+  process.exit(0)
+}
+
+if (manualChangesets.length > 0) {
+  const names = manualChangesets.map((f) => f.replace('.changeset/', ''))
+  console.log(`Found manual changeset(s) in PR: ${names.join(', ')}`)
+  if (existingChangeset === null) {
     setOutput('action', 'skip')
-    process.exit(0)
+  } else {
+    // We wrote one before the contributor added theirs. Drop ours.
+    console.log('Removing the auto-generated changeset in favour of the manual one')
+    setOutput('action', 'remove')
+    setOutput('changeset_file', CHANGESET_FILE)
   }
-} else {
-  if (!existingChangeset.startsWith(AUTO_GENERATED_MARKER)) {
-    console.log('Skipping: changeset was manually edited (marker removed)')
-    setOutput('action', 'skip')
-    process.exit(0)
-  }
-  // Marker present — bot still owns the file, will overwrite below
+  process.exit(0)
 }
 
 // 1. Parse conventional commit

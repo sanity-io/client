@@ -10,6 +10,11 @@ To add one manually:
 pnpm changeset
 ```
 
+A manual changeset always wins. If the bot had already written its own `pr-<number>.md`, it
+removes that file on the next run so the release doesn't get two entries for one PR. Editing the
+bot's file directly works too: deleting the `<!-- auto-generated -->` marker on the first line
+makes the bot leave it alone from then on.
+
 Merging the "Version Packages" PR publishes a release from that branch:
 
 - `main` publishes the current major and takes the `latest` tag on npm.
