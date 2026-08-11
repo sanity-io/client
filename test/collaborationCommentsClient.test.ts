@@ -80,6 +80,58 @@ describe('collaboration.comments', async () => {
     },
   )
 
+  test.skipIf(isEdge)('creates replies with parentCommentId', async () => {
+    let capturedBody: unknown
+
+    nock(apiHost)
+      .post('/v2026-07-18/collaboration/comments', (body) => {
+        capturedBody = body
+        return true
+      })
+      .query({
+        organizationId,
+        resourceId: resource.id,
+        resourceType: resource.type,
+      })
+      .reply(200, {ok: true})
+
+    await getClient().collaboration.comments.create({
+      parentCommentId: 'comment-1',
+      message,
+    })
+
+    expect(capturedBody).toEqual({
+      parentCommentId: 'comment-1',
+      message,
+    })
+  })
+
+  test.skipIf(isEdge)('uses resource query parameters', async () => {
+    const resources = [
+      {type: 'canvas' as const, id: 'canvas-123'},
+      {type: 'dataset' as const, id: 'project-123.production'},
+    ]
+
+    for (const currentResource of resources) {
+      nock(apiHost)
+        .post('/v2026-07-18/collaboration/comments')
+        .query({
+          organizationId,
+          resourceId: currentResource.id,
+          resourceType: currentResource.type,
+        })
+        .reply(200, {ok: true})
+
+      await getClient({resource: currentResource}).collaboration.comments.create({
+        target: {
+          documentId: 'doc-1',
+          documentType: 'article',
+        },
+        message,
+      })
+    }
+  })
+
   test.skipIf(isEdge)('maps update, delete, and reaction requests', async () => {
     const client = getClient()
     const commonQuery = {
@@ -203,6 +255,21 @@ describe('collaboration.comments', async () => {
     )
     expect(() => getClient({resource: undefined}).collaboration.comments.fetch()).toThrow(
       '`resource` must be configured to use collaboration comments',
+    )
+  })
+
+  test('throws when the comment ID is empty', () => {
+    const client = getClient()
+
+    expect(() => client.collaboration.comments.update('', {status: 'resolved'})).toThrow(
+      'Comment ID must be provided',
+    )
+    expect(() => client.collaboration.comments.delete('')).toThrow('Comment ID must be provided')
+    expect(() => client.collaboration.comments.addReaction('', ':heart:')).toThrow(
+      'Comment ID must be provided',
+    )
+    expect(() => client.collaboration.comments.removeReaction('', ':heart:')).toThrow(
+      'Comment ID must be provided',
     )
   })
 

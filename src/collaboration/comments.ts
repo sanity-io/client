@@ -31,6 +31,10 @@ import {
 type Client = SanityClient | ObservableSanityClient
 
 function commentUrl(id: string): string {
+  if (!id) {
+    throw new Error('Comment ID must be provided')
+  }
+
   return `/collaboration/comments/${encodeURIComponent(id)}`
 }
 
