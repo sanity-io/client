@@ -4,14 +4,14 @@ import {type ClientConfig} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {bodyBytes, getActiveMock, objectContaining} from '../helpers/mockFetch'
-import {fixture, getClient, globalApiHost, isEdge} from './helpers'
+import {fixture, getClient, globalApiHost} from './helpers'
 
 describe('mediaLibrary', () => {
   const mediaLibraryId = 'ml123abc'
   const mediaLibraryClientConfig: ClientConfig = {
     '~experimental_resource': {type: 'media-library', id: mediaLibraryId},
   }
-  test.skipIf(isEdge)('video.getPlaybackInfo with string asset identifier', async () => {
+  test('video.getPlaybackInfo with string asset identifier', async () => {
     const client = getClient(mediaLibraryClientConfig)
     const assetId = 'video-abc123def'
     const mockResponse = {
@@ -33,7 +33,7 @@ describe('mediaLibrary', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  test.skipIf(isEdge)('video.getPlaybackInfo with GDR asset identifier', async () => {
+  test('video.getPlaybackInfo with GDR asset identifier', async () => {
     const client = getClient(mediaLibraryClientConfig)
     const assetRef = {_ref: `media-library:${mediaLibraryId}:instance456`}
     const mockResponse = {
@@ -55,7 +55,7 @@ describe('mediaLibrary', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  test.skipIf(isEdge)('video.getPlaybackInfo with transformation options', async () => {
+  test('video.getPlaybackInfo with transformation options', async () => {
     const client = getClient(mediaLibraryClientConfig)
     const assetId = 'video-test123'
     const options = {
@@ -107,7 +107,7 @@ describe('mediaLibrary', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  test.skipIf(isEdge)('video.getPlaybackInfo throws error for invalid GDR format', async () => {
+  test('video.getPlaybackInfo throws error for invalid GDR format', async () => {
     const client = getClient(mediaLibraryClientConfig)
 
     // Test various invalid GDR formats
@@ -160,7 +160,7 @@ describe('mediaLibrary', () => {
     }
   })
 
-  test.skipIf(isEdge)(
+  test(
     'video.getPlaybackInfo throws error for invalid asset instance id',
     async () => {
       const client = getClient(mediaLibraryClientConfig)
@@ -185,7 +185,7 @@ describe('mediaLibrary', () => {
     },
   )
 
-  test.skipIf(isEdge)('video.getPlaybackInfo handles API errors', async () => {
+  test('video.getPlaybackInfo handles API errors', async () => {
     const client = getClient(mediaLibraryClientConfig)
     const assetId = 'video-error123'
 
@@ -197,7 +197,7 @@ describe('mediaLibrary', () => {
     await expect(client.mediaLibrary.video.getPlaybackInfo(assetId)).rejects.toThrow()
   })
 
-  test.skipIf(isEdge)('video.getPlaybackInfo with partial transformation options', async () => {
+  test('video.getPlaybackInfo with partial transformation options', async () => {
     const client = getClient(mediaLibraryClientConfig)
     const assetId = 'video-partial123'
     const options = {
@@ -230,7 +230,7 @@ describe('mediaLibrary', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  test.skipIf(isEdge)('video.getPlaybackInfo with signed/secured response', async () => {
+  test('video.getPlaybackInfo with signed/secured response', async () => {
     const client = getClient(mediaLibraryClientConfig)
     const assetId = 'video-secured123'
     const mockResponse = {
@@ -294,7 +294,7 @@ describe('mediaLibrary', () => {
     expect(clientWithBoth.getDataUrl('query')).toBe(`/media-libraries/${preferredId}/query`)
   })
 
-  test.skipIf(isEdge)('can delete media library assets using mutations', async () => {
+  test('can delete media library assets using mutations', async () => {
     const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
     const assetId = '36fOGtOJOadpl4F9xpksb9uKjYp'
     const expectedBody = {mutations: [{delete: {id: assetId}}]}
@@ -318,7 +318,7 @@ describe('mediaLibrary', () => {
     await expect(client.delete(assetId)).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('assets.upload() works with new resource config', async () => {
+  test('assets.upload() works with new resource config', async () => {
     const fixturePath = fixture('horsehead-nebula.jpg')
     const isImage = bodyBytes(fs.readFileSync(fixturePath))
 
@@ -334,7 +334,7 @@ describe('mediaLibrary', () => {
     })
   })
 
-  test.skipIf(isEdge)('assets.upload() with metadata options', async () => {
+  test('assets.upload() with metadata options', async () => {
     const fixturePath = fixture('horsehead-nebula.jpg')
     const uploadOptions = {
       filename: 'custom-filename.jpg',
@@ -385,7 +385,7 @@ describe('mediaLibrary', () => {
     expect(config['~experimental_resource']).toEqual({type: 'media-library', id: 'test-id'})
   })
 
-  test.skipIf(isEdge)('throws error when Media Library ID is invalid in fetch', async () => {
+  test('throws error when Media Library ID is invalid in fetch', async () => {
     const clientWithInvalidId = getClient({
       resource: {type: 'media-library', id: 'invalid-id'},
     })
@@ -404,7 +404,7 @@ describe('mediaLibrary', () => {
     await expect(clientWithInvalidId.fetch('*')).rejects.toThrow()
   })
 
-  test.skipIf(isEdge)('throws error when Media Library ID is invalid in upload', async () => {
+  test('throws error when Media Library ID is invalid in upload', async () => {
     const clientWithInvalidId = getClient({
       resource: {type: 'media-library', id: 'invalid-id'},
     })
@@ -425,7 +425,7 @@ describe('mediaLibrary', () => {
     await expect(clientWithInvalidId.assets.upload('image', body)).rejects.toThrow()
   })
 
-  test.skipIf(isEdge)('fetch() works with resource config', async () => {
+  test('fetch() works with resource config', async () => {
     const client = getClient({resource: {type: 'media-library', id: mediaLibraryId}})
 
     getActiveMock()

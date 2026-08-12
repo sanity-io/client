@@ -2,7 +2,7 @@ import {type ContentSourceMap} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {anyValue, getActiveMock, objectContaining} from '../helpers/mockFetch'
-import {createClient, getClient, isEdge, projectHost} from './helpers'
+import {createClient, getClient, projectHost} from './helpers'
 
 describe('query construction', () => {
   const result = [{_id: 'njgNkngskjg', rating: 5}]
@@ -34,7 +34,7 @@ describe('query construction', () => {
     },
   } satisfies ContentSourceMap
 
-  test.skipIf(isEdge)('uses GET for queries below limit', async () => {
+  test('uses GET for queries below limit', async () => {
     // Please dont ever do this. Just... don't.
     const clause: string[] = []
     const qParams: Record<string, string> = {}
@@ -66,7 +66,7 @@ describe('query construction', () => {
     expect(res[0].rating, 'data should match').toEqual(5)
   })
 
-  test.skipIf(isEdge)('uses POST for long queries', async () => {
+  test('uses POST for long queries', async () => {
     // Please dont ever do this. Just... don't.
     const clause: string[] = []
     const params: Record<string, string> = {}
@@ -96,7 +96,7 @@ describe('query construction', () => {
     expect(res[0].rating, 'data should match').toEqual(5)
   })
 
-  test.skipIf(isEdge).each([429, 502, 503])('retries %d even if they are POST', async (code) => {
+  test.each([429, 502, 503])('retries %d even if they are POST', async (code) => {
     // Please dont ever do this. Just... don't.
     const clause: string[] = []
     const params: Record<string, string> = {}
@@ -126,7 +126,7 @@ describe('query construction', () => {
     expect(res[0].rating, 'data should match').toEqual(5)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'uses POST for long queries, but puts request tag as query param',
     async () => {
       const clause: string[] = []
@@ -160,7 +160,7 @@ describe('query construction', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'uses POST for long queries, but puts resultSourceMap and perspective as query params',
     async () => {
       const clause: string[] = []
@@ -202,7 +202,7 @@ describe('query construction', () => {
     },
   )
 
-  test.skipIf(isEdge)('uses POST for long queries also towards CDN', async () => {
+  test('uses POST for long queries also towards CDN', async () => {
     const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
 
     const clause: string[] = []
@@ -232,7 +232,7 @@ describe('query construction', () => {
     expect(res[0].rating, 'data should match').toEqual(5)
   })
 })
-describe.skipIf(isEdge)('createVersion()', () => {
+describe('createVersion()', () => {
   test('can create version of a document with publishedId', async () => {
     const document = {_type: 'post', title: 'Draft version'}
     const publishedId = 'pub123'

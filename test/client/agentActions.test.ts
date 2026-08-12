@@ -1,9 +1,9 @@
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {clientConfig, getClient, isEdge, projectHost} from './helpers'
+import {clientConfig, getClient, projectHost} from './helpers'
 
-describe.skipIf(isEdge)('AGENT ACTION: PROMPT', () => {
+describe('AGENT ACTION: PROMPT', () => {
   test('can use instruction', async () => {
     const response = 'i did the thing'
 
@@ -92,7 +92,7 @@ describe.skipIf(isEdge)('AGENT ACTION: PROMPT', () => {
   })
 })
 
-describe.skipIf(isEdge)('AGENT ACTION: PATCH', () => {
+describe('AGENT ACTION: PATCH', () => {
   test('can create new document', async () => {
     const response = {
       _id: 'generated',
@@ -265,7 +265,7 @@ describe.skipIf(isEdge)('AGENT ACTION: PATCH', () => {
   })
 })
 
-describe.skipIf(isEdge)('AGENT ACTION: GENERATE', () => {
+describe('AGENT ACTION: GENERATE', () => {
   test('can create new document', async () => {
     const response = {
       _id: 'generated',
@@ -471,7 +471,7 @@ describe.skipIf(isEdge)('AGENT ACTION: GENERATE', () => {
   })
 })
 
-describe.skipIf(isEdge)('AGENT ACTION: TRANSFORM', () => {
+describe('AGENT ACTION: TRANSFORM', () => {
   test('can create new document', async () => {
     const response = {_id: 'created'}
 
@@ -648,7 +648,7 @@ describe.skipIf(isEdge)('AGENT ACTION: TRANSFORM', () => {
   })
 })
 
-describe.skipIf(isEdge)('AGENT ACTION: TRANSLATE', () => {
+describe('AGENT ACTION: TRANSLATE', () => {
   test('can create new document', async () => {
     const response = {_id: 'created'}
 

@@ -1,7 +1,7 @@
 import {describe, expect, test} from 'vitest'
 
 import {anyValue, getActiveMock} from '../helpers/mockFetch'
-import {createClient, getClient, isEdge, projectHost} from './helpers'
+import {createClient, getClient, projectHost} from './helpers'
 
 describe('getUrl', () => {
   test('can use getUrl() to get API-relative paths', () => {
@@ -34,7 +34,7 @@ test('can use getDataUrl() to get API paths for a resource', () => {
     ),
   ).toBe('/media-libraries/res-id/doc/bike-123')
 })
-describe.skipIf(isEdge)('discardVersion()', () => {
+describe('discardVersion()', () => {
   test('can discard draft version of a document with publishedId', async () => {
     const publishedId = 'doc123'
 
@@ -141,7 +141,7 @@ describe.skipIf(isEdge)('discardVersion()', () => {
     expect(error).not.toBeNull()
   })
 })
-describe.skipIf(isEdge)('unpublishVersion()', () => {
+describe('unpublishVersion()', () => {
   test('can unpublish a release version of a document', async () => {
     const publishedId = 'doc123'
     const releaseId = 'release456'
@@ -243,7 +243,7 @@ describe.skipIf(isEdge)('unpublishVersion()', () => {
     expect(error?.message).toMatch('Invalid document ID - Document ID must be a string')
   })
 })
-describe.skipIf(isEdge)('replaceVersion()', () => {
+describe('replaceVersion()', () => {
   test('can replace version using only document with _id', async () => {
     getActiveMock().clear()
     const documentId = 'drafts.doc123'
@@ -628,7 +628,7 @@ describe.skipIf(isEdge)('replaceVersion()', () => {
   })
 })
 
-test.skipIf(isEdge)('allows overriding headers', async () => {
+test('allows overriding headers', async () => {
   const client = createClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -646,7 +646,7 @@ test.skipIf(isEdge)('allows overriding headers', async () => {
   await expect(client.fetch('*', {}, {headers: {foo: 'bar'}})).resolves.not.toThrow()
 })
 
-test.skipIf(isEdge)('applies headers from client configuration', async () => {
+test('applies headers from client configuration', async () => {
   const client = createClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -670,7 +670,7 @@ test.skipIf(isEdge)('applies headers from client configuration', async () => {
   await expect(client.fetch('*')).resolves.not.toThrow()
 })
 
-test.skipIf(isEdge)('critical headers are not overridden by config headers', async () => {
+test('critical headers are not overridden by config headers', async () => {
   const client = createClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -719,7 +719,7 @@ test.skipIf(isEdge)('critical headers are not overridden by config headers', asy
   ).resolves.not.toThrow()
 })
 
-test.skipIf(isEdge)('headers can be reconfigured', async () => {
+test('headers can be reconfigured', async () => {
   const client = createClient({
     projectId: 'abc123',
     dataset: 'foo',
@@ -769,7 +769,7 @@ test.skipIf(isEdge)('headers can be reconfigured', async () => {
   expect(emptyReq.headers.get('X-Custom-Header'), 'header must be dropped').toBeNull()
 })
 
-test.skipIf(isEdge)('will use live API if withCredentials is set to true', async () => {
+test('will use live API if withCredentials is set to true', async () => {
   const client = createClient({
     withCredentials: true,
     projectId: 'abc123',

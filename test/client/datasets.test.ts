@@ -2,7 +2,7 @@ import {type DatasetsResponse, type EmbeddingsSettings} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {apiHost, defaultProjectId, getClient, isEdge, projectHost} from './helpers'
+import {apiHost, defaultProjectId, getClient, projectHost} from './helpers'
 
 describe('datasets', () => {
   const dsClient = getClient({requestTagPrefix: 'test'})
@@ -15,17 +15,17 @@ describe('datasets', () => {
     expect(() => dsClient.datasets.delete('*foo*')).toThrow(/Datasets can only contain/i)
   })
 
-  test.skipIf(isEdge)('can create dataset', async () => {
+  test('can create dataset', async () => {
     getActiveMock().scope(projectHost()).on('PUT', '/v1/datasets/bar').respond({status: 200})
     await expect(dsClient.datasets.create('bar')).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('can delete dataset', async () => {
+  test('can delete dataset', async () => {
     getActiveMock().scope(projectHost()).on('DELETE', '/v1/datasets/bar').respond({status: 200})
     await expect(dsClient.datasets.delete('bar')).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('can list datasets', async () => {
+  test('can list datasets', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/datasets')
@@ -33,7 +33,7 @@ describe('datasets', () => {
     await expect(dsClient.datasets.list()).resolves.toEqual([{name: 'foo'}, {name: 'bar'}])
   })
 
-  test.skipIf(isEdge)('can list datasets with useProjectHostname=false', async () => {
+  test('can list datasets with useProjectHostname=false', async () => {
     getActiveMock().clear()
     getActiveMock()
       .scope(`https://${apiHost}`)
@@ -46,7 +46,7 @@ describe('datasets', () => {
     expect(getActiveMock()).toHaveConsumedAllMocks() // all expectations satisfied
   })
 
-  test.skipIf(isEdge)('can create dataset with embeddings config', async () => {
+  test('can create dataset with embeddings config', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('PUT', '/v1/datasets/bar', {body: {aclMode: 'public', embeddings: {enabled: true}}})
@@ -62,7 +62,7 @@ describe('datasets', () => {
     expect(getActiveMock()).toHaveConsumedAllMocks()
   })
 
-  test.skipIf(isEdge)('can get embeddings settings', async () => {
+  test('can get embeddings settings', async () => {
     const settings: EmbeddingsSettings = {
       enabled: true,
       projection: 'myProjection',
@@ -77,7 +77,7 @@ describe('datasets', () => {
     expect(getActiveMock()).toHaveConsumedAllMocks()
   })
 
-  test.skipIf(isEdge)('can get embeddings settings with useProjectHostname=false', async () => {
+  test('can get embeddings settings with useProjectHostname=false', async () => {
     getActiveMock().clear()
     const settings: EmbeddingsSettings = {
       enabled: false,
@@ -93,7 +93,7 @@ describe('datasets', () => {
     expect(getActiveMock()).toHaveConsumedAllMocks()
   })
 
-  test.skipIf(isEdge)('can edit embeddings settings', async () => {
+  test('can edit embeddings settings', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('PUT', '/v1/datasets/foo/settings/embeddings', {
@@ -113,7 +113,7 @@ describe('datasets', () => {
     expect(getActiveMock()).toHaveConsumedAllMocks()
   })
 
-  test.skipIf(isEdge)('can edit embeddings settings with useProjectHostname=false', async () => {
+  test('can edit embeddings settings with useProjectHostname=false', async () => {
     getActiveMock().clear()
     getActiveMock()
       .scope(`https://${apiHost}`)

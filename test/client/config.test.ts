@@ -9,7 +9,7 @@ import {firstValueFrom} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
 import {bodyBytes, getActiveMock} from '../helpers/mockFetch'
-import {apiHost, createClient, fixture, getClient, isEdge, isNode, projectHost} from './helpers'
+import {apiHost, createClient, fixture, getClient, isNode, projectHost} from './helpers'
 
 describe('base client', () => {
   test('can create a client', () => {
@@ -191,7 +191,7 @@ describe('base client', () => {
     )
   })
 
-  test.skipIf(isEdge)('can use request() for API-relative requests', async () => {
+  test('can use request() for API-relative requests', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/ping')
@@ -212,7 +212,7 @@ describe('base client', () => {
     expect(error).toMatchObject({message: 'Request options must include a `url`'})
   })
 
-  test.skipIf(isEdge)('can use the deprecated `uri` alias for `url`', async () => {
+  test('can use the deprecated `uri` alias for `url`', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/ping')
@@ -221,7 +221,7 @@ describe('base client', () => {
     await expect(getClient().request({uri: '/ping'})).resolves.toMatchObject({pong: true})
   })
 
-  test.skipIf(isEdge)('observable request() accepts the deprecated `uri` alias', async () => {
+  test('observable request() accepts the deprecated `uri` alias', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/ping')
@@ -232,7 +232,7 @@ describe('base client', () => {
     ).resolves.toMatchObject({pong: true})
   })
 
-  test.skipIf(isEdge)('`uri` wins over `url` when both are given, as in v8', async () => {
+  test('`uri` wins over `url` when both are given, as in v8', async () => {
     // Only `/v1/ping` is mocked - if `url` took precedence the request would
     // go to `/v1/pong` and the mock would reject it.
     getActiveMock()
@@ -246,7 +246,7 @@ describe('base client', () => {
     ).resolves.toMatchObject({pong: true})
   })
 
-  test.skipIf(isEdge)(
+  test(
     'can use request() for API-relative requests (custom api version)',
     async () => {
       getActiveMock()
@@ -280,7 +280,7 @@ describe('base client', () => {
     },
   )
 
-  test.skipIf(isEdge)('observable requests are lazy', async () => {
+  test('observable requests are lazy', async () => {
     expect.assertions(2)
 
     getActiveMock()
@@ -303,7 +303,7 @@ describe('base client', () => {
     })
   })
 
-  test.skipIf(isEdge)('observable requests are cold', async () => {
+  test('observable requests are cold', async () => {
     expect.assertions(3)
 
     getActiveMock()
@@ -332,7 +332,7 @@ describe('base client', () => {
     })
   })
 
-  describe.skipIf(isEdge)('resource client', async () => {
+  describe('resource client', async () => {
     const resourceVariants = [
       {
         type: 'media-library',
@@ -673,7 +673,7 @@ describe('base client', () => {
       const resource = await client.create(doc)
       expect(resource._id, 'should have resource id').toBe('mooblah')
     })
-    test.skipIf(isEdge)(
+    test(
       'executes transaction using resource path when commit() is called',
       async () => {
         const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]

@@ -33,8 +33,7 @@ import {createMockFetch, type MockFetch} from 'get-it/mock'
 
 export type {AsymmetricMatcher, MockFetch, MockResponseDef, MockScope} from 'get-it/mock'
 // Re-export the asymmetric matchers so tests can reach them through the same
-// (edge-guarded, dynamically imported) helper module instead of importing
-// `get-it/mock` directly.
+// helper module instead of importing `get-it/mock` directly.
 export {
   anyValue,
   arrayContaining,

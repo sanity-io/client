@@ -2,9 +2,9 @@ import {ClientError, ServerError} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {createClient, getClient, isEdge, isNode, projectHost} from './helpers'
+import {createClient, getClient, isNode, projectHost} from './helpers'
 
-describe.skipIf(isEdge)('USERS', () => {
+describe('USERS', () => {
   test('can retrieve user by id', async () => {
     const response = {
       role: null,
@@ -22,7 +22,7 @@ describe.skipIf(isEdge)('USERS', () => {
     expect(body).toEqual(response)
   })
 })
-describe.skipIf(isEdge)('CDN API USAGE', () => {
+describe('CDN API USAGE', () => {
   test('will use CDN API by default', async () => {
     const client = createClient({projectId: 'abc123', dataset: 'foo'})
 
@@ -113,7 +113,7 @@ describe.skipIf(isEdge)('CDN API USAGE', () => {
   })
 })
 describe('http requests', () => {
-  test.skipIf(isEdge)('includes token if set', async () => {
+  test('includes token if set', async () => {
     const qs = '?query=foo.bar&returnQuery=false'
     const token = 'abcdefghijklmnopqrstuvwxyz'
     getActiveMock()
@@ -127,7 +127,7 @@ describe('http requests', () => {
     expect(docs.length).toEqual(0)
   })
 
-  test.skipIf(isEdge)('allows overriding token', async () => {
+  test('allows overriding token', async () => {
     const qs = '?query=foo.bar&returnQuery=false'
     const token = 'abcdefghijklmnopqrstuvwxyz'
     const override = '123456789'
@@ -142,7 +142,7 @@ describe('http requests', () => {
     expect(docs.length).toEqual(0)
   })
 
-  test.skipIf(isEdge)('allows overriding timeout', async () => {
+  test('allows overriding timeout', async () => {
     const qs = `?query=${encodeURIComponent('*[][0]')}&returnQuery=false`
     getActiveMock()
       .scope(projectHost())
@@ -153,7 +153,7 @@ describe('http requests', () => {
     expect(docs.length).toEqual(0)
   })
 
-  test.skipIf(isEdge)('forwards Next.js `cache` and `next` options to the fetch init', async () => {
+  test('forwards Next.js `cache` and `next` options to the fetch init', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
@@ -177,7 +177,7 @@ describe('http requests', () => {
     })
   })
 
-  test.skipIf(isEdge)('forwards fetch init from the deprecated `fetch` client config', async () => {
+  test('forwards fetch init from the deprecated `fetch` client config', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
@@ -196,7 +196,7 @@ describe('http requests', () => {
     expect(requests[0].init).toMatchObject({cache: 'no-store', next: {revalidate: 60}})
   })
 
-  test.skipIf(isEdge)(
+  test(
     'attaches no abort signal to query fetches without a caller signal',
     async () => {
       // Next.js' patched fetch opts a request out of React Request
@@ -223,7 +223,7 @@ describe('http requests', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'signal-less queries still honor the timeout via soft rejection',
     async () => {
       getActiveMock()

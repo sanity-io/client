@@ -2,7 +2,7 @@ import {Patch} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {getClient, isEdge, projectHost} from './helpers'
+import {getClient, projectHost} from './helpers'
 
 describe('patch ops', () => {
   test('can build and serialize a patch of operations', () => {
@@ -193,7 +193,7 @@ describe('patch ops', () => {
     )
   })
 
-  test.skipIf(isEdge)('executes patch when commit() is called', async () => {
+  test('executes patch when commit() is called', async () => {
     const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
     getActiveMock()
       .scope(projectHost())
@@ -210,7 +210,7 @@ describe('patch ops', () => {
     expect(res.transactionId, 'applies given patch').toEqual('blatti')
   })
 
-  test.skipIf(isEdge)(
+  test(
     'executes patch with request tag when commit() is called with tag',
     async () => {
       const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
@@ -231,7 +231,7 @@ describe('patch ops', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'executes patch with auto generate key option if specified commit()',
     async () => {
       const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
@@ -256,7 +256,7 @@ describe('patch ops', () => {
     },
   )
 
-  test.skipIf(isEdge)('executes patch with given token override commit() is called', async () => {
+  test('executes patch with given token override commit() is called', async () => {
     const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
     getActiveMock()
       .scope(projectHost())
@@ -274,7 +274,7 @@ describe('patch ops', () => {
     expect(res.transactionId, 'applies given patch').toEqual('blatti')
   })
 
-  test.skipIf(isEdge)('returns patched document by default', async () => {
+  test('returns patched document by default', async () => {
     const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
     const expectedBody = {mutations: [expectedPatch]}
     getActiveMock()
@@ -305,7 +305,7 @@ describe('patch ops', () => {
     expect(res._id, 'returns patched document').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('commit() returns promise', async () => {
+  test('commit() returns promise', async () => {
     expect.assertions(1)
 
     const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}
@@ -370,7 +370,7 @@ describe('patch ops', () => {
     expect(() => patch.dec({bar: 2}).commit()).toThrow(/client.*mutate/i)
   })
 
-  test.skipIf(isEdge)('patch can be created without client and passed to mutate()', async () => {
+  test('patch can be created without client and passed to mutate()', async () => {
     const patch = new Patch('foo').dec({count: 1})
 
     const mutations = [{patch: {id: 'foo', dec: {count: 1}}}]
@@ -388,7 +388,7 @@ describe('patch ops', () => {
 
   // oxlint-disable-next-line no-warning-comments
   // @TODO investigate why this fails on Edge Runtime
-  test.skipIf(isEdge)('can manually call clone on patch', () => {
+  test('can manually call clone on patch', () => {
     const patch1 = getClient().patch('abc123').inc({count: 1})
     const patch2 = patch1.clone()
 

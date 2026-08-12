@@ -2,7 +2,7 @@ import {type ContentSourceMap} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {createClient, getClient, isEdge, projectHost} from './helpers'
+import {createClient, getClient, projectHost} from './helpers'
 
 describe('data', () => {
   const result = [{_id: 'njgNkngskjg', rating: 5}]
@@ -33,7 +33,7 @@ describe('data', () => {
       },
     },
   } satisfies ContentSourceMap
-  test.skipIf(isEdge)('can query for documents', async () => {
+  test('can query for documents', async () => {
     const query = 'beerfiesta.beer[.title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const qs =
@@ -55,7 +55,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('can query for documents and return full response', async () => {
+  test('can query for documents and return full response', async () => {
     const query = 'beerfiesta.beer[.title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const qs =
@@ -80,7 +80,7 @@ describe('data', () => {
     expect(res.result[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('can explicitly ask to include query in response', async () => {
+  test('can explicitly ask to include query in response', async () => {
     const query = 'beerfiesta.beer[.title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const qs =
@@ -105,7 +105,7 @@ describe('data', () => {
     expect(res.result[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('gets helpful error messages on query errors (no tag)', async () => {
+  test('gets helpful error messages on query errors (no tag)', async () => {
     const query = '*[_type == "event]'
     getActiveMock()
       .scope(projectHost())
@@ -130,7 +130,7 @@ describe('data', () => {
     `)
   })
 
-  test.skipIf(isEdge)('gets helpful error messages on query errors (with tag)', async () => {
+  test('gets helpful error messages on query errors (with tag)', async () => {
     const query = '*[_type == "event]'
     getActiveMock()
       .scope(projectHost())
@@ -161,7 +161,7 @@ describe('data', () => {
     `)
   })
 
-  test.skipIf(isEdge)('can query for documents with request tag', async () => {
+  test('can query for documents with request tag', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', `/v1/data/query/foo?query=*&tag=mycompany.syncjob&returnQuery=false`)
@@ -178,7 +178,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('can query for documents with last live event ID', async () => {
+  test('can query for documents with last live event ID', async () => {
     getActiveMock()
       .scope(projectHost())
       .on(
@@ -202,7 +202,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'allows passing last live event ID from Next.js style searchParams',
     async () => {
       getActiveMock()
@@ -232,7 +232,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'allows passing last live event ID from URLSearchParams that might be null',
     async () => {
       getActiveMock()
@@ -258,7 +258,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'allows passing last live event ID from URLSearchParams that might be an empty string',
     async () => {
       getActiveMock()
@@ -284,7 +284,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)('can query for documents with resultSourceMap and perspective', async () => {
+  test('can query for documents with resultSourceMap and perspective', async () => {
     getActiveMock()
       .scope(projectHost())
       .on(
@@ -310,7 +310,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'can query for documents with resultSourceMap=withKeyArraySelector and perspective',
     async () => {
       getActiveMock()
@@ -339,7 +339,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)('automatically useCdn false if perspective is previewDrafts', async () => {
+  test('automatically useCdn false if perspective is previewDrafts', async () => {
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
       .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
@@ -362,7 +362,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
     async () => {
       getActiveMock()
@@ -387,7 +387,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'setting resultSourceMap and perspective on client.fetch overrides the config',
     async () => {
       getActiveMock()
@@ -413,7 +413,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'setting a perspective previewDrafts override on client.fetch sets useCdn to false',
     async () => {
       getActiveMock()
@@ -434,7 +434,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)('can query with a variant id set in the client config', async () => {
+  test('can query with a variant id set in the client config', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=abc`)
@@ -447,7 +447,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('can query with a variant condition set in the client config', async () => {
+  test('can query with a variant condition set in the client config', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=market%3Aus`)
@@ -460,7 +460,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('setting a variant id on client.fetch supersedes the config', async () => {
+  test('setting a variant id on client.fetch supersedes the config', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
@@ -477,7 +477,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'setting a variant condition on client.fetch supersedes the config',
     async () => {
       getActiveMock()
@@ -512,7 +512,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)('sends multiple variant conditions ordered lexicographically', async () => {
+  test('sends multiple variant conditions ordered lexicographically', async () => {
     getActiveMock()
       .scope(projectHost())
       .on(
@@ -542,7 +542,7 @@ describe('data', () => {
     )
   })
 
-  test.skipIf(isEdge)(
+  test(
     'setting a variant id on client.fetch supersedes a variant condition from the config',
     async () => {
       // the fetch-level variant replaces the config value wholesale – no
@@ -560,7 +560,7 @@ describe('data', () => {
     },
   )
 
-  test.skipIf(isEdge)('allow overriding useCdn to false on client.fetch', async () => {
+  test('allow overriding useCdn to false on client.fetch', async () => {
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
       .on('GET', `/v1/data/query/foo?query=*&returnQuery=false`)
@@ -578,7 +578,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('allow overriding useCdn to true on client.fetch', async () => {
+  test('allow overriding useCdn to true on client.fetch', async () => {
     getActiveMock()
       .scope('https://abc123.apicdn.sanity.io')
       .on('GET', `/v1/data/query/foo?query=*&returnQuery=false`)
@@ -596,13 +596,13 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('throws on invalid request tag on request', () => {
+  test('throws on invalid request tag on request', () => {
     expect(() => {
       void getClient().fetch('*', {}, {tag: 'mycompany syncjob ok'})
     }).toThrow(/tag can only contain alphanumeric/i)
   })
 
-  test.skipIf(isEdge)('can use a tag-prefixed client', async () => {
+  test('can use a tag-prefixed client', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&tag=mycompany.syncjob`)
@@ -620,7 +620,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('can query using cacheMode=noStale using APICDN', async () => {
+  test('can query using cacheMode=noStale using APICDN', async () => {
     getActiveMock()
       .scope('https://abc123.apicdn.sanity.io')
       .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&cacheMode=noStale`)
@@ -638,7 +638,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('cacheMode is ignored when useCdn:false', async () => {
+  test('cacheMode is ignored when useCdn:false', async () => {
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
       .on('GET', `/v1/data/query/foo?query=*&returnQuery=false`)
@@ -656,7 +656,7 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test.skipIf(isEdge)('handles api errors gracefully', async () => {
+  test('handles api errors gracefully', async () => {
     expect.assertions(4)
 
     const response = {
@@ -680,7 +680,7 @@ describe('data', () => {
     }
   })
 
-  test.skipIf(isEdge)('handles db errors gracefully', async () => {
+  test('handles db errors gracefully', async () => {
     expect.assertions(4)
 
     const response = {

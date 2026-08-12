@@ -11,10 +11,10 @@ import {
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {getClient, isEdge, projectHost} from './helpers'
+import {getClient, projectHost} from './helpers'
 
 describe('mutations', () => {
-  test.skipIf(isEdge)('can create documents', async () => {
+  test('can create documents', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
 
     getActiveMock()
@@ -42,7 +42,7 @@ describe('mutations', () => {
     expect(res._createdAt, 'server-generated attributes are included').toBeTruthy()
   })
 
-  test.skipIf(isEdge)('can create documents without specifying ID', async () => {
+  test('can create documents without specifying ID', async () => {
     const doc = {_type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{create: {...doc}}]}
     getActiveMock()
@@ -67,7 +67,7 @@ describe('mutations', () => {
     expect(res._id, 'document id returned').toBe('abc456')
   })
 
-  test.skipIf(isEdge)('can create documents with request tag', async () => {
+  test('can create documents with request tag', async () => {
     const doc = {_type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{create: {...doc}}]}
     getActiveMock()
@@ -94,7 +94,7 @@ describe('mutations', () => {
     expect(res._id, 'document id returned').toBe('abc456')
   })
 
-  test.skipIf(isEdge)('can tell create() not to return documents', async () => {
+  test('can tell create() not to return documents', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     getActiveMock()
       .scope(projectHost())
@@ -111,7 +111,7 @@ describe('mutations', () => {
     expect(res.documentId, 'returns document id').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('can tell create() to use non-default visibility mode', async () => {
+  test('can tell create() to use non-default visibility mode', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     getActiveMock()
       .scope(projectHost())
@@ -132,7 +132,7 @@ describe('mutations', () => {
     expect(res._id, 'document id returned').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('can tell create() to auto-generate array keys', async () => {
+  test('can tell create() to auto-generate array keys', async () => {
     const doc = {
       _id: 'abc123',
       _type: 'post',
@@ -170,7 +170,7 @@ describe('mutations', () => {
     expect((res.genus[0] as any)._key, 'array keys generated returned').toEqual('r4p70r')
   })
 
-  test.skipIf(isEdge)('can tell create() to do a dry-run', async () => {
+  test('can tell create() to do a dry-run', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Dromaeosauridae'}
     getActiveMock()
       .scope(projectHost())
@@ -201,7 +201,7 @@ describe('mutations', () => {
     expect(res._id, 'document id returned').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('createIfNotExists() sends correct mutation', async () => {
+  test('createIfNotExists() sends correct mutation', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{createIfNotExists: doc}]}
     getActiveMock()
@@ -220,7 +220,7 @@ describe('mutations', () => {
     await expect(getClient().createIfNotExists(doc)).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('can tell createIfNotExists() not to return documents', async () => {
+  test('can tell createIfNotExists() not to return documents', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{createIfNotExists: doc}]}
     getActiveMock()
@@ -236,7 +236,7 @@ describe('mutations', () => {
     expect(res.documentId, 'returns document id').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('can use request tag with createIfNotExists()', async () => {
+  test('can use request tag with createIfNotExists()', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{createIfNotExists: doc}]}
     getActiveMock()
@@ -257,7 +257,7 @@ describe('mutations', () => {
     expect(res.documentId, 'returns document id').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('createOrReplace() sends correct mutation', async () => {
+  test('createOrReplace() sends correct mutation', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{createOrReplace: doc}]}
     getActiveMock()
@@ -273,7 +273,7 @@ describe('mutations', () => {
     await expect(getClient().createOrReplace(doc)).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('can tell createOrReplace() not to return documents', async () => {
+  test('can tell createOrReplace() not to return documents', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
     const expectedBody = {mutations: [{createOrReplace: doc}]}
     getActiveMock()
@@ -289,7 +289,7 @@ describe('mutations', () => {
     expect(res.documentId, 'returns document id').toEqual('abc123')
   })
 
-  test.skipIf(isEdge)('delete() sends correct mutation', async () => {
+  test('delete() sends correct mutation', async () => {
     const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
     getActiveMock()
       .scope(projectHost())
@@ -304,7 +304,7 @@ describe('mutations', () => {
     await expect(getClient().delete('abc123')).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('delete() can use query', async () => {
+  test('delete() can use query', async () => {
     const expectedBody = {mutations: [{delete: {query: 'foo.sometype'}}]}
     getActiveMock()
       .scope(projectHost())
@@ -316,7 +316,7 @@ describe('mutations', () => {
     await expect(getClient().delete({query: 'foo.sometype'})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('delete() can use request tag', async () => {
+  test('delete() can use request tag', async () => {
     const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
     getActiveMock()
       .scope(projectHost())
@@ -333,7 +333,7 @@ describe('mutations', () => {
     await expect(getClient().delete('abc123', {tag: 'delete.abc'})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('delete() can use query with params', async () => {
+  test('delete() can use query with params', async () => {
     const query = '*[_type == "beer" && title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const expectedBody = {mutations: [{delete: {query, params: params}}]}
@@ -347,7 +347,7 @@ describe('mutations', () => {
     await expect(getClient().delete({query, params: params})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('delete() can be told not to return documents', async () => {
+  test('delete() can be told not to return documents', async () => {
     const expectedBody = {mutations: [{delete: {id: 'abc123'}}]}
     getActiveMock()
       .scope(projectHost())
@@ -360,7 +360,7 @@ describe('mutations', () => {
     await expect(getClient().delete('abc123', {returnDocuments: false})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('mutate() accepts multiple mutations', async () => {
+  test('mutate() accepts multiple mutations', async () => {
     const docs = [
       {
         _id: 'movies.raiders-of-the-lost-ark',
@@ -399,7 +399,7 @@ describe('mutations', () => {
     await expect(getClient().mutate(mutations)).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('mutate() accepts request tag', async () => {
+  test('mutate() accepts request tag', async () => {
     const mutations = [{delete: {id: 'abc123'}}]
 
     getActiveMock()
@@ -424,7 +424,7 @@ describe('mutations', () => {
     await expect(getClient().mutate(mutations, {tag: 'foobar'})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('mutate() accepts transaction id', async () => {
+  test('mutate() accepts transaction id', async () => {
     const mutations = [{delete: {id: 'abc123'}}]
 
     getActiveMock()
@@ -446,7 +446,7 @@ describe('mutations', () => {
     await expect(getClient().mutate(mutations, {transactionId: 'spec-ific'})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('mutate() accepts `autoGenerateArrayKeys`', async () => {
+  test('mutate() accepts `autoGenerateArrayKeys`', async () => {
     const mutations = [
       {
         create: {
@@ -477,7 +477,7 @@ describe('mutations', () => {
     ).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('mutate() accepts `dryRun`', async () => {
+  test('mutate() accepts `dryRun`', async () => {
     const mutations = [{create: {_id: 'abc123', _type: 'post'}}]
 
     getActiveMock()
@@ -502,7 +502,7 @@ describe('mutations', () => {
     await expect(getClient().mutate(mutations, {dryRun: true})).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('mutate() accepts `skipCrossDatasetReferenceValidation`', async () => {
+  test('mutate() accepts `skipCrossDatasetReferenceValidation`', async () => {
     const mutations = [{delete: {id: 'abc123'}}]
 
     getActiveMock()
@@ -525,7 +525,7 @@ describe('mutations', () => {
     ).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)(
+  test(
     'mutate() skips/falls back to defaults on undefined but known properties',
     async () => {
       const mutations = [{delete: {id: 'abc123'}}]
@@ -560,7 +560,7 @@ describe('mutations', () => {
     },
   )
 
-  test.skipIf(isEdge)('action() performs single operation', async () => {
+  test('action() performs single operation', async () => {
     const action: CreateAction = {
       actionType: 'sanity.action.document.create',
       publishedId: 'post1',
@@ -585,7 +585,7 @@ describe('mutations', () => {
     await expect(getClient().action(action)).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('action() performs multiple operations', async () => {
+  test('action() performs multiple operations', async () => {
     const action1: CreateAction = {
       actionType: 'sanity.action.document.create',
       publishedId: 'post1',
@@ -654,7 +654,7 @@ describe('mutations', () => {
     ).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('action() accepts optional parameters', async () => {
+  test('action() accepts optional parameters', async () => {
     const action: CreateAction = {
       actionType: 'sanity.action.document.create',
       publishedId: 'post1',
@@ -688,7 +688,7 @@ describe('mutations', () => {
     await expect(getClient().action(action, options)).resolves.not.toThrow()
   })
 
-  test.skipIf(isEdge)('action() handles undefined optional parameters gracefully', async () => {
+  test('action() handles undefined optional parameters gracefully', async () => {
     const action: CreateAction = {
       actionType: 'sanity.action.document.create',
       publishedId: 'post1',

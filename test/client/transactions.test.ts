@@ -2,7 +2,7 @@ import {Transaction} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {getClient, isEdge, projectHost} from './helpers'
+import {getClient, projectHost} from './helpers'
 
 describe('transactions', () => {
   test('can build and serialize a transaction of operations', () => {
@@ -162,7 +162,7 @@ describe('transactions', () => {
     ])
   })
 
-  test.skipIf(isEdge)('executes transaction when commit() is called', async () => {
+  test('executes transaction when commit() is called', async () => {
     const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
     getActiveMock()
       .scope(projectHost())
@@ -177,7 +177,7 @@ describe('transactions', () => {
     expect(res.transactionId, 'applies given transaction').toEqual('blatti')
   })
 
-  test.skipIf(isEdge)(
+  test(
     'executes transaction with request tag when commit() is called with tag',
     async () => {
       const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
@@ -224,9 +224,7 @@ describe('transactions', () => {
     ).toThrow(/contains an ID/)
   })
 
-  // oxlint-disable-next-line no-warning-comments
-  // @TODO investigate why this fails on Edge Runtime
-  test.skipIf(isEdge)('can manually call clone on transaction', () => {
+  test('can manually call clone on transaction', () => {
     const trans1 = getClient().transaction().delete('foo.bar')
     const trans2 = trans1.clone()
 
@@ -248,7 +246,7 @@ describe('transactions', () => {
     ])
   })
 
-  test.skipIf(isEdge)(
+  test(
     'transaction can be created without client and passed to mutate()',
     async () => {
       const trx = new Transaction()
@@ -273,7 +271,7 @@ describe('transactions', () => {
     expect(() => trans.delete('foo.bar').commit()).toThrow(/client.*mutate/i)
   })
 
-  test.skipIf(isEdge)('transaction can be given an explicit transaction ID', async () => {
+  test('transaction can be given an explicit transaction ID', async () => {
     const transactionId = 'moop'
     const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
     getActiveMock()

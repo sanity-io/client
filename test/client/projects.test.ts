@@ -4,9 +4,9 @@ import {firstValueFrom} from 'rxjs'
 import {describe, expect, test, vi} from 'vitest'
 
 import {getActiveFetch, getActiveMock} from '../helpers/mockFetch'
-import {apiHost, createClient, getClient, isEdge, isNode} from './helpers'
+import {apiHost, createClient, getClient, isNode} from './helpers'
 
-describe.skipIf(isEdge)('PROJECTS', () => {
+describe('PROJECTS', () => {
   test('can request list of projects', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)

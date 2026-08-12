@@ -1,10 +1,10 @@
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock, objectContaining} from '../helpers/mockFetch'
-import {apiHost, createClient, getClient, isEdge, projectHost} from './helpers'
+import {apiHost, createClient, getClient, projectHost} from './helpers'
 
 describe('fetching documents', () => {
-  test.skipIf(isEdge)('can query for single document', async () => {
+  test('can query for single document', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123')
@@ -21,7 +21,7 @@ describe('fetching documents', () => {
     })
   })
 
-  test.skipIf(isEdge)('can query for single document using resource config', async () => {
+  test('can query for single document using resource config', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)
       .on('GET', '/v1/media-libraries/res-id/doc/abc123')
@@ -43,7 +43,7 @@ describe('fetching documents', () => {
     })
   })
 
-  test.skipIf(isEdge)('can query for single document with request tag', async () => {
+  test('can query for single document with request tag', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123?tag=some.tag')
@@ -63,7 +63,7 @@ describe('fetching documents', () => {
     })
   })
 
-  test.skipIf(isEdge)('can query for multiple documents', async () => {
+  test('can query for multiple documents', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123,abc321')
@@ -83,7 +83,7 @@ describe('fetching documents', () => {
     expect(abc321!.mood, 'data should match').toBe('tense')
   })
 
-  test.skipIf(isEdge)('can query for multiple documents with tag', async () => {
+  test('can query for multiple documents with tag', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123,abc321?tag=mood.docs')
@@ -105,7 +105,7 @@ describe('fetching documents', () => {
     expect(abc321!.mood, 'data should match').toBe('tense')
   })
 
-  test.skipIf(isEdge)('preserves the position of requested documents', async () => {
+  test('preserves the position of requested documents', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123,abc321,abc456')
@@ -126,7 +126,7 @@ describe('fetching documents', () => {
     expect(abc456!.mood, 'data should match').toBe('neutral')
   })
 
-  test.skipIf(isEdge)(
+  test(
     'documentsExists returns set with all ids when none are omitted',
     async () => {
       getActiveMock()
@@ -144,7 +144,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)('documentsExists excludes ids omitted with reason "existence"', async () => {
+  test('documentsExists excludes ids omitted with reason "existence"', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123,abc321,abc456', {
@@ -168,7 +168,7 @@ describe('fetching documents', () => {
     expect(existing.size).toBe(1)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'documentsExists keeps ids omitted with reason other than "existence"',
     async () => {
       getActiveMock()
@@ -191,7 +191,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)('documentsExists forwards the tag option', async () => {
+  test('documentsExists forwards the tag option', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123', {
@@ -203,7 +203,7 @@ describe('fetching documents', () => {
     expect(existing.has('abc123')).toBe(true)
   })
 
-  test.skipIf(isEdge)(
+  test(
     'documentsExists returns empty set for empty ids without making a request',
     async () => {
       const existing = await getClient().documentsExists([])
@@ -212,7 +212,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)('documentsExists works with a single id', async () => {
+  test('documentsExists works with a single id', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123', {query: objectContaining({excludeContent: 'true'})})
@@ -224,7 +224,7 @@ describe('fetching documents', () => {
     expect(existing.has('abc123')).toBe(true)
   })
 
-  test.skipIf(isEdge)('documentsExists rejects on http error responses', async () => {
+  test('documentsExists rejects on http error responses', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/doc/foo/abc123', {query: objectContaining({excludeContent: 'true'})})
@@ -233,7 +233,7 @@ describe('fetching documents', () => {
     await expect(getClient().documentsExists(['abc123'])).rejects.toThrow(/Internal Server Error/)
   })
 
-  test.skipIf(isEdge)('documentsExists rejects on http error', async () => {
+  test('documentsExists rejects on http error', async () => {
     expect.assertions(2)
 
     getActiveMock()
@@ -249,7 +249,7 @@ describe('fetching documents', () => {
     }
   })
 
-  test.skipIf(isEdge)(
+  test(
     'documentsExists treats missing omitted field as all ids existing',
     async () => {
       getActiveMock()
@@ -266,7 +266,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'documentsExists percent-encodes ids so delimiter chars are preserved',
     async () => {
       getActiveMock()
@@ -283,7 +283,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'documentsExists batches large id arrays into requests of at most 100 ids',
     async () => {
       const ids = Array.from({length: 150}, (_, i) => `id${i + 1}`)
@@ -315,7 +315,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)(
+  test(
     'gives http statuscode as error if no body is present on errors',
     async () => {
       expect.assertions(2)
@@ -334,7 +334,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)('includes body if expected JSON object not returned on errors', async () => {
+  test('includes body if expected JSON object not returned on errors', async () => {
     expect.assertions(2)
 
     getActiveMock()
@@ -352,7 +352,7 @@ describe('fetching documents', () => {
     }
   })
 
-  test.skipIf(isEdge)(
+  test(
     'includes part of body if expected JSON object not returned on errors',
     async () => {
       expect.assertions(2)
@@ -373,7 +373,7 @@ describe('fetching documents', () => {
     },
   )
 
-  test.skipIf(isEdge)('uses `error` property as error if present and is string', async () => {
+  test('uses `error` property as error if present and is string', async () => {
     expect.assertions(2)
 
     getActiveMock()
@@ -389,7 +389,7 @@ describe('fetching documents', () => {
     }
   })
 
-  test.skipIf(isEdge)('uses `message` property as error if present and is string', async () => {
+  test('uses `message` property as error if present and is string', async () => {
     expect.assertions(2)
 
     getActiveMock()
@@ -405,7 +405,7 @@ describe('fetching documents', () => {
     }
   })
 
-  test.skipIf(isEdge)('falls back to HTTP error code if error shape is unknown', async () => {
+  test('falls back to HTTP error code if error shape is unknown', async () => {
     expect.assertions(2)
 
     getActiveMock()
@@ -421,7 +421,7 @@ describe('fetching documents', () => {
     }
   })
 
-  test.skipIf(isEdge)('populates response body on errors', async () => {
+  test('populates response body on errors', async () => {
     expect.assertions(3)
 
     getActiveMock()
@@ -444,7 +444,7 @@ describe('fetching documents', () => {
     )
   })
 
-  describe.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
+  describe(
     'can cancel request with an abort controller signal',
     () => {
       test('client.fetch', async () => {

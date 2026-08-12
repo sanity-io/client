@@ -1,6 +1,6 @@
 import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {testResolveFetch} from './helpers/mockFetch'
+import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
 
 describe('Client config warnings', async () => {
   const isEdge = typeof EdgeRuntime === 'string'
@@ -64,9 +64,7 @@ describe('Client config warnings', async () => {
 
   // Deprecation printers are `once`-wrapped at module scope, so this has to be
   // the only test in the file that touches the `uri` option.
-  test.skipIf(isEdge)('warns once when the deprecated `uri` request option is used', async () => {
-    const {getActiveMock} = await import('./helpers/mockFetch')
-
+  test('warns once when the deprecated `uri` request option is used', async () => {
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
       .on('GET', '/v1/ping')
@@ -88,10 +86,8 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
 
-  test.skipIf(isEdge)('warns if server sends warning back', async () => {
+  test('warns if server sends warning back', async () => {
     expect.assertions(1)
-
-    const {getActiveMock} = await import('./helpers/mockFetch')
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -102,10 +98,8 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledWith('Friction endures')
   })
 
-  test.skipIf(isEdge)('only warns once', async () => {
+  test('only warns once', async () => {
     expect.assertions(2)
-
-    const {getActiveMock} = await import('./helpers/mockFetch')
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -126,10 +120,8 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
 
-  test.skipIf(isEdge)('ignores warnings using string pattern', async () => {
+  test('ignores warnings using string pattern', async () => {
     expect.assertions(1)
-
-    const {getActiveMock} = await import('./helpers/mockFetch')
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -150,10 +142,8 @@ describe('Client config warnings', async () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
-  test.skipIf(isEdge)('ignores warnings using regex pattern', async () => {
+  test('ignores warnings using regex pattern', async () => {
     expect.assertions(1)
-
-    const {getActiveMock} = await import('./helpers/mockFetch')
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -174,10 +164,8 @@ describe('Client config warnings', async () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
-  test.skipIf(isEdge)('ignores warnings using array of patterns', async () => {
+  test('ignores warnings using array of patterns', async () => {
     expect.assertions(1)
-
-    const {getActiveMock} = await import('./helpers/mockFetch')
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -194,10 +182,8 @@ describe('Client config warnings', async () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
-  test.skipIf(isEdge)('shows warnings when ignoreWarnings does not match', async () => {
+  test('shows warnings when ignoreWarnings does not match', async () => {
     expect.assertions(1)
-
-    const {getActiveMock} = await import('./helpers/mockFetch')
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -218,10 +204,9 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledWith('This is an important warning')
   })
 
-  test.skipIf(isEdge)('ignores warnings using exported constant', async () => {
+  test('ignores warnings using exported constant', async () => {
     expect.assertions(1)
 
-    const {getActiveMock} = await import('./helpers/mockFetch')
     const {EXPERIMENTAL_API_WARNING} = await import('../src/types')
 
     getActiveMock()

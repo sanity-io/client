@@ -12,7 +12,7 @@ import {
 } from '@vercel/stega'
 import {beforeEach, describe, expect, test} from 'vitest'
 
-import {testResolveFetch} from '../helpers/mockFetch'
+import {getActiveMock, objectContaining, testResolveFetch} from '../helpers/mockFetch'
 
 // Clients in this suite go through the per-test mock, injected via the
 // public `resolveFetch` config option.
@@ -30,16 +30,7 @@ const clientConfig = {
   useCdn: false,
 }
 
-describe('@sanity/client/stega', async () => {
-  const isEdge = typeof EdgeRuntime === 'string'
-  let getActiveMock: typeof import('../helpers/mockFetch').getActiveMock = () => {
-    throw new Error('Not supported in EdgeRuntime')
-  }
-  if (!isEdge) {
-    const mod = await import('../helpers/mockFetch')
-    getActiveMock = mod.getActiveMock
-  }
-
+describe('@sanity/client/stega', () => {
   const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...conf})
 
   const result = [{_id: 'njgNkngskjg', title: 'IPA', rating: 4, country: 'Norway'}]
@@ -141,7 +132,7 @@ describe('@sanity/client/stega', async () => {
       expect(client.config({stega: true}).config().stega.enabled).toBe(true)
     })
 
-    test.skipIf(isEdge)('it returns stega strings in the response', async () => {
+    test('it returns stega strings in the response', async () => {
       getActiveMock()
         .scope(projectHost())
         .on(
@@ -178,7 +169,7 @@ describe('@sanity/client/stega', async () => {
       `)
     })
 
-    test.skipIf(isEdge)('it strips stega strings from params', async () => {
+    test('it strips stega strings from params', async () => {
       getActiveMock()
         .scope(projectHost())
         .on(
@@ -194,7 +185,7 @@ describe('@sanity/client/stega', async () => {
     })
   })
 
-  describe.skipIf(isEdge)('client.fetch', async () => {
+  describe('client.fetch', async () => {
     test('the stega option accepts booleans as a shortcut to toggle `enabled`', async () => {
       getActiveMock()
         .scope(projectHost())
@@ -282,9 +273,8 @@ describe('@sanity/client', () => {
       ).not.toThrow()
     })
   })
-  describe.skipIf(typeof EdgeRuntime === 'string')('client.fetch', async () => {
+  describe('client.fetch', () => {
     const client = createClient(clientConfig)
-    const {getActiveMock, objectContaining} = await import('../helpers/mockFetch')
 
     // Mock fetch handlers must be registered after the per-test setup has
     // installed an active mock, so register inside beforeEach rather than at
