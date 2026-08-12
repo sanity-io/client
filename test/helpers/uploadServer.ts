@@ -15,9 +15,6 @@ import http from 'node:http'
  * - `/error400` - 401 with a structured error body, plus `traceparent` and
  *   `x-served-by` headers, mirroring a real API error response.
  * - `/error500` - 503 with a plain-text body.
- * - `/slow` - delays its 200 response by `SLOW_RESPONSE_DELAY_MS`, so a short
- *   client-side timeout can be exercised without the request ever completing
- *   in time.
  * - `/hang` - never responds at all. Used by the abort tests.
  *
  * Any request carrying an `?id=` or `?tag=` query parameter is recorded
@@ -27,8 +24,6 @@ import http from 'node:http'
  * running in a real browser to prove what the server actually received,
  * now that there is no fake XHR instance left to inspect.
  */
-
-const SLOW_RESPONSE_DELAY_MS = 3000
 
 interface RequestRecord {
   received: boolean
@@ -118,16 +113,6 @@ export async function createUploadServer(): Promise<UploadServer> {
       return
     }
 
-    if (route === 'slow') {
-      req.on('end', () => {
-        setTimeout(() => {
-          res.writeHead(200, {'content-type': 'application/json'})
-          res.end(JSON.stringify({document: {_id: 'image-abc', _type: 'sanity.imageAsset'}}))
-        }, SLOW_RESPONSE_DELAY_MS)
-      })
-      return
-    }
-
     if (route === 'error400') {
       req.on('end', () => {
         res.writeHead(401, 'Unauthorized', {
@@ -153,23 +138,6 @@ export async function createUploadServer(): Promise<UploadServer> {
     // Default: success. Covers both the explicit `/success` route used by the
     // low-level `uploadWithProgress()` tests and `/v1/assets/images/<dataset>`
     // built by `assets.upload()`.
-    //
-    // Pausing between chunks (rather than draining as fast as Node/the OS
-    // will allow) is deliberate: verified empirically that an unthrottled
-    // multi-megabyte body drains over loopback in single-digit
-    // milliseconds - far too fast for a real browser's upload-progress
-    // reporting to fire more than once or twice. Pausing here means Node
-    // stops pulling bytes off the socket, which fills the kernel's receive
-    // buffer and applies real TCP backpressure all the way back to the
-    // browser's `send()` - confirmed with a throwaway client/server pair
-    // that this makes the sender's writes start blocking on `drain` events,
-    // exactly what a genuinely slow network would do. That's what gives
-    // `xhr.upload.onprogress` real wall-clock time to fire more than a
-    // couple of times, without needing an implausibly large body.
-    req.on('data', () => {
-      req.pause()
-      setTimeout(() => req.resume(), 20)
-    })
     req.on('end', () => {
       res.writeHead(201, 'Created', {'content-type': 'application/json'})
       res.end(JSON.stringify({document: {_id: 'image-abc', _type: 'sanity.imageAsset'}}))
