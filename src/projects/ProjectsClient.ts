@@ -17,11 +17,23 @@ type OmittedProjectFields<T extends ListOptions | undefined> =
 
 /** @internal */
 export class ObservableProjectsClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: ObservableSanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -51,7 +63,7 @@ export class ObservableProjectsClient {
       query.onlyExplicitMembership = 'true'
     }
 
-    return _requestObservable<SanityProject[]>(this.#client, this.#httpRequest, {
+    return _requestObservable<SanityProject[]>(this._client, this._httpRequest, {
       url,
       query,
     }) as Observable<Omit<SanityProject, OmittedProjectFields<T>>[]>
@@ -63,7 +75,7 @@ export class ObservableProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Observable<SanityProject> {
-    return _requestObservable<SanityProject>(this.#client, this.#httpRequest, {
+    return _requestObservable<SanityProject>(this._client, this._httpRequest, {
       url: `/projects/${projectId}`,
     })
   }
@@ -71,11 +83,23 @@ export class ObservableProjectsClient {
 
 /** @internal */
 export class ProjectsClient {
-  #client: SanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: SanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -104,7 +128,7 @@ export class ProjectsClient {
     if (options?.onlyExplicitMembership) {
       query.onlyExplicitMembership = 'true'
     }
-    return _request<SanityProject[]>(this.#client, this.#httpRequest, {
+    return _request<SanityProject[]>(this._client, this._httpRequest, {
       url,
       query,
     }) as Promise<Omit<SanityProject, OmittedProjectFields<T>>[]>
@@ -116,7 +140,7 @@ export class ProjectsClient {
    * @param projectId - ID of the project to fetch
    */
   getById(projectId: string): Promise<SanityProject> {
-    return _request<SanityProject>(this.#client, this.#httpRequest, {
+    return _request<SanityProject>(this._client, this._httpRequest, {
       url: `/projects/${projectId}`,
     })
   }

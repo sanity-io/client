@@ -19,11 +19,23 @@ import * as validators from '../validators'
 
 /** @internal */
 export class ObservableAssetsClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: ObservableSanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -68,17 +80,29 @@ export class ObservableAssetsClient {
     body: UploadBody,
     options?: UploadClientConfig,
   ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
-    return _upload(this.#client, this.#httpRequest, assetType, body, options)
+    return _upload(this._client, this._httpRequest, assetType, body, options)
   }
 }
 
 /** @internal */
 export class AssetsClient {
-  #client: SanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: SanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -123,7 +147,7 @@ export class AssetsClient {
     options?: UploadClientConfig,
   ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
     type Doc = {document: SanityAssetDocument | SanityImageAssetDocument}
-    const observable = _upload<Doc>(this.#client, this.#httpRequest, assetType, body, options)
+    const observable = _upload<Doc>(this._client, this._httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
         filter((event): event is UploadResponseEvent<Doc> => event.type === 'response'),

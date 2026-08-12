@@ -10,11 +10,23 @@ import {_translate, _translateObservable, type TranslateDocument} from './transl
 
 /** @public */
 export class ObservableAgentsActionClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: ObservableSanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -28,7 +40,7 @@ export class ObservableAgentsActionClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _generateObservable(this.#client, this.#httpRequest, request)
+    return _generateObservable(this._client, this._httpRequest, request)
   }
 
   /**
@@ -42,7 +54,7 @@ export class ObservableAgentsActionClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _transformObservable(this.#client, this.#httpRequest, request)
+    return _transformObservable(this._client, this._httpRequest, request)
   }
 
   /**
@@ -56,17 +68,29 @@ export class ObservableAgentsActionClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _translateObservable(this.#client, this.#httpRequest, request)
+    return _translateObservable(this._client, this._httpRequest, request)
   }
 }
 
 /** @public */
 export class AgentActionsClient {
-  #client: SanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: SanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -80,7 +104,7 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _generate(this.#client, this.#httpRequest, request)
+    return _generate(this._client, this._httpRequest, request)
   }
 
   /**
@@ -94,7 +118,7 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _transform(this.#client, this.#httpRequest, request)
+    return _transform(this._client, this._httpRequest, request)
   }
 
   /**
@@ -108,7 +132,7 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _translate(this.#client, this.#httpRequest, request)
+    return _translate(this._client, this._httpRequest, request)
   }
 
   /**
@@ -118,7 +142,7 @@ export class AgentActionsClient {
   prompt<const DocumentShape extends Record<string, Any>>(
     request: PromptRequest<DocumentShape>,
   ): Promise<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
-    return _prompt(this.#client, this.#httpRequest, request)
+    return _prompt(this._client, this._httpRequest, request)
   }
 
   /**
@@ -133,6 +157,6 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _patch(this.#client, this.#httpRequest, request)
+    return _patch(this._client, this._httpRequest, request)
   }
 }

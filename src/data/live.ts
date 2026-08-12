@@ -26,9 +26,19 @@ const requiredApiVersion = '2021-03-25'
  * @public
  */
 export class LiveClient {
-  #client: SanityClient | ObservableSanityClient
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: SanityClient | ObservableSanityClient
+
   constructor(client: SanityClient | ObservableSanityClient) {
-    this.#client = client
+    this._client = client
   }
 
   /**
@@ -52,7 +62,7 @@ export class LiveClient {
      */
     waitFor?: 'function'
   } = {}): Observable<LiveEvent> {
-    const config = this.#client.config()
+    const config = this._client.config()
     const {
       projectId,
       apiVersion: _apiVersion,
@@ -74,8 +84,8 @@ export class LiveClient {
         `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
       )
     }
-    const path = _getDataUrl(this.#client, 'live/events')
-    const url = new URL(this.#client.getUrl(path, false))
+    const path = _getDataUrl(this._client, 'live/events')
+    const url = new URL(this._client.getUrl(path, false))
     const tag = _tag && requestTagPrefix ? [requestTagPrefix, _tag].join('.') : _tag
     if (tag) {
       url.searchParams.set('tag', tag)
@@ -129,7 +139,7 @@ export class LiveClient {
     ])
 
     const checkCors = checkCorsObservable(
-      new URL(this.#client.getUrl('/check/cors', false)),
+      new URL(this._client.getUrl('/check/cors', false)),
       projectId,
       eventSourceWithCredentials,
     )

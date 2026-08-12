@@ -12,11 +12,23 @@ import type {
 
 /** @internal */
 export class ObservableMediaLibraryVideoClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: ObservableSanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -29,7 +41,7 @@ export class ObservableMediaLibraryVideoClient {
     assetIdentifier: MediaLibraryAssetInstanceIdentifier,
     options: MediaLibraryPlaybackInfoOptions = {},
   ): Observable<VideoPlaybackInfo> {
-    const config = this.#client.config()
+    const config = this._client.config()
     const resource = config.resource || config['~experimental_resource']
     const configMediaLibraryId = resource?.id
 
@@ -45,7 +57,7 @@ export class ObservableMediaLibraryVideoClient {
     const url = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
-    return _requestObservable<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
+    return _requestObservable<VideoPlaybackInfo>(this._client, this._httpRequest, {
       method: 'GET',
       url,
       query: queryParams,
@@ -55,11 +67,23 @@ export class ObservableMediaLibraryVideoClient {
 
 /** @internal */
 export class MediaLibraryVideoClient {
-  #client: SanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: SanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -72,7 +96,7 @@ export class MediaLibraryVideoClient {
     assetIdentifier: MediaLibraryAssetInstanceIdentifier,
     options: MediaLibraryPlaybackInfoOptions = {},
   ): Promise<VideoPlaybackInfo> {
-    const config = this.#client.config()
+    const config = this._client.config()
     const resource = config.resource || config['~experimental_resource']
     const configMediaLibraryId = resource?.id
 
@@ -88,7 +112,7 @@ export class MediaLibraryVideoClient {
     const url = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
-    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
+    return _request<VideoPlaybackInfo>(this._client, this._httpRequest, {
       method: 'GET',
       url,
       query: queryParams,

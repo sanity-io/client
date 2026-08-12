@@ -136,17 +136,19 @@ export class BaseTransaction {
 
 /** @public */
 export class Transaction extends BaseTransaction {
-  #client?: SanityClient
+  /** @internal */
+  _client?: SanityClient
+
   constructor(operations?: Mutation[], client?: SanityClient, transactionId?: string) {
     super(operations, transactionId)
-    this.#client = client
+    this._client = client
   }
 
   /**
    * Clones the transaction
    */
   clone(): Transaction {
-    return new Transaction([...this.operations], this.#client, this.trxId)
+    return new Transaction([...this.operations], this._client, this.trxId)
   }
 
   /**
@@ -193,14 +195,14 @@ export class Transaction extends BaseTransaction {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    if (!this.#client) {
+    if (!this._client) {
       throw new Error(
         'No `client` passed to transaction, either provide one or pass the ' +
           'transaction to a clients `mutate()` method',
       )
     }
 
-    return this.#client.mutate<R>(
+    return this._client.mutate<R>(
       this.serialize() as Any,
       Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {}),
     )
@@ -245,7 +247,7 @@ export class Transaction extends BaseTransaction {
 
     // patch => patch.inc({visits: 1}).set({foo: 'bar'})
     if (isBuilder) {
-      const patch = patchOps(new Patch(patchOrDocumentId, {}, this.#client))
+      const patch = patchOps(new Patch(patchOrDocumentId, {}, this._client))
       if (!(patch instanceof Patch)) {
         throw new Error('function passed to `patch()` must return the patch')
       }
@@ -260,7 +262,7 @@ export class Transaction extends BaseTransaction {
      * )
      */
     if (isMutationSelection) {
-      const patch = new Patch(patchOrDocumentId, patchOps || {}, this.#client)
+      const patch = new Patch(patchOrDocumentId, patchOps || {}, this._client)
       return this._add({patch: patch.serialize()})
     }
 
@@ -270,17 +272,19 @@ export class Transaction extends BaseTransaction {
 
 /** @public */
 export class ObservableTransaction extends BaseTransaction {
-  #client?: ObservableSanityClient
+  /** @internal */
+  _client?: ObservableSanityClient
+
   constructor(operations?: Mutation[], client?: ObservableSanityClient, transactionId?: string) {
     super(operations, transactionId)
-    this.#client = client
+    this._client = client
   }
 
   /**
    * Clones the transaction
    */
   clone(): ObservableTransaction {
-    return new ObservableTransaction([...this.operations], this.#client, this.trxId)
+    return new ObservableTransaction([...this.operations], this._client, this.trxId)
   }
 
   /**
@@ -327,14 +331,14 @@ export class ObservableTransaction extends BaseTransaction {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    if (!this.#client) {
+    if (!this._client) {
       throw new Error(
         'No `client` passed to transaction, either provide one or pass the ' +
           'transaction to a clients `mutate()` method',
       )
     }
 
-    return this.#client.mutate<R>(
+    return this._client.mutate<R>(
       this.serialize() as Any,
       Object.assign({transactionId: this.trxId}, defaultMutateOptions, options || {}),
     )
@@ -370,7 +374,7 @@ export class ObservableTransaction extends BaseTransaction {
 
     // patch => patch.inc({visits: 1}).set({foo: 'bar'})
     if (isBuilder) {
-      const patch = patchOps(new ObservablePatch(patchOrDocumentId, {}, this.#client))
+      const patch = patchOps(new ObservablePatch(patchOrDocumentId, {}, this._client))
       if (!(patch instanceof ObservablePatch)) {
         throw new Error('function passed to `patch()` must return the patch')
       }
