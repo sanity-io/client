@@ -1,10 +1,14 @@
 import {defineConfig} from '@sanity/pkg-utils'
 
+import {stripInternalMembers} from './scripts/stripInternalMembers'
+
 export default defineConfig({
   tsconfig: 'tsconfig.dist.json',
 
   // `dist` is cleaned by default; list it alongside `coverage` to keep both.
   clean: ['dist', 'coverage'],
+
+  plugins: [stripInternalMembers()],
 
   deps: {alwaysBundle: ['@vercel/stega']},
 

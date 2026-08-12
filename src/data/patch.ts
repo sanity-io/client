@@ -193,7 +193,8 @@ export class BasePatch {
 
 /** @public */
 export class ObservablePatch extends BasePatch {
-  #client?: ObservableSanityClient
+  /** @internal */
+  _client?: ObservableSanityClient
 
   constructor(
     selection: PatchSelection,
@@ -201,14 +202,14 @@ export class ObservablePatch extends BasePatch {
     client?: ObservableSanityClient,
   ) {
     super(selection, operations)
-    this.#client = client
+    this._client = client
   }
 
   /**
    * Clones the patch
    */
   clone(): ObservablePatch {
-    return new ObservablePatch(this.selection, {...this.operations}, this.#client)
+    return new ObservablePatch(this.selection, {...this.operations}, this._client)
   }
 
   /**
@@ -257,7 +258,7 @@ export class ObservablePatch extends BasePatch {
   ): Observable<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    if (!this.#client) {
+    if (!this._client) {
       throw new Error(
         'No `client` passed to patch, either provide one or pass the ' +
           'patch to a clients `mutate()` method',
@@ -266,23 +267,25 @@ export class ObservablePatch extends BasePatch {
 
     const returnFirst = typeof this.selection === 'string'
     const opts = Object.assign({returnFirst, returnDocuments: true}, options)
-    return this.#client.mutate<R>({patch: this.serialize()} as Any, opts)
+    return this._client.mutate<R>({patch: this.serialize()} as Any, opts)
   }
 }
 
 /** @public */
 export class Patch extends BasePatch {
-  #client?: SanityClient
+  /** @internal */
+  _client?: SanityClient
+
   constructor(selection: PatchSelection, operations?: PatchOperations, client?: SanityClient) {
     super(selection, operations)
-    this.#client = client
+    this._client = client
   }
 
   /**
    * Clones the patch
    */
   clone(): Patch {
-    return new Patch(this.selection, {...this.operations}, this.#client)
+    return new Patch(this.selection, {...this.operations}, this._client)
   }
 
   /**
@@ -331,7 +334,7 @@ export class Patch extends BasePatch {
   ): Promise<
     SanityDocument<R> | SanityDocument<R>[] | SingleMutationResult | MultipleMutationResult
   > {
-    if (!this.#client) {
+    if (!this._client) {
       throw new Error(
         'No `client` passed to patch, either provide one or pass the ' +
           'patch to a clients `mutate()` method',
@@ -340,6 +343,6 @@ export class Patch extends BasePatch {
 
     const returnFirst = typeof this.selection === 'string'
     const opts = Object.assign({returnFirst, returnDocuments: true}, options)
-    return this.#client.mutate<R>({patch: this.serialize()} as Any, opts)
+    return this._client.mutate<R>({patch: this.serialize()} as Any, opts)
   }
 }

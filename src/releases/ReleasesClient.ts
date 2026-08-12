@@ -30,11 +30,23 @@ import {createRelease} from './createRelease'
 
 /** @public */
 export class ObservableReleasesClient {
-  #client: ObservableSanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: ObservableSanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -69,8 +81,8 @@ export class ObservableReleasesClient {
     options?: {signal?: AbortSignal; tag?: string},
   ): Observable<ReleaseDocument | undefined> {
     return _getDocumentObservable<ReleaseDocument>(
-      this.#client,
-      this.#httpRequest,
+      this._client,
+      this._httpRequest,
       `_.releases.${releaseId}`,
       options,
     )
@@ -147,7 +159,7 @@ export class ObservableReleasesClient {
     const {action, options} = createRelease(releaseOrOptions, maybeOptions)
     const {releaseId, metadata} = action
 
-    return _actionObservable(this.#client, this.#httpRequest, action, options).pipe(
+    return _actionObservable(this._client, this._httpRequest, action, options).pipe(
       map((actionResult) => ({
         ...actionResult,
         releaseId,
@@ -179,7 +191,7 @@ export class ObservableReleasesClient {
       patch,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, editAction, options)
+    return _actionObservable(this._client, this._httpRequest, editAction, options)
   }
 
   /**
@@ -209,7 +221,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, publishAction, options)
+    return _actionObservable(this._client, this._httpRequest, publishAction, options)
   }
 
   /**
@@ -236,7 +248,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, archiveAction, options)
+    return _actionObservable(this._client, this._httpRequest, archiveAction, options)
   }
 
   /**
@@ -261,7 +273,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, unarchiveAction, options)
+    return _actionObservable(this._client, this._httpRequest, unarchiveAction, options)
   }
 
   /**
@@ -290,7 +302,7 @@ export class ObservableReleasesClient {
       publishAt,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, scheduleAction, options)
+    return _actionObservable(this._client, this._httpRequest, scheduleAction, options)
   }
 
   /**
@@ -317,7 +329,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, unscheduleAction, options)
+    return _actionObservable(this._client, this._httpRequest, unscheduleAction, options)
   }
 
   /**
@@ -342,7 +354,7 @@ export class ObservableReleasesClient {
       releaseId,
     }
 
-    return _actionObservable(this.#client, this.#httpRequest, deleteAction, options)
+    return _actionObservable(this._client, this._httpRequest, deleteAction, options)
   }
 
   /**
@@ -361,17 +373,29 @@ export class ObservableReleasesClient {
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Observable<RawQueryResponse<SanityDocument[]>> {
-    return _getReleaseDocumentsObservable(this.#client, this.#httpRequest, releaseId, options)
+    return _getReleaseDocumentsObservable(this._client, this._httpRequest, releaseId, options)
   }
 }
 
 /** @public */
 export class ReleasesClient {
-  #client: SanityClient
-  #httpRequest: HttpRequest
+  /**
+   * Private properties. These do not use `#` (JS private) because TS collapses them to a
+   * to a single `#private` in the emitted declaration, and that brands nominally, which
+   * creates all sorts of type issues when there's multiple versions of `@sanity/client`
+   * in the dependency tree. Instead, we rely on `@internal` to remove them from definitions,
+   * the underscore prefix as a runtime "do not use" signal to external users.
+   */
+
+  /** @internal */
+  _client: SanityClient
+
+  /** @internal */
+  _httpRequest: HttpRequest
+
   constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
+    this._client = client
+    this._httpRequest = httpRequest
   }
 
   /**
@@ -405,8 +429,8 @@ export class ReleasesClient {
     options?: {signal?: AbortSignal; tag?: string},
   ): Promise<ReleaseDocument | undefined> {
     return _getDocument<ReleaseDocument>(
-      this.#client,
-      this.#httpRequest,
+      this._client,
+      this._httpRequest,
       `_.releases.${releaseId}`,
       options,
     )
@@ -475,7 +499,7 @@ export class ReleasesClient {
     const {action, options} = createRelease(releaseOrOptions, maybeOptions)
     const {releaseId, metadata} = action
 
-    const actionResult = await _action(this.#client, this.#httpRequest, action, options)
+    const actionResult = await _action(this._client, this._httpRequest, action, options)
 
     return {...actionResult, releaseId, metadata}
   }
@@ -503,7 +527,7 @@ export class ReleasesClient {
       patch,
     }
 
-    return _action(this.#client, this.#httpRequest, editAction, options)
+    return _action(this._client, this._httpRequest, editAction, options)
   }
 
   /**
@@ -533,7 +557,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequest, publishAction, options)
+    return _action(this._client, this._httpRequest, publishAction, options)
   }
 
   /**
@@ -560,7 +584,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequest, archiveAction, options)
+    return _action(this._client, this._httpRequest, archiveAction, options)
   }
 
   /**
@@ -585,7 +609,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequest, unarchiveAction, options)
+    return _action(this._client, this._httpRequest, unarchiveAction, options)
   }
 
   /**
@@ -614,7 +638,7 @@ export class ReleasesClient {
       publishAt,
     }
 
-    return _action(this.#client, this.#httpRequest, scheduleAction, options)
+    return _action(this._client, this._httpRequest, scheduleAction, options)
   }
 
   /**
@@ -641,7 +665,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequest, unscheduleAction, options)
+    return _action(this._client, this._httpRequest, unscheduleAction, options)
   }
 
   /**
@@ -666,7 +690,7 @@ export class ReleasesClient {
       releaseId,
     }
 
-    return _action(this.#client, this.#httpRequest, deleteAction, options)
+    return _action(this._client, this._httpRequest, deleteAction, options)
   }
 
   /**
@@ -685,6 +709,6 @@ export class ReleasesClient {
     {releaseId}: {releaseId: string},
     options?: BaseMutationOptions,
   ): Promise<RawQueryResponse<SanityDocument[]>> {
-    return _getReleaseDocuments(this.#client, this.#httpRequest, releaseId, options)
+    return _getReleaseDocuments(this._client, this._httpRequest, releaseId, options)
   }
 }
