@@ -148,9 +148,11 @@ describe('stripInternalClassMembers', () => {
  * a build; `npm test` on a clean checkout skips.
  */
 describe.skipIf(!existsSync(resolve(distDir, 'index.d.ts')))('built declarations', () => {
-  const declarationFiles = readdirSync(distDir).filter((file) => file.endsWith('.d.ts'))
-
   test('every emitted .d.ts is already stripped', () => {
+    // Read the directory here rather than in the `describe` body: a skipped suite still runs its
+    // callback, so scanning at collection time fails the file on an unbuilt checkout.
+    const declarationFiles = readdirSync(distDir).filter((file) => file.endsWith('.d.ts'))
+
     expect(declarationFiles.length).toBeGreaterThan(0)
 
     const remaining = declarationFiles.filter(
