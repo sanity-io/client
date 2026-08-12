@@ -92,3 +92,37 @@ describe('lineage', () => {
     await expect(client.createOrReplace(doc)).resolves.not.toThrow()
   })
 })
+
+describe('http requests', () => {
+  test('includes user agent in node', async () => {
+    const {default: pkg} = await import('../../package.json')
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', '/v1/data/doc/foo/bar', {
+        headers: {'User-Agent': `${pkg.name} ${pkg.version}`},
+      })
+      .respond({status: 200, body: {documents: []}})
+
+    await expect(getClient().getDocument('bar')).resolves.not.toThrow()
+  })
+
+  test('handles HTTP errors gracefully', async () => {
+    expect.assertions(2)
+
+    const doc = {_id: 'barfoo', _type: 'document', visits: 5}
+    const expectedBody = {mutations: [{create: doc}]}
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+        body: expectedBody,
+      })
+      .respondWithError(new Error('Something went wrong'))
+
+    try {
+      await getClient().create(doc)
+    } catch (err: any) {
+      expect(err, 'should error').toBeInstanceOf(Error)
+      expect(err.message, 'has message').toEqual('Something went wrong')
+    }
+  })
+})

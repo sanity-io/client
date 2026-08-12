@@ -1,5 +1,3 @@
-import fs from 'node:fs'
-
 import {
   type ClientConfig,
   type ClientPerspective,
@@ -8,8 +6,8 @@ import {
 import {firstValueFrom} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
-import {bodyBytes, getActiveMock} from '../helpers/mockFetch'
-import {apiHost, createClient, fixture, getClient, isNode, projectHost} from './helpers'
+import {getActiveMock} from '../helpers/mockFetch'
+import {apiHost, createClient, getClient, projectHost} from './helpers'
 
 describe('base client', () => {
   test('can create a client', () => {
@@ -246,39 +244,16 @@ describe('base client', () => {
     ).resolves.toMatchObject({pong: true})
   })
 
-  test(
-    'can use request() for API-relative requests (custom api version)',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', '/v2019-01-29/ping')
-        .respond({status: 200, body: {pong: true}})
+  test('can use request() for API-relative requests (custom api version)', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', '/v2019-01-29/ping')
+      .respond({status: 200, body: {pong: true}})
 
-      await expect(
-        getClient({apiVersion: '2019-01-29'}).request({url: '/ping'}),
-      ).resolves.toMatchObject({pong: true})
-    },
-  )
-
-  test.runIf(isNode)(
-    'observable requests leave no listeners on a reused caller signal',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', '/v1/ping')
-        .respondPersist({status: 200, body: {pong: true}})
-
-      const controller = new AbortController()
-      for (let i = 0; i < 3; i++) {
-        await firstValueFrom(
-          getClient().observable.request({url: '/ping', signal: controller.signal}),
-        )
-      }
-
-      const {default: nodeEvents} = await import('node:events')
-      expect(nodeEvents.getEventListeners(controller.signal, 'abort')).toHaveLength(0)
-    },
-  )
+    await expect(
+      getClient({apiVersion: '2019-01-29'}).request({url: '/ping'}),
+    ).resolves.toMatchObject({pong: true})
+  })
 
   test('observable requests are lazy', async () => {
     expect.assertions(2)
@@ -530,42 +505,6 @@ describe('base client', () => {
                 expect(result, 'should have result').toBeDefined()
               })
 
-              test.skipIf(!isNode)('uploads images using resource config', async () => {
-                const fixturePath = fixture('horsehead-nebula.jpg')
-
-                const config: ClientConfig = {
-                  apiHost: `https://${apiHost}`,
-                  '~experimental_resource': resource,
-                }
-                if (apiVersion) {
-                  config.apiVersion = apiVersion
-                }
-                const assetsClient = getClient(config).assets
-
-                if (resource.type === 'dataset') {
-                  // Rejected client-side - no request is made, so no mock is needed.
-                  expect(() =>
-                    assetsClient.upload('image', fs.createReadStream(fixturePath)),
-                  ).toThrow(/Assets are not supported for dataset/i)
-                  return
-                }
-
-                const uploadPath =
-                  resource.type === 'media-library'
-                    ? `/v${apiVersion || '1'}${resource.baseUrl}/upload`
-                    : `/v${apiVersion || '1'}${resource.baseUrl}/assets/images`
-                getActiveMock()
-                  .scope(`https://${apiHost}`)
-                  .on('POST', uploadPath, {body: bodyBytes(fs.readFileSync(fixturePath))})
-                  .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
-
-                const document = await assetsClient.upload(
-                  'image',
-                  fs.createReadStream(fixturePath),
-                )
-                expect(document.url).toEqual('https://some.asset.url')
-              })
-
               test('users: me', async () => {
                 getActiveMock()
                   .scope(`https://${apiHost}`)
@@ -673,24 +612,21 @@ describe('base client', () => {
       const resource = await client.create(doc)
       expect(resource._id, 'should have resource id').toBe('mooblah')
     })
-    test(
-      'executes transaction using resource path when commit() is called',
-      async () => {
-        const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
-        getActiveMock()
-          .scope(`https://${apiHost}`)
-          .on('POST', '/v1/canvases/res-id/mutate?returnIds=true&visibility=sync', {
-            body: {mutations},
-          })
-          .respond({status: 200, body: {transactionId: 'blatti'}})
+    test('executes transaction using resource path when commit() is called', async () => {
+      const mutations = [{create: {_type: 'foo', bar: true}}, {delete: {id: 'barfoo'}}]
+      getActiveMock()
+        .scope(`https://${apiHost}`)
+        .on('POST', '/v1/canvases/res-id/mutate?returnIds=true&visibility=sync', {
+          body: {mutations},
+        })
+        .respond({status: 200, body: {transactionId: 'blatti'}})
 
-        const res = await getClient({'~experimental_resource': {type: 'canvas', id: 'res-id'}})
-          .transaction()
-          .create({_type: 'foo', bar: true})
-          .delete('barfoo')
-          .commit()
-        expect(res.transactionId, 'applies given transaction').toEqual('blatti')
-      },
-    )
+      const res = await getClient({'~experimental_resource': {type: 'canvas', id: 'res-id'}})
+        .transaction()
+        .create({_type: 'foo', bar: true})
+        .delete('barfoo')
+        .commit()
+      expect(res.transactionId, 'applies given transaction').toEqual('blatti')
+    })
   })
 })

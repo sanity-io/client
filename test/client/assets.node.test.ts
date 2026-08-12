@@ -5,9 +5,9 @@ import {filter} from 'rxjs/operators'
 import {describe, expect, test} from 'vitest'
 
 import {bodyBytes, getActiveFetch, getActiveMock} from '../helpers/mockFetch'
-import {fixture, getClient, isNode, projectHost} from './helpers'
+import {fixture, getClient, projectHost} from './helpers'
 
-describe.runIf(isNode)('ASSETS', () => {
+describe('ASSETS', () => {
   test('uploads images', async () => {
     const fixturePath = fixture('horsehead-nebula.jpg')
     const isImage = bodyBytes(fs.readFileSync(fixturePath))

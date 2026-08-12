@@ -2,7 +2,7 @@ import {ClientError, ServerError} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
-import {createClient, getClient, isNode, projectHost} from './helpers'
+import {createClient, getClient, projectHost} from './helpers'
 
 describe('USERS', () => {
   test('can retrieve user by id', async () => {
@@ -196,63 +196,43 @@ describe('http requests', () => {
     expect(requests[0].init).toMatchObject({cache: 'no-store', next: {revalidate: 60}})
   })
 
-  test(
-    'attaches no abort signal to query fetches without a caller signal',
-    async () => {
-      // Next.js' patched fetch opts a request out of React Request
-      // Memoization whenever `init.signal` is present, and get-it v9
-      // attaches an `AbortSignal.timeout()` signal by default. Queries made
-      // without a caller-provided signal must reach fetch signal-free.
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
-        .respond({status: 200, body: {result: []}})
-        .respond({status: 200, body: {result: []}})
-
-      await getClient().fetch('*')
-      // A caller-provided signal is the documented opt-out: it must still
-      // reach the fetch init untouched.
-      await getClient().fetch('*', {}, {signal: new AbortController().signal})
-
-      const requests = getActiveMock().getRequests()
-      expect(requests).toHaveLength(2)
-      expect(requests[0].init?.signal, 'no signal without caller signal').toBeUndefined()
-      expect(requests[1].init?.signal, 'caller signal must be forwarded').toBeInstanceOf(
-        AbortSignal,
-      )
-    },
-  )
-
-  test(
-    'signal-less queries still honor the timeout via soft rejection',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
-        .respond({status: 200, body: {result: []}, delay: 250})
-
-      const request = getClient().fetch('*', {}, {timeout: 25})
-      const error = await request.then(
-        () => null,
-        (err) => err,
-      )
-      // get-it's rejection-only timeout mode ({signal: false}) rejects with
-      // the same TimeoutError DOMException as its signal-attached timeouts.
-      expect(error).toBeInstanceOf(Error)
-      expect(error.name).toBe('TimeoutError')
-    },
-  )
-
-  test.runIf(isNode)('includes user agent in node', async () => {
-    const {default: pkg} = await import('../../package.json')
+  test('attaches no abort signal to query fetches without a caller signal', async () => {
+    // Next.js' patched fetch opts a request out of React Request
+    // Memoization whenever `init.signal` is present, and get-it v9
+    // attaches an `AbortSignal.timeout()` signal by default. Queries made
+    // without a caller-provided signal must reach fetch signal-free.
     getActiveMock()
       .scope(projectHost())
-      .on('GET', '/v1/data/doc/foo/bar', {
-        headers: {'User-Agent': `${pkg.name} ${pkg.version}`},
-      })
-      .respond({status: 200, body: {documents: []}})
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .respond({status: 200, body: {result: []}})
+      .respond({status: 200, body: {result: []}})
 
-    await expect(getClient().getDocument('bar')).resolves.not.toThrow()
+    await getClient().fetch('*')
+    // A caller-provided signal is the documented opt-out: it must still
+    // reach the fetch init untouched.
+    await getClient().fetch('*', {}, {signal: new AbortController().signal})
+
+    const requests = getActiveMock().getRequests()
+    expect(requests).toHaveLength(2)
+    expect(requests[0].init?.signal, 'no signal without caller signal').toBeUndefined()
+    expect(requests[1].init?.signal, 'caller signal must be forwarded').toBeInstanceOf(AbortSignal)
+  })
+
+  test('signal-less queries still honor the timeout via soft rejection', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', '/v1/data/query/foo?query=*&returnQuery=false')
+      .respond({status: 200, body: {result: []}, delay: 250})
+
+    const request = getClient().fetch('*', {}, {timeout: 25})
+    const error = await request.then(
+      () => null,
+      (err) => err,
+    )
+    // get-it's rejection-only timeout mode ({signal: false}) rejects with
+    // the same TimeoutError DOMException as its signal-attached timeouts.
+    expect(error).toBeInstanceOf(Error)
+    expect(error.name).toBe('TimeoutError')
   })
 
   test('ClientError includes message in stack', () => {
@@ -370,25 +350,5 @@ describe('http requests', () => {
   test('exposes default requester', async () => {
     const {requester: exportedRequester} = await import('../../src')
     expect(typeof exportedRequester).toEqual('function')
-  })
-
-  test.runIf(isNode)('handles HTTP errors gracefully', async () => {
-    expect.assertions(2)
-
-    const doc = {_id: 'barfoo', _type: 'document', visits: 5}
-    const expectedBody = {mutations: [{create: doc}]}
-    getActiveMock()
-      .scope(projectHost())
-      .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-        body: expectedBody,
-      })
-      .respondWithError(new Error('Something went wrong'))
-
-    try {
-      await getClient().create(doc)
-    } catch (err: any) {
-      expect(err, 'should error').toBeInstanceOf(Error)
-      expect(err.message, 'has message').toEqual('Something went wrong')
-    }
   })
 })

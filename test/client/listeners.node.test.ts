@@ -9,13 +9,9 @@ import {
   streamError,
   streamStall,
 } from '../helpers/mockFetch'
-import {getClient, isNode, projectHost} from './helpers'
+import {getClient, projectHost} from './helpers'
 
-// `isNode`'s own definition already requires `!isEdge` (see helpers.ts), so
-// `isEdge || !isNode` was equivalent to `!isNode` alone - dropping the
-// redundant disjunct changes no runtime behavior. Whether these EventSource-
-// backed listener tests can run outside Node at all is 9b's call.
-describe.skipIf(!isNode)('LISTENERS', () => {
+describe('LISTENERS', () => {
   test('listeners connect to listen endpoint, emits events', async () => {
     expect.assertions(1)
 
