@@ -83,8 +83,7 @@
   "scripts": {
     "build": "pkg build --strict && pkg --strict",
     "coverage": "vitest run --coverage",
-    "docs:build": "typedoc",
-    "docs:clean": "npx rimraf docs",
+    "docs:build": "pnpm --filter @sanity/client-docs exec typedoc --options ../../typedoc.json",
     "lint": "oxlint",
     "prepublishOnly": "pnpm run build",
     "release": "changeset publish",
@@ -140,7 +139,6 @@
     "oxlint-tsgolint": "^7.0.2001",
     "pkg-pr-new": "^0.0.88",
     "playwright": "^1.62.1",
-    "typedoc": "^0.28.16",
     "typescript": "7.0.2",
     "undici": "^7.29.0",
     "vitest": "^4.1.10"

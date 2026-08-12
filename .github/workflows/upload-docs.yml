@@ -11,6 +11,9 @@ on:
       - 'src/**'
       - 'typedoc.json'
       - 'package.json'
+      - 'tools/typedoc/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/upload-docs.yml'
   # Manual trigger
   workflow_dispatch:
@@ -48,9 +51,9 @@ jobs:
           pnpm run docs:build
 
           # Check if the file was generated successfully
-          if [ -f "docs/client-typedoc-output.json" ]; then
-            FILE_SIZE=$(du -h docs/client-typedoc-output.json | cut -f1)
-            EXPORT_COUNT=$(jq '[.children[]?.children // empty | length] | add // 0' docs/client-typedoc-output.json)
+          if [ -f "dist-docs/client-typedoc-output.json" ]; then
+            FILE_SIZE=$(du -h dist-docs/client-typedoc-output.json | cut -f1)
+            EXPORT_COUNT=$(jq '[.children[]?.children // empty | length] | add // 0' dist-docs/client-typedoc-output.json)
             echo "✅ TypeDoc generated successfully"
             echo "📄 File size: $FILE_SIZE"
             echo "📊 Total exports: $EXPORT_COUNT"
@@ -68,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: typedoc-${{ github.sha }}
-          path: docs/client-typedoc-output.json
+          path: dist-docs/client-typedoc-output.json
           retention-days: 1
 
       - name: Upload HTML docs artifact
@@ -77,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: typedoc-html-pr-${{ github.event.pull_request.number }}
-          path: docs/html
+          path: dist-docs/html
           retention-days: 7
 
       - name: Comment on PR
@@ -119,6 +122,6 @@ jobs:
         with:
           packageName: '@sanity/client'
           version: ${{ steps.version.outputs.version }}
-          typedocJsonPath: 'docs/client-typedoc-output.json'
+          typedocJsonPath: 'dist-docs/client-typedoc-output.json'
         env:
           SANITY_DOCS_API_TOKEN: ${{ secrets.SANITY_DOCS_API_TOKEN }}

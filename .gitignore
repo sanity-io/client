@@ -3,7 +3,8 @@
 
 # Compiled files
 dist
-docs
+# Generated TypeDoc output. Kept out of docs/, which holds the hand-written migration guides.
+dist-docs
 
 # Intermediate build artifacts (e.g. the pruned Context spec)
 .tmp

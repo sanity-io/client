@@ -1,3 +1,10 @@
+# TypeDoc reads the TypeScript compiler API off the `typescript` main entry, which typescript@7
+# no longer exposes (it only ships `./unstable/*`), and no TypeDoc release accepts a peer above
+# 6.0.x. pnpm resolves peers from the importer, so the only way to hand TypeDoc an older
+# TypeScript is to give it an importer of its own. This package is that importer; nothing else
+# depends on it, and the client itself still builds on 7.
+packages:
+  - tools/typedoc
 # Dependencies allowed to run install scripts. pnpm blocks these by default.
 # - esbuild: links its platform binary, pulled in transitively by vitest and next
 # - sharp: next's image optimizer, pulled in by the next type tests

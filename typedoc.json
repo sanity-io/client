@@ -8,8 +8,8 @@
     "./src/media-library.ts"
   ],
   "entryPointStrategy": "expand",
-  "json": "./docs/client-typedoc-output.json",
-  "html": "./docs/html",
+  "json": "./dist-docs/client-typedoc-output.json",
+  "html": "./dist-docs/html",
   "pretty": true,
   "tsconfig": "./tsconfig.json",
   "excludePrivate": true,
