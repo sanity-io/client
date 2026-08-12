@@ -26,12 +26,4 @@ export const clientConfig = {
 
 export const fixture = (name: string) => path.join(__dirname, '..', 'fixtures', name)
 
-export const isEdge = typeof EdgeRuntime === 'string'
-// workerd has `typeof document === 'undefined'` AND shims
-// `process.versions.node`, so neither distinguishes it from Node. The only
-// reliable signal is its user agent.
-const isCloudflareWorker =
-  typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers'
-export const isNode = !isEdge && !isCloudflareWorker && typeof document === 'undefined'
-
 export const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...conf})
