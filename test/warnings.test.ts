@@ -15,6 +15,9 @@ describe('Client config warnings', async () => {
   const createClient: typeof import('../src').createClient = (config) =>
     createCoreClient({resolveFetch: testResolveFetch, ...config})
 
+  // Legitimate use of `vi.spyOn`, not a module-boundary mock: this observes
+  // a designed-in output channel (the warnings this suite exists to test)
+  // rather than substituting a collaborator of the code under test.
   const warn = vi.spyOn(console, 'warn')
   beforeEach(() => {
     warn.mockReset()

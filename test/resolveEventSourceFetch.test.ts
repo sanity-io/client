@@ -1,7 +1,7 @@
 import {createClient} from '@sanity/client'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {resolveEventSourceFetch} from '../src/data/resolveEventSourceFetch'
+import {pickBaseFetch, resolveEventSourceFetch} from '../src/data/resolveEventSourceFetch'
 
 const spyFetch = () =>
   vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(''))
@@ -23,16 +23,19 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       // (Node's global fetch, for one, does not read
       // `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`.)
       const envFetch = spyFetch()
-      const globalFetch = spyFetch()
-      vi.stubGlobal('fetch', globalFetch)
       const resolveFetch = vi.fn(() => envFetch)
       const config = {...getConfig(), resolveFetch}
+
+      // `pickBaseFetch` is the seam this whole module resolves through, so
+      // asserting identity against it directly is a stronger check than
+      // stubbing `globalThis.fetch` and asserting it was left untouched: it
+      // cannot pass by accident, and needs no global stubbing at all.
+      expect(pickBaseFetch(config)).toBe(envFetch)
 
       await resolveEventSourceFetch(config)('https://example.com/sse')
 
       expect(resolveFetch).toHaveBeenCalledWith(undefined)
       expect(envFetch).toHaveBeenCalledTimes(1)
-      expect(globalFetch).not.toHaveBeenCalled()
     })
 
     test('an explicit proxy config is passed to the environment fetch resolver', async () => {
@@ -47,6 +50,14 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
     })
 
     test('falls back to globalThis.fetch when the environment has no resolver', async () => {
+      // Legitimate use of `vi.stubGlobal`, not a module-boundary mock: the
+      // unit under test is *defined* as reading `globalThis.fetch` when no
+      // resolver is configured, so controlling the global here is testing
+      // the documented fallback contract, not substituting a collaborator.
+      // An identity assertion against `pickBaseFetch` (as used above) does
+      // not work for this branch: the implementation returns
+      // `globalThis.fetch.bind(globalThis)`, and `.bind()` produces a new
+      // function object on every call, so `toBe` would always fail.
       const globalFetch = spyFetch()
       vi.stubGlobal('fetch', globalFetch)
       const config = {...getConfig(), resolveFetch: undefined}

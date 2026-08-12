@@ -523,6 +523,9 @@ describe('.live.events()', () => {
     // `CorsOriginError.addOriginUrl` is only constructed when `location` is
     // available (i.e. in browser-ish environments). Stub it here so we can
     // assert the `credentials=` query param ends up on the deep-link.
+    // Legitimate use of `vitest.stubGlobal`, not a module-boundary mock:
+    // this reads an environment global the code under test is documented
+    // to consult, rather than substituting a collaborator.
     vitest.stubGlobal('location', {origin: 'https://example.com'})
     try {
       const error = await firstValueFrom(
