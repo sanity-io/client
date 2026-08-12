@@ -155,7 +155,9 @@ describe('.live.events()', () => {
     })
 
     const [request] = getActiveMock().getRequests()
-    expect(request.query, 'url should be correct').toMatchObject({includeDrafts: 'true'})
+    expect(request.query, 'query should include includeDrafts').toMatchObject({
+      includeDrafts: 'true',
+    })
   })
 
   test('supports restart events', async () => {
@@ -353,7 +355,7 @@ describe('.live.events()', () => {
       .on('GET', '/vX/check/cors')
       .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
 
-    // Rate limiting is transient — unlike other 4xx rejections it must keep
+    // Rate limiting is transient - unlike other 4xx rejections it must keep
     // the reconnect behavior so listeners recover when the throttle lifts
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -383,7 +385,7 @@ describe('.live.events()', () => {
       .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
 
     // Simulate an auth rejection, e.g. an expired or revoked token. Unlike a
-    // transient 5xx, the server will keep rejecting — reconnecting forever
+    // transient 5xx, the server will keep rejecting - reconnecting forever
     // would hammer the API once per second.
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -563,6 +565,8 @@ describe('.live.events()', () => {
   })
 
   test('can immediately unsubscribe, does not connect to server', async () => {
+    expect.assertions(3)
+
     const onMessage = vitest.fn()
     const onError = vitest.fn()
 
@@ -570,9 +574,11 @@ describe('.live.events()', () => {
     // fetch records a request synchronously as soon as it's called, before
     // any handler lookup, so "no request recorded" can't stand in for "the
     // connection never happened" the way it did against the real server.
-    // The behavior that matters here - unsubscribing tears the listener
-    // down cleanly - is the callbacks below, which is what actually breaks
-    // if teardown leaks a live listener onto the (unmatched) response.
+    // Instead, assert the transport-level signal the EventSource's fetch call
+    // carries: RxJS teardown (from the synchronous `unsubscribe()` below)
+    // calls `es.close()`, which aborts that request's controller before the
+    // microtask queue runs, so the recorded request's `init.signal` is
+    // already aborted.
     const client = createClient({
       projectId: 'abc123',
       dataset: 'unsubscribe',
@@ -592,6 +598,7 @@ describe('.live.events()', () => {
 
     expect(onMessage).not.toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
+    expect(getActiveMock().getRequests()[0]?.init?.signal?.aborted).toBe(true)
   })
 
   test('passes custom headers from client configuration', async () => {
