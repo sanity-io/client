@@ -23,8 +23,7 @@
     "url": "git+https://github.com/sanity-io/client.git"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "type": "module",
   "sideEffects": false,
