@@ -4,30 +4,79 @@ import {type AddressInfo, type Socket} from 'node:net'
 import {join as joinPath} from 'node:path'
 import {TLSSocket} from 'node:tls'
 
-// Load pre-generated test certificates
+// Load pre-generated test certificates - a server cert signed by the test CA
+// in `certs/ca.pem`, so the client can verify it for real instead of
+// disabling TLS verification. See `certs/README.md`.
 const testCert = {
-  key: readFileSync(joinPath(__dirname, 'certs', 'key.pem')),
-  cert: readFileSync(joinPath(__dirname, 'certs', 'cert.pem')),
+  key: readFileSync(joinPath(__dirname, 'certs', 'server', 'key.pem')),
+  cert: readFileSync(joinPath(__dirname, 'certs', 'server', 'cert.pem')),
 }
+const testCaPath = joinPath(__dirname, 'certs', 'ca.pem')
 
 import {createClient as createCoreClient} from '@sanity/client'
+import type {FetchFunction} from 'get-it'
+import {ProxyAgent} from 'undici'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {requestOptions} from '../src/http/requestOptions'
 import {getActiveFetch, getActiveMock} from './helpers/mockFetch'
 
+const testCaCert = readFileSync(testCaPath)
+
+/**
+ * Builds a fetch that tunnels through `proxyUrl` and verifies the far end's
+ * certificate against the test CA, instead of disabling TLS verification for
+ * the whole process (which this replaces).
+ *
+ * This constructs its own undici `ProxyAgent` rather than going through
+ * get-it's `createNodeFetch({proxy, tls: {ca}})` (what the production
+ * `resolveFetch` in `src/http/nodeMiddleware.ts` uses): get-it's public
+ * `TlsOptions` only forwards `cert`/`key`/`ca`, and this also needs
+ * `servername`, which that type doesn't expose.
+ *
+ * `servername` is needed because verification for a CONNECT-tunneled request
+ * is against the *origin* hostname the client believes it's calling (e.g.
+ * `abc123.api.sanity.io`), not the tunnel's own address - confirmed
+ * empirically: with only `ca` set, the request failed with
+ * `ERR_TLS_CERT_ALTNAME_INVALID: Host: abc123.api.sanity.io. is not in the
+ * cert's altnames: IP Address:127.0.0.1, DNS:localhost`. The test server's
+ * certificate is issued for what it actually is - `127.0.0.1`/`localhost` -
+ * so `servername` pins verification to that real identity, the same idea as
+ * curl's `--resolve` combined with `--cacert` for a service reached through a
+ * tunnel. `localhost`, not `127.0.0.1`: RFC 6066 SNI values must be DNS
+ * names, not IP literals - Node accepts an IP but logs a deprecation warning
+ * for it (`DEP0123`), which `localhost` avoids while matching the cert's
+ * other SAN entry just as well.
+ */
+function createCaTrustingProxyFetch(proxyUrl: string): FetchFunction {
+  const dispatcher = new ProxyAgent({
+    uri: proxyUrl,
+    allowH2: false,
+    requestTls: {ca: testCaCert, servername: 'localhost'},
+  })
+  return async (input, init) => {
+    const {body, ...rest} = init ?? {}
+    // `dispatcher` is a Node-only, non-standard `fetch()` extension (not part
+    // of the DOM `RequestInit` type `FetchInit` is deliberately kept
+    // compatible with) - hence the intersection type here rather than an
+    // inline object literal, which `RequestInit`'s excess-property check
+    // would reject.
+    const requestInit: RequestInit & {dispatcher: ProxyAgent} = {
+      ...rest,
+      dispatcher,
+      ...(body === undefined ? {} : {body}),
+      ...(body instanceof ReadableStream ? {duplex: 'half'} : {}),
+    }
+    return fetch(input, requestInit)
+  }
+}
+
 // Proxied requests must reach the real local CONNECT proxy, everything else
-// goes through the per-test mock - mirroring how the environment's own
-// resolver treats an explicit proxy URL. The env resolver is grabbed from an
-// uninjected client's config.
-const envResolveFetch = createCoreClient({projectId: 'proxyenv', dataset: 'proxyenv'}).config()
-  .resolveFetch
+// goes through the per-test mock.
 const createClient: typeof createCoreClient = (config) =>
   createCoreClient({
     resolveFetch: (proxyUrl) =>
-      typeof proxyUrl === 'string' && envResolveFetch
-        ? envResolveFetch(proxyUrl)
-        : getActiveFetch(),
+      typeof proxyUrl === 'string' ? createCaTrustingProxyFetch(proxyUrl) : getActiveFetch(),
     ...config,
   })
 
@@ -100,12 +149,17 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       let proxyPort: number
       let connectRequests: {method: string; url: string; headers: IncomingMessage['headers']}[]
       let tunneledRequests: {method: string; url: string; headers: Record<string, string>}[]
-      let originalTlsReject: string | undefined
 
       beforeEach(async () => {
-        // Allow self-signed certificates for testing
-        originalTlsReject = process.env.NODE_TLS_REJECT_UNAUTHORIZED
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+        // TLS verification here is provided by createCaTrustingProxyFetch()
+        // above, scoped to this test's own client - not by disabling it for
+        // the whole process, as this test used to.
+        //
+        // `vi.stubEnv('NODE_EXTRA_CA_CERTS', testCaPath)` was tried first, as
+        // the more standard mechanism, but empirically has no effect: Node
+        // reads that variable once at process start, so stubbing it here
+        // (long after boot) still leaves the request failing with
+        // `UNABLE_TO_VERIFY_LEAF_SIGNATURE`.
         connectRequests = []
         tunneledRequests = []
 
@@ -190,12 +244,6 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       })
 
       afterEach(async () => {
-        // Restore original TLS setting
-        if (originalTlsReject === undefined) {
-          delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
-        } else {
-          process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTlsReject
-        }
         await new Promise<void>((resolve) => proxyServer.close(() => resolve()))
       })
 
