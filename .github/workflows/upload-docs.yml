@@ -33,22 +33,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
+          cache: pnpm
           node-version: lts/*
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Generate TypeDoc
         id: generate
         run: |
           echo "🔄 Generating TypeDoc documentation..."
-          npm run docs:build
+          pnpm run docs:build
 
           # Check if the file was generated successfully
           if [ -f "docs/client-typedoc-output.json" ]; then
@@ -68,7 +65,7 @@ jobs:
 
       - name: Upload TypeDoc artifact
         if: steps.generate.outputs.success == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: typedoc-${{ github.sha }}
           path: docs/client-typedoc-output.json
@@ -77,7 +74,7 @@ jobs:
       - name: Upload HTML docs artifact
         if: github.event_name == 'pull_request' && steps.generate.outputs.success == 'true'
         id: html-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: typedoc-html-pr-${{ github.event.pull_request.number }}
           path: docs/html
