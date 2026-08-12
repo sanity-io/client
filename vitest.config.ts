@@ -4,7 +4,7 @@ import {configDefaults, defineConfig, type ViteUserConfig} from 'vitest/config'
 import pkg from './package.json' with {type: 'json'}
 
 /** Suites that must not run under the source-alias configs. */
-export const baseExclude = [...configDefaults.exclude, 'runtimes/**', 'test-next/**']
+export const baseExclude = [...configDefaults.exclude, 'runtimes/**', 'test/next/**']
 
 /**
  * Non-Node environments additionally skip tests that need Node APIs by nature.

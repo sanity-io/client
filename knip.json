@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["test/**/*.test.ts", "test/**/*.test-d.ts", "test-next/**/*.test-d.ts", "runtimes/**"],
+  "entry": ["test/**/*.test.ts", "test/**/*.test-d.ts", "runtimes/**"],
   "project": ["src/**", "test/**"],
   // `vercelStegaCleanAll` is a deliberate `@deprecated` alias of `stegaClean`
   // (see src/stega/stegaClean.ts), re-exported publicly from src/stega/index.ts.

@@ -36,7 +36,7 @@
   },
   "overrides": [
     {
-      "files": ["test/**/*.ts", "test-next/**/*.ts"],
+      "files": ["test/**/*.ts"],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off"

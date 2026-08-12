@@ -165,7 +165,7 @@ describe('http requests', () => {
     const client = getClient()
 
     // `cache`/`next` only type-check with Next.js' `RequestInit`
-    // augmentation (see test-next/); runtime support must work regardless.
+    // augmentation (see test/next/); runtime support must work regardless.
     // @ts-expect-error -- see above
     await client.fetch('*', {}, {cache: 'no-store', next: {revalidate: 60, tags: ['sanity']}})
 
@@ -185,7 +185,7 @@ describe('http requests', () => {
 
     const client = getClient({
       // @ts-expect-error -- `cache`/`next` only type-check with Next.js'
-      // `RequestInit` augmentation (see test-next/); runtime support must
+      // `RequestInit` augmentation (see test/next/); runtime support must
       // work regardless.
       fetch: {cache: 'no-store', next: {revalidate: 60}},
     })
