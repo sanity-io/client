@@ -5,8 +5,11 @@ import {
   type QueryParams,
   type QueryWithoutParams,
   type RawQueryResponse,
+  type VideoPlaybackInfoSigned,
 } from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
+
+import {getPlaybackTokens} from '../src/media-library'
 
 describe('client.request', () => {
   const client = createClient({})
@@ -364,5 +367,23 @@ describe('client.fetch', () => {
         {next: {revalidate: false, tags: ['post']}},
       ),
     ).toMatchTypeOf<any>()
+  })
+})
+
+describe('mediaLibrary', () => {
+  const client = createClient({})
+  test('video.getPlaybackInfo with signed/secured response', async () => {
+    const result = await client.mediaLibrary.video.getPlaybackInfo('video-secured123')
+    const tokens = getPlaybackTokens(result)
+
+    // Type assertions - check that tokens are present
+    if (tokens && 'token' in result.stream) {
+      // Result is a signed response, cast it for type checking
+      const signedResult = result as VideoPlaybackInfoSigned
+      expectTypeOf(signedResult.stream.token).toBeString()
+      expectTypeOf(signedResult.thumbnail.token).toBeString()
+      expectTypeOf(signedResult.storyboard.token).toBeString()
+      expectTypeOf(signedResult.animated.token).toBeString()
+    }
   })
 })
