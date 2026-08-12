@@ -1,5 +1,3 @@
-import path from 'node:path'
-
 import {type ClientConfig, createClient as createCoreClient} from '@sanity/client'
 
 import {testResolveFetch} from '../helpers/mockFetch'
@@ -23,7 +21,5 @@ export const clientConfig = {
   dataset: 'foo',
   useCdn: false,
 }
-
-export const fixture = (name: string) => path.join(__dirname, '..', 'fixtures', name)
 
 export const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...conf})

@@ -5,7 +5,8 @@ import {filter} from 'rxjs/operators'
 import {describe, expect, test} from 'vitest'
 
 import {bodyBytes, getActiveFetch, getActiveMock} from '../helpers/mockFetch'
-import {fixture, getClient, projectHost} from './helpers'
+import {getClient, projectHost} from './helpers'
+import {fixture} from './helpers.node'
 
 describe('ASSETS', () => {
   test('uploads images', async () => {

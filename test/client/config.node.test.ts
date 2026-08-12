@@ -5,7 +5,8 @@ import {firstValueFrom} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
 import {bodyBytes, getActiveMock} from '../helpers/mockFetch'
-import {apiHost, fixture, getClient, projectHost} from './helpers'
+import {apiHost, getClient, projectHost} from './helpers'
+import {fixture} from './helpers.node'
 
 describe('base client', () => {
   test('observable requests leave no listeners on a reused caller signal', async () => {
