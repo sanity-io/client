@@ -3,7 +3,11 @@
 # 6.0.x. pnpm resolves peers from the importer, so the only way to hand TypeDoc an older
 # TypeScript is to give it an importer of its own. This package is that importer; nothing else
 # depends on it, and the client itself still builds on 7.
+# `.` has to stay listed: declaring `packages` at all replaces the implicit root-only default, and
+# changesets resolves release targets through the workspace globs. Without it, `changeset version`
+# fails with "Found changeset ... for package @sanity/client which is not in the workspace".
 packages:
+  - .
   - tools/typedoc
 # Dependencies allowed to run install scripts. pnpm blocks these by default.
 # - esbuild: links its platform binary, pulled in transitively by vitest and next
