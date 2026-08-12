@@ -160,30 +160,27 @@ describe('mediaLibrary', () => {
     }
   })
 
-  test(
-    'video.getPlaybackInfo throws error for invalid asset instance id',
-    async () => {
-      const client = getClient(mediaLibraryClientConfig)
+  test('video.getPlaybackInfo throws error for invalid asset instance id', async () => {
+    const client = getClient(mediaLibraryClientConfig)
 
-      expect.assertions(2)
+    expect.assertions(2)
 
-      try {
-        await client.mediaLibrary.video.getPlaybackInfo({} as any)
-      } catch (err) {
-        expect((err as Error).message).toBe(
-          'Invalid video asset instance identifier "[object Object]": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library',
-        )
-      }
+    try {
+      await client.mediaLibrary.video.getPlaybackInfo({} as any)
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        'Invalid video asset instance identifier "[object Object]": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library',
+      )
+    }
 
-      try {
-        await client.mediaLibrary.video.getPlaybackInfo({_ref: 123} as any)
-      } catch (err) {
-        expect((err as Error).message).toBe(
-          'Invalid video asset instance identifier "123": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library',
-        )
-      }
-    },
-  )
+    try {
+      await client.mediaLibrary.video.getPlaybackInfo({_ref: 123} as any)
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        'Invalid video asset instance identifier "123": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library',
+      )
+    }
+  })
 
   test('video.getPlaybackInfo handles API errors', async () => {
     const client = getClient(mediaLibraryClientConfig)

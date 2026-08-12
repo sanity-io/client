@@ -210,51 +210,41 @@ describe('patch ops', () => {
     expect(res.transactionId, 'applies given patch').toEqual('blatti')
   })
 
-  test(
-    'executes patch with request tag when commit() is called with tag',
-    async () => {
-      const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
-      getActiveMock()
-        .scope(projectHost())
-        .on('POST', '/v1/data/mutate/foo?tag=company.setvisited&returnIds=true&visibility=sync', {
-          body: {
-            mutations: [expectedPatch],
-          },
-        })
-        .respond({status: 200, body: {transactionId: 'blatti'}})
+  test('executes patch with request tag when commit() is called with tag', async () => {
+    const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/mutate/foo?tag=company.setvisited&returnIds=true&visibility=sync', {
+        body: {
+          mutations: [expectedPatch],
+        },
+      })
+      .respond({status: 200, body: {transactionId: 'blatti'}})
 
-      const res = await getClient()
-        .patch('abc123')
-        .set({visited: true})
-        .commit({returnDocuments: false, tag: 'company.setvisited'})
-      expect(res.transactionId, 'applies given patch').toEqual('blatti')
-    },
-  )
+    const res = await getClient()
+      .patch('abc123')
+      .set({visited: true})
+      .commit({returnDocuments: false, tag: 'company.setvisited'})
+    expect(res.transactionId, 'applies given patch').toEqual('blatti')
+  })
 
-  test(
-    'executes patch with auto generate key option if specified commit()',
-    async () => {
-      const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
-      getActiveMock()
-        .scope(projectHost())
-        .on(
-          'POST',
-          '/v1/data/mutate/foo?returnIds=true&autoGenerateArrayKeys=true&visibility=sync',
-          {
-            body: {
-              mutations: [expectedPatch],
-            },
-          },
-        )
-        .respond({status: 200, body: {transactionId: 'blatti'}})
+  test('executes patch with auto generate key option if specified commit()', async () => {
+    const expectedPatch = {patch: {id: 'abc123', set: {visited: true}}}
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/mutate/foo?returnIds=true&autoGenerateArrayKeys=true&visibility=sync', {
+        body: {
+          mutations: [expectedPatch],
+        },
+      })
+      .respond({status: 200, body: {transactionId: 'blatti'}})
 
-      const res = await getClient()
-        .patch('abc123')
-        .set({visited: true})
-        .commit({returnDocuments: false, autoGenerateArrayKeys: true})
-      expect(res.transactionId, 'applies given patch').toEqual('blatti')
-    },
-  )
+    const res = await getClient()
+      .patch('abc123')
+      .set({visited: true})
+      .commit({returnDocuments: false, autoGenerateArrayKeys: true})
+    expect(res.transactionId, 'applies given patch').toEqual('blatti')
+  })
 
   test('executes patch with given token override commit() is called', async () => {
     const expectedPatch = {patch: {id: 'abc123', inc: {count: 1}, set: {visited: true}}}

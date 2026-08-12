@@ -177,26 +177,23 @@ describe('transactions', () => {
     expect(res.transactionId, 'applies given transaction').toEqual('blatti')
   })
 
-  test(
-    'executes transaction with request tag when commit() is called with tag',
-    async () => {
-      const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
-      getActiveMock()
-        .scope(projectHost())
-        .on('POST', '/v1/data/mutate/foo?tag=sfcraft.createbar&returnIds=true&visibility=sync', {
-          body: {
-            mutations,
-          },
-        })
-        .respond({status: 200, body: {transactionId: 'blatti'}})
+  test('executes transaction with request tag when commit() is called with tag', async () => {
+    const mutations = [{create: {_type: 'bar', name: 'Toronado'}}]
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/mutate/foo?tag=sfcraft.createbar&returnIds=true&visibility=sync', {
+        body: {
+          mutations,
+        },
+      })
+      .respond({status: 200, body: {transactionId: 'blatti'}})
 
-      const res = await getClient()
-        .transaction()
-        .create({_type: 'bar', name: 'Toronado'})
-        .commit({tag: 'sfcraft.createbar'})
-      expect(res.transactionId, 'applies given transaction').toEqual('blatti')
-    },
-  )
+    const res = await getClient()
+      .transaction()
+      .create({_type: 'bar', name: 'Toronado'})
+      .commit({tag: 'sfcraft.createbar'})
+    expect(res.transactionId, 'applies given transaction').toEqual('blatti')
+  })
 
   test('throws when passing incorrect input to transaction operations', () => {
     const trans = getClient().transaction()
@@ -246,25 +243,22 @@ describe('transactions', () => {
     ])
   })
 
-  test(
-    'transaction can be created without client and passed to mutate()',
-    async () => {
-      const trx = new Transaction()
-      trx.delete('foo')
+  test('transaction can be created without client and passed to mutate()', async () => {
+    const trx = new Transaction()
+    trx.delete('foo')
 
-      const mutations = [{delete: {id: 'foo'}}]
-      getActiveMock()
-        .scope(projectHost())
-        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-          body: {
-            mutations,
-          },
-        })
-        .respond({status: 200, body: {results: [{id: 'foo', operation: 'delete'}]}})
+    const mutations = [{delete: {id: 'foo'}}]
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+        body: {
+          mutations,
+        },
+      })
+      .respond({status: 200, body: {results: [{id: 'foo', operation: 'delete'}]}})
 
-      await expect(getClient().mutate(trx)).resolves.not.toThrow()
-    },
-  )
+    await expect(getClient().mutate(trx)).resolves.not.toThrow()
+  })
 
   test('transaction commit() throws if called without a client', () => {
     const trans = new Transaction()

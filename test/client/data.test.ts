@@ -202,87 +202,78 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test(
-    'allows passing last live event ID from Next.js style searchParams',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on(
-          'GET',
-          `/vX/data/query/foo?query=*&returnQuery=false&lastLiveEventId=MTA0MDM1Nnx2a2lQY200bnRHQQ`,
-        )
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-          },
-        })
-
-      const res = await getClient({apiVersion: 'X'}).fetch(
-        '*',
-        {},
-        // searchParams in Next.js will return an arry of strings in some cases,
-        // as an convenience we allow it, and behave the same way as URLSearchParams.get() when that happens:
-        // we pick the first value in the array
-        {lastLiveEventId: ['MTA0MDM1Nnx2a2lQY200bnRHQQ', 'some-other-value']},
+  test('allows passing last live event ID from Next.js style searchParams', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on(
+        'GET',
+        `/vX/data/query/foo?query=*&returnQuery=false&lastLiveEventId=MTA0MDM1Nnx2a2lQY200bnRHQQ`,
       )
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+        },
+      })
 
-  test(
-    'allows passing last live event ID from URLSearchParams that might be null',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false`)
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-          },
-        })
-      const searchParams = new URLSearchParams('')
+    const res = await getClient({apiVersion: 'X'}).fetch(
+      '*',
+      {},
+      // searchParams in Next.js will return an arry of strings in some cases,
+      // as an convenience we allow it, and behave the same way as URLSearchParams.get() when that happens:
+      // we pick the first value in the array
+      {lastLiveEventId: ['MTA0MDM1Nnx2a2lQY200bnRHQQ', 'some-other-value']},
+    )
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
-      const res = await getClient({apiVersion: 'X'}).fetch(
-        '*',
-        {},
-        // URLSearchParams.get() will return null if the key is not found, we should handle that
-        {lastLiveEventId: searchParams.get('lastLiveEventId')},
-      )
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+  test('allows passing last live event ID from URLSearchParams that might be null', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/vX/data/query/foo?query=*&returnQuery=false`)
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+        },
+      })
+    const searchParams = new URLSearchParams('')
 
-  test(
-    'allows passing last live event ID from URLSearchParams that might be an empty string',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false`)
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-          },
-        })
-      const searchParams = new URLSearchParams('lastLiveEventId=')
+    const res = await getClient({apiVersion: 'X'}).fetch(
+      '*',
+      {},
+      // URLSearchParams.get() will return null if the key is not found, we should handle that
+      {lastLiveEventId: searchParams.get('lastLiveEventId')},
+    )
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
-      const res = await getClient({apiVersion: 'X'}).fetch(
-        '*',
-        {},
-        // URLSearchParams.get() will return null if the key is not found, we should handle that
-        {lastLiveEventId: searchParams.get('lastLiveEventId')},
-      )
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+  test('allows passing last live event ID from URLSearchParams that might be an empty string', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/vX/data/query/foo?query=*&returnQuery=false`)
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+        },
+      })
+    const searchParams = new URLSearchParams('lastLiveEventId=')
+
+    const res = await getClient({apiVersion: 'X'}).fetch(
+      '*',
+      {},
+      // URLSearchParams.get() will return null if the key is not found, we should handle that
+      {lastLiveEventId: searchParams.get('lastLiveEventId')},
+    )
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
   test('can query for documents with resultSourceMap and perspective', async () => {
     getActiveMock()
@@ -310,34 +301,31 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test(
-    'can query for documents with resultSourceMap=withKeyArraySelector and perspective',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on(
-          'GET',
-          `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=withKeyArraySelector&perspective=previewDrafts`,
-        )
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-            resultSourceMap,
-          },
-        })
-
-      const client = getClient({
-        apiVersion: 'X',
-        resultSourceMap: 'withKeyArraySelector',
-        perspective: 'previewDrafts',
+  test('can query for documents with resultSourceMap=withKeyArraySelector and perspective', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on(
+        'GET',
+        `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=withKeyArraySelector&perspective=previewDrafts`,
+      )
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+          resultSourceMap,
+        },
       })
-      const res = await client.fetch('*', {})
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+
+    const client = getClient({
+      apiVersion: 'X',
+      resultSourceMap: 'withKeyArraySelector',
+      perspective: 'previewDrafts',
+    })
+    const res = await client.fetch('*', {})
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
   test('automatically useCdn false if perspective is previewDrafts', async () => {
     getActiveMock()
@@ -362,77 +350,68 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test(
-    'can query for documents with resultSourceMap and perspective using the third client.fetch parameter',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on(
-          'GET',
-          `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=true&perspective=previewDrafts`,
-        )
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-            resultSourceMap,
-          },
-        })
-
-      const client = getClient({apiVersion: 'X'})
-      const res = await client.fetch('*', {}, {resultSourceMap: true, perspective: 'previewDrafts'})
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
-
-  test(
-    'setting resultSourceMap and perspective on client.fetch overrides the config',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&perspective=published`)
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-            resultSourceMap,
-          },
-        })
-
-      const client = getClient({
-        apiVersion: 'X',
-        resultSourceMap: true,
-        perspective: 'previewDrafts',
+  test('can query for documents with resultSourceMap and perspective using the third client.fetch parameter', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on(
+        'GET',
+        `/vX/data/query/foo?query=*&returnQuery=false&resultSourceMap=true&perspective=previewDrafts`,
+      )
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+          resultSourceMap,
+        },
       })
-      const res = await client.fetch('*', {}, {resultSourceMap: false, perspective: 'published'})
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
 
-  test(
-    'setting a perspective previewDrafts override on client.fetch sets useCdn to false',
-    async () => {
-      getActiveMock()
-        .scope('https://abc123.api.sanity.io')
-        .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
-        .respond({
-          status: 200,
-          body: {
-            ms: 123,
-            result,
-          },
-        })
+    const client = getClient({apiVersion: 'X'})
+    const res = await client.fetch('*', {}, {resultSourceMap: true, perspective: 'previewDrafts'})
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
-      const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
-      const res = await client.fetch('*', {}, {perspective: 'previewDrafts'})
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+  test('setting resultSourceMap and perspective on client.fetch overrides the config', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&perspective=published`)
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+          resultSourceMap,
+        },
+      })
+
+    const client = getClient({
+      apiVersion: 'X',
+      resultSourceMap: true,
+      perspective: 'previewDrafts',
+    })
+    const res = await client.fetch('*', {}, {resultSourceMap: false, perspective: 'published'})
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
+
+  test('setting a perspective previewDrafts override on client.fetch sets useCdn to false', async () => {
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+        },
+      })
+
+    const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
+    const res = await client.fetch('*', {}, {perspective: 'previewDrafts'})
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
   test('can query with a variant id set in the client config', async () => {
     getActiveMock()
@@ -477,40 +456,37 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test(
-    'setting a variant condition on client.fetch supersedes the config',
-    async () => {
-      getActiveMock()
-        .scope(projectHost())
-        .on(
-          'GET',
-          `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu`,
-        )
-        .respond({status: 200, body: {ms: 123, result}})
-
-      const client = getClient({
-        apiVersion: 'X',
-        variant: {
-          market: 'us',
-        },
-      })
-
-      const res = await client.fetch(
-        '*',
-        {},
-        {
-          variant: {
-            market: 'eu',
-            currency: 'gbp',
-            audience: 'musicians',
-          },
-        },
+  test('setting a variant condition on client.fetch supersedes the config', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on(
+        'GET',
+        `/vX/data/query/foo?query=*&returnQuery=false&variantCondition=audience%3Amusicians&variantCondition=currency%3Agbp&variantCondition=market%3Aeu`,
       )
+      .respond({status: 200, body: {ms: 123, result}})
 
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+    const client = getClient({
+      apiVersion: 'X',
+      variant: {
+        market: 'us',
+      },
+    })
+
+    const res = await client.fetch(
+      '*',
+      {},
+      {
+        variant: {
+          market: 'eu',
+          currency: 'gbp',
+          audience: 'musicians',
+        },
+      },
+    )
+
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
   test('sends multiple variant conditions ordered lexicographically', async () => {
     getActiveMock()
@@ -542,23 +518,20 @@ describe('data', () => {
     )
   })
 
-  test(
-    'setting a variant id on client.fetch supersedes a variant condition from the config',
-    async () => {
-      // the fetch-level variant replaces the config value wholesale – no
-      // `variantCondition` param should remain
-      getActiveMock()
-        .scope(projectHost())
-        .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
-        .respond({status: 200, body: {ms: 123, result}})
+  test('setting a variant id on client.fetch supersedes a variant condition from the config', async () => {
+    // the fetch-level variant replaces the config value wholesale – no
+    // `variantCondition` param should remain
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/vX/data/query/foo?query=*&returnQuery=false&variant=xyz`)
+      .respond({status: 200, body: {ms: 123, result}})
 
-      const client = getClient({apiVersion: 'X', variant: {market: 'us'}})
-      const res = await client.fetch('*', {}, {variant: 'xyz'})
+    const client = getClient({apiVersion: 'X', variant: {market: 'us'}})
+    const res = await client.fetch('*', {}, {variant: 'xyz'})
 
-      expect(res.length, 'length should match').toBe(1)
-      expect(res[0].rating, 'data should match').toBe(5)
-    },
-  )
+    expect(res.length, 'length should match').toBe(1)
+    expect(res[0].rating, 'data should match').toBe(5)
+  })
 
   test('allow overriding useCdn to false on client.fetch', async () => {
     getActiveMock()

@@ -525,40 +525,37 @@ describe('mutations', () => {
     ).resolves.not.toThrow()
   })
 
-  test(
-    'mutate() skips/falls back to defaults on undefined but known properties',
-    async () => {
-      const mutations = [{delete: {id: 'abc123'}}]
+  test('mutate() skips/falls back to defaults on undefined but known properties', async () => {
+    const mutations = [{delete: {id: 'abc123'}}]
 
-      getActiveMock()
-        .scope(projectHost())
-        .on(
-          'POST',
-          '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync',
-          {
-            body: {
-              mutations,
-            },
-          },
-        )
-        .respond({
-          status: 200,
+    getActiveMock()
+      .scope(projectHost())
+      .on(
+        'POST',
+        '/v1/data/mutate/foo?tag=foobar&returnIds=true&returnDocuments=true&visibility=sync',
+        {
           body: {
-            transactionId: 'foo',
-            results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+            mutations,
           },
-        })
+        },
+      )
+      .respond({
+        status: 200,
+        body: {
+          transactionId: 'foo',
+          results: [{id: 'abc123', operation: 'delete', document: {_id: 'abc123'}}],
+        },
+      })
 
-      await expect(
-        getClient().mutate(mutations, {
-          tag: 'foobar',
-          skipCrossDatasetReferenceValidation: undefined,
-          returnDocuments: undefined,
-          autoGenerateArrayKeys: undefined,
-        }),
-      ).resolves.not.toThrow()
-    },
-  )
+    await expect(
+      getClient().mutate(mutations, {
+        tag: 'foobar',
+        skipCrossDatasetReferenceValidation: undefined,
+        returnDocuments: undefined,
+        autoGenerateArrayKeys: undefined,
+      }),
+    ).resolves.not.toThrow()
+  })
 
   test('action() performs single operation', async () => {
     const action: CreateAction = {
