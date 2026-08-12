@@ -303,13 +303,26 @@ describe('.live.events()', () => {
       apiVersion: 'X',
     })
 
-    const error = await firstValueFrom(
-      noCorsClient.live.events().pipe(catchError((err) => of(err))),
-    )
-    expect(error).toBeInstanceOf(CorsOriginError)
-    expect(error.message).toMatchInlineSnapshot(
-      `"The current origin is not allowed to connect to the Live Content API. Change your configuration here: https://sanity.io/manage/project/no-cors/api"`,
-    )
+    // `CorsOriginError.addOriginUrl` (and therefore its `message`) is only
+    // built with a deep-link when `location` is available, which happy-dom
+    // provides but Node does not. Stub it so the message is deterministic
+    // across environments instead of depending on which one happens to
+    // supply a `location` global.
+    // Legitimate use of `vitest.stubGlobal`, not a module-boundary mock:
+    // this reads an environment global the code under test is documented
+    // to consult, rather than substituting a collaborator.
+    vitest.stubGlobal('location', {origin: 'https://example.com'})
+    try {
+      const error = await firstValueFrom(
+        noCorsClient.live.events().pipe(catchError((err) => of(err))),
+      )
+      expect(error).toBeInstanceOf(CorsOriginError)
+      expect(error.message).toMatchInlineSnapshot(
+        `"The current origin is not allowed to connect to the Live Content API. Add it here: https://sanity.io/manage/project/no-cors/api?cors=add&origin=https%3A%2F%2Fexample.com"`,
+      )
+    } finally {
+      vitest.unstubAllGlobals()
+    }
 
     const corsClient = createClient({
       projectId: 'cors',
