@@ -23,6 +23,11 @@ import {getActiveFetch, getActiveMock} from './helpers/mockFetch'
 
 const testCaCert = readFileSync(testCaPath)
 
+// Body the mock proxy sends back for a plain-HTTP tunneled target (see the
+// "production proxy fetch" test below), distinguishable from the JSON
+// Sanity-API-shaped response used for the HTTPS targets.
+const PLAIN_HTTP_RESPONSE_BODY = 'plain http response body'
+
 /**
  * Builds a fetch that tunnels through `proxyUrl` and verifies the far end's
  * certificate against the test CA, instead of disabling TLS verification for
@@ -48,13 +53,27 @@ const testCaCert = readFileSync(testCaPath)
  * for it (`DEP0123`), which `localhost` avoids while matching the cert's
  * other SAN entry just as well.
  */
+// Mirrors the `proxyFetchCache` in `src/http/nodeMiddleware.ts`: `resolveFetch`
+// runs on every request (`src/http/requestOptions.ts`), so without this a
+// `ProxyAgent` - and its own connection pool - would be built and then never
+// closed on every single proxied request in this file, a latent leak
+// (harmless today only because the mock server below sends
+// `Connection: close`). Memoizing per URL, like production does, means the
+// tests in this file that make one request reuse nothing new, but a test
+// making several through the same client/proxy shares one agent instead of
+// piling them up.
+const caTrustingProxyFetches = new Map<string, FetchFunction>()
+
 function createCaTrustingProxyFetch(proxyUrl: string): FetchFunction {
+  const cached = caTrustingProxyFetches.get(proxyUrl)
+  if (cached) return cached
+
   const dispatcher = new ProxyAgent({
     uri: proxyUrl,
     allowH2: false,
     requestTls: {ca: testCaCert, servername: 'localhost'},
   })
-  return async (input, init) => {
+  const proxyFetch: FetchFunction = async (input, init) => {
     const {body, ...rest} = init ?? {}
     // `dispatcher` is a Node-only, non-standard `fetch()` extension (not part
     // of the DOM `RequestInit` type `FetchInit` is deliberately kept
@@ -69,6 +88,8 @@ function createCaTrustingProxyFetch(proxyUrl: string): FetchFunction {
     }
     return fetch(input, requestInit)
   }
+  caTrustingProxyFetches.set(proxyUrl, proxyFetch)
+  return proxyFetch
 }
 
 // Proxied requests must reach the real local CONNECT proxy, everything else
@@ -163,10 +184,16 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         connectRequests = []
         tunneledRequests = []
 
-        // Create a mock HTTP proxy server that handles CONNECT for HTTPS tunneling
+        // Create a mock HTTP proxy server that handles CONNECT for tunneling
         proxyServer = createServer()
 
-        // Handle CONNECT method for HTTPS tunneling
+        // Handle CONNECT method for tunneling. undici's `ProxyAgent` tunnels
+        // regardless of the target's scheme (`proxyTunnel` defaults to
+        // `true`), so a plain-HTTP target still arrives here as a CONNECT -
+        // it just skips the TLS handshake once the tunnel is up. That's used
+        // below by the "production proxy fetch" test, which targets a
+        // `:80` (plain HTTP) origin so it needs neither the test CA nor a
+        // TLS handshake to exercise the real production dispatcher.
         proxyServer.on('connect', (req: IncomingMessage, clientSocket: Socket) => {
           connectRequests.push({
             method: req.method || 'CONNECT',
@@ -177,17 +204,21 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
           // Tell the client the tunnel is established
           clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
 
-          // Create a TLS server to handle the tunneled HTTPS request
-          const tlsSocket = new TLSSocket(clientSocket, {
-            isServer: true,
-            key: testCert.key,
-            cert: testCert.cert,
-          })
+          const isPlainHttpTarget = (req.url || '').endsWith(':80')
+          const protocol = isPlainHttpTarget ? 'http' : 'https'
+          // For an HTTPS target the client TLS-handshakes over the raw tunnel
+          // next, so the far end needs to speak TLS back. A plain-HTTP
+          // target's tunneled bytes are already plaintext HTTP - nothing to
+          // wrap. `TLSSocket` extends `Socket`, so both branches fit the one
+          // `Socket`-typed variable below without a cast.
+          const tunnelSocket: Socket = isPlainHttpTarget
+            ? clientSocket
+            : new TLSSocket(clientSocket, {isServer: true, key: testCert.key, cert: testCert.cert})
 
           // Buffer to accumulate request data
           let requestData = ''
 
-          tlsSocket.on('data', (data: Buffer) => {
+          tunnelSocket.on('data', (data: Buffer) => {
             requestData += data.toString()
 
             // Check if we have a complete HTTP request (ends with double CRLF)
@@ -210,28 +241,32 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
               tunneledRequests.push({
                 method,
-                url: `https://${req.url}${path}`,
+                url: `${protocol}://${req.url}${path}`,
                 headers,
               })
 
-              // Send a mock Sanity API response
-              const responseBody = JSON.stringify({result: []})
+              // Send a mock response - the real Sanity API shape for the
+              // HTTPS targets every other test in this file uses, a plain
+              // distinguishable body for the plain-HTTP target.
+              const responseBody = isPlainHttpTarget
+                ? PLAIN_HTTP_RESPONSE_BODY
+                : JSON.stringify({result: []})
               const response = [
                 'HTTP/1.1 200 OK',
-                'Content-Type: application/json',
+                `Content-Type: ${isPlainHttpTarget ? 'text/plain' : 'application/json'}`,
                 `Content-Length: ${responseBody.length}`,
                 'Connection: close',
                 '',
                 responseBody,
               ].join('\r\n')
 
-              tlsSocket.write(response)
-              tlsSocket.end()
+              tunnelSocket.write(response)
+              tunnelSocket.end()
             }
           })
 
-          tlsSocket.on('error', () => {
-            // Ignore TLS errors in tests
+          tunnelSocket.on('error', () => {
+            // Ignore TLS/socket errors in tests
           })
         })
 
@@ -409,6 +444,41 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
         expect(tunneledRequests.length).toBe(1)
         expect(tunneledRequests[0].headers['x-sanity-project-id']).toBe('abc123')
+      })
+
+      test('the production resolveFetch tunnels a real request through the proxy', async () => {
+        // Every other test above goes through `createCaTrustingProxyFetch()`,
+        // built for this file's TLS-trust needs. This one instead calls the
+        // real production `resolveFetch` from `src/http/nodeMiddleware.ts`
+        // (`createCoreClient(...).config().resolveFetch` - the same accessor
+        // every proxied test in this file used before the CA work, and still
+        // what `client.config().resolveFetch` returns in production) to
+        // prove the actual `getProxyFetch` / `createNodeFetch({proxy,
+        // connections: 30})` dispatcher tunnels a request end to end, not
+        // just that constructing it doesn't throw.
+        //
+        // Targets a plain-HTTP origin, deliberately, so this needs neither
+        // the test CA nor a TLS handshake - undici's `ProxyAgent` tunnels
+        // regardless of scheme (see the `beforeEach` above), so a CONNECT
+        // still happens; the mock proxy just skips wrapping the tunnel in
+        // TLS for a `:80` target, since the origin genuinely has none.
+        const {resolveFetch} = createCoreClient({
+          projectId: 'abc123',
+          dataset: 'production',
+        }).config()
+        if (!resolveFetch) {
+          throw new Error('expected the Node entry to supply resolveFetch on the config')
+        }
+        const proxiedFetch = resolveFetch(`http://127.0.0.1:${proxyPort}`)
+
+        const response = await proxiedFetch('http://plain-http-origin.test/probe')
+        const body = await response.text()
+
+        expect(connectRequests.length).toBe(1)
+        expect(connectRequests[0].url).toBe('plain-http-origin.test:80')
+        expect(tunneledRequests.length).toBe(1)
+        expect(tunneledRequests[0].url).toContain('/probe')
+        expect(body).toBe(PLAIN_HTTP_RESPONSE_BODY)
       })
 
       // Skipped under get-it v9 / undici: `EnvHttpProxyAgent` snapshots the
