@@ -17,6 +17,32 @@ const createClient: typeof createCoreClient = (config) =>
   createCoreClient({resolveFetch: testResolveFetch, ...config})
 
 /**
+ * Stubs `location.origin` for a deterministic `CorsOriginError` deep-link and
+ * returns the origin the error should end up embedding.
+ *
+ * Node, happy-dom and the edge-runtime test environment either have no
+ * `location` yet or a plain, writable one, so `vitest.stubGlobal` can freely
+ * replace it there. Real browsers make `window.location` (and every one of
+ * its properties) non-configurable - the HTML spec marks them
+ * `[LegacyUnforgeable]`, a deliberate security property so a page can't hide
+ * navigation from script - so the stub throws there instead. When that
+ * happens there is nothing to fake: the browser already has a real
+ * `location`, so fall back to whatever origin is actually serving the test.
+ *
+ * Legitimate use of `vitest.stubGlobal`, not a module-boundary mock: this
+ * reads an environment global the code under test is documented to consult,
+ * rather than substituting a collaborator.
+ */
+function stubLocationOrigin(fallback = 'https://example.com'): string {
+  try {
+    vitest.stubGlobal('location', {origin: fallback})
+    return fallback
+  } catch {
+    return location.origin
+  }
+}
+
+/**
  * `live.events()` makes two kinds of requests, both routed through the
  * injected mock transport and therefore registered via {@link getActiveMock}:
  *
@@ -308,17 +334,14 @@ describe('.live.events()', () => {
     // provides but Node does not. Stub it so the message is deterministic
     // across environments instead of depending on which one happens to
     // supply a `location` global.
-    // Legitimate use of `vitest.stubGlobal`, not a module-boundary mock:
-    // this reads an environment global the code under test is documented
-    // to consult, rather than substituting a collaborator.
-    vitest.stubGlobal('location', {origin: 'https://example.com'})
+    const origin = stubLocationOrigin()
     try {
       const error = await firstValueFrom(
         noCorsClient.live.events().pipe(catchError((err) => of(err))),
       )
       expect(error).toBeInstanceOf(CorsOriginError)
-      expect(error.message).toMatchInlineSnapshot(
-        `"The current origin is not allowed to connect to the Live Content API. Add it here: https://sanity.io/manage/project/no-cors/api?cors=add&origin=https%3A%2F%2Fexample.com"`,
+      expect(error.message).toBe(
+        `The current origin is not allowed to connect to the Live Content API. Add it here: https://sanity.io/manage/project/no-cors/api?cors=add&origin=${encodeURIComponent(origin)}`,
       )
     } finally {
       vitest.unstubAllGlobals()
@@ -536,17 +559,14 @@ describe('.live.events()', () => {
     // `CorsOriginError.addOriginUrl` is only constructed when `location` is
     // available (i.e. in browser-ish environments). Stub it here so we can
     // assert the `credentials=` query param ends up on the deep-link.
-    // Legitimate use of `vitest.stubGlobal`, not a module-boundary mock:
-    // this reads an environment global the code under test is documented
-    // to consult, rather than substituting a collaborator.
-    vitest.stubGlobal('location', {origin: 'https://example.com'})
+    const origin = stubLocationOrigin()
     try {
       const error = await firstValueFrom(
         client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
       )
       expect(error).toBeInstanceOf(CorsOriginError)
       expect(error.addOriginUrl?.searchParams.get('credentials')).toBe('')
-      expect(error.addOriginUrl?.searchParams.get('origin')).toBe('https://example.com')
+      expect(error.addOriginUrl?.searchParams.get('origin')).toBe(origin)
     } finally {
       vitest.unstubAllGlobals()
     }

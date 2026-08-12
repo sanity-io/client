@@ -1,4 +1,5 @@
-// Simulated browser environment. Phase 4 replaces this with real browsers.
+// Real browsers: chromium, firefox and webkit via Playwright.
+import {playwright} from '@vitest/browser-playwright'
 import {defineConfig} from 'vitest/config'
 
 import {nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
@@ -7,9 +8,17 @@ export default defineConfig({
   test: {
     ...sharedConfig,
     exclude: nonNodeExclude,
-    environment: 'happy-dom',
     alias: sourceAlias('default'),
     typecheck: {enabled: false},
+    browser: {
+      enabled: true,
+      provider: playwright(),
+      instances: [
+        {browser: 'chromium', headless: true},
+        {browser: 'firefox', headless: true},
+        {browser: 'webkit', headless: true},
+      ],
+    },
   },
   resolve: {conditions: ['browser', 'module', 'import']},
 })

@@ -151,14 +151,15 @@ describe('data', () => {
         },
       })
 
-    await expect(getClient().fetch(query, {}, {tag: 'get-events'})).rejects
-      .toThrowErrorMatchingInlineSnapshot(`
-      [Error: GROQ query parse error:
-      > 1 | *[_type == "event]
-          |           ^^^^^^^ unexpected token "\\"event]", expected expression
-
-      Tag: get-events]
-    `)
+    // A file (not inline) snapshot: two `toThrowErrorMatchingInlineSnapshot`
+    // calls in this file both resolve to the same call site under WebKit
+    // (a `@vitest/snapshot` stack-inference quirk specific to that engine),
+    // so the second one spuriously collides with the first. A file snapshot
+    // is keyed by test name instead of by call-site stack, sidestepping it.
+    const error = await getClient()
+      .fetch(query, {}, {tag: 'get-events'})
+      .catch((err: unknown) => err)
+    expect(error).toMatchSnapshot()
   })
 
   test('can query for documents with request tag', async () => {

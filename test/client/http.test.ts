@@ -255,20 +255,25 @@ describe('http requests', () => {
     }
   })
 
-  test('ClientError includes message in stack', () => {
+  // `.stack` is non-standard and its format is engine-defined: V8 (Node,
+  // Chromium) prepends `${name}: ${message}` before the frames, so the
+  // message incidentally shows up there too, but SpiderMonkey (Firefox) and
+  // JavaScriptCore (WebKit) don't include it. `.message` is the portable,
+  // spec-guaranteed place to assert this.
+  test('ClientError includes description in message', () => {
     const body = {error: {description: 'Invalid query'}}
     const error = new ClientError({statusCode: 400, headers: {}, body})
-    expect(error.stack!.includes(body.error.description)).toBeTruthy()
+    expect(error.message.includes(body.error.description)).toBeTruthy()
   })
 
-  test('ServerError includes message in stack', () => {
+  test('ServerError includes error and message in message', () => {
     const body = {
       error: 'Gateway Time-Out',
       message: 'The upstream service did not respond in time',
     }
     const error = new ServerError({statusCode: 504, headers: {}, body})
-    expect(error.stack!.includes(body.error)).toBeTruthy()
-    expect(error.stack!.includes(body.message)).toBeTruthy()
+    expect(error.message.includes(body.error)).toBeTruthy()
+    expect(error.message.includes(body.message)).toBeTruthy()
   })
 
   test('mutation error includes items in message', () => {
