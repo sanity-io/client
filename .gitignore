@@ -3,7 +3,8 @@
 
 # Compiled files
 dist
-docs
+# Generated TypeDoc output. Kept out of docs/, which holds the hand-written migration guides.
+dist-docs
 
 # Coverage directories used by tools like c8
 coverage
