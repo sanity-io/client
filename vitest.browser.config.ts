@@ -10,6 +10,10 @@ export default defineConfig({
     exclude: nonNodeExclude,
     alias: sourceAlias('default'),
     typecheck: {enabled: false},
+    // Real browsers are the only environment `*.browser.test.ts` files
+    // collect in (see `browserOnlyExclude` in vitest.config.ts) - they need
+    // the upload server's URL, provided via globalSetup.upload.ts.
+    globalSetup: ['./test/helpers/globalSetup.upload.ts'],
     browser: {
       enabled: true,
       provider: playwright(),

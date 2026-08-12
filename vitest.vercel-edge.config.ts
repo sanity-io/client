@@ -2,12 +2,13 @@
 // otherwise browser exports.
 import {defineConfig} from 'vitest/config'
 
-import {nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
+import {browserOnlyExclude, nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
 
 export default defineConfig({
   test: {
     ...sharedConfig,
-    exclude: nonNodeExclude,
+    // The edge-runtime environment has no `XMLHttpRequest` global either.
+    exclude: [...nonNodeExclude, ...browserOnlyExclude],
     environment: 'edge-runtime',
     alias: sourceAlias('default'),
     typecheck: {enabled: false},

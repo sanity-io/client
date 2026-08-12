@@ -14,6 +14,24 @@ export const baseExclude = [...configDefaults.exclude, 'runtimes/**', 'test/next
 export const nonNodeExclude = [...baseExclude, 'test/**/*.node.test.ts']
 
 /**
+ * `*.browser.test.ts` files prove their behaviour by talking to a real server
+ * through a real `XMLHttpRequest` - no faking the transport. That needs more
+ * than the global merely existing:
+ *
+ * - Node and the edge-runtime environment have no `XMLHttpRequest` global at
+ *   all.
+ * - happy-dom does implement the global, but not the behaviour: verified
+ *   empirically (a real happy-dom `XMLHttpRequest` against a real local
+ *   server) that it never fires `xhr.upload.onprogress` and never fires
+ *   `ontimeout` - so it can run the request but can't exercise either
+ *   feature.
+ *
+ * All three exclude these files outright rather than skip individual tests
+ * within them. Only real browsers (`vitest.browser.config.ts`) collect them.
+ */
+export const browserOnlyExclude = ['test/**/*.browser.test.ts']
+
+/**
  * Resolves the `@sanity/client` specifiers to source, reading `pkg.exports` so
  * the aliases cannot drift from the real map. `'node'` picks the undici-backed
  * Node build; `'default'` picks the platform-neutral fetch build that browser,
@@ -37,6 +55,7 @@ export const sharedConfig = {
 export default defineConfig({
   test: {
     ...sharedConfig,
+    exclude: [...baseExclude, ...browserOnlyExclude],
     alias: sourceAlias('node'),
     typecheck: {enabled: true},
     coverage: {
