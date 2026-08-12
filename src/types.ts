@@ -256,6 +256,11 @@ export interface ClientConfig {
    * Lineage token for recursion control
    */
   lineage?: string
+  /**
+   * ID of the blueprints stack that `functions.invoke()` resolves function
+   * names against. Function names are unique within a stack
+   */
+  stackId?: string
 }
 
 /** @public */
@@ -1938,6 +1943,7 @@ export type {
   TranslateTarget,
   TranslateTargetInclude,
 } from './agent/actions/translate'
+export type {InvokeFunctionEvent, InvokeFunctionRequest} from './functions/invoke'
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,
