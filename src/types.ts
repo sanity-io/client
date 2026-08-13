@@ -6,8 +6,9 @@ import type {Observable} from 'rxjs'
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
 /**
- * Low-level requester returned by `defineHttpRequest`. Surfaces as
- * `client.config().requester` and as the named `requester` export.
+ * Low-level requester returned by `defineRequester(...).observable`.
+ * Surfaces as `client.config().requester` and as the named `requester`
+ * export.
  *
  * Defined locally rather than imported from `http/request` so api-extractor
  * inlines it into the bundled `.d.ts` instead of emitting a relative import

@@ -6,20 +6,23 @@
   // (see src/stega/stegaClean.ts), re-exported publicly from src/stega/index.ts.
   // It is not a real duplicate, so scope the ignore to that one file rather
   // than turning the `duplicates` rule off project-wide.
+  //
+  // `_patchObservable`/`_promptObservable` are unused, but not for the usual
+  // dead-code reason: `ObservableAgentsActionClient` (src/agent/actions/
+  // AgentActionsClient.ts) implements `generate`/`transform`/`translate` by
+  // calling their `_xObservable` siblings, but has no `patch`/`prompt`
+  // methods at all, even though the promise-based `AgentActionsClient` has
+  // both and `_patchObservable`/`_promptObservable` are ready-made,
+  // correctly-shaped implementations for them. That looks like an
+  // unfinished feature rather than leftover code, so Task 15 left it alone
+  // and flagged it instead of deleting the export or guessing at the wiring.
   "ignoreIssues": {
-    "src/stega/stegaClean.ts": ["duplicates"]
+    "src/stega/stegaClean.ts": ["duplicates"],
+    "src/agent/actions/patch.ts": ["exports"],
+    "src/agent/actions/prompt.ts": ["exports"]
   },
-  // `exports` and `types` are downgraded to "warn" (reported, exit 0) rather
-  // than "off" because there are 10 known-but-deferred findings: internal
-  // exports in src/ (7 unused exports, 3 unused exported types) that are not
-  // referenced from test/ or any public entry point. They are kept exported
-  // because Task 6 of this test-suite-cleanup plan may re-export some of
-  // them (_observe, _dataRequestObservable, defineHttpRequest are candidates)
-  // so tests can call the internals directly with real inputs. Task 15
-  // re-runs knip after the test restructure to either remove what's still
-  // unused or promote these two rules back to "error".
   "rules": {
-    "exports": "warn",
-    "types": "warn"
+    "exports": "error",
+    "types": "error"
   }
 }

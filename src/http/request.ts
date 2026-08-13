@@ -29,7 +29,7 @@ export type LegacyMiddleware = TransformMiddleware | WrappingMiddleware
  *
  * @internal
  */
-export interface ResponseEvent {
+interface ResponseEvent {
   type: 'response'
   body: unknown
   statusCode: number
@@ -40,12 +40,13 @@ export interface ResponseEvent {
 }
 
 /**
- * Legacy "requester" type — the result of `defineHttpRequest`. Returns a
- * single-event Observable for compatibility with the rest of the codebase.
+ * Legacy "requester" type - the observable half of `defineRequester`'s
+ * result. Returns a single-event Observable for compatibility with the rest
+ * of the codebase.
  *
  * @internal
  */
-export type LegacyRequester = (options: Any) => Observable<ResponseEvent>
+type LegacyRequester = (options: Any) => Observable<ResponseEvent>
 
 /**
  * Promise-based sibling of {@link LegacyRequester}. Resolves directly to the
@@ -55,7 +56,7 @@ export type LegacyRequester = (options: Any) => Observable<ResponseEvent>
  *
  * @internal
  */
-export type PromiseRequester = (options: Any) => Promise<ResponseEvent>
+type PromiseRequester = (options: Any) => Promise<ResponseEvent>
 
 /**
  * Both forms of the transport, sharing a single underlying get-it requester
@@ -161,14 +162,6 @@ export function defineRequester(
     })
 
   return {promise, observable}
-}
-
-/** @internal */
-export function defineHttpRequest(
-  envOptions: EnvironmentOptions,
-  config: HttpRequestConfig = {},
-): LegacyRequester {
-  return defineRequester(envOptions, config).observable
 }
 
 /**
