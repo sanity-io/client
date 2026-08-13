@@ -126,7 +126,13 @@ function write<T>(
 
 function writeDocument(...args: WriteArgs): Observable<CollaborationCommentDocument> {
   return write<CommentDocumentMutationResponse>(...args).pipe(
-    map(({results}) => results[0].document),
+    map(({results}) => {
+      const document = results[0]?.document
+      if (!document) {
+        throw new Error('Comment write did not return a comment document')
+      }
+      return document
+    }),
   )
 }
 
@@ -251,7 +257,7 @@ export function _listen<
   const qs = encodeQueryString({
     query,
     params,
-    options: {tag, ...listenOpts, ...resourceQuery(client)},
+    options: {...listenOpts, ...resourceQuery(client)},
   })
 
   const uri = `${client.getUrl('/collaboration/comments/listen')}${qs}`

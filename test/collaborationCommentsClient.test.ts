@@ -1,7 +1,7 @@
 import type {AddressInfo} from 'node:net'
 
 import {type ClientConfig, type CollaborationCommentDocument, createClient} from '@sanity/client'
-import {firstValueFrom} from 'rxjs'
+import {firstValueFrom, lastValueFrom, take, toArray} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
 import {createSseServer} from './helpers/sseServer'
@@ -287,6 +287,26 @@ describe('collaboration.comments', async () => {
     })
   })
 
+  test.skipIf(isEdge)('rejects when a write response carries no comment document', async () => {
+    nock(apiHost)
+      .patch('/v2026-07-18/collaboration/comments/comment-1')
+      .query(commonQuery)
+      .reply(200, mutationResponse([]))
+    nock(apiHost)
+      .post('/v2026-07-18/collaboration/comments/comment-1/reactions')
+      .query(commonQuery)
+      .reply(200, mutationResponse([{id: 'comment-1', operation: 'update'}]))
+
+    const client = getClient()
+
+    await expect(
+      client.collaboration.comments.update('comment-1', {status: 'resolved'}),
+    ).rejects.toThrow('Comment write did not return a comment document')
+    await expect(client.collaboration.comments.addReaction('comment-1', ':heart:')).rejects.toThrow(
+      'Comment write did not return a comment document',
+    )
+  })
+
   test.skipIf(isEdge)('rejects when a write does not match a comment', async () => {
     const notFound = {
       statusCode: 404,
@@ -363,6 +383,69 @@ describe('collaboration.comments', async () => {
       ),
     ).resolves.toEqual({open: []})
   })
+
+  test.skipIf(isEdge)('forwards token and header request options', async () => {
+    const query = '*[_type == "sanity.comment"]'
+
+    nock(apiHost)
+      .matchHeader('authorization', 'Bearer request-token')
+      .matchHeader('x-custom', 'yes')
+      .get('/v2026-07-18/collaboration/comments/query')
+      .query({...commonQuery, query})
+      .reply(200, {result: []})
+    nock(apiHost)
+      .matchHeader('authorization', 'Bearer request-token')
+      .matchHeader('x-custom', 'yes')
+      .post('/v2026-07-18/collaboration/comments')
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+      )
+
+    const client = getClient({token: 'config-token'})
+    const options = {token: 'request-token', headers: {'x-custom': 'yes'}}
+
+    await expect(client.collaboration.comments.fetch(query, undefined, options)).resolves.toEqual(
+      [],
+    )
+    await expect(
+      client.collaboration.comments.create(
+        {target: {documentId: 'doc-1', documentType: 'article'}, message},
+        options,
+      ),
+    ).resolves.toEqual(commentDocument)
+  })
+
+  test.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
+    'cancels a fetch with an abort controller signal',
+    async () => {
+      expect.assertions(2)
+
+      const query = '*[_type == "sanity.comment"]'
+
+      nock(apiHost)
+        .get('/v2026-07-18/collaboration/comments/query')
+        .query({...commonQuery, query})
+        .delay(100)
+        .reply(200, {result: []})
+
+      const abortController = new AbortController()
+      const promise = getClient().collaboration.comments.fetch(query, undefined, {
+        signal: abortController.signal,
+      })
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      try {
+        abortController.abort()
+        await promise
+      } catch (err: any) {
+        if (err.name === 'AssertionError') throw err
+        expect(err).toBeInstanceOf(Error)
+        expect(err.name, 'should throw AbortError').toBe('AbortError')
+      }
+    },
+  )
 
   test('throws when organizationId or resource is missing', () => {
     const query = '*[_type == "sanity.comment"]'
@@ -616,6 +699,67 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
           '*[_type == "sanity.comment" && target.document._ref == $ref]',
           {ref: 'canvas:canvas-123:doc-1'},
         ),
+      )
+
+      server.close()
+    })
+
+    test('emits the events opted into, and filters out the rest', async () => {
+      expect.assertions(2)
+
+      const server = await createSseServer(({channel}) => {
+        channel!.send({event: 'welcome', data: {listenerName: 'listener-1'}})
+        channel!.send({event: 'mutation', data: {documentId: 'comment-1'}})
+        process.nextTick(() => channel!.close())
+      })
+
+      const client = getClient({
+        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      })
+      const query = '*[_type == "sanity.comment"]'
+
+      const optedIn = await lastValueFrom(
+        client.collaboration.comments
+          .listen(query, undefined, {events: ['welcome', 'mutation']})
+          .pipe(take(2), toArray()),
+      )
+      expect(optedIn).toEqual([
+        {type: 'welcome', listenerName: 'listener-1'},
+        {type: 'mutation', documentId: 'comment-1'},
+      ])
+
+      // The welcome event is still sent, but only mutations are emitted by default
+      await expect(firstValueFrom(client.collaboration.comments.listen(query))).resolves.toEqual({
+        type: 'mutation',
+        documentId: 'comment-1',
+      })
+
+      server.close()
+    })
+
+    test('forwards listener options to the listen endpoint', async () => {
+      expect.assertions(2)
+
+      const server = await createSseServer(({request, channel}) => {
+        const search = new URLSearchParams(request.url!.split('?')[1] ?? '')
+
+        expect(search.get('effectFormat')).toBe('mendoza')
+        expect(search.get('visibility')).toBe('query')
+
+        channel!.send({event: 'welcome'})
+      })
+
+      const client = getClient({
+        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      })
+
+      await firstValueFrom(
+        client.collaboration.comments.listen('*[_type == "sanity.comment"]', undefined, {
+          effectFormat: 'mendoza',
+          events: ['welcome'],
+          visibility: 'query',
+        }),
+        {defaultValue: null},
       )
 
       server.close()
