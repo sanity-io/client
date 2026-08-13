@@ -1,4 +1,4 @@
-import {type ContentSourceMap} from '@sanity/client'
+import {ClientError, type ContentSourceMap} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
@@ -131,6 +131,7 @@ describe('data', () => {
   })
 
   test('gets helpful error messages on query errors (with tag)', async () => {
+    expect.assertions(2)
     const query = '*[_type == "event]'
     getActiveMock()
       .scope(projectHost())
@@ -159,6 +160,7 @@ describe('data', () => {
     const error = await getClient()
       .fetch(query, {}, {tag: 'get-events'})
       .catch((err: unknown) => err)
+    expect(error).toBeInstanceOf(ClientError)
     expect(error).toMatchSnapshot()
   })
 

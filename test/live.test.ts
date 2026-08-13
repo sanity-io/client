@@ -3,6 +3,7 @@ import {
   ConnectionFailedError,
   CorsOriginError,
   createClient as createCoreClient,
+  MessageError,
 } from '@sanity/client'
 import {encode} from 'eventsource-encoder'
 import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
@@ -234,7 +235,7 @@ describe('.live.events()', () => {
   })
 
   test('emits errors', async () => {
-    expect.assertions(1)
+    expect.assertions(2)
 
     // An `event: error` message errors the live-events observable, which
     // triggers the `/check/cors` probe just like any other error.
@@ -264,6 +265,7 @@ describe('.live.events()', () => {
 
     const error = await firstValueFrom(client.live.events().pipe(catchError((err) => of(err))))
 
+    expect(error).toBeInstanceOf(MessageError)
     expect(error.message, 'should have passed error message').toBe('Unfortunate error')
   })
 

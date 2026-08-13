@@ -1,4 +1,4 @@
-import {ConnectionFailedError, createClient as createCoreClient} from '@sanity/client'
+import {ChannelError, ConnectionFailedError, createClient as createCoreClient} from '@sanity/client'
 import {encode} from 'eventsource-encoder'
 import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
 import {describe, expect, test, vitest} from 'vitest'
@@ -387,7 +387,7 @@ describe('.listen()', () => {
   })
 
   test('emits channel errors', async () => {
-    expect.assertions(1)
+    expect.assertions(2)
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -410,11 +410,12 @@ describe('.listen()', () => {
 
     const error = await firstValueFrom(client.listen('*').pipe(catchError((err) => of(err))))
 
+    expect(error).toBeInstanceOf(ChannelError)
     expect(error.message, 'should have passed error message').toBe('Unfortunate error')
   })
 
   test('emits channel errors with deep error description', async () => {
-    expect.assertions(1)
+    expect.assertions(2)
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -437,11 +438,12 @@ describe('.listen()', () => {
 
     const error = await firstValueFrom(client.listen('*').pipe(catchError((err) => of(err))))
 
+    expect(error).toBeInstanceOf(ChannelError)
     expect(error.message, 'should have passed error message').toBe('Expected error')
   })
 
   test('emits channel errors with groq parse errors (no tag)', async () => {
-    expect.assertions(1)
+    expect.assertions(2)
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -474,6 +476,7 @@ describe('.listen()', () => {
       client.listen('*[_type == "event]').pipe(catchError((err) => of(err))),
     )
 
+    expect(error).toBeInstanceOf(ChannelError)
     expect(error.message, 'should have passed error message').toMatchInlineSnapshot(
       `
         "GROQ query parse error:
@@ -484,7 +487,7 @@ describe('.listen()', () => {
   })
 
   test('emits channel errors with groq parse errors (with tag)', async () => {
-    expect.assertions(1)
+    expect.assertions(2)
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -517,6 +520,7 @@ describe('.listen()', () => {
       client.listen('*[_type == "event]', {}, {tag: 'some-tag'}).pipe(catchError((err) => of(err))),
     )
 
+    expect(error).toBeInstanceOf(ChannelError)
     expect(error.message, 'should have passed error message').toMatchInlineSnapshot(
       `
         "GROQ query parse error:
@@ -529,7 +533,7 @@ describe('.listen()', () => {
   })
 
   test('emits error if request URL is too large', async () => {
-    expect.assertions(1)
+    expect.assertions(2)
 
     // `_listen()` rejects the too-large URL synchronously, before ever
     // calling `initEventSource()` - no request is made, so no handler is
@@ -547,6 +551,10 @@ describe('.listen()', () => {
       client.listen(`*{"foo":"${pad}"`).pipe(catchError((error) => of(error))),
     )
 
+    // `src/data/listen.ts` throws a plain `Error` here, not one of the
+    // EventSource-specific subclasses - there is no narrower class to
+    // assert.
+    expect(err).toBeInstanceOf(Error)
     expect(err.message, 'should have passed error message').toBe('Query too large for listener')
   })
 
