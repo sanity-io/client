@@ -1,3 +1,4 @@
+import {getPublishedId} from '@sanity/client/csm'
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
@@ -19,7 +20,6 @@ import type {
   ResumableListenEventNames,
 } from '../types'
 import defaults from '../util/defaults'
-import {getPublishedId} from '../util/getPublishedId'
 import {pick} from '../util/pick'
 import {
   type CollaborationCommentCreate,
