@@ -37,9 +37,8 @@ pnpm lint        # oxlint
 pnpm format      # oxfmt
 ```
 
-Two honest caveats about those last two:
+One honest caveat about those last two:
 
-- `pnpm knip` exits 0, but it still prints known, deferred findings (unused internal exports and types). The `exports` and `types` rules are set to `warn` rather than `error` for now. It is not a clean report yet.
 - The workerd CI job runs with `continue-on-error: true`. workerd's native `MessageEvent` drops `lastEventId` from its constructor init dict, so server-sent event IDs arrive empty on Cloudflare Workers. See the comment above the `workerd-runtime` job in `.github/workflows/ci.yml` for the full story. The fix lands in the `eventsource` package, not here.
 
 Before you write code, read the sections below. They hold the rules for TypeScript and for tests.
@@ -47,6 +46,8 @@ Before you write code, read the sections below. They hold the rules for TypeScri
 ## TypeScript: no type assertions
 
 **Never use a type assertion (`as`, `<Type>`, `as any`, `as unknown as X`).** There is no acceptable use in new code, in `src` or in tests.
+
+This is a bar for new code, not a description of the codebase today: pre-existing assertions in both `src` and `test` predate the rule and are being removed opportunistically as code is touched, not in a dedicated sweep.
 
 When a type does not match, one of these is true:
 
