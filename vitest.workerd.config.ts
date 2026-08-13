@@ -1,7 +1,7 @@
-// Runs a smoke suite inside Cloudflare's workerd runtime (via miniflare) to
-// verify the client works *out of the box* on bare workerd: i.e. WITHOUT the
-// `nodejs_compat` flag, so it never reaches for get-it's Node (undici) build
-// or any `node:*` API.
+// Runs the shared test suite inside Cloudflare's workerd runtime (via
+// miniflare), deliberately WITHOUT the `nodejs_compat` flag: anything that
+// can only resolve via the `node` condition, or reaches for a `node:*` API
+// (including get-it's Node/undici build), fails here - which is the point.
 
 import {cloudflareTest} from '@cloudflare/vitest-pool-workers'
 import {defineConfig} from 'vitest/config'
