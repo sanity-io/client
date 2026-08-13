@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs'
 import {createServer, type IncomingMessage, type Server} from 'node:http'
 import {type AddressInfo, type Socket} from 'node:net'
 import {join as joinPath} from 'node:path'
-import {TLSSocket} from 'node:tls'
+import {getCACertificates, setDefaultCACertificates, TLSSocket} from 'node:tls'
 
 // Load pre-generated test certificates - a server cert signed by the test CA
 // in `certs/ca.pem`, so the client can verify it for real instead of
@@ -479,20 +479,40 @@ describe('proxy configuration', () => {
       expect(body).toBe(PLAIN_HTTP_RESPONSE_BODY)
     })
 
-    // Skipped under get-it v9 / undici: `EnvHttpProxyAgent` snapshots the
-    // HTTPS_PROXY value at construction time, and the default Node fetch is
-    // built at module load — so setting the env var inside the test no
-    // longer takes effect. Real-world usage (env var set before process
-    // start) continues to work, but we can't exercise that swap mid-test.
-    test.skip('uses HTTPS_PROXY environment variable automatically', async () => {
-      const originalHttpsProxy = process.env.HTTPS_PROXY
-      process.env.HTTPS_PROXY = `http://127.0.0.1:${proxyPort}`
+    test('uses HTTPS_PROXY environment variable automatically', async () => {
+      // The file-local `createClient` wrapper above always substitutes the
+      // active mock for the no-explicit-proxy case (see its comment), so it
+      // can't exercise this. This needs the unwrapped `createCoreClient` -
+      // the same production client the "production resolveFetch tunnels..."
+      // test above uses - whose config `resolveFetch` falls through to the
+      // real `src/http/nodeMiddleware.ts`.
+      //
+      // `vi.stubEnv` runs before that `resolveFetch` is ever invoked with no
+      // explicit proxy, so the lazily-built, module-cached default fetch
+      // (`envDefaultFetch` in `nodeMiddleware.ts`) is still unbuilt when this
+      // test's request creates it, and the `EnvHttpProxyAgent` undici
+      // constructs snapshots the stubbed value correctly.
+      vi.stubEnv('HTTPS_PROXY', `http://127.0.0.1:${proxyPort}`)
+
+      // The production dispatcher takes no `ca` option (unlike
+      // `createCaTrustingProxyFetch()` above), so it TLS-verifies the
+      // tunnelled connection against Node's real default trust store. The
+      // `beforeEach` comment already ruled out `NODE_EXTRA_CA_CERTS` (read
+      // once at process start); `tls.setDefaultCACertificates()` is the
+      // runtime equivalent, so extend the real default store with the test
+      // CA instead. Target `localhost` (via `apiHost`/`useProjectHostname`,
+      // rather than the usual `abc123.api.sanity.io`) so the requested
+      // hostname matches the test cert's SAN list.
+      const originalCaCertificates = getCACertificates('default')
+      setDefaultCACertificates([...originalCaCertificates, testCaCert])
 
       try {
-        const client = createClient({
+        const client = createCoreClient({
           projectId: 'abc123',
           dataset: 'production',
           apiVersion: '2021-06-07',
+          apiHost: 'https://localhost',
+          useProjectHostname: false,
           useCdn: false,
           // No explicit proxy option - should use env var
         })
@@ -500,13 +520,10 @@ describe('proxy configuration', () => {
         await client.fetch('*[_type == "post"]')
 
         expect(connectRequests.length).toBe(1)
-        expect(connectRequests[0].url).toBe('abc123.api.sanity.io:443')
+        expect(connectRequests[0].url).toBe('localhost:443')
       } finally {
-        if (originalHttpsProxy === undefined) {
-          delete process.env.HTTPS_PROXY
-        } else {
-          process.env.HTTPS_PROXY = originalHttpsProxy
-        }
+        setDefaultCACertificates(originalCaCertificates)
+        vi.unstubAllEnvs()
       }
     })
 
