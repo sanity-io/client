@@ -147,6 +147,7 @@ export async function updateDocumentTitle(_id, title) {
     - [Downloading MP4 renditions](#downloading-mp4-renditions)
   - [Invoking functions](#invoking-functions)
     - [Choosing a stack](#choosing-a-stack)
+    - [Scoping to an organization](#scoping-to-an-organization)
     - [Return values and timeouts](#return-values-and-timeouts)
 - [License](#license)
 - [Migrate](#migrate)
@@ -2456,7 +2457,6 @@ Call a Sanity Pubsub Function on demand. These APIs are available on the `client
 
 Functions are addressed by the `name` they are declared with in your blueprint. Names are unique within a stack. The client needs a `stackId` in order to resolve. Configure it once on the client, or pass it per call.
 
-
 ```js
 import {createClient} from '@sanity/client'
 
@@ -2494,9 +2494,33 @@ const summary = await client.functions.invoke<{words: number}>('summarize', {
 await client.functions.invoke('my-function', {stackId: 'another-stack-id'})
 ```
 
-Resolving the name costs one extra request per call: the client reads the stack to find the function, then invokes it. If neither the request nor the config supplies a `stackId`, the call rejects without touching the network. 
+Resolving the name takes one extra request per call: the client reads the stack to find the function, then invokes it. If neither the request nor the config supplies a `stackId`, the call rejects without touching the network.
 
 Invoking a name the stack doesn't declare rejects.
+
+#### Scoping to an organization
+
+Project scope is the default. For an organization-scoped stack, set `organizationId`:
+
+```js
+const client = createClient({
+  projectId: 'your-project-id',
+  apiVersion: '2025-02-19',
+  token: 'valid-token',
+  stackId: 'your-stack-id',
+  organizationId: 'your-organization-id',
+})
+```
+
+It can also be passed per call, and wins over the client config:
+
+```js
+await client.functions.invoke('my-function', {organizationId: 'another-organization-id'})
+```
+
+An `organizationId` takes precedence over `projectId`, since a stack is only ever resolvable at one scope. `projectId` becomes optional in that case, provided the client is also configured with `useProjectHostname: false`.
+
+Scope has to match the token. A project-scoped token gets `403` on an organization-scoped stack; mint one that matches with `sanity blueprints mint-deploy-token --organization-id <id>`.
 
 #### Return values and timeouts
 

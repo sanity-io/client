@@ -9,6 +9,8 @@ const API_VERSION = '2025-02-19'
 const BASE = `/v${API_VERSION}`
 const STACK_ID = 'ST-1234567890'
 const OTHER_STACK_ID = 'ST-9876543210'
+const ORG_ID = 'oOrG12345'
+const OTHER_ORG_ID = 'oOtHeR9999'
 
 // Clients in this suite go through the per-test mock, injected via the
 // public `resolveFetch` config option.
@@ -166,6 +168,85 @@ describe('client.functions.invoke', () => {
     await getClient().functions.invoke('my-func')
 
     expect(mock).toHaveReceivedRequest('POST', invokeUri('fn-abc123'), {headers: scopeHeaders})
+  })
+
+  test('scopes to the organization when `organizationId` is configured', async () => {
+    const orgHeaders = {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': ORG_ID}
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('GET', stackUri(STACK_ID), {headers: orgHeaders})
+      .respond({status: 200, body: STACK})
+    mock
+      .scope(HOST)
+      .on('POST', invokeUri('fn-abc123'), {headers: orgHeaders})
+      .respond({status: 200, body: {ok: true}})
+
+    const client = createClient({
+      projectId: PROJECT_ID,
+      apiVersion: API_VERSION,
+      useCdn: false,
+      token: 'my-token',
+      stackId: STACK_ID,
+      organizationId: ORG_ID,
+    })
+
+    await expect(client.functions.invoke('my-func')).resolves.toEqual({ok: true})
+    // Organization scope wins over the configured project.
+    expect(mock).toHaveReceivedRequest('GET', stackUri(STACK_ID), {
+      headers: {'X-Sanity-Scope-Type': 'organization'},
+    })
+  })
+
+  test('a per-call organizationId overrides the client config', async () => {
+    const orgHeaders = {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': OTHER_ORG_ID}
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('GET', stackUri(STACK_ID), {headers: orgHeaders})
+      .respond({status: 200, body: STACK})
+    mock
+      .scope(HOST)
+      .on('POST', invokeUri('fn-abc123'), {headers: orgHeaders})
+      .respond({status: 200, body: {ok: true}})
+
+    const client = createClient({
+      projectId: PROJECT_ID,
+      apiVersion: API_VERSION,
+      useCdn: false,
+      token: 'my-token',
+      stackId: STACK_ID,
+      organizationId: ORG_ID,
+    })
+
+    await expect(
+      client.functions.invoke('my-func', {organizationId: OTHER_ORG_ID}),
+    ).resolves.toEqual({ok: true})
+  })
+
+  test('organization scope does not require a projectId', async () => {
+    const orgHeaders = {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': ORG_ID}
+    const mock = getActiveMock()
+    const globalHost = 'https://api.sanity.io'
+    mock
+      .scope(globalHost)
+      .on('GET', stackUri(STACK_ID), {headers: orgHeaders})
+      .respond({status: 200, body: STACK})
+    mock
+      .scope(globalHost)
+      .on('POST', invokeUri('fn-abc123'), {headers: orgHeaders})
+      .respond({status: 200, body: {ok: true}})
+
+    const client = createClient({
+      apiVersion: API_VERSION,
+      useProjectHostname: false,
+      useCdn: false,
+      token: 'my-token',
+      stackId: STACK_ID,
+      organizationId: ORG_ID,
+    })
+
+    await expect(client.functions.invoke('my-func')).resolves.toEqual({ok: true})
   })
 
   test('defaults the payload to an empty object when no event is given', async () => {

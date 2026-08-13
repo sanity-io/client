@@ -11,3 +11,7 @@ a per-call `timeout` and an `AbortSignal`.
 Names are only unique within a stack, so resolving one requires a `stackId`, either from the new
 `stackId` client config option or from the request. That resolution costs one extra request per
 call. A function that returns nothing resolves to `undefined`.
+
+Stacks deployed at organization scope are reached with the new `organizationId` client config
+option, or a per-call `organizationId`. It takes precedence over `projectId`, which becomes
+optional in that case.

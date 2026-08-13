@@ -25,6 +25,10 @@ export interface InvokeFunctionRequest {
    */
   stackId?: string
   /**
+   * Organization owning the stack.
+   */
+  organizationId?: string
+  /**
    * Milliseconds to wait for the function to return.
    */
   timeout?: number
@@ -46,10 +50,24 @@ interface StackResource {
 
 type Client = SanityClient | ObservableSanityClient
 
-const scopeHeaders = (config: InitializedClientConfig): Record<string, string> => {
+const scopeHeaders = (
+  config: InitializedClientConfig,
+  request: InvokeFunctionRequest | undefined,
+): Record<string, string> => {
+  const organizationId = request?.organizationId || config.organizationId
+  if (organizationId) {
+    return {
+      'X-Sanity-Scope-Type': 'organization',
+      'X-Sanity-Scope-Id': organizationId,
+    }
+  }
+
   const {projectId} = config
   if (!projectId) {
-    throw new Error('`functions.invoke()` requires a `projectId` to be set in the client config')
+    throw new Error(
+      '`functions.invoke()` requires a `projectId` to be set in the client config, or an ' +
+        '`organizationId` for a stack deployed at organization scope',
+    )
   }
 
   return {
@@ -93,7 +111,7 @@ function _resolveFunctionId(
 ): Observable<string> {
   return _requestObservable<{resources?: StackResource[]}>(client, httpRequest, {
     method: 'GET',
-    uri: `/blueprints/stacks/${stackId}`,
+    url: `/blueprints/stacks/${stackId}`,
     headers,
     signal: request?.signal,
   }).pipe(
@@ -129,7 +147,7 @@ export function _invoke<R = unknown>(
   // (and so a rejected promise) rather than throwing at the call site.
   return defer(() => {
     const config = client.config()
-    const headers = scopeHeaders(config)
+    const headers = scopeHeaders(config, request)
     const stackId = resolveStackId(config, request)
 
     return _resolveFunctionId(client, httpRequest, functionName, stackId, headers, request).pipe(
@@ -141,7 +159,7 @@ export function _invoke<R = unknown>(
       mergeMap((functionId) =>
         _requestObservable<R | undefined>(client, httpRequest, {
           method: 'POST',
-          uri: `/functions/${functionId}/invoke`,
+          url: `/functions/${functionId}/invoke`,
           headers,
           body: {event: {data: request?.event?.data ?? {}}},
           timeout: request?.timeout,

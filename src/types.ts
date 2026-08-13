@@ -261,6 +261,10 @@ export interface ClientConfig {
    * names against. Function names are unique within a stack
    */
   stackId?: string
+  /**
+   * ID of the organization owning the blueprints stack
+   */
+  organizationId?: string
 }
 
 /** @public */

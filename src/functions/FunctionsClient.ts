@@ -46,6 +46,9 @@ export class FunctionsClient {
    * the client config, which costs one extra request per call. Rejects if the
    * stack has no function by that name.
    *
+   * The lookup is scoped to `projectId`, or to `organizationId` when one is set
+   * for a stack deployed at organization scope.
+   *
    * The request stays open until the function finishes, and resolves with its
    * return value, or `undefined` if it returns nothing. Long-running functions
    * may need an explicit `timeout`.
