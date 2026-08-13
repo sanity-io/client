@@ -29,7 +29,7 @@ export type LegacyMiddleware = TransformMiddleware | WrappingMiddleware
  *
  * @internal
  */
-interface ResponseEvent {
+export interface ResponseEvent {
   type: 'response'
   body: unknown
   statusCode: number
@@ -46,7 +46,7 @@ interface ResponseEvent {
  *
  * @internal
  */
-type LegacyRequester = (options: Any) => Observable<ResponseEvent>
+export type LegacyRequester = (options: Any) => Observable<ResponseEvent>
 
 /**
  * Promise-based sibling of {@link LegacyRequester}. Resolves directly to the
@@ -56,7 +56,7 @@ type LegacyRequester = (options: Any) => Observable<ResponseEvent>
  *
  * @internal
  */
-type PromiseRequester = (options: Any) => Promise<ResponseEvent>
+export type PromiseRequester = (options: Any) => Promise<ResponseEvent>
 
 /**
  * Both forms of the transport, sharing a single underlying get-it requester
