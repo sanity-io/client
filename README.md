@@ -148,6 +148,7 @@ export async function updateDocumentTitle(_id, title) {
     - [Working with signed playback information](#working-with-signed-playback-information)
     - [Downloading MP4 renditions](#downloading-mp4-renditions)
   - [Collaboration Comments API](#collaboration-comments-api)
+    - [Configuration](#configuration-1)
     - [Creating comments and replies](#creating-comments-and-replies)
     - [Updating and deleting comments](#updating-and-deleting-comments)
     - [Reactions](#reactions)
@@ -2645,6 +2646,28 @@ client.collaboration.comments.getTargetDocumentRef('drafts.doc-1') // 'canvas:yo
 const comments = await client.collaboration.comments.fetch(
   '*[_type == "sanity.comment" && target.document._ref == $ref]',
   {ref: client.collaboration.comments.getTargetDocumentRef('doc-1')},
+)
+```
+
+Because `target.document._ref` is normalized to the published ID, that query returns the comments for the published document, its drafts and all of its versions. `target.sourceDocumentId` holds the exact document ID the comment was created against, so filter on it to narrow the result to a single draft or version:
+
+```js
+// Comments created on the draft only
+const draftComments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
+  {
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
+    sourceDocumentId: 'drafts.doc-1',
+  },
+)
+
+// Comments created on a single version only
+const versionComments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
+  {
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
+    sourceDocumentId: 'versions.summer-release.doc-1',
+  },
 )
 ```
 
