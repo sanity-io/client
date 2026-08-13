@@ -1,7 +1,0 @@
-{
-  "name": "deno-runtime-test",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "description": "Consumes the packed tarball so Deno resolves @sanity/client the way real consumers do, rather than reaching into dist/ by file path."
-}

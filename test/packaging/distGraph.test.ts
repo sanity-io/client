@@ -1,4 +1,4 @@
-import {existsSync, readFileSync} from 'node:fs'
+import {readFileSync} from 'node:fs'
 import {dirname, resolve} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
@@ -16,9 +16,9 @@ import {describe, expect, test} from 'vitest'
  * walking the built output finds it.
  */
 
-// `__dirname` rather than `import.meta.url`: the happy-dom suite rewrites
-// `import.meta.url` to an http URL, which `node:path` can't resolve.
-const distDir = resolve(__dirname, '../dist')
+// `__dirname` rather than `import.meta.url`: Vite/vitest can rewrite
+// `import.meta.url` in ways `node:path` can't resolve.
+const distDir = resolve(__dirname, '../../dist')
 
 /** Matches `from "x"`, `import "x"` and `import("x")` in generated ESM. */
 const SPECIFIER_RE = /(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+)["']/g
@@ -49,9 +49,10 @@ function reachableSpecifiers(entry: string): Set<string> {
   return bare
 }
 
-// Only meaningful against real build output. The `test:browser` CI job restores
-// it before running this suite; `npm test` on a clean checkout skips.
-describe.skipIf(!existsSync(resolve(distDir, 'index.js')))('dist module graph', () => {
+// This suite only ever runs via `test:packaging`, which requires `pnpm build`
+// first - so a missing `dist/` is a real failure (a broken build, or the
+// script run out of order), not something to skip past quietly.
+describe('dist module graph', () => {
   // Every entry a non-Node runtime can reach. `stega.js` imports `@sanity/client`
   // as a bare specifier, so it re-enters through the `exports` map rather than
   // through this graph walk - which is the correct boundary to stop at.

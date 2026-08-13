@@ -52,6 +52,8 @@ describe('pkg.exports - worker/edge resolution guard', () => {
     'vercel edge': ['edge-light', 'worker', 'browser', 'module', 'import', 'node'],
     deno: ['deno', 'node', 'module', 'import'],
     bun: ['bun', 'node', 'module', 'import'],
+    'react-server': ['react-server', 'node', 'module', 'import'],
+    'sanity-function': ['sanity-function', 'node', 'module', 'import'],
   } as const
 
   for (const [runtime, conditions] of Object.entries(workerRuntimes)) {

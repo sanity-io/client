@@ -225,6 +225,14 @@ jobs:
       - uses: antongolub/action-setup-bun@f0b9f339a7ce9ba1174a58484e4dc9bbd6f7b133 # v1
       - run: pnpm run test:bun
 
+  # TODO(Task 13): this job is a placeholder. The former `runtimes` tree (its
+  # `node` subdirectory) and its `test:node-runtimes` script are gone
+  # (test-suite-cleanup Task 12). The CJS interop guard it ran now lives at
+  # `test/packaging/cjs-interop.test.ts` (run via `pnpm run test:packaging`,
+  # which needs vitest and so a full install, not `--prod`), and the live-API
+  # smoke test now lives at `test/integration/live.test.ts` (`pnpm run
+  # test:integration`), meant to run on a schedule and on version PRs rather
+  # than every PR. Task 13 rewires this job (and the schedule) accordingly.
   node-runtimes:
     runs-on: ubuntu-latest
     needs: [build]
@@ -245,7 +253,6 @@ jobs:
           # The archive is rooted at `dist/` (`upload-artifact` strips the least
           # common ancestor of its paths), so extract it back into place.
           path: dist/
-      - run: pnpm run test:node-runtimes
 
   next-runtime:
     runs-on: ubuntu-latest

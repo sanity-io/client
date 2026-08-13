@@ -10,8 +10,6 @@
     ".changeset",
     "dist",
     "coverage",
-    "runtimes/deno",
-    "runtimes/node",
     "CHANGELOG.md"
   ]
 }

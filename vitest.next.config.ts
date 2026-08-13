@@ -5,7 +5,7 @@ import {configDefaults, defineConfig} from 'vitest/config'
 export default defineConfig({
   test: {
     // Only run tests in the test/next directory
-    exclude: [...configDefaults.exclude, 'runtimes/**', 'test/**'],
+    exclude: [...configDefaults.exclude, 'test/**'],
     // `typecheck.include`/`exclude` are a separate axis from the regular
     // `test.include`/`exclude` above (they govern which `*.test-d.ts` files
     // get type-checked, not executed) and default to every such file in the
