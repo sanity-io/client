@@ -1,8 +1,9 @@
+import type {ClientPerspective} from '@sanity/client'
 import {expect, test} from 'vitest'
 
 import {resolvePerspectives} from '../../src/csm/resolvePerspectives'
 
-test.each([
+test.each<[Exclude<ClientPerspective, 'raw'>, string[]]>([
   ['previewDrafts', ['drafts', 'published']],
   ['drafts', ['drafts', 'published']],
   ['published', ['published']],
@@ -18,5 +19,5 @@ test.each([
     ['rABC123', 'drafts', 'published'],
   ],
 ])('resolvePerspectives(%s)', (perspective, shouldEqual) => {
-  expect(resolvePerspectives(perspective as unknown as any)).toEqual(shouldEqual)
+  expect(resolvePerspectives(perspective)).toEqual(shouldEqual)
 })

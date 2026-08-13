@@ -13,6 +13,11 @@ import {describe, expect, test} from 'vitest'
 import {getActiveMock} from '../helpers/mockFetch'
 import {getClient, projectHost} from './helpers'
 
+/** Narrows an array element to read the server-generated `_key` the response-document type doesn't declare. */
+function hasKey(value: unknown): value is {_key: string} {
+  return typeof value === 'object' && value !== null && '_key' in value
+}
+
 describe('mutations', () => {
   test('can create documents', async () => {
     const doc = {_id: 'abc123', _type: 'post', name: 'Raptor'}
@@ -166,8 +171,10 @@ describe('mutations', () => {
 
     const res = await getClient().create(doc, {autoGenerateArrayKeys: true})
     expect(res._id, 'document id returned').toEqual('abc123')
-    // typings don't support the implicit `_key` on arrays, yet
-    expect((res.genus[0] as any)._key, 'array keys generated returned').toEqual('r4p70r')
+    // Typings don't support the implicit `_key` on arrays, yet, so narrow
+    // with a guard instead of casting to read it.
+    const [firstGenus] = res.genus
+    expect(hasKey(firstGenus) && firstGenus._key, 'array keys generated returned').toEqual('r4p70r')
   })
 
   test('can tell create() to do a dry-run', async () => {
