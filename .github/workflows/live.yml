@@ -6,9 +6,11 @@ on:
     - cron: '0 4 * * *'
   workflow_dispatch:
   # The changesets version pull request, so a release is never cut without a live
-  # check. To promote this to every PR, delete the `branches`/`paths` filters below.
+  # check. `main` (v8) and `v7` (the maintenance branch) both cut releases through
+  # changesets (see release.yml), so both are covered here. To promote this to every
+  # PR, delete the `branches`/`paths` filters below.
   pull_request:
-    branches: [main]
+    branches: [main, v7]
     paths: ['.changeset/**']
 
 concurrency:

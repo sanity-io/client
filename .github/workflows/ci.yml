@@ -208,8 +208,9 @@ jobs:
       - run: pnpm run test:react-server
 
   deno-runtime:
+    # No `needs: [build]`: `vitest.deno.config.ts` resolves through `sourceAlias`, same
+    # reasoning as `vercel-edge` above - this job never touches `dist/`.
     runs-on: ubuntu-latest
-    needs: [build]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -217,32 +218,25 @@ jobs:
         with:
           cache: pnpm
           node-version: lts/*
-      # This job needs a full install: `deno test` type-checks the suite and resolves
-      # `@types/node`, which is a devDependency. npm's flat node_modules happened to
-      # expose it even under `--omit=dev`; pnpm's isolated layout does not.
-      #
-      # This job (like `bun-runtime` below) now runs the full suite rather than a
-      # two-line smoke file, and the full suite needs devDependencies (vitest itself
-      # included), so it can no longer install with `--prod` to catch a devDependency
-      # leaking into a published entry point either. That guard now lives in
-      # `test/exports.test.ts` and `test/packaging/` (entry-point resolution) and in
-      # `knip` (dependency classification) instead of in this job's install step.
+      # This job needs a full install: `test:deno` now runs the full suite through
+      # `npm:vitest` (not `deno test`), and vitest - like the rest of the suite's
+      # devDependencies - is unavailable under `--prod`. Confirmed empirically: `pnpm
+      # install --frozen-lockfile --prod --ignore-scripts` here fails immediately with
+      # "Could not find vitest in a node_modules folder." This job (like `bun-runtime`
+      # below) can therefore no longer use `--prod --ignore-scripts` to catch a
+      # devDependency leaking into a published entry point either - that guard now
+      # lives in `test/exports.test.ts` and `test/packaging/` (entry-point resolution)
+      # and in `knip` (dependency classification) instead of in this job's install step.
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v8
-        name: Restore build output
-        with:
-          name: build-output-${{ github.run_id }}
-          # The archive is rooted at `dist/` (`upload-artifact` strips the least
-          # common ancestor of its paths), so extract it back into place.
-          path: dist/
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
       - run: pnpm run test:deno
 
   bun-runtime:
+    # No `needs: [build]`: the default `vitest.config.ts` this job runs against also
+    # resolves through `sourceAlias`, same reasoning as `vercel-edge` above.
     runs-on: ubuntu-latest
-    needs: [build]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -257,13 +251,6 @@ jobs:
       # `test/exports.test.ts` and `test/packaging/` (entry-point resolution) and in
       # `knip` (dependency classification) instead of in this job's install step.
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v8
-        name: Restore build output
-        with:
-          name: build-output-${{ github.run_id }}
-          # The archive is rooted at `dist/` (`upload-artifact` strips the least
-          # common ancestor of its paths), so extract it back into place.
-          path: dist/
       - uses: antongolub/action-setup-bun@f0b9f339a7ce9ba1174a58484e4dc9bbd6f7b133 # v1
       - run: pnpm run test:bun
 
