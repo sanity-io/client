@@ -129,6 +129,15 @@ describe('collaboration.comments write results', () => {
     >()
   })
 
+  test('getTargetDocumentRef returns a global document reference', () => {
+    expectTypeOf(comments.getTargetDocumentRef('doc-1')).toEqualTypeOf<
+      CollaborationCommentDocument['target']['document']['_ref']
+    >()
+    expectTypeOf(observableComments.getTargetDocumentRef('doc-1')).toEqualTypeOf<
+      CollaborationCommentDocument['target']['document']['_ref']
+    >()
+  })
+
   test('writes are not void', () => {
     // @ts-expect-error - create resolves to the created comment
     expectTypeOf(comments.create(body)).toEqualTypeOf<Promise<void>>()

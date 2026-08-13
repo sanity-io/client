@@ -320,52 +320,30 @@ describe('collaboration.comments', async () => {
     ).rejects.toThrow('Comment comment-1 not found')
   })
 
-  test.skipIf(isEdge)('fetches comments with structured query options', async () => {
-    const comments: CollaborationCommentDocument[] = [
-      {
-        _id: 'comment-1',
-        _type: 'sanity.comment',
-        _createdAt: '2026-07-22T09:58:00.000Z',
-        _updatedAt: '2026-07-22T09:58:00.000Z',
-        _rev: 'rev-1',
-        message,
-        reactions: [],
-        status: 'open',
-        target: {
-          document: {
-            _ref: 'canvas:canvas-123:doc-1',
-            _type: 'globalDocumentReference',
-            _weak: true,
-          },
-          documentType: 'article',
-          sourceDocumentId: 'doc-1',
-        },
-      },
-    ]
+  test.skipIf(isEdge)('fetches comment documents with a GROQ query and params', async () => {
+    const comments: CollaborationCommentDocument[] = [commentDocument]
+    const query =
+      '*[_type == "sanity.comment" && target.document._ref == $ref] | order(_createdAt desc)[0...50]'
 
     nock(apiHost)
       .get('/v2026-07-18/collaboration/comments/query')
       .query({
         $ref: JSON.stringify('canvas:canvas-123:doc-1'),
         organizationId,
-        query:
-          '*[_type == "sanity.comment" && (target.document._ref == $ref)] | order(_createdAt desc)[0...50]',
+        query,
         resourceId: resource.id,
         resourceType: resource.type,
       })
       .reply(200, {result: comments})
 
     await expect(
-      getClient().collaboration.comments.fetch({
-        filter: 'target.document._ref == $ref',
-        orderings: [{field: '_createdAt', direction: 'desc'}],
-        params: {ref: 'canvas:canvas-123:doc-1'},
-        slice: [0, 50],
+      getClient().collaboration.comments.fetch<CollaborationCommentDocument[]>(query, {
+        ref: 'canvas:canvas-123:doc-1',
       }),
     ).resolves.toEqual(comments)
   })
 
-  test.skipIf(isEdge)('fetches comments with raw GROQ', async () => {
+  test.skipIf(isEdge)('fetches comments with a projection', async () => {
     nock(apiHost)
       .get('/v2026-07-18/collaboration/comments/query')
       .query({
@@ -386,31 +364,13 @@ describe('collaboration.comments', async () => {
     ).resolves.toEqual({open: []})
   })
 
-  test.skipIf(isEdge)('builds the document ref from targetDocumentId', async () => {
-    nock(apiHost)
-      .get('/v2026-07-18/collaboration/comments/query')
-      .query({
-        organizationId,
-        query:
-          '*[_type == "sanity.comment" && target.document._ref == "canvas:canvas-123:doc-1" && (status == "open")]',
-        resourceId: resource.id,
-        resourceType: resource.type,
-      })
-      .reply(200, {result: []})
-
-    await expect(
-      getClient().collaboration.comments.fetch({
-        targetDocumentId: 'drafts.doc-1',
-        filter: 'status == "open"',
-      }),
-    ).resolves.toEqual([])
-  })
-
   test('throws when organizationId or resource is missing', () => {
-    expect(() => getClient({organizationId: undefined}).collaboration.comments.fetch()).toThrow(
-      '`organizationId` must be configured to use collaboration comments',
-    )
-    expect(() => getClient({resource: undefined}).collaboration.comments.fetch()).toThrow(
+    const query = '*[_type == "sanity.comment"]'
+
+    expect(() =>
+      getClient({organizationId: undefined}).collaboration.comments.fetch(query),
+    ).toThrow('`organizationId` must be configured to use collaboration comments')
+    expect(() => getClient({resource: undefined}).collaboration.comments.fetch(query)).toThrow(
       '`resource` must be configured to use collaboration comments',
     )
   })
@@ -430,16 +390,51 @@ describe('collaboration.comments', async () => {
     )
   })
 
-  test('rejects queries that exceed the max URL length', async () => {
-    await expect(
-      getClient().collaboration.comments.fetch({filter: `title == "${'x'.repeat(20000)}"`}),
-    ).rejects.toThrow('Query too large for request URL')
+  test('builds target document references from the configured resource', () => {
+    const {comments} = getClient().collaboration
 
-    await expect(
-      firstValueFrom(
-        getClient().collaboration.comments.listen({filter: `title == "${'x'.repeat(20000)}"`}),
-      ),
-    ).rejects.toThrow('Query too large for listener')
+    expect(comments.getTargetDocumentRef('doc-1')).toBe('canvas:canvas-123:doc-1')
+    expect(
+      getClient({
+        resource: {type: 'dataset', id: 'project-123.production'},
+      }).collaboration.comments.getTargetDocumentRef('doc-1'),
+    ).toBe('dataset:project-123.production:doc-1')
+  })
+
+  test('normalizes draft and version ids in target document references', () => {
+    const {comments} = getClient().collaboration
+
+    expect(comments.getTargetDocumentRef('drafts.doc-1')).toBe('canvas:canvas-123:doc-1')
+    expect(comments.getTargetDocumentRef('versions.summer-drop.doc-1')).toBe(
+      'canvas:canvas-123:doc-1',
+    )
+  })
+
+  test('throws when building a target document reference without a resource or id', () => {
+    expect(() =>
+      getClient({resource: undefined}).collaboration.comments.getTargetDocumentRef('doc-1'),
+    ).toThrow('`resource` must be configured to use collaboration comments')
+    expect(() => getClient().collaboration.comments.getTargetDocumentRef('')).toThrow(
+      'Document ID must be provided',
+    )
+  })
+
+  test('builds target document references from the observable namespace', () => {
+    const {comments} = getClient().observable.collaboration
+
+    expect(comments.getTargetDocumentRef('drafts.doc-1')).toBe('canvas:canvas-123:doc-1')
+  })
+
+  test('rejects queries that exceed the max URL length', async () => {
+    const query = `*[_type == "sanity.comment" && title == "${'x'.repeat(20000)}"]`
+
+    await expect(getClient().collaboration.comments.fetch(query)).rejects.toThrow(
+      'Query too large for request URL',
+    )
+
+    await expect(firstValueFrom(getClient().collaboration.comments.listen(query))).rejects.toThrow(
+      'Query too large for listener',
+    )
   })
 
   test.skipIf(isEdge)('supports the observable comments namespace', async () => {
@@ -487,7 +482,9 @@ describe('collaboration.comments', async () => {
 
     const {comments} = getClient().observable.collaboration
 
-    await expect(firstValueFrom(comments.fetch())).resolves.toEqual([])
+    await expect(firstValueFrom(comments.fetch('*[_type == "sanity.comment"]'))).resolves.toEqual(
+      [],
+    )
     await expect(
       firstValueFrom(
         comments.create({
@@ -528,7 +525,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
           $ref: JSON.stringify('canvas:canvas-123:doc-1'),
           includeResult: 'true',
           organizationId,
-          query: '*[_type == "sanity.comment" && (target.document._ref == $ref)]',
+          query: '*[_type == "sanity.comment" && target.document._ref == $ref]',
           resourceId: resource.id,
           resourceType: resource.type,
           tag: 'comments.listen',
@@ -561,10 +558,8 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
 
       const event = await firstValueFrom(
         client.collaboration.comments.listen(
-          {
-            filter: 'target.document._ref == $ref',
-            params: {ref: 'canvas:canvas-123:doc-1'},
-          },
+          '*[_type == "sanity.comment" && target.document._ref == $ref]',
+          {ref: 'canvas:canvas-123:doc-1'},
           {
             includeResult: true,
             tag: 'listen',
@@ -588,7 +583,7 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       server.close()
     })
 
-    test('listens with a raw GROQ query and params', async () => {
+    test('listens without listener options', async () => {
       expect.assertions(2)
 
       const server = await createSseServer(({request, channel}) => {

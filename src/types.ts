@@ -1909,8 +1909,6 @@ export type {
   CollaborationCommentReactionShortName,
   CollaborationCommentsListenOptions,
   CollaborationCommentsRequestOptions,
-  CollaborationCommentsStructuredFetchOptions,
-  CollaborationCommentsStructuredListenOptions,
   CollaborationCommentStatus,
   CollaborationCommentsWriteOptions,
   CollaborationCommentTarget,

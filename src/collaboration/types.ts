@@ -1,7 +1,6 @@
 import type {
   Any,
   ListenOptions,
-  QueryParams,
   RequestOptions,
   ResumableListenOptions,
   SanityDocument,
@@ -31,47 +30,6 @@ export type CollaborationCommentsWriteOptions = CollaborationCommentsRequestOpti
 }
 
 /**
- * Structured query options for `collaboration.comments.fetch`.
- *
- * Request options such as `signal` and `tag` are passed as a trailing argument,
- * the same way as `client.fetch(query, params, options)`.
- *
- * ### Example
- * ```ts
- * // Open comments on a document, newest first
- * await client.collaboration.comments.fetch({
- *   targetDocumentId: 'doc-1',
- *   filter: 'status == "open"',
- *   orderings: [{field: '_createdAt', direction: 'desc'}],
- *   slice: [0, 50],
- * })
- * ```
- *
- * @alpha
- */
-export interface CollaborationCommentsStructuredFetchOptions {
-  /**
-   * GROQ filter appended to the built-in `_type == "sanity.comment"` filter.
-   * The string is interpolated into the query as-is, so pass untrusted values
-   * through `params` instead of embedding them in the filter.
-   */
-  filter?: string
-  /** Result orderings, applied with the GROQ `order()` function */
-  orderings?: {field: string; direction: 'asc' | 'desc'}[]
-  /** Values for GROQ parameters (`$param`) used in `filter` */
-  params?: QueryParams
-  /** Result pagination, applied as a GROQ slice, e.g. `[0...50]` */
-  slice?: [number, number]
-  /**
-   * Only return comments on the given document. The client builds the
-   * `target.document._ref` value from the configured `resource` and the
-   * published ID of the given document ID (draft and version IDs are
-   * normalized, since comment refs always use published IDs).
-   */
-  targetDocumentId?: string
-}
-
-/**
  * Listener options for `collaboration.comments.listen`.
  *
  * @alpha
@@ -79,39 +37,30 @@ export interface CollaborationCommentsStructuredFetchOptions {
 export type CollaborationCommentsListenOptions = ListenOptions | ResumableListenOptions
 
 /**
- * Structured query options for `collaboration.comments.listen`.
- *
- * Listener options such as `events`, `includeResult` and `tag` are passed as a
- * trailing argument, the same way as `client.listen(query, params, options)`.
+ * Status of a comment thread. Replies always share the status of their parent comment.
  *
  * @alpha
  */
-export interface CollaborationCommentsStructuredListenOptions {
-  /**
-   * GROQ filter appended to the built-in `_type == "sanity.comment"` filter.
-   * The string is interpolated into the query as-is, so pass untrusted values
-   * through `params` instead of embedding them in the filter.
-   */
-  filter?: string
-  /** Values for GROQ parameters (`$param`) used in `filter` */
-  params?: QueryParams
-  /**
-   * Only listen for comments on the given document. The client builds the
-   * `target.document._ref` value from the configured `resource` and the
-   * published ID of the given document ID (draft and version IDs are
-   * normalized, since comment refs always use published IDs).
-   */
-  targetDocumentId?: string
-}
-
-/** @alpha */
 export type CollaborationCommentStatus = 'open' | 'resolved'
 
-/** @alpha */
+/**
+ * Emoji short names that can be used as comment reactions.
+ *
+ * @alpha
+ */
 export type CollaborationCommentReactionShortName =
-  ':-1:' | ':+1:' | ':eyes:' | ':heart:' | ':heavy_plus_sign:' | ':rocket:'
+  | ':-1:'
+  | ':+1:'
+  | ':eyes:'
+  | ':heart:'
+  | ':heavy_plus_sign:'
+  | ':rocket:'
 
-/** @alpha */
+/**
+ * A single Portable Text block, as used in comment messages and content snapshots.
+ *
+ * @alpha
+ */
 export interface CollaborationCommentPortableTextBlock {
   _type: string
   children: Array<{_type: string; [key: string]: Any}>
@@ -132,8 +81,13 @@ export type CollaborationCommentMessage = CollaborationCommentPortableTextBlock[
  */
 export interface CollaborationCommentDocument extends SanityDocument {
   _type: 'sanity.comment'
-  _system?: {createdBy?: string}
+  _system?: {
+    /** ID of the user that created the comment */
+    createdBy?: string
+  }
+  /** ID shared by a top-level comment and all of its replies */
   threadId?: string
+  /** Set on replies, pointing to the comment being replied to */
   parentCommentId?: string
   message: CollaborationCommentMessage
   reactions: {
@@ -142,6 +96,7 @@ export interface CollaborationCommentDocument extends SanityDocument {
     userId: string
     addedAt: string
   }[]
+  /** Arbitrary metadata stored with the comment by the creating application */
   context?: Record<string, unknown>
   target: {
     /** Global document reference (`resourceType:resourceId:documentId`, using the published document ID) */
@@ -159,8 +114,10 @@ export interface CollaborationCommentDocument extends SanityDocument {
       selection?: Record<string, Any>
     }
   }
+  /** Copy of the commented content, as it looked when the comment was created */
   contentSnapshot?: CollaborationCommentPortableTextBlock[]
   status: CollaborationCommentStatus
+  /** Set when the message has been updated after creation */
   lastEditedAt?: string
 }
 
@@ -195,6 +152,8 @@ export type CollaborationCommentTarget = {
 )
 
 /**
+ * Comment to create with `collaboration.comments.create`.
+ *
  * A top-level comment requires `target`; a reply requires `parentCommentId` (never both).
  * Replies inherit `target`, `status`, and `threadId` from the parent comment.
  *
@@ -243,6 +202,8 @@ export type CollaborationCommentCreate = {
  * @alpha
  */
 export interface CollaborationCommentUpdate {
+  /** Replaces the current message */
   message?: CollaborationCommentMessage
+  /** Cascades to the comment's replies */
   status?: CollaborationCommentStatus
 }

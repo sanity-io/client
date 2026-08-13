@@ -27,8 +27,6 @@ import {
   type CollaborationCommentReactionShortName,
   type CollaborationCommentsListenOptions,
   type CollaborationCommentsRequestOptions,
-  type CollaborationCommentsStructuredFetchOptions,
-  type CollaborationCommentsStructuredListenOptions,
   type CollaborationCommentsWriteOptions,
   type CollaborationCommentUpdate,
   possibleRequestOptions,
@@ -62,42 +60,22 @@ function resourceQuery(client: Client): Record<string, string> {
   }
 }
 
-function buildFilter(
+/** @internal */
+export function _getTargetDocumentRef(
   client: Client,
-  options: {filter?: string; targetDocumentId?: string} = {},
-): string {
-  const conditions = ['_type == "sanity.comment"']
-
-  if (options.targetDocumentId) {
-    const {resourceType, resourceId} = resourceQuery(client)
-    const ref = `${resourceType}:${resourceId}:${getPublishedId(options.targetDocumentId)}`
-    conditions.push(`target.document._ref == ${JSON.stringify(ref)}`)
+  documentId: string,
+): CollaborationCommentDocument['target']['document']['_ref'] {
+  if (!documentId) {
+    throw new Error('Document ID must be provided')
   }
 
-  if (options.filter) {
-    conditions.push(`(${options.filter})`)
+  const {resource} = client.config()
+
+  if (!resource) {
+    throw new Error('`resource` must be configured to use collaboration comments')
   }
 
-  return conditions.join(' && ')
-}
-
-function buildStructuredFetchQuery(
-  client: Client,
-  options: CollaborationCommentsStructuredFetchOptions = {},
-): string {
-  const {orderings, slice} = options
-  let query = `*[${buildFilter(client, options)}]`
-
-  if (orderings?.length) {
-    const order = orderings.map((ordering) => `${ordering.field} ${ordering.direction}`)
-    query += ` | order(${order.join(', ')})`
-  }
-
-  if (slice) {
-    query += `[${slice[0]}...${slice[1]}]`
-  }
-
-  return query
+  return `${resource.type}:${resource.id}:${getPublishedId(documentId)}`
 }
 
 type WriteArgs = [
@@ -256,22 +234,6 @@ export function _fetch<R>(
 }
 
 /** @internal */
-export function _fetchStructured<R>(
-  client: Client,
-  httpRequest: HttpRequest,
-  options: CollaborationCommentsStructuredFetchOptions = {},
-  requestOptions?: CollaborationCommentsRequestOptions,
-): Observable<R> {
-  return _fetch(
-    client,
-    httpRequest,
-    buildStructuredFetchQuery(client, options),
-    options.params,
-    requestOptions,
-  )
-}
-
-/** @internal */
 export function _listen<
   Opts extends CollaborationCommentsListenOptions = CollaborationCommentsListenOptions,
 >(
@@ -304,15 +266,4 @@ export function _listen<
     uri,
     events,
   )
-}
-
-/** @internal */
-export function _listenStructured<
-  Opts extends CollaborationCommentsListenOptions = CollaborationCommentsListenOptions,
->(
-  client: Client,
-  options: CollaborationCommentsStructuredListenOptions = {},
-  listenOptions?: Opts,
-): Observable<ListenEventFromOptions<CollaborationCommentDocument, Opts>> {
-  return _listen(client, `*[${buildFilter(client, options)}]`, options.params, listenOptions)
 }
