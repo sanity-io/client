@@ -18,8 +18,19 @@ describe('pkg.exports["."]', () => {
     const node = await import('../src/index.node')
     expect(Object.keys(source)).toEqual(Object.keys(node))
   })
-  // oxlint-disable-next-line no-warning-comments
-  // @TODO disabling this test until we no longer have the migrationNotice.ts
+  // This was disabled pending the removal of `src/migrationNotice.ts`, on
+  // the assumption that file's removal meant the default export itself was
+  // going away too. That premise no longer holds: `migrationNotice.ts` is
+  // indeed gone, but its warning (`printNoDefaultExport`) now lives in
+  // `src/warnings.ts` and is still called from
+  // `src/defineDeprecatedCreateClient.ts`, which both `src/index.ts` and
+  // `src/index.node.ts` still `export default`. This has been the shape
+  // since at least the CHANGELOG entries for #105/#117 - a long-standing,
+  // deliberately-kept-for-back-compat deprecated default export, not an
+  // oversight. Confirmed by running this unskipped: it fails with
+  // `Received: [Function deprecatedCreateClient]`. Re-enabling requires an
+  // actual decision to drop the deprecated default export (a breaking
+  // change), which is out of scope here.
   test.skip('default exports should not be used', async () => {
     await expect(
       import('../src/index'),
