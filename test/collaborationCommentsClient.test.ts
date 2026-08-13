@@ -17,6 +17,41 @@ const message = [
   },
 ]
 
+const commentDocument: CollaborationCommentDocument = {
+  _id: 'comment-1',
+  _type: 'sanity.comment',
+  _createdAt: '2026-07-22T09:58:00.000Z',
+  _updatedAt: '2026-07-22T09:58:00.000Z',
+  _rev: 'rev-1',
+  message,
+  reactions: [],
+  status: 'open',
+  target: {
+    document: {
+      _ref: 'canvas:canvas-123:doc-1',
+      _type: 'globalDocumentReference',
+      _weak: true,
+    },
+    documentType: 'article',
+    sourceDocumentId: 'doc-1',
+  },
+}
+
+const replyDocument: CollaborationCommentDocument = {
+  ...commentDocument,
+  _id: 'reply-1',
+  parentCommentId: 'comment-1',
+}
+
+/** The write endpoints pass the org-store mutate envelope through as-is. */
+const mutationResponse = (
+  results: {
+    id: string
+    operation: 'create' | 'update' | 'delete'
+    document?: CollaborationCommentDocument
+  }[],
+) => ({transactionId: 'txn-1', results})
+
 const getClient = (config: Partial<ClientConfig> = {}) =>
   createClient({
     apiHost,
@@ -55,11 +90,14 @@ describe('collaboration.comments', async () => {
           tag: 'comments.create',
           transactionId: 'txn-123',
         })
-        .reply(200, {ok: true})
+        .reply(
+          200,
+          mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+        )
 
       const client = getClient({requestTagPrefix: 'comments'})
 
-      await client.collaboration.comments.create(
+      const created = await client.collaboration.comments.create(
         {
           target: {
             documentId: 'doc-1',
@@ -77,6 +115,7 @@ describe('collaboration.comments', async () => {
         },
         message,
       })
+      expect(created).toEqual(commentDocument)
     },
   )
 
@@ -93,9 +132,9 @@ describe('collaboration.comments', async () => {
         resourceId: resource.id,
         resourceType: resource.type,
       })
-      .reply(200, {ok: true})
+      .reply(200, mutationResponse([{id: 'reply-1', operation: 'create', document: replyDocument}]))
 
-    await getClient().collaboration.comments.create({
+    const reply = await getClient().collaboration.comments.create({
       parentCommentId: 'comment-1',
       message,
     })
@@ -104,6 +143,7 @@ describe('collaboration.comments', async () => {
       parentCommentId: 'comment-1',
       message,
     })
+    expect(reply).toEqual(replyDocument)
   })
 
   test.skipIf(isEdge)('uses resource query parameters', async () => {
@@ -120,7 +160,10 @@ describe('collaboration.comments', async () => {
           resourceId: currentResource.id,
           resourceType: currentResource.type,
         })
-        .reply(200, {ok: true})
+        .reply(
+          200,
+          mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+        )
 
       await getClient({resource: currentResource}).collaboration.comments.create({
         target: {
@@ -132,35 +175,149 @@ describe('collaboration.comments', async () => {
     }
   })
 
+  const commonQuery = {
+    organizationId,
+    resourceId: resource.id,
+    resourceType: resource.type,
+  }
+
   test.skipIf(isEdge)('maps update, delete, and reaction requests', async () => {
     const client = getClient()
-    const commonQuery = {
-      organizationId,
-      resourceId: resource.id,
-      resourceType: resource.type,
+    const resolved: CollaborationCommentDocument = {...commentDocument, status: 'resolved'}
+    const reacted: CollaborationCommentDocument = {
+      ...commentDocument,
+      reactions: [
+        {
+          _key: 'key-1',
+          shortName: ':heart:',
+          userId: 'user-1',
+          addedAt: '2026-07-22T09:58:00.000Z',
+        },
+      ],
     }
 
     nock(apiHost)
       .patch('/v2026-07-18/collaboration/comments/comment%2F1', {status: 'resolved'})
       .query(commonQuery)
-      .reply(200, {ok: true})
+      .reply(200, mutationResponse([{id: 'comment/1', operation: 'update', document: resolved}]))
     nock(apiHost)
       .delete('/v2026-07-18/collaboration/comments/comment%2F1')
       .query(commonQuery)
-      .reply(200)
+      .reply(200, mutationResponse([{id: 'comment/1', operation: 'delete'}]))
     nock(apiHost)
       .post('/v2026-07-18/collaboration/comments/comment%2F1/reactions', {shortName: ':heart:'})
       .query(commonQuery)
-      .reply(200, {ok: true})
+      .reply(200, mutationResponse([{id: 'comment/1', operation: 'update', document: reacted}]))
     nock(apiHost)
       .delete('/v2026-07-18/collaboration/comments/comment%2F1/reactions/%3Aheart%3A')
       .query(commonQuery)
-      .reply(200)
+      .reply(
+        200,
+        mutationResponse([{id: 'comment/1', operation: 'update', document: commentDocument}]),
+      )
 
-    await client.collaboration.comments.update('comment/1', {status: 'resolved'})
-    await client.collaboration.comments.delete('comment/1')
-    await client.collaboration.comments.addReaction('comment/1', ':heart:')
-    await client.collaboration.comments.removeReaction('comment/1', ':heart:')
+    await expect(
+      client.collaboration.comments.update('comment/1', {status: 'resolved'}),
+    ).resolves.toEqual(resolved)
+    await expect(client.collaboration.comments.delete('comment/1')).resolves.toEqual({
+      transactionId: 'txn-1',
+      documentIds: ['comment/1'],
+      results: [{id: 'comment/1', operation: 'delete'}],
+    })
+    await expect(
+      client.collaboration.comments.addReaction('comment/1', ':heart:'),
+    ).resolves.toEqual(reacted)
+    await expect(
+      client.collaboration.comments.removeReaction('comment/1', ':heart:'),
+    ).resolves.toEqual(commentDocument)
+  })
+
+  test.skipIf(isEdge)('returns the comment when a status change cascades to replies', async () => {
+    const resolved: CollaborationCommentDocument = {...commentDocument, status: 'resolved'}
+    const resolvedReply: CollaborationCommentDocument = {...replyDocument, status: 'resolved'}
+
+    nock(apiHost)
+      .patch('/v2026-07-18/collaboration/comments/comment-1', {status: 'resolved'})
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([
+          {id: 'comment-1', operation: 'update', document: resolved},
+          {id: 'reply-1', operation: 'update', document: resolvedReply},
+        ]),
+      )
+
+    await expect(
+      getClient().collaboration.comments.update('comment-1', {status: 'resolved'}),
+    ).resolves.toEqual(resolved)
+  })
+
+  test.skipIf(isEdge)('returns the deleted comment and reply ids', async () => {
+    nock(apiHost)
+      .delete('/v2026-07-18/collaboration/comments/comment-1')
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([
+          {id: 'comment-1', operation: 'delete'},
+          {id: 'reply-1', operation: 'delete'},
+        ]),
+      )
+
+    await expect(getClient().collaboration.comments.delete('comment-1')).resolves.toEqual({
+      transactionId: 'txn-1',
+      documentIds: ['comment-1', 'reply-1'],
+      results: [
+        {id: 'comment-1', operation: 'delete'},
+        {id: 'reply-1', operation: 'delete'},
+      ],
+    })
+  })
+
+  test.skipIf(isEdge)('resolves delete with no document ids when nothing matched', async () => {
+    nock(apiHost)
+      .delete('/v2026-07-18/collaboration/comments/comment-1')
+      .query(commonQuery)
+      .reply(200, mutationResponse([]))
+
+    await expect(getClient().collaboration.comments.delete('comment-1')).resolves.toEqual({
+      transactionId: 'txn-1',
+      documentIds: [],
+      results: [],
+    })
+  })
+
+  test.skipIf(isEdge)('rejects when a write does not match a comment', async () => {
+    const notFound = {
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Comment comment-1 not found',
+    }
+
+    nock(apiHost)
+      .patch('/v2026-07-18/collaboration/comments/comment-1')
+      .query(commonQuery)
+      .reply(404, notFound)
+    nock(apiHost)
+      .post('/v2026-07-18/collaboration/comments/comment-1/reactions')
+      .query(commonQuery)
+      .reply(404, notFound)
+    nock(apiHost)
+      .delete('/v2026-07-18/collaboration/comments/comment-1/reactions/%3Aheart%3A')
+      .query(commonQuery)
+      .reply(404, notFound)
+
+    const client = getClient()
+
+    await expect(
+      client.collaboration.comments.update('comment-1', {status: 'resolved'}),
+    ).rejects.toThrow('Comment comment-1 not found')
+    await expect(client.collaboration.comments.addReaction('comment-1', ':heart:')).rejects.toThrow(
+      'Comment comment-1 not found',
+    )
+    await expect(
+      client.collaboration.comments.removeReaction('comment-1', ':heart:'),
+    ).rejects.toThrow('Comment comment-1 not found')
   })
 
   test.skipIf(isEdge)('fetches comments with structured query options', async () => {
@@ -295,10 +452,64 @@ describe('collaboration.comments', async () => {
         resourceType: resource.type,
       })
       .reply(200, {result: []})
+    nock(apiHost)
+      .post('/v2026-07-18/collaboration/comments')
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+      )
+    nock(apiHost)
+      .delete('/v2026-07-18/collaboration/comments/comment-1')
+      .query(commonQuery)
+      .reply(200, mutationResponse([{id: 'comment-1', operation: 'delete'}]))
+    nock(apiHost)
+      .patch('/v2026-07-18/collaboration/comments/comment-1')
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      )
+    nock(apiHost)
+      .post('/v2026-07-18/collaboration/comments/comment-1/reactions')
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      )
+    nock(apiHost)
+      .delete('/v2026-07-18/collaboration/comments/comment-1/reactions/%3Aheart%3A')
+      .query(commonQuery)
+      .reply(
+        200,
+        mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      )
 
+    const {comments} = getClient().observable.collaboration
+
+    await expect(firstValueFrom(comments.fetch())).resolves.toEqual([])
     await expect(
-      firstValueFrom(getClient().observable.collaboration.comments.fetch()),
-    ).resolves.toEqual([])
+      firstValueFrom(
+        comments.create({
+          target: {documentId: 'doc-1', documentType: 'article'},
+          message,
+        }),
+      ),
+    ).resolves.toEqual(commentDocument)
+    await expect(firstValueFrom(comments.delete('comment-1'))).resolves.toEqual({
+      transactionId: 'txn-1',
+      documentIds: ['comment-1'],
+      results: [{id: 'comment-1', operation: 'delete'}],
+    })
+    await expect(
+      firstValueFrom(comments.update('comment-1', {status: 'resolved'})),
+    ).resolves.toEqual(commentDocument)
+    await expect(firstValueFrom(comments.addReaction('comment-1', ':heart:'))).resolves.toEqual(
+      commentDocument,
+    )
+    await expect(firstValueFrom(comments.removeReaction('comment-1', ':heart:'))).resolves.toEqual(
+      commentDocument,
+    )
   })
 })
 

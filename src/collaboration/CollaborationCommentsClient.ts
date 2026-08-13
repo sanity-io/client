@@ -2,7 +2,13 @@ import {lastValueFrom, type Observable} from 'rxjs'
 
 import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequest, ListenEvent, MutationEvent, QueryParams} from '../types'
+import type {
+  HttpRequest,
+  ListenEvent,
+  MultipleMutationResult,
+  MutationEvent,
+  QueryParams,
+} from '../types'
 import {
   _addReaction,
   _create,
@@ -79,26 +85,30 @@ export class ObservableCollaborationCommentsClient {
    *
    * @param body - Comment to create
    * @param options - Optional request options
+   * @returns The created comment
    */
   create(
     body: CollaborationCommentCreate,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _create(this.#client, this.#httpRequest, body, options)
   }
 
   /**
    * Update the message and/or status of an existing comment.
    *
+   * Updating `status` cascades to the comment's replies.
+   *
    * @param id - Comment document ID
    * @param body - Fields to update
    * @param options - Optional request options
+   * @returns The updated comment
    */
   update(
     id: string,
     body: CollaborationCommentUpdate,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _update(this.#client, this.#httpRequest, id, body, options)
   }
 
@@ -107,8 +117,12 @@ export class ObservableCollaborationCommentsClient {
    *
    * @param id - Comment document ID
    * @param options - Optional request options
+   * @returns Mutation result, where `documentIds` covers the comment and every deleted reply
    */
-  delete(id: string, options?: CollaborationCommentsWriteOptions): Observable<void> {
+  delete(
+    id: string,
+    options?: CollaborationCommentsWriteOptions,
+  ): Observable<MultipleMutationResult> {
     return _delete(this.#client, this.#httpRequest, id, options)
   }
 
@@ -118,12 +132,13 @@ export class ObservableCollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction applied
    */
   addReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _addReaction(this.#client, this.#httpRequest, id, shortName, options)
   }
 
@@ -133,12 +148,13 @@ export class ObservableCollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction removed
    */
   removeReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _removeReaction(this.#client, this.#httpRequest, id, shortName, options)
   }
 
@@ -226,26 +242,30 @@ export class CollaborationCommentsClient {
    *
    * @param body - Comment to create
    * @param options - Optional request options
+   * @returns The created comment
    */
   create(
     body: CollaborationCommentCreate,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_create(this.#client, this.#httpRequest, body, options))
   }
 
   /**
    * Update the message and/or status of an existing comment.
    *
+   * Updating `status` cascades to the comment's replies.
+   *
    * @param id - Comment document ID
    * @param body - Fields to update
    * @param options - Optional request options
+   * @returns The updated comment
    */
   update(
     id: string,
     body: CollaborationCommentUpdate,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_update(this.#client, this.#httpRequest, id, body, options))
   }
 
@@ -254,8 +274,9 @@ export class CollaborationCommentsClient {
    *
    * @param id - Comment document ID
    * @param options - Optional request options
+   * @returns Mutation result, where `documentIds` covers the comment and every deleted reply
    */
-  delete(id: string, options?: CollaborationCommentsWriteOptions): Promise<void> {
+  delete(id: string, options?: CollaborationCommentsWriteOptions): Promise<MultipleMutationResult> {
     return lastValueFrom(_delete(this.#client, this.#httpRequest, id, options))
   }
 
@@ -265,12 +286,13 @@ export class CollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction applied
    */
   addReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_addReaction(this.#client, this.#httpRequest, id, shortName, options))
   }
 
@@ -280,12 +302,13 @@ export class CollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction removed
    */
   removeReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_removeReaction(this.#client, this.#httpRequest, id, shortName, options))
   }
 

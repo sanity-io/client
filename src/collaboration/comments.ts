@@ -11,7 +11,13 @@ import {
   possibleOptions as possibleListenOptions,
 } from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequest, QueryParams, ResumableListenEventNames} from '../types'
+import type {
+  HttpRequest,
+  MultipleMutationResult,
+  MutationOperation,
+  QueryParams,
+  ResumableListenEventNames,
+} from '../types'
 import defaults from '../util/defaults'
 import {getPublishedId} from '../util/getPublishedId'
 import {pick} from '../util/pick'
@@ -94,15 +100,41 @@ function buildStructuredFetchQuery(
   return query
 }
 
-function write(
+type WriteArgs = [
+  client: Client,
+  httpRequest: HttpRequest,
+  method: 'POST' | 'PATCH' | 'DELETE',
+  url: string,
+  body: unknown,
+  options?: CollaborationCommentsWriteOptions,
+]
+
+/**
+ * The write endpoints pass the mutation response through as-is, mirroring
+ * `client.mutate`.
+ */
+interface CommentMutationResponse {
+  transactionId: string
+  results: {id: string; operation: MutationOperation}[]
+}
+
+/**
+ * Writes that mutate a single comment always come back with the document, since
+ * the API requests documents from the org store and 404s when nothing matched.
+ */
+interface CommentDocumentMutationResponse extends CommentMutationResponse {
+  results: {id: string; operation: MutationOperation; document: CollaborationCommentDocument}[]
+}
+
+function write<T>(
   client: Client,
   httpRequest: HttpRequest,
   method: 'POST' | 'PATCH' | 'DELETE',
   url: string,
   body: unknown,
   options: CollaborationCommentsWriteOptions = {},
-): Observable<void> {
-  return _request<void>(client, httpRequest, {
+): Observable<T> {
+  return _request<T>(client, httpRequest, {
     method,
     uri: url,
     body,
@@ -114,14 +146,30 @@ function write(
   })
 }
 
+function writeDocument(...args: WriteArgs): Observable<CollaborationCommentDocument> {
+  return write<CommentDocumentMutationResponse>(...args).pipe(
+    map(({results}) => results[0].document),
+  )
+}
+
+function writeMutationResult(...args: WriteArgs): Observable<MultipleMutationResult> {
+  return write<CommentMutationResponse>(...args).pipe(
+    map(({transactionId, results}) => ({
+      transactionId,
+      documentIds: results.map((result) => result.id),
+      results,
+    })),
+  )
+}
+
 /** @internal */
 export function _create(
   client: Client,
   httpRequest: HttpRequest,
   body: CollaborationCommentCreate,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'POST', '/collaboration/comments', body, options)
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(client, httpRequest, 'POST', '/collaboration/comments', body, options)
 }
 
 /** @internal */
@@ -131,8 +179,8 @@ export function _update(
   id: string,
   body: CollaborationCommentUpdate,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'PATCH', commentUrl(id), body, options)
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(client, httpRequest, 'PATCH', commentUrl(id), body, options)
 }
 
 /** @internal */
@@ -141,8 +189,8 @@ export function _delete(
   httpRequest: HttpRequest,
   id: string,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'DELETE', commentUrl(id), undefined, options)
+): Observable<MultipleMutationResult> {
+  return writeMutationResult(client, httpRequest, 'DELETE', commentUrl(id), undefined, options)
 }
 
 /** @internal */
@@ -152,8 +200,15 @@ export function _addReaction(
   id: string,
   shortName: CollaborationCommentReactionShortName,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'POST', `${commentUrl(id)}/reactions`, {shortName}, options)
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(
+    client,
+    httpRequest,
+    'POST',
+    `${commentUrl(id)}/reactions`,
+    {shortName},
+    options,
+  )
 }
 
 /** @internal */
@@ -163,8 +218,8 @@ export function _removeReaction(
   id: string,
   shortName: CollaborationCommentReactionShortName,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(
     client,
     httpRequest,
     'DELETE',
