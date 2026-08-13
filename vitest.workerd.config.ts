@@ -6,7 +6,7 @@
 import {cloudflareTest} from '@cloudflare/vitest-pool-workers'
 import {defineConfig} from 'vitest/config'
 
-import {sourceAlias} from './vitest.config'
+import {browserOnlyExclude, nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
 
 export default defineConfig({
   plugins: [
@@ -17,7 +17,8 @@ export default defineConfig({
     }),
   ],
   test: {
-    include: ['runtimes/workerd/**/*.test.ts'],
+    ...sharedConfig,
+    exclude: [...nonNodeExclude, ...browserOnlyExclude],
     // Mirror the other runtime suites: resolve `@sanity/client` to source so we
     // don't depend on `npm run build`. The real `exports` map is exercised by
     // the packaging-resolution guard in `test/exports.test.ts` instead.
