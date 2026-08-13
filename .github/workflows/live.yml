@@ -1,0 +1,47 @@
+name: Live API
+
+on:
+  schedule:
+    # 04:00 UTC daily
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  # The changesets version pull request, so a release is never cut without a live
+  # check. To promote this to every PR, delete the `branches`/`paths` filters below.
+  pull_request:
+    branches: [main]
+    paths: ['.changeset/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Live API on ${{ matrix.runtime }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [node, bun, deno, workerd, vercel-edge]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          cache: pnpm
+          node-version: lts/*
+      - run: pnpm install --frozen-lockfile
+      # This is the only place `test/integration/live.test.ts` runs: it resolves
+      # `@sanity/client` through the real `exports` map, so it needs a real build
+      # against `dist/`, not a source alias.
+      - run: pnpm run build
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: matrix.runtime == 'bun'
+      - uses: denoland/setup-deno@v2
+        if: matrix.runtime == 'deno'
+        with:
+          deno-version: v2.x
+      - run: pnpm run test:integration:${{ matrix.runtime }}
