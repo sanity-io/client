@@ -6,6 +6,7 @@ import type {HttpRequest, InitializedClientConfig} from '../types'
 
 /** Function resource types in a blueprint are namespaced under this prefix. */
 const FUNCTION_RESOURCE_PREFIX = 'sanity.function.'
+const INVOKABLE_FUNCTION_TYPE = 'sanity.function.pubsub'
 
 /** @public */
 export interface InvokeFunctionEvent {
@@ -129,6 +130,10 @@ function _resolveFunctionId(
         throw new Error(
           `Function "${functionName}" is declared in stack "${stackId}" but is not deployed`,
         )
+      }
+
+      if (match.type !== INVOKABLE_FUNCTION_TYPE) {
+        throw new Error(`Function invocation is not supported for ${match.type}`)
       }
 
       return match.externalId

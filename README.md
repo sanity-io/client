@@ -2455,6 +2455,8 @@ Available resolutions depend on the source video but typically include `1080p`, 
 
 Call a Sanity Pubsub Function on demand. These APIs are available on the `client.functions` namespace.
 
+Only `sanity.function.pubsub` functions can be invoked this way. Every other type is driven by its own trigger.
+
 Functions are addressed by the `name` they are declared with in your blueprint. Names are unique within a stack. The client needs a `stackId` in order to resolve. Configure it once on the client, or pass it per call.
 
 ```js
@@ -2496,7 +2498,7 @@ await client.functions.invoke('my-function', {stackId: 'another-stack-id'})
 
 Resolving the name takes one extra request per call: the client reads the stack to find the function, then invokes it. If neither the request nor the config supplies a `stackId`, the call rejects without touching the network.
 
-Invoking a name the stack doesn't declare rejects.
+Invoking a name the stack doesn't declare or a non-pubsub function rejects.
 
 #### Scoping to an organization
 

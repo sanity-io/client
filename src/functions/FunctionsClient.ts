@@ -44,7 +44,8 @@ export class FunctionsClient {
    *
    * The name is resolved within the stack given by `stackId` on the request or
    * the client config, which costs one extra request per call. Rejects if the
-   * stack has no function by that name.
+   * stack has no function by that name, or if the name resolves to anything
+   * other than a `sanity.function.pubsub` function.
    *
    * The lookup is scoped to `projectId`, or to `organizationId` when one is set
    * for a stack deployed at organization scope.

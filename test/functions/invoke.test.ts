@@ -34,8 +34,11 @@ const STACK = {
   id: STACK_ID,
   name: 'my-stack',
   resources: [
-    {name: 'my-func', type: 'sanity.function.document', externalId: 'fn-abc123'},
-    {name: 'other-func', type: 'sanity.function.queue', externalId: 'fn-def456'},
+    {name: 'my-func', type: 'sanity.function.pubsub', externalId: 'fn-abc123'},
+    // Only pubsub functions can be invoked on demand.
+    // Other types should be rejected without a request to the Functions service.
+    {name: 'doc-func', type: 'sanity.function.document', externalId: 'fn-def456'},
+    {name: 'cron-func', type: 'sanity.function.cron', externalId: 'fn-ghi789'},
     // A non-function resource sharing a name must not be picked up.
     {name: 'my-func', type: 'sanity.cors.origin', externalId: 'co-000000'},
   ],
@@ -86,10 +89,30 @@ describe('client.functions.invoke', () => {
       .on('GET', stackUri(STACK_ID))
       .respond({
         status: 200,
-        body: {...STACK, resources: [{name: 'pending-func', type: 'sanity.function.document'}]},
+        body: {...STACK, resources: [{name: 'pending-func', type: 'sanity.function.pubsub'}]},
       })
 
     await expect(getClient().functions.invoke('pending-func')).rejects.toThrow('is not deployed')
+  })
+
+  test('rejects a document function without calling the Functions service', async () => {
+    const mock = getActiveMock()
+    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
+
+    await expect(getClient().functions.invoke('doc-func')).rejects.toThrow(
+      'Function invocation is not supported for sanity.function.document',
+    )
+    expect(mock).toHaveReceivedRequestTimes('POST', invokeUri('fn-def456'), 0)
+  })
+
+  test('rejects a cron function without calling the Functions service', async () => {
+    const mock = getActiveMock()
+    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
+
+    await expect(getClient().functions.invoke('cron-func')).rejects.toThrow(
+      'Function invocation is not supported for sanity.function.cron',
+    )
+    expect(mock).toHaveReceivedRequestTimes('POST', invokeUri('fn-ghi789'), 0)
   })
 
   test('a per-call stackId overrides the client config', async () => {
@@ -101,9 +124,7 @@ describe('client.functions.invoke', () => {
         status: 200,
         body: {
           id: OTHER_STACK_ID,
-          resources: [
-            {name: 'my-func', type: 'sanity.function.document', externalId: 'fn-other999'},
-          ],
+          resources: [{name: 'my-func', type: 'sanity.function.pubsub', externalId: 'fn-other999'}],
         },
       })
     mock

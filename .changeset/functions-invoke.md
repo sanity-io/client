@@ -4,7 +4,9 @@
 
 feat: add `client.functions.invoke()` for calling deployed functions on demand
 
-Invoke a Sanity Function by the `name`. 
+Invoke a Sanity Pubsub Function by the `name`. Only `sanity.function.pubsub` functions can be
+invoked on demand.
+
 Available in two forms, `client.functions.invoke()` resolves with the function's return value, `client.observable.functions.invoke()` emits it and accepts an `event.data` payload,
 a per-call `timeout` and an `AbortSignal`.
 
