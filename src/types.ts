@@ -792,6 +792,17 @@ export type VersionAction =
   | ReplaceVersionAction
   | UnpublishVersionAction
 
+/**
+ * @public
+ * @beta
+ */
+export type VariantAction =
+  | CreateVariantAction
+  | EditVariantAction
+  | DeleteVariantAction
+  | PublishVariantAction
+  | UnpublishVariantAction
+
 /** @public */
 export type Action =
   | CreateAction
@@ -802,6 +813,7 @@ export type Action =
   | PublishAction
   | UnpublishAction
   | VersionAction
+  | VariantAction
   | ReleaseAction
   | VariantDefinitionAction
 
@@ -959,6 +971,201 @@ export interface UnpublishVersionAction {
   actionType: 'sanity.action.document.version.unpublish'
   versionId: string
   publishedId: string
+}
+
+/**
+ * Creates a variant of a document, either by supplying the full document
+ * content, or the base ID of a document to copy.
+ *
+ * @public
+ * @beta
+ */
+export type CreateVariantAction = {
+  actionType: 'sanity.action.document.variant.create'
+
+  /**
+   * ID of the document group to create a variant of. Must be a published
+   * document ID, without a `drafts.` or `versions.` prefix.
+   */
+  publishedId: string
+
+  /**
+   * Name of the variant definition this document belongs to, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Source bundle: `'$published'`, `'drafts'`, or a release id.
+   * Defaults to `'$published'`.
+   */
+  bundleId?: '$published' | 'drafts' | (string & {})
+} & (
+  | {
+      /**
+       * The full document content. Requires a `_type` property.
+       */
+      document: SanityDocumentStub
+      baseId?: never
+      ifBaseRevisionId?: never
+    }
+  | {
+      /**
+       * ID of an existing document to copy the content from.
+       */
+      baseId: string
+
+      /**
+       * When set, the action fails unless the current revision of the base
+       * document matches this value.
+       */
+      ifBaseRevisionId?: string
+      document?: never
+    }
+)
+
+/**
+ * Modifies a variant version of a document by applying a patch.
+ *
+ * If no such variant document exists it is first created, by copying the
+ * variant's published sibling, or the published document if the variant was
+ * never published.
+ *
+ * @public
+ * @beta
+ */
+export interface EditVariantAction {
+  actionType: 'sanity.action.document.variant.edit'
+
+  /**
+   * ID of the document group the variant belongs to. Must be a published
+   * document ID, without a `drafts.` or `versions.` prefix.
+   */
+  publishedId: string
+
+  /**
+   * Name of the variant definition this document belongs to, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Source bundle: `'$published'`, `'drafts'`, or a release id.
+   * Defaults to `'$published'`.
+   */
+  bundleId?: '$published' | 'drafts' | (string & {})
+
+  /**
+   * Patch operations to apply.
+   */
+  patch: PatchOperations
+}
+
+/**
+ * Deletes a variant of a document.
+ *
+ * @public
+ * @beta
+ */
+export interface DeleteVariantAction {
+  actionType: 'sanity.action.document.variant.delete'
+
+  /**
+   * ID of the document group the variant belongs to. Must be a published
+   * document ID, without a `drafts.` or `versions.` prefix.
+   */
+  publishedId: string
+
+  /**
+   * Name of the variant definition this document belongs to, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Source bundle: `'$published'`, `'drafts'`, or a release id.
+   * Defaults to `'$published'`.
+   */
+  bundleId?: '$published' | 'drafts' | (string & {})
+
+  /**
+   * Delete document history.
+   */
+  purge?: boolean
+}
+
+/**
+ * Publishes a variant version of a document, replacing the published variant
+ * and removing the source variant document.
+ *
+ * @public
+ * @beta
+ */
+export interface PublishVariantAction {
+  actionType: 'sanity.action.document.variant.publish'
+
+  /**
+   * ID of the document group the variant belongs to. Must be a published
+   * document ID, without a `drafts.` or `versions.` prefix.
+   */
+  publishedId: string
+
+  /**
+   * Name of the variant definition this document belongs to, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Bundle to publish from: `'drafts'` or a release id. Required, and cannot
+   * be `'$published'`, as the source and target would be the same document.
+   */
+  bundleId: 'drafts' | (string & {})
+
+  /**
+   * When set, publishing fails unless the current revision of the source
+   * variant document matches this value.
+   */
+  ifVersionRevisionId?: string
+
+  /**
+   * When set, publishing fails unless the current revision of the published
+   * variant document matches this value.
+   */
+  ifPublishedVariantRevisionId?: string
+}
+
+/**
+ * Unpublishes a variant version of a document.
+ *
+ * By default the published variant is removed and preserved as a draft
+ * variant. When a release id is given as the `bundleId`, the deletion is
+ * instead staged in that release, and takes effect when it is published.
+ *
+ * @public
+ * @beta
+ */
+export interface UnpublishVariantAction {
+  actionType: 'sanity.action.document.variant.unpublish'
+
+  /**
+   * ID of the document group the variant belongs to. Must be a published
+   * document ID, without a `drafts.` or `versions.` prefix.
+   */
+  publishedId: string
+
+  /**
+   * Name of the variant definition this document belongs to, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Selects the unpublish mode: `'$published'` (the default) removes the
+   * published variant directly, while a release id stages the removal in that
+   * release. `'drafts'` is not accepted.
+   */
+  bundleId?: '$published' | (string & {})
 }
 
 /**
