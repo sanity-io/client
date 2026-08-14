@@ -4,12 +4,15 @@ import {createMediaLibraryClient, mediaLibraryId} from './helpers'
 import {uniqueJpegBytes} from './mediaLibraryFixture'
 
 /**
- * Media Library smoke test: `resource: {type: 'media-library', id}` makes the
- * client build a completely different host and path from the project case,
- * and upload to the Media Library's own endpoint, which responds with a
- * `{asset: ...}` body rather than Content Lake's `{document: ...}`. A mocked
- * transport cannot catch a regression in either, because the mock is told
- * which URL and body shape to expect.
+ * Media Library smoke test, covering the full lifecycle of an asset: upload,
+ * read it back, delete it, confirm it is gone.
+ *
+ * `resource: {type: 'media-library', id}` makes the client build a completely
+ * different host and path from the project case, on every request rather than
+ * just the upload. A mocked transport cannot catch a regression there, because
+ * the mock is told which URL to expect - so this walks three endpoints, not
+ * one. Upload additionally responds with a `{asset: ...}` body where Content
+ * Lake sends `{document: ...}`.
  *
  * Uploads a real image, since a degenerate one (e.g. a 1x1 PNG) is rejected
  * by the API with a 422. The bytes are unique per run (see
@@ -17,13 +20,13 @@ import {uniqueJpegBytes} from './mediaLibraryFixture'
  * this suite's integration matrix runs several runtimes, potentially
  * concurrently, so re-using fixed bytes would collide across runs.
  *
- * Cleans up both documents an upload leaves behind: the `sanity.asset`
- * document itself, and the derived `image-...` instance document its
- * `currentVersion` points at. Leaking either would change what the next run
- * sees, and combined with the content-hash dedup, a leaked asset with
- * non-unique bytes would wedge the suite - so cleanup runs in a `finally`.
+ * An upload leaves two documents behind: the `sanity.asset` document itself,
+ * and the derived `image-...` instance document its `currentVersion` points
+ * at. Both are deleted. Leaking either would change what the next run sees,
+ * so the delete is both the last step of the smoke path and a `finally`
+ * safety net for the case where an earlier assertion throws.
  */
-test('assets.upload() uploads to the Media Library and the resource id reaches the request', async () => {
+test('assets.upload() uploads to the Media Library, and the asset can be read back and deleted', async () => {
   const client = createMediaLibraryClient()
 
   // `config()` resolves the configured resource, so this also catches a
@@ -36,10 +39,24 @@ test('assets.upload() uploads to the Media Library and the resource id reaches t
     filename: 'client-integration-media-library.jpg',
   })
 
+  /**
+   * Deletes everything the upload created. Safe to call twice: deleting an
+   * already-deleted document is a no-op rather than an error, which is what
+   * lets this serve as both the asserted final step and the `finally` net.
+   */
+  const deleteUploaded = async () => {
+    await client.delete(uploaded._id)
+    // The instance document is only reachable via the Media Library shape.
+    if ('currentVersion' in uploaded) {
+      await client.delete(uploaded.currentVersion._ref)
+    }
+  }
+
   // Everything below runs inside the `try` so that a shape regression still
   // cleans up: the upload has already succeeded server-side by this point, so
   // throwing before the `finally` is registered would leak the asset into the
   // library.
+  let deleted = false
   try {
     // Resolving to `undefined` here is the exact regression this test exists
     // for: the client used to unwrap `.document`, which the Media Library
@@ -61,13 +78,30 @@ test('assets.upload() uploads to the Media Library and the resource id reaches t
       )
     }
     expect(uploaded.currentVersion._ref).toEqual(expect.any(String))
+
+    // Read it back through the doc endpoint, which the library builds its own
+    // URL for. Asserting the id and type round-trip proves the upload response
+    // described a document that actually exists, rather than one the endpoint
+    // merely echoed back.
+    const fetched = await client.getDocument(uploaded._id)
+    expect(fetched).toMatchObject({
+      _id: uploaded._id,
+      _type: 'sanity.asset',
+      assetType: 'sanity.imageAsset',
+    })
+
+    // Deleting is part of the smoke path, not just teardown: it is a mutation
+    // against the library's own mutate endpoint, and a regression there would
+    // otherwise surface only as a slow leak of assets.
+    await deleteUploaded()
+    deleted = true
+
+    await expect(client.getDocument(uploaded._id)).resolves.toBeUndefined()
   } finally {
-    // `_id` is present on every shape this can resolve to, so it is safe to
-    // delete without narrowing first. The derived `image-...` instance
-    // document is only reachable via the Media Library shape.
-    await client.delete(uploaded._id)
-    if ('currentVersion' in uploaded) {
-      await client.delete(uploaded.currentVersion._ref)
+    if (!deleted) {
+      // An assertion above already failed, so surface that rather than a
+      // secondary cleanup error - but still make the attempt.
+      await deleteUploaded().catch(() => {})
     }
   }
 })
