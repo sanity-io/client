@@ -8,13 +8,35 @@ import {createClient} from '@sanity/client'
 import type {SanityClient} from '@sanity/client'
 
 /**
+ * Reads a piece of suite configuration from the environment, falling back to
+ * the provisioned default.
+ *
+ * The defaults are what CI uses, so nothing has to be configured for the
+ * normal path. The override exists so the suite can be pointed at a different
+ * project, dataset or Media Library without patching this file: to reproduce a
+ * failure against your own project, or to run two branches concurrently
+ * without them competing for the same documents. Treats an empty variable as
+ * unset, since a CI secret that failed to resolve expands to an empty string
+ * rather than disappearing, and silently targeting `projectId: ''` would fail
+ * far from its cause.
+ */
+function fromEnv(name: string, fallback: string): string {
+  const value = process.env[name]
+  return value === undefined || value === '' ? fallback : value
+}
+
+/**
  * Project provisioned solely for this suite, in its own organization (Sanity
  * Client CI) so a CI-writable token cannot reach anything else. The `test`
  * dataset is private and holds only system documents; every test creates and
  * deletes its own fixtures.
+ *
+ * Override with `SANITY_INTEGRATION_PROJECT_ID` / `SANITY_INTEGRATION_DATASET`.
+ * A token for the overriding project has to be supplied alongside, since the
+ * default token is scoped to the default project.
  */
-export const projectId = 'ufeo1jge'
-export const dataset = 'test'
+export const projectId = fromEnv('SANITY_INTEGRATION_PROJECT_ID', 'ufeo1jge')
+export const dataset = fromEnv('SANITY_INTEGRATION_DATASET', 'test')
 
 /**
  * Pinned and dated, not `vX`: keeps results deterministic across runs rather
@@ -35,8 +57,12 @@ export const apiVersion = '2024-08-01'
  * however broad its project role, fails with "Insufficient permissions". So
  * {@link createMediaLibraryClient} uses `SANITY_INTEGRATION_ORG_TOKEN`, not the
  * project token the rest of this suite uses.
+ *
+ * Override with `SANITY_INTEGRATION_MEDIA_LIBRARY_ID`. Note that this is not
+ * tied to {@link projectId}: the library belongs to the organization, so
+ * overriding the project does not imply overriding the library, or the reverse.
  */
-export const mediaLibraryId = 'mlh3itedy1LA'
+export const mediaLibraryId = fromEnv('SANITY_INTEGRATION_MEDIA_LIBRARY_ID', 'mlh3itedy1LA')
 
 /** `_type` given to every document this suite creates, so stray leftovers are easy to spot and sweep. */
 export const smokeDocumentType = 'client.integration.smoke'

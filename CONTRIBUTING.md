@@ -189,6 +189,16 @@ pnpm run test:integration
 
 `createIntegrationClient()` in `test/integration/helpers.ts` throws immediately if `SANITY_INTEGRATION_TOKEN` is missing, rather than skipping. CI always has the secret, so a missing token locally means the suite was invoked without the setup above, and that should fail loudly instead of silently passing or skipping.
 
+### Pointing the suite somewhere else
+
+The project, dataset and Media Library the suite targets all fall back to the provisioned defaults, so the normal path needs no configuration. Override them to reproduce a failure against your own project, or to run two branches concurrently without them competing for the same documents:
+
+- `SANITY_INTEGRATION_PROJECT_ID` (defaults to the CI project)
+- `SANITY_INTEGRATION_DATASET` (defaults to `test`)
+- `SANITY_INTEGRATION_MEDIA_LIBRARY_ID` (defaults to the CI organization's library)
+
+Supply a matching token alongside any override: the default tokens are scoped to the default project and organization. The Media Library is an organization-level resource, so overriding the project does not imply overriding the library, or the reverse. An empty value counts as unset, so that a CI secret which fails to resolve falls back to the default rather than silently targeting `projectId: ''`.
+
 ### Rules for this suite
 
 - Self-contained: a test that needs a document creates it and deletes it in a `finally`. Never depend on seeded content, and never leave anything behind.
