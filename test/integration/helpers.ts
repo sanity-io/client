@@ -6,6 +6,8 @@
 // what this suite must not do.
 import {createClient} from '@sanity/client'
 import type {SanityClient} from '@sanity/client'
+import {createClient as createStegaEnabledClient} from '@sanity/client/stega'
+import type {SanityStegaClient} from '@sanity/client/stega'
 
 /**
  * Reads a piece of suite configuration from the environment, falling back to
@@ -141,6 +143,16 @@ export async function fetchUntilVisible<T>(
  * passing (or, worse, silently skipped).
  */
 export function createIntegrationClient(): SanityClient {
+  return createClient({projectId, dataset, apiVersion, useCdn: false, token: requireProjectToken()})
+}
+
+/**
+ * Reads the project token, throwing rather than skipping when it is missing.
+ *
+ * Shared by every project-scoped factory below, so that all of them fail with
+ * the same actionable message instead of a 401 from the API.
+ */
+function requireProjectToken(): string {
   const token = process.env.SANITY_INTEGRATION_TOKEN
   if (!token) {
     throw new Error(
@@ -150,7 +162,39 @@ export function createIntegrationClient(): SanityClient {
     )
   }
 
-  return createClient({projectId, dataset, apiVersion, useCdn: false, token})
+  return token
+}
+
+/**
+ * Studio URL the stega smoke test encodes edit links against.
+ *
+ * Never resolved or fetched: stega encoding only needs a base to build an edit
+ * URL from, so an unreachable placeholder keeps the test independent of any
+ * deployed Studio.
+ */
+export const stegaStudioUrl = 'https://example.com/studio'
+
+/**
+ * Creates a stega-enabled client, imported from the `@sanity/client/stega`
+ * entry point rather than the root one.
+ *
+ * This covers a second published entry point in the `exports` map, and it is
+ * the shortest real path through `src/csm/`: `stega: {enabled: true}` makes
+ * `fetch()` request a content source map and then run it through the csm
+ * helpers (`resolveEditInfo`, `createEditUrl`, `walkMap`, `jsonPath`) to encode
+ * an edit URL into every string in the result. A mocked transport cannot catch
+ * a drift in the source map the API produces, which is the input those helpers
+ * work from.
+ */
+export function createStegaClient(): SanityStegaClient {
+  return createStegaEnabledClient({
+    projectId,
+    dataset,
+    apiVersion,
+    useCdn: false,
+    token: requireProjectToken(),
+    stega: {enabled: true, studioUrl: stegaStudioUrl},
+  })
 }
 
 /**
