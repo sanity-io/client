@@ -39,7 +39,7 @@ pnpm format      # oxfmt
 
 `pnpm knip` is expected to exit 0. It carries a few narrow, documented ignores in `knip.json` rather than a blanket rule downgrade, so read the comments there before adding another.
 
-One note on dependencies: the `eventsource` floor is `>= 5.1.0` for a reason. Earlier versions relied on `MessageEvent`'s constructor init dict round-tripping `lastEventId`, which workerd does not do, so server-sent event IDs arrived empty on Cloudflare Workers. Do not relax that floor without confirming `pnpm test:workerd` still passes.
+One note on dependencies: the `eventsource` floor is `>= 5.1.0` for a reason. Earlier versions relied on `MessageEvent`'s constructor init dict round-tripping `lastEventId`, which workerd does not do, so server-sent event IDs arrived empty on Cloudflare Workers. Do not relax that floor without confirming `pnpm test:workerd` still passes. The upstream fix is tracked in [cloudflare/workerd#6995](https://github.com/cloudflare/workerd/pull/6995).
 
 Before you write code, read the sections below. They hold the rules for TypeScript and for tests.
 

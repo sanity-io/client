@@ -127,11 +127,14 @@ jobs:
       - run: pnpm run test:vercel-edge
 
   # This job is why `eventsource` is pinned to >= 5.1.0. workerd's native `MessageEvent`
-  # drops the `lastEventId` member of its constructor init dict, which every other
-  # environment this suite runs in honours. `src/data/eventsource.ts` reads
+  # drops members of its constructor init dict, including `lastEventId`, which every
+  # other environment this suite runs in honours. `src/data/eventsource.ts` reads
   # `message.lastEventId` to populate the `id` of every `ServerSentEvent`, so before
   # eventsource 5.1.0 that id arrived empty on bare Cloudflare Workers. Do not relax the
   # `eventsource` floor without checking these tests still pass here.
+  #
+  # Upstream fix: https://github.com/cloudflare/workerd/pull/6995. Once that ships and
+  # the floor can be lowered again, this job is the check that proves it.
   workerd-runtime:
     # No `needs: [build]`: see the comment on `vercel-edge` above - same reasoning,
     # `vitest.workerd.config.ts` also resolves through `sourceAlias`.
