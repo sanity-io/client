@@ -14,8 +14,6 @@
 // glob keeps working if a file ever needs to live outside `test/integration/`.
 import {defineConfig} from 'vitest/config'
 
-import {coverageConfig} from './vitest.config'
-
 /**
  * The environment the integration suite reads its configuration from.
  *
@@ -75,14 +73,34 @@ export const integrationProvide = {
 export default defineConfig({
   test: {
     provide: integrationProvide,
-    // Importing `coverageConfig` and nothing else is deliberate: it is the one
-    // export from `vitest.config.ts` that is safe here, since it carries no
-    // `setupFiles` and so cannot drag in the fetch mock this suite must not
-    // have. This suite is not run with `--coverage` today, and coverage of it
-    // would be of `dist/` remapped back to source rather than of source
-    // directly, but wiring it means a future `--coverage` run reports the same
-    // shape as every other suite instead of vitest's unfiltered defaults.
-    coverage: coverageConfig,
+    // NOT the shared `coverageConfig`, which would report 0% for every file
+    // here. This suite executes `dist/` through the real `exports` map, not
+    // `src/`, so its coverage arrives keyed by `dist/*.js` and only becomes
+    // `src/*.ts` after being remapped through the build's source maps.
+    //
+    // Both halves of the shared config are matched against the pre-remap path,
+    // so both discard exactly the data we want: `include: ['src/**']` drops the
+    // `dist` entries (while still listing every `src` file, which is what makes
+    // the report read as a uniform 0% rather than as empty), and
+    // `exclude: ['dist/**']` drops them too. Verified by probing: with both
+    // removed, a single test file reports ~27% and `src/config.ts` shows real
+    // hits. So this is exclusion-only, and deliberately does not exclude
+    // `dist`.
+    //
+    // `rolldown-runtime` is the one `dist` file with no source map, so it can
+    // never be attributed back to source and is excluded by name rather than
+    // left in the report as a meaningless row.
+    //
+    // These numbers are not comparable with the other suites': they measure the
+    // bundled output's statements, not the source's.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json', 'json-summary'],
+      exclude: ['node_modules/**', 'test/**', 'dist/rolldown-runtime-*.js'],
+      excludeAfterRemap: false,
+      reportOnFailure: true,
+      clean: true,
+    },
     include: ['test/**/*.integration.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
 
