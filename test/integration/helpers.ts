@@ -48,7 +48,7 @@ export const dataset = fromEnv('SANITY_INTEGRATION_DATASET', 'test')
  * `client.live.events()`; none of the six features this suite covers need
  * `vX`.
  */
-export const apiVersion = '2024-08-01'
+const apiVersion = '2024-08-01'
 
 /**
  * Media Library provisioned for the organization that owns this project.
@@ -191,7 +191,7 @@ function requireProjectToken(): string {
  * `vX`, so releases keep the same determinism the rest of the suite gets from a
  * dated version.
  */
-export const releasesApiVersion = '2025-02-19'
+const releasesApiVersion = '2025-02-19'
 
 /**
  * Creates a client for the releases smoke test, on {@link releasesApiVersion}.
@@ -217,7 +217,7 @@ export function createReleasesClient(): SanityClient {
  * URL from, so an unreachable placeholder keeps the test independent of any
  * deployed Studio.
  */
-export const stegaStudioUrl = 'https://example.com/studio'
+const stegaStudioUrl = 'https://example.com/studio'
 
 /**
  * Creates a stega-enabled client, imported from the `@sanity/client/stega`
