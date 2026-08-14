@@ -149,16 +149,9 @@ Every other suite in this repo mocks the transport: requests go through the clie
 
 Keep it minimal. One smoke test per feature that could significantly change the client's behavior, asserting that the round trip works: a query returns the document you just wrote, a listener connects, a mutation lands. This is not the place for a matrix of every flag and option a feature supports. The hermetic suite already covers that, without needing the network.
 
-The features currently covered, one test each:
+For what is covered today, read `test/integration/`: one file per feature, named after it. Every test there carries a docblock explaining why it needs the network and what a mock could not catch. Write that docblock when you add one; it is the part that stops the next person from deleting the test as redundant.
 
-- Query - `client.fetch()`
-- Document fetch - `client.getDocument()`, the `/doc` endpoint
-- Listener - `client.listen()`
-- Live Content API - `client.live.events()`
-- Content source maps / stega - `client.fetch()` with `resultSourceMap`
-- Mutations - `client.create()` then `client.delete()`
-- Media Library - a client configured with `resource: {type: 'media-library', id}`
-- Agent Actions - `client.agent.action.prompt()`
+An error path can earn a place here, and that is not a departure from "assert the round trip". What justifies one is that the interesting behavior is a mapping the client does not author: it reads a body whose shape the API decides. So assert that the client surfaced the server's own diagnosis, never just that something threw. Note that the same mistake surfaces differently per feature - a bad query rejects an HTTP request, while the listen endpoint accepts the connection and reports it as a server-sent `error` frame - so find out how it actually arrives instead of assuming.
 
 ### Two tokens, and why
 
@@ -166,9 +159,21 @@ Most of the suite uses `SANITY_INTEGRATION_TOKEN`, a project-scoped Editor token
 
 Agent Actions and Media Library both need `SANITY_INTEGRATION_ORG_TOKEN` instead, an organization-scoped token. Agent Actions requires the `sanity.organization/read` grant, which no project token can carry however broad its project role. Media Library uploads fail the same way: a project token gets "Insufficient permissions" against the upload endpoint, however broad its project role. The two are kept separate from the project token on purpose: the other tests have no business holding organization-wide credentials. Note that an organization token also needs a role that actually grants org read; the organization's default `member` role does not, and a token without it authenticates fine but sees no organizations.
 
-Agent Actions is also the one test that departs from the suite's pinned `apiVersion`, because it rejects dated versions and requires `vX`.
+### API versions
 
-Two limits worth knowing before extending these:
+The suite pins one dated `apiVersion`, and some features reject it: Agent Actions rejects dated versions entirely and needs `vX`, and release actions are refused with `action index 0: not supported for this API version` on anything before `2025-02-19`. Probe the boundary rather than guessing, and when a feature needs its own version, add a dedicated client factory in `test/integration/helpers.ts` documenting what you found. Prefer a dated version over `vX`, so the suite keeps the determinism it pins for.
+
+### Releases, and anything else that mutates state beyond a document
+
+Releases are the sharpest example of the cleanup rules below, so read this before touching them or adding anything similar.
+
+- Releases are a state machine, and most actions are legal only from certain states. Publishing is effectively terminal, and only an `archived` or `published` release can be deleted. Walk one release through a lifecycle rather than writing an isolated test per action, each of which would have to build its own precondition against real state.
+- Some transitions are asynchronous. `publish()` resolves while the release is still in `publishing`, and acting on it then fails with "not permitted to transition from state publishing to ...". Poll for the state you need; do not assume the action's promise resolving means it finished.
+- Cleanup has to work from whatever state a mid-test failure left behind: unschedule if scheduled, wait out any transition in flight, archive if active, then delete. And clean up what the actions created, not just the release - publishing a release writes real documents into the dataset.
+- Ids compose. A document in a release is stored as `versions.<releaseId>.<documentId>`, and the client rejects document ids over 128 characters, which is why `uniqueReleaseId()` is terser than `uniqueDocumentId()`.
+- `releases.fetchDocuments()` is a GROQ query (`*[sanity::partOfRelease($releaseId)]`), so it needs polling like any other - and it returns nothing under the default perspective, so it needs `perspective: 'raw'` from the client config. Its own options type carries no `perspective`, even though the API honours one.
+
+Two more limits worth knowing:
 
 - The Media Library smoke test uploads a real image and deletes it afterwards. The library dedupes uploads by content hash, so re-uploading identical bytes fails with "asset already exists" - the test generates unique bytes per run (a random UUID embedded as a JPEG comment segment) so concurrent runs of the integration matrix don't collide. `client.mediaLibrary.video.getPlaybackInfo()` remains hermetic-only: it would need a real video asset uploaded to the library, which this suite has no way to provision.
 - The Agent Actions test asserts the response is a non-empty string rather than matching exact content. Asking a model for an exact word and asserting it would flake on nondeterminism, which defeats the purpose. It also costs real inference per run, so keep it to one call.
@@ -203,7 +208,9 @@ Supply a matching token alongside any override: the default tokens are scoped to
 
 - Self-contained: a test that needs a document creates it and deletes it in a `finally`. Never depend on seeded content, and never leave anything behind.
 - Unique ids per run, built with `crypto.randomUUID()`, so concurrent runs cannot collide.
-- Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset.
+- Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset, and do not assert on anything administered outside this suite: assert that a dataset or project is in a list, never how many there are, or whose name they carry.
+- Nothing may depend on which of two concurrent things wins. Cancelling a request, for example, aborts the signal _before_ the call rather than on a timer, because `setTimeout(() => abort(), n)` races the network and either passes for the wrong reason or flakes in CI. Cover the deterministic half here and leave the racy half hermetic.
+- Assert what all five runtimes agree on. The runtime's own `fetch` produces an aborted request's rejection, so match on `name === 'AbortError'` (which the DOM standard fixes) rather than on a concrete class.
 - No `skipIf`/`runIf`/`.skip`/`.todo`, same rule as the rest of the suite. If a feature cannot be exercised with the tokens and provisioning available, document the gap here instead of writing a test that never runs.
 - Never query for a document you just wrote without polling. Content Lake acknowledges a write before the query index has caught up, so `create()` can resolve, and the document be readable through the `/doc` endpoint, while a GROQ query for it still returns nothing. Use `fetchUntilVisible()` from `test/integration/helpers.ts`. This lag is usually far under the first poll interval, which is what makes it dangerous: a single fetch passes every time locally and fails occasionally in CI. `getDocument()` and `getDocuments()` read the document store directly and need no polling.
 - Keep assertions outside the polling helper, and let request errors propagate. `fetchUntilVisible()` retries only on absence, so a wrong value or a 401 fails immediately instead of being retried until the deadline.
