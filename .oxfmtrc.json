@@ -6,10 +6,5 @@
   "singleQuote": true,
   "sortImports": true,
   "sortPackageJson": true,
-  "ignorePatterns": [
-    ".changeset",
-    "dist",
-    "coverage",
-    "CHANGELOG.md"
-  ]
+  "ignorePatterns": [".changeset", "dist", "coverage", "CHANGELOG.md"]
 }

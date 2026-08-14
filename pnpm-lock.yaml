@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      debug:
-        specifier: ^4.4.0
-        version: 4.4.3(supports-color@10.2.2)
       eventsource:
         specifier: ^5.1.0
         version: 5.1.0
@@ -20,6 +17,9 @@ importers:
       nanoid:
         specifier: ^6.0.1
         version: 6.0.1
+      obug:
+        specifier: ^2.1.4
+        version: 2.1.4
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
@@ -39,9 +39,6 @@ importers:
       '@sanity/pkg-utils':
         specifier: ^12.1.2
         version: 12.1.2(@babel/runtime@7.29.7)(@types/node@22.20.1)(oxc-resolver@11.24.2)(rolldown@1.2.3)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(tsx@4.23.12)(yaml@2.9.0))
-      '@types/debug':
-        specifier: ^4.1.12
-        version: 4.1.13
       '@types/json-diff':
         specifier: ^1.0.3
         version: 1.0.3
@@ -1943,9 +1940,6 @@ packages:
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
-  '@types/debug@4.1.13':
-    resolution: {integrity: sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==}
-
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
@@ -1954,9 +1948,6 @@ packages:
 
   '@types/json-diff@1.0.3':
     resolution: {integrity: sha512-Qvxm8fpRMv/1zZR3sQWImeRK2mBYJji20xF51Fq9Gt//Ed18u0x6/FNLogLS1xhfUWTEmDyqveJqn95ltB6Kvw==}
-
-  '@types/ms@2.1.0':
-    resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
@@ -6010,17 +6001,11 @@ snapshots:
       '@types/deep-eql': 4.0.2
       assertion-error: 2.0.1
 
-  '@types/debug@4.1.13':
-    dependencies:
-      '@types/ms': 2.1.0
-
   '@types/deep-eql@4.0.2': {}
 
   '@types/estree@1.0.9': {}
 
   '@types/json-diff@1.0.3': {}
-
-  '@types/ms@2.1.0': {}
 
   '@types/node@12.20.55': {}
 
