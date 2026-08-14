@@ -175,7 +175,8 @@ Releases are the sharpest example of the cleanup rules below, so read this befor
 
 Two more limits worth knowing:
 
-- The Media Library smoke test uploads a real image and deletes it afterwards. The library dedupes uploads by content hash, so re-uploading identical bytes fails with "asset already exists" - the test generates unique bytes per run (a random UUID embedded as a JPEG comment segment) so concurrent runs of the integration matrix don't collide. `client.mediaLibrary.video.getPlaybackInfo()` remains hermetic-only: it would need a real video asset uploaded to the library, which this suite has no way to provision.
+- The Media Library smoke test uploads a real image and deletes it afterwards. The library dedupes uploads by content hash, so re-uploading identical bytes fails with "asset already exists" - the test generates unique bytes per run (a random UUID embedded as a JPEG comment segment) so concurrent runs of the integration matrix don't collide.
+- `client.mediaLibrary.video.getPlaybackInfo()` reads a video asset provisioned in the library, and is the one test here that depends on pre-existing content. Video uploads are transcoded asynchronously, so a self-provisioned fixture would mean polling for encoding to finish on every run of a five-runtime matrix, to exercise a single GET. It resolves the video instance id through the asset's `currentVersion` rather than hardcoding it, so a re-encode does not break it, and `SANITY_INTEGRATION_VIDEO_ASSET_ID` points it at another asset. Consequence worth knowing when sweeping for leftovers: the library is expected to contain that asset, so "the Media Library is empty" is no longer the clean state.
 - The Agent Actions test asserts the response is a non-empty string rather than matching exact content. Asking a model for an exact word and asserting it would flake on nondeterminism, which defeats the purpose. It also costs real inference per run, so keep it to one call.
 
 ### Naming
@@ -201,12 +202,13 @@ The project, dataset and Media Library the suite targets all fall back to the pr
 - `SANITY_INTEGRATION_PROJECT_ID` (defaults to the CI project)
 - `SANITY_INTEGRATION_DATASET` (defaults to `test`)
 - `SANITY_INTEGRATION_MEDIA_LIBRARY_ID` (defaults to the CI organization's library)
+- `SANITY_INTEGRATION_VIDEO_ASSET_ID` (defaults to a video asset in that library, for the playback-info test)
 
 Supply a matching token alongside any override: the default tokens are scoped to the default project and organization. The Media Library is an organization-level resource, so overriding the project does not imply overriding the library, or the reverse. An empty value counts as unset, so that a CI secret which fails to resolve falls back to the default rather than silently targeting `projectId: ''`.
 
 ### Rules for this suite
 
-- Self-contained: a test that needs a document creates it and deletes it in a `finally`. Never depend on seeded content, and never leave anything behind.
+- Self-contained: a test that needs a document creates it and deletes it in a `finally`. Never depend on seeded content, and never leave anything behind. The single exception is the video asset behind `getPlaybackInfo` (above), which cannot be provisioned synchronously; if you find yourself wanting a second exception, say why in the test rather than quietly adding one.
 - Unique ids per run, built with `crypto.randomUUID()`, so concurrent runs cannot collide.
 - Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset, and do not assert on anything administered outside this suite: assert that a dataset or project is in a list, never how many there are, or whose name they carry.
 - Nothing may depend on which of two concurrent things wins. Cancelling a request, for example, aborts the signal _before_ the call rather than on a timer, because `setTimeout(() => abort(), n)` races the network and either passes for the wrong reason or flakes in CI. Cover the deterministic half here and leave the racy half hermetic.

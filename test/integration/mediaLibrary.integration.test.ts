@@ -1,6 +1,6 @@
 import {expect, test} from 'vitest'
 
-import {createMediaLibraryClient, mediaLibraryId} from './helpers'
+import {createMediaLibraryClient, mediaLibraryId, videoAssetId} from './helpers'
 import {uniqueJpegBytes} from './mediaLibraryFixture'
 
 /**
@@ -104,4 +104,67 @@ test('assets.upload() uploads to the Media Library, and the asset can be read ba
       await deleteUploaded().catch(() => {})
     }
   }
+})
+
+/**
+ * `mediaLibrary.video.getPlaybackInfo()` against a real video asset.
+ *
+ * Worth a real request because the client does non-trivial work here that a
+ * mock validates only against itself: it accepts three different identifier
+ * forms, parses a library id back out of a Global Dataset Reference, and builds
+ * a `/media-libraries/{id}/video/{instanceId}/playback-info` URL from whichever
+ * form it was given. A mocked transport is told the URL to expect, so it cannot
+ * catch a regression in how that URL is derived.
+ *
+ * Read-only, and the one test in this suite that depends on pre-existing
+ * content: see {@link videoAssetId} for why a self-provisioned fixture is worse
+ * here.
+ */
+test('mediaLibrary.video.getPlaybackInfo() returns playback info for a video asset', async () => {
+  const client = createMediaLibraryClient()
+
+  // `getPlaybackInfo` takes the video *instance* id, not the asset id, so
+  // resolve it the way an application would rather than hardcoding it: the
+  // instance id changes if the asset is re-encoded, the asset id does not.
+  const asset = await client.getDocument(videoAssetId)
+  if (!asset || !('currentVersion' in asset)) {
+    throw new Error(
+      `Expected a Media Library video asset at "${videoAssetId}" with a \`currentVersion\`, got: ` +
+        `${JSON.stringify(asset)}. This test depends on a pre-provisioned video asset; set ` +
+        `SANITY_INTEGRATION_VIDEO_ASSET_ID if the library it lives in has changed.`,
+    )
+  }
+  const instanceId = asset.currentVersion._ref
+
+  const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(instanceId)
+
+  // Assert the shape and that the URLs are absolute, not the URLs themselves:
+  // they carry an opaque per-asset id and a CDN host, neither of which this
+  // client is responsible for.
+  expect(playbackInfo).toMatchObject({
+    id: expect.any(String),
+    duration: expect.any(Number),
+    aspectRatio: expect.any(Number),
+    stream: {url: expect.stringMatching(/^https:\/\//)},
+    thumbnail: {url: expect.stringMatching(/^https:\/\//)},
+    animated: {url: expect.stringMatching(/^https:\/\//)},
+    storyboard: {url: expect.stringMatching(/^https:\/\//)},
+  })
+  expect(playbackInfo.duration).toBeGreaterThan(0)
+  expect(playbackInfo.renditions).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        resolution: expect.any(String),
+        url: expect.stringMatching(/^https:\/\//),
+      }),
+    ]),
+  )
+
+  // The same asset by Global Dataset Reference. This is the branch where the
+  // library id comes out of the identifier rather than the client config, so it
+  // exercises a different path through URL building and has to agree.
+  const viaReference = await client.mediaLibrary.video.getPlaybackInfo(
+    `media-library:${mediaLibraryId}:${instanceId}`,
+  )
+  expect(viaReference.id).toEqual(playbackInfo.id)
 })

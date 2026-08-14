@@ -87,6 +87,31 @@ const apiVersion = '2024-08-01'
  */
 export const mediaLibraryId = fromEnv('SANITY_INTEGRATION_MEDIA_LIBRARY_ID', 'mlh3itedy1LA')
 
+/**
+ * A video asset provisioned in the Media Library, for the `getPlaybackInfo`
+ * smoke test.
+ *
+ * This is the one value in this suite that names pre-existing content, which
+ * breaks the "create your own fixtures and delete them" rule the rest of the
+ * suite follows. Deliberate, and the alternative is worse: video uploads are
+ * transcoded asynchronously, so a test that uploaded its own asset would have
+ * to poll for encoding to finish before playback info existed, on every run of
+ * a five-runtime matrix, for a code path that is a single GET.
+ *
+ * This is the `sanity.asset` document id, not the video instance id that
+ * `getPlaybackInfo` takes. The test resolves the instance through
+ * `currentVersion`, which is both what an application does and what keeps this
+ * working if the asset is ever re-encoded: the asset id survives, the instance
+ * id does not.
+ *
+ * Override with `SANITY_INTEGRATION_VIDEO_ASSET_ID` when pointing the suite at
+ * another library, which will not have this asset.
+ */
+export const videoAssetId = fromEnv(
+  'SANITY_INTEGRATION_VIDEO_ASSET_ID',
+  '3HvPOrShB87UQmwuXc3D2M1PLrU',
+)
+
 /** `_type` given to every document this suite creates, so stray leftovers are easy to spot and sweep. */
 export const smokeDocumentType = 'client.integration.smoke'
 
@@ -112,7 +137,7 @@ export function uniqueReleaseId(): string {
 
 /**
  * How long to wait for a just-written document to become queryable, and how
- * often to re-check. The 15s ceiling sits well inside this suite's 30s
+ * often to re-check. The 15s ceiling sits well inside this suite's 60s
  * `testTimeout` so that exhausting it reports as "never became visible" rather
  * than as an opaque test timeout, while leaving room for the surrounding
  * create and delete.

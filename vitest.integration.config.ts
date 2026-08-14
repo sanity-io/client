@@ -27,6 +27,7 @@ export interface IntegrationEnv {
   SANITY_INTEGRATION_PROJECT_ID: string
   SANITY_INTEGRATION_DATASET: string
   SANITY_INTEGRATION_MEDIA_LIBRARY_ID: string
+  SANITY_INTEGRATION_VIDEO_ASSET_ID: string
 }
 
 declare module 'vitest' {
@@ -67,6 +68,7 @@ export const integrationProvide = {
     SANITY_INTEGRATION_PROJECT_ID: process.env.SANITY_INTEGRATION_PROJECT_ID ?? '',
     SANITY_INTEGRATION_DATASET: process.env.SANITY_INTEGRATION_DATASET ?? '',
     SANITY_INTEGRATION_MEDIA_LIBRARY_ID: process.env.SANITY_INTEGRATION_MEDIA_LIBRARY_ID ?? '',
+    SANITY_INTEGRATION_VIDEO_ASSET_ID: process.env.SANITY_INTEGRATION_VIDEO_ASSET_ID ?? '',
   },
 } satisfies {integrationEnv: IntegrationEnv}
 
