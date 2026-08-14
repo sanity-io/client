@@ -15,6 +15,8 @@
 import {cloudflareTest} from '@cloudflare/vitest-pool-workers'
 import {defineConfig} from 'vitest/config'
 
+import {integrationProvide} from './vitest.integration.config'
+
 export default defineConfig({
   plugins: [
     cloudflareTest({
@@ -29,6 +31,22 @@ export default defineConfig({
   test: {
     include: ['test/integration/**/*.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
+    // This suite's `SANITY_INTEGRATION_*` configuration, read from
+    // `process.env` in `vitest.integration.config.ts` (which runs in Node,
+    // where that works) and handed to the tests over `provide`/`inject`. This
+    // config is *why* that indirection exists: `process.env` inside the
+    // cloudflare pool is permanently empty, so reading it in the tests failed
+    // every one of them here. See the comment on `integrationProvide` for what
+    // else was tried and ruled out.
+    //
+    // Importing this one plain object does not break the "shares nothing with
+    // the other configs" rule above. That rule exists because `sharedConfig`
+    // carries the fetch-mock `setupFiles`, which must never reach this suite;
+    // `integrationProvide` carries no `setupFiles` and cannot drag one in. It is
+    // the same reasoning under which `vitest.integration.config.ts` imports
+    // `coverageConfig` from `vitest.config.ts`. Do not read this as licence to
+    // start spreading shared config in here.
+    provide: integrationProvide,
     // Same values, and the same reasoning, as `vitest.integration.config.ts`:
     // read the comment there. They are repeated rather than imported because
     // this config deliberately shares nothing with the others. Without them the

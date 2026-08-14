@@ -16,8 +16,65 @@ import {defineConfig} from 'vitest/config'
 
 import {coverageConfig} from './vitest.config'
 
+/**
+ * The environment the integration suite reads its configuration from.
+ *
+ * Every value is a string, and an empty string means "not set" - see
+ * {@link integrationProvide} for why they are not read from `process.env` in
+ * the tests themselves.
+ */
+export interface IntegrationEnv {
+  SANITY_INTEGRATION_TOKEN: string
+  SANITY_INTEGRATION_ORG_TOKEN: string
+  SANITY_INTEGRATION_PROJECT_ID: string
+  SANITY_INTEGRATION_DATASET: string
+  SANITY_INTEGRATION_MEDIA_LIBRARY_ID: string
+}
+
+declare module 'vitest' {
+  interface ProvidedContext {
+    integrationEnv: IntegrationEnv
+  }
+}
+
+/**
+ * Suite configuration read here, in the config, and handed to the tests over
+ * vitest's `provide`/`inject` channel rather than read from `process.env` by
+ * the tests themselves.
+ *
+ * The reason is workerd. Under `@cloudflare/vitest-pool-workers`, `process.env`
+ * exists inside the worker but is permanently empty, so every test in this
+ * suite failed there with "SANITY_INTEGRATION_TOKEN is not set" while passing
+ * on the other four runtimes. Ruled out empirically before landing this:
+ * miniflare `bindings` (they surface via `cloudflare:test`'s `env`, a
+ * workerd-only import that has no business in shared helpers, and never reach
+ * `process.env`), `define: {'process.env': ...}` (not forwarded to the workers
+ * pool transform), and both of those combined with
+ * `compatibilityFlags: ['nodejs_compat']` (still empty, and that flag is
+ * deliberately omitted here to mirror real Workers). Do not retry them.
+ *
+ * `provide`/`inject` does reach the pool, including from module top level, and
+ * is already how `globalSetup.upload.ts` gets the upload server URL across a
+ * process boundary. Config files run in Node, where `process.env` works, so the
+ * documented `SANITY_INTEGRATION_*` variables keep working exactly as before.
+ *
+ * Applied to all five runtimes rather than only workerd: a runtime-specific
+ * branch in the helpers would mean four runtimes exercise a different code path
+ * from the fifth, which is how this stayed broken in the first place.
+ */
+export const integrationProvide = {
+  integrationEnv: {
+    SANITY_INTEGRATION_TOKEN: process.env.SANITY_INTEGRATION_TOKEN ?? '',
+    SANITY_INTEGRATION_ORG_TOKEN: process.env.SANITY_INTEGRATION_ORG_TOKEN ?? '',
+    SANITY_INTEGRATION_PROJECT_ID: process.env.SANITY_INTEGRATION_PROJECT_ID ?? '',
+    SANITY_INTEGRATION_DATASET: process.env.SANITY_INTEGRATION_DATASET ?? '',
+    SANITY_INTEGRATION_MEDIA_LIBRARY_ID: process.env.SANITY_INTEGRATION_MEDIA_LIBRARY_ID ?? '',
+  },
+} satisfies {integrationEnv: IntegrationEnv}
+
 export default defineConfig({
   test: {
+    provide: integrationProvide,
     // Importing `coverageConfig` and nothing else is deliberate: it is the one
     // export from `vitest.config.ts` that is safe here, since it carries no
     // `setupFiles` and so cannot drag in the fetch mock this suite must not

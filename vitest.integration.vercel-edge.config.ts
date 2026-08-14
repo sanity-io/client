@@ -23,11 +23,25 @@
 import {defineConfig} from 'vitest/config'
 
 import pkg from './package.json' with {type: 'json'}
+import {integrationProvide} from './vitest.integration.config'
 
 export default defineConfig({
   test: {
     include: ['test/integration/**/*.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
+    // This suite's `SANITY_INTEGRATION_*` configuration, read from `process.env`
+    // in `vitest.integration.config.ts` and handed to the tests over
+    // `provide`/`inject`. `process.env` works fine in this runtime; the
+    // indirection exists for workerd (see `integrationProvide`) and is applied
+    // uniformly so all five runtimes exercise the same code path in the helpers.
+    //
+    // Importing this one plain object does not break the "shares nothing with
+    // the other configs" rule above. That rule exists because `sharedConfig`
+    // carries the fetch-mock `setupFiles`, which must never reach this suite;
+    // `integrationProvide` carries no `setupFiles` and cannot drag one in. It is
+    // the same reasoning under which `vitest.integration.config.ts` imports
+    // `coverageConfig` from `vitest.config.ts`.
+    provide: integrationProvide,
     // Same values, and the same reasoning, as `vitest.integration.config.ts`:
     // read the comment there. They are repeated rather than imported because
     // this config deliberately shares nothing with the others. Without them the

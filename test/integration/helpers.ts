@@ -8,23 +8,43 @@ import {createClient} from '@sanity/client'
 import type {SanityClient} from '@sanity/client'
 import {createClient as createStegaEnabledClient} from '@sanity/client/stega'
 import type {SanityStegaClient} from '@sanity/client/stega'
+import {inject} from 'vitest'
+
+import type {IntegrationEnv} from '../../vitest.integration.config'
 
 /**
- * Reads a piece of suite configuration from the environment, falling back to
- * the provisioned default.
+ * The `SANITY_INTEGRATION_*` values for this run.
+ *
+ * Read from `process.env` by the vitest config, not here: under workerd
+ * `process.env` exists but is permanently empty, so reading it in this file
+ * failed every test in this suite on that one runtime out of five. The config
+ * runs in Node, where `process.env` works, and hands the values over vitest's
+ * `provide`/`inject` channel - the same channel `globalSetup.upload.ts` uses.
+ * See `integrationProvide` in `vitest.integration.config.ts` for what else was
+ * tried and why it does not work. The documented environment variables are
+ * unchanged; only the route from the shell to these helpers is.
+ *
+ * Injected once at module level, which works in every pool including the
+ * cloudflare one. Do not "simplify" this back to `process.env`.
+ */
+const integrationEnv = inject('integrationEnv')
+
+/**
+ * Reads a piece of suite configuration, falling back to the provisioned
+ * default.
  *
  * The defaults are what CI uses, so nothing has to be configured for the
  * normal path. The override exists so the suite can be pointed at a different
  * project, dataset or Media Library without patching this file: to reproduce a
  * failure against your own project, or to run two branches concurrently
- * without them competing for the same documents. Treats an empty variable as
+ * without them competing for the same documents. Treats an empty value as
  * unset, since a CI secret that failed to resolve expands to an empty string
  * rather than disappearing, and silently targeting `projectId: ''` would fail
  * far from its cause.
  */
-function fromEnv(name: string, fallback: string): string {
-  const value = process.env[name]
-  return value === undefined || value === '' ? fallback : value
+function fromEnv(name: keyof IntegrationEnv, fallback: string): string {
+  const value = integrationEnv[name]
+  return value === '' ? fallback : value
 }
 
 /**
@@ -58,7 +78,8 @@ const apiVersion = '2024-08-01'
  * dataset. Uploading to it needs an organization-wide token: a project token,
  * however broad its project role, fails with "Insufficient permissions". So
  * {@link createMediaLibraryClient} uses `SANITY_INTEGRATION_ORG_TOKEN`, not the
- * project token the rest of this suite uses.
+ * project token the rest of this suite uses. (Like every value here, that
+ * reaches this file through {@link integrationEnv} rather than `process.env`.)
  *
  * Override with `SANITY_INTEGRATION_MEDIA_LIBRARY_ID`. Note that this is not
  * tied to {@link projectId}: the library belongs to the organization, so
@@ -151,7 +172,7 @@ export async function fetchUntilVisible<T>(
  * Creates a client for the integration smoke suite, reading the token from
  * `SANITY_INTEGRATION_TOKEN`.
  *
- * Throws immediately if the variable is missing, rather than skipping the
+ * Throws immediately if the token is missing, rather than skipping the
  * test: the workflow that runs this suite always provides the secret, so a
  * missing token locally means the suite was invoked without the setup
  * CONTRIBUTING.md describes. That should fail loudly, not quietly report as
@@ -168,7 +189,7 @@ export function createIntegrationClient(): SanityClient {
  * the same actionable message instead of a 401 from the API.
  */
 function requireProjectToken(): string {
-  const token = process.env.SANITY_INTEGRATION_TOKEN
+  const token = integrationEnv.SANITY_INTEGRATION_TOKEN
   if (!token) {
     throw new Error(
       'SANITY_INTEGRATION_TOKEN is not set. The integration smoke suite needs an API token for ' +
@@ -254,7 +275,7 @@ export function createStegaClient(): SanityStegaClient {
  * permissions" against the upload endpoint.
  */
 export function createMediaLibraryClient(): SanityClient {
-  const token = process.env.SANITY_INTEGRATION_ORG_TOKEN
+  const token = integrationEnv.SANITY_INTEGRATION_ORG_TOKEN
   if (!token) {
     throw new Error(
       'SANITY_INTEGRATION_ORG_TOKEN is not set. The Media Library smoke test needs an ' +
@@ -286,7 +307,7 @@ export function createMediaLibraryClient(): SanityClient {
  * place the suite departs from its pinned-version rule.
  */
 export function createAgentActionsClient(): SanityClient {
-  const token = process.env.SANITY_INTEGRATION_ORG_TOKEN
+  const token = integrationEnv.SANITY_INTEGRATION_ORG_TOKEN
   if (!token) {
     throw new Error(
       'SANITY_INTEGRATION_ORG_TOKEN is not set. The Agent Actions smoke test needs an ' +
