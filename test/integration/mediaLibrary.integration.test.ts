@@ -36,25 +36,38 @@ test('assets.upload() uploads to the Media Library and the resource id reaches t
     filename: 'client-integration-media-library.jpg',
   })
 
-  // The Media Library upload endpoint responds with `{asset: ...}`, a
-  // `sanity.asset` document - never Content Lake's `{document: ...}` shape.
-  // Narrowing on `currentVersion` (only present on the Media Library shape)
-  // rather than asserting keeps this a real check instead of a cast.
-  if (!('currentVersion' in uploaded)) {
-    throw new Error(
-      `Expected a Media Library asset document with \`currentVersion\`, got: ${JSON.stringify(uploaded)}`,
-    )
-  }
-
-  const instanceId = uploaded.currentVersion._ref
-
+  // Everything below runs inside the `try` so that a shape regression still
+  // cleans up: the upload has already succeeded server-side by this point, so
+  // throwing before the `finally` is registered would leak the asset into the
+  // library.
   try {
+    // Resolving to `undefined` here is the exact regression this test exists
+    // for: the client used to unwrap `.document`, which the Media Library
+    // endpoint never sends.
+    expect(uploaded).toBeDefined()
     expect(uploaded).toMatchObject({
       _id: expect.any(String),
-      assetType: expect.any(String),
+      _type: 'sanity.asset',
+      assetType: 'sanity.imageAsset',
     })
+
+    // The Media Library upload endpoint responds with `{asset: ...}`, a
+    // `sanity.asset` document - never Content Lake's `{document: ...}` shape.
+    // Narrowing on `currentVersion` (only present on the Media Library shape)
+    // rather than asserting keeps this a real check instead of a cast.
+    if (!('currentVersion' in uploaded)) {
+      throw new Error(
+        `Expected a Media Library asset document with \`currentVersion\`, got: ${JSON.stringify(uploaded)}`,
+      )
+    }
+    expect(uploaded.currentVersion._ref).toEqual(expect.any(String))
   } finally {
+    // `_id` is present on every shape this can resolve to, so it is safe to
+    // delete without narrowing first. The derived `image-...` instance
+    // document is only reachable via the Media Library shape.
     await client.delete(uploaded._id)
-    await client.delete(instanceId)
+    if ('currentVersion' in uploaded) {
+      await client.delete(uploaded.currentVersion._ref)
+    }
   }
 })
