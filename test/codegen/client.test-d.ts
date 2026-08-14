@@ -18,48 +18,48 @@ describe('client.fetch', () => {
   describe('without params', () => {
     test('known query type', async () => {
       const resp = await client.fetch("*[_type == 'foo']")
-      expectTypeOf(resp).toMatchTypeOf<FooResult>()
+      expectTypeOf(resp).toExtend<FooResult>()
     })
 
     test('ad-hoc query type', async () => {
       const resp = await client.fetch("*[_type == 'bar']")
-      expectTypeOf(resp).toMatchTypeOf<any>()
+      expectTypeOf(resp).toExtend<any>()
     })
 
     test('ad-hoc query with a custom type', async () => {
       type Result = {bar: string}
       const resp = await client.fetch<Result>("*[_type == 'bar']")
-      expectTypeOf(resp).toMatchTypeOf<Result>()
+      expectTypeOf(resp).toExtend<Result>()
     })
 
     test('known query type, but overriden with ad-hoc type', async () => {
       type Result = {bar: string}
       const resp = await client.fetch<Result>("*[_type == 'foo']")
-      expectTypeOf(resp).toMatchTypeOf<Result>()
+      expectTypeOf(resp).toExtend<Result>()
     })
   })
 
   describe('unfiltered response', () => {
     test('known query type', async () => {
       const resp = await client.fetch("*[_type == 'foo']", {}, {filterResponse: false})
-      expectTypeOf(resp).toMatchTypeOf<RawQueryResponse<FooResult>>()
+      expectTypeOf(resp).toExtend<RawQueryResponse<FooResult>>()
     })
 
     test('ad-hoc query type', async () => {
       const resp = await client.fetch("*[_type == 'bar']", {}, {filterResponse: false})
-      expectTypeOf(resp).toMatchTypeOf<RawQueryResponse<any>>()
+      expectTypeOf(resp).toExtend<RawQueryResponse<any>>()
     })
 
     test('ad-hoc query with a custom type', async () => {
       type Result = {bar: string}
       const resp = await client.fetch<Result>("*[_type == 'bar']", {}, {filterResponse: false})
-      expectTypeOf(resp).toMatchTypeOf<RawQueryResponse<Result>>()
+      expectTypeOf(resp).toExtend<RawQueryResponse<Result>>()
     })
 
     test('known query type, but overriden with ad-hoc type', async () => {
       type Result = {bar: string}
       const resp = await client.fetch<Result>("*[_type == 'foo']", {}, {filterResponse: false})
-      expectTypeOf(resp).toMatchTypeOf<RawQueryResponse<Result>>()
+      expectTypeOf(resp).toExtend<RawQueryResponse<Result>>()
     })
   })
 })

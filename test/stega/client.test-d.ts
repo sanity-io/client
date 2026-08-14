@@ -9,30 +9,28 @@ import {describe, expectTypeOf, test} from 'vitest'
 describe('client.fetch', () => {
   const client: SanityClient | SanityStegaClient = createStegaClient({})
   test('simple query', async () => {
-    expectTypeOf(await client.fetch('*')).toMatchTypeOf<any>()
-    expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toMatchTypeOf<any>()
+    expectTypeOf(await client.fetch('*')).toExtend<any>()
+    expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toExtend<any>()
   })
   test('generics', async () => {
-    expectTypeOf(await client.fetch<number>('count(*)')).toMatchTypeOf<number>()
+    expectTypeOf(await client.fetch<number>('count(*)')).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {type: string}>('count(*[_type == $type])', {type: 'post'}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch<number, {type: string}>('count(*[_type == $type])'),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch<number, {type: string}>('count(*[_type == $type])', {_type: 'post'}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
   })
   test('filterResponse: false', async () => {
     expectTypeOf(
       await client.fetch<number>('count(*)', {}, {filterResponse: true}),
-    ).toMatchTypeOf<number>()
-    expectTypeOf(
-      await client.fetch<number>('count(*)', {}, {filterResponse: false}),
-    ).toMatchTypeOf<{
+    ).toExtend<number>()
+    expectTypeOf(await client.fetch<number>('count(*)', {}, {filterResponse: false})).toExtend<{
       result: number
       ms: number
       query: string
@@ -44,14 +42,14 @@ describe('client.fetch', () => {
         {type: 'post'},
         {filterResponse: true},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {type: string}>(
         'count(*[_type == $type])',
         {type: 'post'},
         {filterResponse: false},
       ),
-    ).toMatchTypeOf<{
+    ).toExtend<{
       result: number
       ms: number
       query: string
@@ -68,12 +66,12 @@ test('SanityClient type can be assigned to SanityStegaClient', () => {
     return client instanceof SanityClient
   }
 
-  expectTypeOf(isStegaClient(createStegaClient({}))).toMatchTypeOf<boolean>()
-  expectTypeOf(isStegaClient(createClient({}))).toMatchTypeOf<boolean>()
-  expectTypeOf(isSanityClient(createStegaClient({}))).toMatchTypeOf<boolean>()
-  expectTypeOf(isSanityClient(createClient({}))).toMatchTypeOf<boolean>()
+  expectTypeOf(isStegaClient(createStegaClient({}))).toExtend<boolean>()
+  expectTypeOf(isStegaClient(createClient({}))).toExtend<boolean>()
+  expectTypeOf(isSanityClient(createStegaClient({}))).toExtend<boolean>()
+  expectTypeOf(isSanityClient(createClient({}))).toExtend<boolean>()
 })
 
 test('SanityClient type is assignable to itself on both export paths', async () => {
-  expectTypeOf<SanityClient>().toMatchTypeOf<import('@sanity/client/stega').SanityClient>()
+  expectTypeOf<SanityClient>().toExtend<import('@sanity/client/stega').SanityClient>()
 })

@@ -18,11 +18,11 @@ describe('client.fetch', () => {
         K in keyof QueryOptions as QueryParams[K] extends never ? K : never
       ]-?: QueryParams[K] extends never ? true : never
     }
-    expectTypeOf<QueryParamsKeys>().toMatchTypeOf<Record<string, never>>()
+    expectTypeOf<QueryParamsKeys>().toExtend<Record<string, never>>()
     // Any params not conflicting with QueryOptions should be allowed
-    expectTypeOf({type: 'post'}).toMatchTypeOf<QueryParams>()
+    expectTypeOf({type: 'post'}).toExtend<QueryParams>()
     // While those conflicting should error
-    expectTypeOf({cache: 'no-store'}).not.toMatchTypeOf<QueryParams>()
+    expectTypeOf({cache: 'no-store'}).not.toExtend<QueryParams>()
   })
   test('simple query', async () => {
     expectTypeOf(
@@ -31,21 +31,21 @@ describe('client.fetch', () => {
         {type: 'post'},
         {cache: 'force-cache', next: {revalidate: 60, tags: ['post']}},
       ),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch(
         '*[_type == $type]',
         {type: 'post'},
         {filterResponse: false, cache: 'force-cache', next: {revalidate: 60, tags: ['post']}},
       ),
-    ).toMatchTypeOf<RawQueryResponse<any>>()
+    ).toExtend<RawQueryResponse<any>>()
     expectTypeOf(
       await client.fetch(
         '*[_type == $type]',
         {type: 'post'},
         {filterResponse: false, returnQuery: false},
       ),
-    ).toMatchTypeOf<RawQuerylessQueryResponse<any>>()
+    ).toExtend<RawQuerylessQueryResponse<any>>()
   })
   test('generics', async () => {
     expectTypeOf(
@@ -53,7 +53,7 @@ describe('client.fetch', () => {
         // @ts-expect-error -- should fail
         cache: 'invalid-cache',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<
         number,
@@ -62,21 +62,21 @@ describe('client.fetch', () => {
       >('count(*[cache == $cache])', {
         cache: 'force-cache',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<
         number,
         // @ts-expect-error -- should fail
         {cache: QueryOptions['cache']}
       >('count(*[cache == $cache])', {cache: 'invalid-cache'}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
 
     expectTypeOf(
       await client.fetch<number>('count(*[next.revalidate == $next.revalidate])', {
         // @ts-expect-error -- should fail
         next: {revalidate: false},
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<
         number,
@@ -85,37 +85,37 @@ describe('client.fetch', () => {
       >('count(*[next.revalidate == $next.revalidate])', {
         next: {revalidate: false},
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
   })
   test('options for Next.js App Router are available', async () => {
     expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {cache: 'no-store'}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {revalidate: 60}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {revalidate: false}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {tags: ['post']}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch(
         '*[_type == $type]',
         {type: 'post'},
         {next: {revalidate: 60, tags: ['post']}},
       ),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch(
         '*[_type == $type]',
         {type: 'post'},
         {next: {revalidate: false, tags: ['post']}},
       ),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
   })
 })

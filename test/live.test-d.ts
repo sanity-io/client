@@ -10,8 +10,8 @@ describe('client.live.events', () => {
       {type: 'post'},
       {filterResponse: false, lastLiveEventId: searchParams.get('lastLiveEventId')},
     )
-    expectTypeOf(initial).toMatchTypeOf<number>()
-    expectTypeOf(syncTags!).toMatchTypeOf<SyncTag[]>()
+    expectTypeOf(initial).toExtend<number>()
+    expectTypeOf(syncTags!).toExtend<SyncTag[]>()
 
     client.live.events().subscribe((event) => {
       if (
@@ -26,15 +26,15 @@ describe('client.live.events', () => {
   test('event types', async () => {
     const subscription = client.live.events().subscribe((event) => {
       if (event.type === 'restart') {
-        expectTypeOf(event).toMatchTypeOf<{type: 'restart'}>()
+        expectTypeOf(event).toExtend<{type: 'restart'}>()
       }
       if (event.type === 'message') {
-        expectTypeOf(event).toMatchTypeOf<{type: 'message'; id: string; tags: SyncTag[]}>()
+        expectTypeOf(event).toMatchObjectType<{type: 'message'; id: string; tags: SyncTag[]}>()
       }
       if (event.type === 'goaway') {
-        expectTypeOf(event).toMatchTypeOf<{type: 'goaway'; id: string; reason: string}>()
+        expectTypeOf(event).toMatchObjectType<{type: 'goaway'; id: string; reason: string}>()
       }
     })
-    expectTypeOf(subscription.unsubscribe).toMatchTypeOf<() => void>()
+    expectTypeOf(subscription.unsubscribe).toExtend<() => void>()
   })
 })
