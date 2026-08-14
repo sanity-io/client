@@ -31,9 +31,10 @@ export const apiVersion = '2024-08-01'
  *
  * Media Library is an organization-level resource, reached by configuring the
  * client with `resource: {type: 'media-library', id}` rather than a project and
- * dataset. Reads work with the same project token the rest of this suite uses;
- * writes to the library need an organization-wide token, which this suite
- * deliberately does not carry. So the media library smoke test is read-only.
+ * dataset. Uploading to it needs an organization-wide token: a project token,
+ * however broad its project role, fails with "Insufficient permissions". So
+ * {@link createMediaLibraryClient} uses `SANITY_INTEGRATION_ORG_TOKEN`, not the
+ * project token the rest of this suite uses.
  */
 export const mediaLibraryId = 'mlh3itedy1LA'
 
@@ -70,20 +71,22 @@ export function createIntegrationClient(): SanityClient {
 
 /**
  * Creates a client targeting the organization's Media Library instead of a
- * project dataset, using the same token as {@link createIntegrationClient}.
+ * project dataset, using an organization-scoped token.
  *
  * The point of exercising this for real is that `resource` changes how the
  * client builds every URL (a library host and path rather than a project one).
  * A mocked transport cannot catch a regression there, because the mock is told
- * which URL to expect.
+ * which URL to expect. Uploading to the library also needs the organization
+ * token: the project token every other test uses gets "Insufficient
+ * permissions" against the upload endpoint.
  */
 export function createMediaLibraryClient(): SanityClient {
-  const token = process.env.SANITY_INTEGRATION_TOKEN
+  const token = process.env.SANITY_INTEGRATION_ORG_TOKEN
   if (!token) {
     throw new Error(
-      'SANITY_INTEGRATION_TOKEN is not set. The integration smoke suite needs an API token for ' +
-        'the test project to talk to the real Sanity API. See "Integration smoke tests" in ' +
-        'CONTRIBUTING.md for how to create your own token and run this suite locally.',
+      'SANITY_INTEGRATION_ORG_TOKEN is not set. The Media Library smoke test needs an ' +
+        'organization-scoped token to upload, separate from the project token the rest of the ' +
+        'suite uses. See "Integration smoke tests" in CONTRIBUTING.md.',
     )
   }
 

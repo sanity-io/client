@@ -164,13 +164,13 @@ The features currently covered, one test each:
 
 Most of the suite uses `SANITY_INTEGRATION_TOKEN`, a project-scoped Editor token.
 
-Agent Actions needs `SANITY_INTEGRATION_ORG_TOKEN` instead, an organization-scoped token. It requires the `sanity.organization/read` grant, which no project token can carry however broad its project role. The two are kept separate on purpose: the other tests have no business holding organization-wide credentials. Note that an organization token also needs a role that actually grants org read; the organization's default `member` role does not, and a token without it authenticates fine but sees no organizations.
+Agent Actions and Media Library both need `SANITY_INTEGRATION_ORG_TOKEN` instead, an organization-scoped token. Agent Actions requires the `sanity.organization/read` grant, which no project token can carry however broad its project role. Media Library uploads fail the same way: a project token gets "Insufficient permissions" against the upload endpoint, however broad its project role. The two are kept separate from the project token on purpose: the other tests have no business holding organization-wide credentials. Note that an organization token also needs a role that actually grants org read; the organization's default `member` role does not, and a token without it authenticates fine but sees no organizations.
 
 Agent Actions is also the one test that departs from the suite's pinned `apiVersion`, because it rejects dated versions and requires `vX`.
 
 Two limits worth knowing before extending these:
 
-- Media Library reads work with the project token, but writes need the organization token. The smoke test is read-only, which keeps the broader credential out of that path. Exercising `client.mediaLibrary.video.getPlaybackInfo()` would need a real video asset uploaded to the library; it fails client-side validation without one.
+- The Media Library smoke test uploads a real image and deletes it afterwards. The library dedupes uploads by content hash, so re-uploading identical bytes fails with "asset already exists" - the test generates unique bytes per run (a random UUID embedded as a JPEG comment segment) so concurrent runs of the integration matrix don't collide. `client.mediaLibrary.video.getPlaybackInfo()` remains hermetic-only: it would need a real video asset uploaded to the library, which this suite has no way to provision.
 - The Agent Actions test asserts the response is a non-empty string rather than matching exact content. Asking a model for an exact word and asserting it would flake on nondeterminism, which defeats the purpose. It also costs real inference per run, so keep it to one call.
 
 ### Naming
