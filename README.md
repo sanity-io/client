@@ -147,6 +147,13 @@ export async function updateDocumentTitle(_id, title) {
     - [Getting video playback information](#getting-video-playback-information)
     - [Working with signed playback information](#working-with-signed-playback-information)
     - [Downloading MP4 renditions](#downloading-mp4-renditions)
+  - [Collaboration Comments API](#collaboration-comments-api)
+    - [Configuration](#configuration-1)
+    - [Creating comments and replies](#creating-comments-and-replies)
+    - [Updating and deleting comments](#updating-and-deleting-comments)
+    - [Reactions](#reactions)
+    - [Fetching comments](#fetching-comments)
+    - [Listening for comment changes](#listening-for-comment-changes)
 - [License](#license)
 - [From `v5`](#from-v5)
   - [The default `useCdn` is changed to `true`](#the-default-usecdn-is-changed-to-true)
@@ -2527,6 +2534,171 @@ if (playbackInfo.renditions?.length) {
 ```
 
 Available resolutions depend on the source video but typically include `1080p`, `480p`, and `270p`.
+
+### Collaboration Comments API
+
+The Collaboration Comments API lets you read and write comments on documents in an organization resource, such as a Canvas or a dataset. These methods are available on the `client.collaboration.comments` namespace, with Observable equivalents on `client.observable.collaboration.comments`.
+
+> **Note:** This API is currently in alpha and may change in future releases.
+
+#### Configuration
+
+Comments are organization-scoped, so the client needs both an `organizationId` and a `resource`:
+
+```js
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  apiVersion: '2026-07-18',
+  token: 'valid-token',
+  useCdn: false,
+  organizationId: 'your-organization-id',
+  resource: {
+    type: 'canvas',
+    id: 'your-canvas-id',
+  },
+})
+```
+
+#### Creating comments and replies
+
+A top-level comment requires a `target`, while a reply requires a `parentCommentId`. Replies inherit `target`, `status` and `threadId` from the comment they reply to. The `message` is an array of Portable Text blocks.
+
+```js
+const message = [{_type: 'block', children: [{_type: 'span', text: 'Looks good to me'}]}]
+
+const comment = await client.collaboration.comments.create({
+  message,
+  target: {documentId: 'doc-1', documentType: 'article'},
+})
+
+const reply = await client.collaboration.comments.create({
+  message,
+  parentCommentId: comment._id,
+})
+```
+
+To comment on a single field, pass a `path` in the target. Inline selections additionally require a `range`, where each endpoint points at a keyed Portable Text child and a character offset:
+
+```js
+await client.collaboration.comments.create({
+  message,
+  target: {
+    documentId: 'doc-1',
+    documentType: 'article',
+    path: 'body',
+    range: {
+      start: {_key: 'span-1', offset: 0},
+      end: {_key: 'span-1', offset: 12},
+    },
+  },
+})
+```
+
+#### Updating and deleting comments
+
+`update()` can change the `message`, the `status`, or both, and resolves with the updated comment. Changing the status cascades to the comment's replies.
+
+```js
+await client.collaboration.comments.update('comment-1', {status: 'resolved'})
+```
+
+Deleting a comment also deletes its replies, so the returned `documentIds` covers the comment and every deleted reply:
+
+```js
+const {documentIds} = await client.collaboration.comments.delete('comment-1')
+```
+
+#### Reactions
+
+Reactions are added and removed on behalf of the authenticated user, and are identified by emoji short name:
+
+```js
+await client.collaboration.comments.addReaction('comment-1', ':+1:')
+await client.collaboration.comments.removeReaction('comment-1', ':+1:')
+```
+
+#### Fetching comments
+
+`fetch()` mirrors `client.fetch()`, and queries the comments stored for the configured resource. Comment documents are of type `sanity.comment`:
+
+```js
+const comments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && status == "open"] | order(_createdAt desc)[0...50]',
+)
+```
+
+A comment points at the document it belongs to through `target.document._ref`, a global document reference of the form `resourceType:resourceId:documentId`. It always uses the published document ID, even for comments created on a draft or a version, so to fetch the comments for a single document, pass that reference as a parameter:
+
+```js
+const comments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref]',
+  {ref: 'canvas:your-canvas-id:doc-1'},
+)
+```
+
+`getTargetDocumentRef()` builds that reference from the configured resource, and normalizes draft and version IDs to the published ID:
+
+```js
+client.collaboration.comments.getTargetDocumentRef('doc-1') // 'canvas:your-canvas-id:doc-1'
+client.collaboration.comments.getTargetDocumentRef('drafts.doc-1') // 'canvas:your-canvas-id:doc-1'
+
+const comments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref]',
+  {ref: client.collaboration.comments.getTargetDocumentRef('doc-1')},
+)
+```
+
+Because `target.document._ref` is normalized to the published ID, that query returns the comments for the published document, its drafts and all of its versions. `target.sourceDocumentId` holds the exact document ID the comment was created against, so filter on it to narrow the result to a single draft or version:
+
+```js
+// Comments created on the draft only
+const draftComments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
+  {
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
+    sourceDocumentId: 'drafts.doc-1',
+  },
+)
+
+// Comments created on a single version only
+const versionComments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
+  {
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
+    sourceDocumentId: 'versions.summer-release.doc-1',
+  },
+)
+```
+
+Pass untrusted values as parameters rather than interpolating them into the query string. A third argument takes request options such as `signal` and `tag`.
+
+The result type defaults to `unknown`, since the query decides the shape. In TypeScript, pass the expected shape as a type parameter:
+
+```ts
+import type {CollaborationCommentDocument} from '@sanity/client'
+
+const comments = await client.collaboration.comments.fetch<CollaborationCommentDocument[]>(
+  '*[_type == "sanity.comment"]',
+)
+```
+
+#### Listening for comment changes
+
+`listen()` mirrors `client.listen()` and returns an Observable of mutation events. It takes the same query and parameters as `fetch()`, followed by listener options such as `events` and `includeResult`:
+
+```js
+const subscription = client.collaboration.comments
+  .listen('*[_type == "sanity.comment" && target.document._ref == $ref]', {
+    ref: 'canvas:your-canvas-id:doc-1',
+  })
+  .subscribe((event) => {
+    console.log(event.documentId, event.transition)
+  })
+
+// Later, when you no longer need the updates
+subscription.unsubscribe()
+```
 
 ## License
 

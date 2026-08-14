@@ -1,4 +1,10 @@
-import type {CollaborationCommentCreate} from '@sanity/client'
+import {
+  type CollaborationCommentCreate,
+  type CollaborationCommentDocument,
+  createClient,
+  type MultipleMutationResult,
+} from '@sanity/client'
+import type {Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
 const message = [
@@ -79,5 +85,64 @@ describe('CollaborationCommentCreate', () => {
 
     expectTypeOf(replyWithTarget).toEqualTypeOf<CollaborationCommentCreate>()
     expectTypeOf(replyWithThreadId).toEqualTypeOf<CollaborationCommentCreate>()
+  })
+})
+
+describe('collaboration.comments write results', () => {
+  const {comments} = createClient({}).collaboration
+  const observableComments = createClient({}).observable.collaboration.comments
+  const body: CollaborationCommentCreate = {
+    message,
+    target: {documentId: 'doc-1', documentType: 'article'},
+  }
+
+  test('resolves to the comment document', () => {
+    expectTypeOf(comments.create(body)).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
+    expectTypeOf(comments.update('comment-1', {status: 'resolved'})).toEqualTypeOf<
+      Promise<CollaborationCommentDocument>
+    >()
+    expectTypeOf(comments.addReaction('comment-1', ':heart:')).toEqualTypeOf<
+      Promise<CollaborationCommentDocument>
+    >()
+    expectTypeOf(comments.removeReaction('comment-1', ':heart:')).toEqualTypeOf<
+      Promise<CollaborationCommentDocument>
+    >()
+
+    expectTypeOf(observableComments.create(body)).toEqualTypeOf<
+      Observable<CollaborationCommentDocument>
+    >()
+    expectTypeOf(observableComments.update('comment-1', {status: 'resolved'})).toEqualTypeOf<
+      Observable<CollaborationCommentDocument>
+    >()
+    expectTypeOf(observableComments.addReaction('comment-1', ':heart:')).toEqualTypeOf<
+      Observable<CollaborationCommentDocument>
+    >()
+    expectTypeOf(observableComments.removeReaction('comment-1', ':heart:')).toEqualTypeOf<
+      Observable<CollaborationCommentDocument>
+    >()
+  })
+
+  test('delete resolves to a mutation result, since it also removes replies', () => {
+    expectTypeOf(comments.delete('comment-1')).toEqualTypeOf<Promise<MultipleMutationResult>>()
+    expectTypeOf(observableComments.delete('comment-1')).toEqualTypeOf<
+      Observable<MultipleMutationResult>
+    >()
+  })
+
+  test('getTargetDocumentRef returns a global document reference', () => {
+    expectTypeOf(comments.getTargetDocumentRef('doc-1')).toEqualTypeOf<
+      CollaborationCommentDocument['target']['document']['_ref']
+    >()
+    expectTypeOf(observableComments.getTargetDocumentRef('doc-1')).toEqualTypeOf<
+      CollaborationCommentDocument['target']['document']['_ref']
+    >()
+  })
+
+  test('writes are not void', () => {
+    // @ts-expect-error - create resolves to the created comment
+    expectTypeOf(comments.create(body)).toEqualTypeOf<Promise<void>>()
+
+    // @ts-expect-error - delete resolves to a mutation result
+    expectTypeOf(comments.delete('comment-1')).toEqualTypeOf<Promise<void>>()
   })
 })

@@ -2,15 +2,20 @@ import {lastValueFrom, type Observable} from 'rxjs'
 
 import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequest, ListenEvent, MutationEvent, QueryParams} from '../types'
+import type {
+  HttpRequest,
+  ListenEvent,
+  MultipleMutationResult,
+  MutationEvent,
+  QueryParams,
+} from '../types'
 import {
   _addReaction,
   _create,
   _delete,
   _fetch,
-  _fetchStructured,
+  _getTargetDocumentRef,
   _listen,
-  _listenStructured,
   _removeReaction,
   _update,
 } from './comments'
@@ -20,46 +25,14 @@ import type {
   CollaborationCommentReactionShortName,
   CollaborationCommentsListenOptions,
   CollaborationCommentsRequestOptions,
-  CollaborationCommentsStructuredFetchOptions,
-  CollaborationCommentsStructuredListenOptions,
   CollaborationCommentsWriteOptions,
   CollaborationCommentUpdate,
 } from './types'
 
-type StructuredFetchArgs = [
-  options?: CollaborationCommentsStructuredFetchOptions,
-  requestOptions?: CollaborationCommentsRequestOptions,
-]
-type RawFetchArgs = [
-  query: string,
-  params?: QueryParams,
-  options?: CollaborationCommentsRequestOptions,
-]
-type FetchArgs = StructuredFetchArgs | RawFetchArgs
-
-type StructuredListenArgs = [
-  options?: CollaborationCommentsStructuredListenOptions,
-  listenOptions?: CollaborationCommentsListenOptions,
-]
-type RawListenArgs = [
-  query: string,
-  params?: QueryParams,
-  options?: CollaborationCommentsListenOptions,
-]
-type ListenArgs = StructuredListenArgs | RawListenArgs
-
-/**
- * The two call styles are distinguished by the first argument: raw GROQ calls
- * always pass a query string, structured calls pass an options object (or nothing).
- */
-function isRawArgs(args: FetchArgs): args is RawFetchArgs
-function isRawArgs(args: ListenArgs): args is RawListenArgs
-function isRawArgs(args: FetchArgs | ListenArgs): boolean {
-  return typeof args[0] === 'string'
-}
-
 /**
  * Comments on the configured `resource`.
+ *
+ * Requires `organizationId` and `resource` to be set in the client configuration.
  *
  * @alpha
  */
@@ -79,26 +52,30 @@ export class ObservableCollaborationCommentsClient {
    *
    * @param body - Comment to create
    * @param options - Optional request options
+   * @returns The created comment
    */
   create(
     body: CollaborationCommentCreate,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _create(this.#client, this.#httpRequest, body, options)
   }
 
   /**
    * Update the message and/or status of an existing comment.
    *
+   * Updating `status` cascades to the comment's replies.
+   *
    * @param id - Comment document ID
    * @param body - Fields to update
    * @param options - Optional request options
+   * @returns The updated comment
    */
   update(
     id: string,
     body: CollaborationCommentUpdate,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _update(this.#client, this.#httpRequest, id, body, options)
   }
 
@@ -107,8 +84,12 @@ export class ObservableCollaborationCommentsClient {
    *
    * @param id - Comment document ID
    * @param options - Optional request options
+   * @returns Mutation result, where `documentIds` covers the comment and every deleted reply
    */
-  delete(id: string, options?: CollaborationCommentsWriteOptions): Observable<void> {
+  delete(
+    id: string,
+    options?: CollaborationCommentsWriteOptions,
+  ): Observable<MultipleMutationResult> {
     return _delete(this.#client, this.#httpRequest, id, options)
   }
 
@@ -118,12 +99,13 @@ export class ObservableCollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction applied
    */
   addReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _addReaction(this.#client, this.#httpRequest, id, shortName, options)
   }
 
@@ -133,80 +115,97 @@ export class ObservableCollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction removed
    */
   removeReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Observable<void> {
+  ): Observable<CollaborationCommentDocument> {
     return _removeReaction(this.#client, this.#httpRequest, id, shortName, options)
+  }
+
+  /**
+   * Build the global document reference used by `target.document._ref`, for use in
+   * queries and listeners.
+   *
+   * The reference is built from the configured `resource` and the published ID of
+   * the given document ID, since comment references always use published IDs.
+   *
+   * @example
+   * ```ts
+   * client.collaboration.comments.listen(
+   *   '*[_type == "sanity.comment" && target.document._ref == $ref]',
+   *   {ref: client.collaboration.comments.getTargetDocumentRef('doc-1')},
+   * )
+   * ```
+   *
+   * @param documentId - Document ID, in published, draft or version form
+   * @returns Global document reference, of the form `resourceType:resourceId:documentId`
+   */
+  getTargetDocumentRef(
+    documentId: string,
+  ): CollaborationCommentDocument['target']['document']['_ref'] {
+    return _getTargetDocumentRef(this.#client, documentId)
   }
 
   /**
    * Fetch comments on the configured resource.
    *
-   * When called with structured options, this lists comment documents; the built-in
-   * `_type == "sanity.comment"` filter is always applied. When called with a GROQ
-   * query and params, it mirrors `client.fetch` and gives full control over the
-   * query and the result shape. Both call styles accept trailing request options
-   * such as `signal` and `tag`.
+   * Mirrors `client.fetch`. Comment documents are of type `sanity.comment`, so
+   * queries typically filter on `_type == "sanity.comment"`.
    *
-   * @param options - Structured query options
-   * @param requestOptions - Optional request options
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Optional request options
    */
-  fetch<R = CollaborationCommentDocument[]>(
-    options?: CollaborationCommentsStructuredFetchOptions,
-    requestOptions?: CollaborationCommentsRequestOptions,
-  ): Observable<R>
   fetch<R = unknown>(
     query: string,
     params?: QueryParams,
     options?: CollaborationCommentsRequestOptions,
-  ): Observable<R>
-  fetch<R>(...args: FetchArgs): Observable<R> {
-    return isRawArgs(args)
-      ? _fetch<R>(this.#client, this.#httpRequest, ...args)
-      : _fetchStructured<R>(this.#client, this.#httpRequest, ...args)
+  ): Observable<R> {
+    return _fetch<R>(this.#client, this.#httpRequest, query, params, options)
   }
 
   /**
    * Listen for changes to comments on the configured resource.
    *
-   * Emits mutation events unless `events` is configured, like `client.listen`.
-   * When called with structured options, it builds the query from `targetDocumentId`
-   * and `filter`; the built-in `_type == "sanity.comment"` filter is always applied.
-   * When called with a GROQ query and params, it mirrors
-   * `client.listen(query, params, options)`. Both call styles accept trailing
-   * listener options such as `events`, `includeResult` and `tag`.
+   * Mirrors `client.listen(query, params)`, and emits mutation events.
    *
-   * @param options - Structured listener options
-   * @param listenOptions - Optional listener options
+   * @param query - GROQ-filter to listen to changes for
+   * @param params - Optional query parameters
    */
-  listen(
-    options?: CollaborationCommentsStructuredListenOptions,
-  ): Observable<MutationEvent<CollaborationCommentDocument>>
-  listen<Opts extends CollaborationCommentsListenOptions>(
-    options: CollaborationCommentsStructuredListenOptions | undefined,
-    listenOptions: Opts,
-  ): Observable<ListenEventFromOptions<CollaborationCommentDocument, Opts>>
   listen(
     query: string,
     params?: QueryParams,
   ): Observable<MutationEvent<CollaborationCommentDocument>>
+  /**
+   * Listen for changes to comments on the configured resource.
+   *
+   * Mirrors `client.listen(query, params, options)`.
+   *
+   * @param query - GROQ-filter to listen to changes for
+   * @param params - Optional query parameters
+   * @param options - Listener options, such as `events`, `includeResult` and `tag`
+   */
   listen<Opts extends CollaborationCommentsListenOptions>(
     query: string,
     params: QueryParams | undefined,
     options: Opts,
   ): Observable<ListenEventFromOptions<CollaborationCommentDocument, Opts>>
-  listen(...args: ListenArgs): Observable<ListenEvent<CollaborationCommentDocument>> {
-    return isRawArgs(args)
-      ? _listen(this.#client, ...args)
-      : _listenStructured(this.#client, ...args)
+  listen(
+    query: string,
+    params?: QueryParams,
+    options?: CollaborationCommentsListenOptions,
+  ): Observable<ListenEvent<CollaborationCommentDocument>> {
+    return _listen(this.#client, query, params, options)
   }
 }
 
 /**
  * Comments on the configured `resource`.
+ *
+ * Requires `organizationId` and `resource` to be set in the client configuration.
  *
  * @alpha
  */
@@ -226,26 +225,30 @@ export class CollaborationCommentsClient {
    *
    * @param body - Comment to create
    * @param options - Optional request options
+   * @returns The created comment
    */
   create(
     body: CollaborationCommentCreate,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_create(this.#client, this.#httpRequest, body, options))
   }
 
   /**
    * Update the message and/or status of an existing comment.
    *
+   * Updating `status` cascades to the comment's replies.
+   *
    * @param id - Comment document ID
    * @param body - Fields to update
    * @param options - Optional request options
+   * @returns The updated comment
    */
   update(
     id: string,
     body: CollaborationCommentUpdate,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_update(this.#client, this.#httpRequest, id, body, options))
   }
 
@@ -254,8 +257,9 @@ export class CollaborationCommentsClient {
    *
    * @param id - Comment document ID
    * @param options - Optional request options
+   * @returns Mutation result, where `documentIds` covers the comment and every deleted reply
    */
-  delete(id: string, options?: CollaborationCommentsWriteOptions): Promise<void> {
+  delete(id: string, options?: CollaborationCommentsWriteOptions): Promise<MultipleMutationResult> {
     return lastValueFrom(_delete(this.#client, this.#httpRequest, id, options))
   }
 
@@ -265,12 +269,13 @@ export class CollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction applied
    */
   addReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_addReaction(this.#client, this.#httpRequest, id, shortName, options))
   }
 
@@ -280,76 +285,89 @@ export class CollaborationCommentsClient {
    * @param id - Comment document ID
    * @param shortName - Emoji short name, for example `:+1:`
    * @param options - Optional request options
+   * @returns The comment, with the reaction removed
    */
   removeReaction(
     id: string,
     shortName: CollaborationCommentReactionShortName,
     options?: CollaborationCommentsWriteOptions,
-  ): Promise<void> {
+  ): Promise<CollaborationCommentDocument> {
     return lastValueFrom(_removeReaction(this.#client, this.#httpRequest, id, shortName, options))
+  }
+
+  /**
+   * Build the global document reference used by `target.document._ref`, for use in
+   * queries and listeners.
+   *
+   * The reference is built from the configured `resource` and the published ID of
+   * the given document ID, since comment references always use published IDs.
+   *
+   * @example
+   * ```ts
+   * const comments = await client.collaboration.comments.fetch(
+   *   '*[_type == "sanity.comment" && target.document._ref == $ref]',
+   *   {ref: client.collaboration.comments.getTargetDocumentRef('doc-1')},
+   * )
+   * ```
+   *
+   * @param documentId - Document ID, in published, draft or version form
+   * @returns Global document reference, of the form `resourceType:resourceId:documentId`
+   */
+  getTargetDocumentRef(
+    documentId: string,
+  ): CollaborationCommentDocument['target']['document']['_ref'] {
+    return _getTargetDocumentRef(this.#client, documentId)
   }
 
   /**
    * Fetch comments on the configured resource.
    *
-   * When called with structured options, this lists comment documents; the built-in
-   * `_type == "sanity.comment"` filter is always applied. When called with a GROQ
-   * query and params, it mirrors `client.fetch` and gives full control over the
-   * query and the result shape. Both call styles accept trailing request options
-   * such as `signal` and `tag`.
+   * Mirrors `client.fetch`. Comment documents are of type `sanity.comment`, so
+   * queries typically filter on `_type == "sanity.comment"`.
    *
-   * @param options - Structured query options
-   * @param requestOptions - Optional request options
+   * @param query - GROQ-query to perform
+   * @param params - Optional query parameters
+   * @param options - Optional request options
    */
-  fetch<R = CollaborationCommentDocument[]>(
-    options?: CollaborationCommentsStructuredFetchOptions,
-    requestOptions?: CollaborationCommentsRequestOptions,
-  ): Promise<R>
   fetch<R = unknown>(
     query: string,
     params?: QueryParams,
     options?: CollaborationCommentsRequestOptions,
-  ): Promise<R>
-  fetch<R>(...args: FetchArgs): Promise<R> {
-    return lastValueFrom(
-      isRawArgs(args)
-        ? _fetch<R>(this.#client, this.#httpRequest, ...args)
-        : _fetchStructured<R>(this.#client, this.#httpRequest, ...args),
-    )
+  ): Promise<R> {
+    return lastValueFrom(_fetch<R>(this.#client, this.#httpRequest, query, params, options))
   }
 
   /**
    * Listen for changes to comments on the configured resource.
    *
-   * Emits mutation events unless `events` is configured, like `client.listen`.
-   * When called with structured options, it builds the query from `targetDocumentId`
-   * and `filter`; the built-in `_type == "sanity.comment"` filter is always applied.
-   * When called with a GROQ query and params, it mirrors
-   * `client.listen(query, params, options)`. Both call styles accept trailing
-   * listener options such as `events`, `includeResult` and `tag`.
+   * Mirrors `client.listen(query, params)`, and emits mutation events.
    *
-   * @param options - Structured listener options
-   * @param listenOptions - Optional listener options
+   * @param query - GROQ-filter to listen to changes for
+   * @param params - Optional query parameters
    */
-  listen(
-    options?: CollaborationCommentsStructuredListenOptions,
-  ): Observable<MutationEvent<CollaborationCommentDocument>>
-  listen<Opts extends CollaborationCommentsListenOptions>(
-    options: CollaborationCommentsStructuredListenOptions | undefined,
-    listenOptions: Opts,
-  ): Observable<ListenEventFromOptions<CollaborationCommentDocument, Opts>>
   listen(
     query: string,
     params?: QueryParams,
   ): Observable<MutationEvent<CollaborationCommentDocument>>
+  /**
+   * Listen for changes to comments on the configured resource.
+   *
+   * Mirrors `client.listen(query, params, options)`.
+   *
+   * @param query - GROQ-filter to listen to changes for
+   * @param params - Optional query parameters
+   * @param options - Listener options, such as `events`, `includeResult` and `tag`
+   */
   listen<Opts extends CollaborationCommentsListenOptions>(
     query: string,
     params: QueryParams | undefined,
     options: Opts,
   ): Observable<ListenEventFromOptions<CollaborationCommentDocument, Opts>>
-  listen(...args: ListenArgs): Observable<ListenEvent<CollaborationCommentDocument>> {
-    return isRawArgs(args)
-      ? _listen(this.#client, ...args)
-      : _listenStructured(this.#client, ...args)
+  listen(
+    query: string,
+    params?: QueryParams,
+    options?: CollaborationCommentsListenOptions,
+  ): Observable<ListenEvent<CollaborationCommentDocument>> {
+    return _listen(this.#client, query, params, options)
   }
 }

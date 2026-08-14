@@ -1,3 +1,4 @@
+import {getPublishedId} from '@sanity/client/csm'
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
@@ -11,9 +12,14 @@ import {
   possibleOptions as possibleListenOptions,
 } from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequest, QueryParams, ResumableListenEventNames} from '../types'
+import type {
+  HttpRequest,
+  MultipleMutationResult,
+  MutationOperation,
+  QueryParams,
+  ResumableListenEventNames,
+} from '../types'
 import defaults from '../util/defaults'
-import {getPublishedId} from '../util/getPublishedId'
 import {pick} from '../util/pick'
 import {
   type CollaborationCommentCreate,
@@ -21,8 +27,6 @@ import {
   type CollaborationCommentReactionShortName,
   type CollaborationCommentsListenOptions,
   type CollaborationCommentsRequestOptions,
-  type CollaborationCommentsStructuredFetchOptions,
-  type CollaborationCommentsStructuredListenOptions,
   type CollaborationCommentsWriteOptions,
   type CollaborationCommentUpdate,
   possibleRequestOptions,
@@ -56,53 +60,59 @@ function resourceQuery(client: Client): Record<string, string> {
   }
 }
 
-function buildFilter(
+/** @internal */
+export function _getTargetDocumentRef(
   client: Client,
-  options: {filter?: string; targetDocumentId?: string} = {},
-): string {
-  const conditions = ['_type == "sanity.comment"']
-
-  if (options.targetDocumentId) {
-    const {resourceType, resourceId} = resourceQuery(client)
-    const ref = `${resourceType}:${resourceId}:${getPublishedId(options.targetDocumentId)}`
-    conditions.push(`target.document._ref == ${JSON.stringify(ref)}`)
+  documentId: string,
+): CollaborationCommentDocument['target']['document']['_ref'] {
+  if (!documentId) {
+    throw new Error('Document ID must be provided')
   }
 
-  if (options.filter) {
-    conditions.push(`(${options.filter})`)
+  const {resource} = client.config()
+
+  if (!resource) {
+    throw new Error('`resource` must be configured to use collaboration comments')
   }
 
-  return conditions.join(' && ')
+  return `${resource.type}:${resource.id}:${getPublishedId(documentId)}`
 }
 
-function buildStructuredFetchQuery(
+type WriteArgs = [
   client: Client,
-  options: CollaborationCommentsStructuredFetchOptions = {},
-): string {
-  const {orderings, slice} = options
-  let query = `*[${buildFilter(client, options)}]`
+  httpRequest: HttpRequest,
+  method: 'POST' | 'PATCH' | 'DELETE',
+  url: string,
+  body: unknown,
+  options?: CollaborationCommentsWriteOptions,
+]
 
-  if (orderings?.length) {
-    const order = orderings.map((ordering) => `${ordering.field} ${ordering.direction}`)
-    query += ` | order(${order.join(', ')})`
-  }
-
-  if (slice) {
-    query += `[${slice[0]}...${slice[1]}]`
-  }
-
-  return query
+/**
+ * The write endpoints pass the mutation response through as-is, mirroring
+ * `client.mutate`.
+ */
+interface CommentMutationResponse {
+  transactionId: string
+  results: {id: string; operation: MutationOperation}[]
 }
 
-function write(
+/**
+ * Writes that mutate a single comment always come back with the document, since
+ * the API requests documents from the org store and 404s when nothing matched.
+ */
+interface CommentDocumentMutationResponse extends CommentMutationResponse {
+  results: {id: string; operation: MutationOperation; document: CollaborationCommentDocument}[]
+}
+
+function write<T>(
   client: Client,
   httpRequest: HttpRequest,
   method: 'POST' | 'PATCH' | 'DELETE',
   url: string,
   body: unknown,
   options: CollaborationCommentsWriteOptions = {},
-): Observable<void> {
-  return _request<void>(client, httpRequest, {
+): Observable<T> {
+  return _request<T>(client, httpRequest, {
     method,
     uri: url,
     body,
@@ -114,14 +124,36 @@ function write(
   })
 }
 
+function writeDocument(...args: WriteArgs): Observable<CollaborationCommentDocument> {
+  return write<CommentDocumentMutationResponse>(...args).pipe(
+    map(({results}) => {
+      const document = results[0]?.document
+      if (!document) {
+        throw new Error('Comment write did not return a comment document')
+      }
+      return document
+    }),
+  )
+}
+
+function writeMutationResult(...args: WriteArgs): Observable<MultipleMutationResult> {
+  return write<CommentMutationResponse>(...args).pipe(
+    map(({transactionId, results}) => ({
+      transactionId,
+      documentIds: results.map((result) => result.id),
+      results,
+    })),
+  )
+}
+
 /** @internal */
 export function _create(
   client: Client,
   httpRequest: HttpRequest,
   body: CollaborationCommentCreate,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'POST', '/collaboration/comments', body, options)
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(client, httpRequest, 'POST', '/collaboration/comments', body, options)
 }
 
 /** @internal */
@@ -131,8 +163,8 @@ export function _update(
   id: string,
   body: CollaborationCommentUpdate,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'PATCH', commentUrl(id), body, options)
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(client, httpRequest, 'PATCH', commentUrl(id), body, options)
 }
 
 /** @internal */
@@ -141,8 +173,8 @@ export function _delete(
   httpRequest: HttpRequest,
   id: string,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'DELETE', commentUrl(id), undefined, options)
+): Observable<MultipleMutationResult> {
+  return writeMutationResult(client, httpRequest, 'DELETE', commentUrl(id), undefined, options)
 }
 
 /** @internal */
@@ -152,8 +184,15 @@ export function _addReaction(
   id: string,
   shortName: CollaborationCommentReactionShortName,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(client, httpRequest, 'POST', `${commentUrl(id)}/reactions`, {shortName}, options)
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(
+    client,
+    httpRequest,
+    'POST',
+    `${commentUrl(id)}/reactions`,
+    {shortName},
+    options,
+  )
 }
 
 /** @internal */
@@ -163,8 +202,8 @@ export function _removeReaction(
   id: string,
   shortName: CollaborationCommentReactionShortName,
   options?: CollaborationCommentsWriteOptions,
-): Observable<void> {
-  return write(
+): Observable<CollaborationCommentDocument> {
+  return writeDocument(
     client,
     httpRequest,
     'DELETE',
@@ -201,22 +240,6 @@ export function _fetch<R>(
 }
 
 /** @internal */
-export function _fetchStructured<R>(
-  client: Client,
-  httpRequest: HttpRequest,
-  options: CollaborationCommentsStructuredFetchOptions = {},
-  requestOptions?: CollaborationCommentsRequestOptions,
-): Observable<R> {
-  return _fetch(
-    client,
-    httpRequest,
-    buildStructuredFetchQuery(client, options),
-    options.params,
-    requestOptions,
-  )
-}
-
-/** @internal */
 export function _listen<
   Opts extends CollaborationCommentsListenOptions = CollaborationCommentsListenOptions,
 >(
@@ -234,7 +257,7 @@ export function _listen<
   const qs = encodeQueryString({
     query,
     params,
-    options: {tag, ...listenOpts, ...resourceQuery(client)},
+    options: {...listenOpts, ...resourceQuery(client)},
   })
 
   const uri = `${client.getUrl('/collaboration/comments/listen')}${qs}`
@@ -249,15 +272,4 @@ export function _listen<
     uri,
     events,
   )
-}
-
-/** @internal */
-export function _listenStructured<
-  Opts extends CollaborationCommentsListenOptions = CollaborationCommentsListenOptions,
->(
-  client: Client,
-  options: CollaborationCommentsStructuredListenOptions = {},
-  listenOptions?: Opts,
-): Observable<ListenEventFromOptions<CollaborationCommentDocument, Opts>> {
-  return _listen(client, `*[${buildFilter(client, options)}]`, options.params, listenOptions)
 }
