@@ -13,7 +13,16 @@ export default defineConfig({
     cloudflareTest({
       // Intentionally no `compatibilityFlags: ['nodejs_compat']` - the point of
       // this suite is to prove the client runs on a stock worker.
-      miniflare: {compatibilityDate: '2024-09-23'},
+      //
+      // `2024-11-11` is the earliest date at which workerd implements the
+      // `cache` field on a request init, which `eventsource` sets to
+      // `no-store` on every SSE connection. Before that date workerd throws
+      // "The 'cache' field on 'RequestInitializerDict' is not implemented"
+      // rather than ignoring it, so `client.listen()` and
+      // `client.live.events()` cannot connect at all. Equivalent to enabling
+      // the `cache_option_enabled` flag on an older date; both were verified
+      // by probing miniflare directly. Do not pin this earlier.
+      miniflare: {compatibilityDate: '2024-11-11'},
     }),
   ],
   test: {

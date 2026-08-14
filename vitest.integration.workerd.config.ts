@@ -23,7 +23,16 @@ export default defineConfig({
       miniflare: {
         // `compatibilityDate` is required or workerd will not start.
         // `nodejs_compat` is deliberately omitted, matching `vitest.workerd.config.ts`.
-        compatibilityDate: '2024-09-23',
+        //
+        // `2024-11-11` is the earliest date at which workerd implements the `cache` field
+        // on a request init. `eventsource` sets `cache: 'no-store'` on every SSE
+        // connection, and before that date workerd throws "The 'cache' field on
+        // 'RequestInitializerDict' is not implemented" instead of ignoring it, so the
+        // `listen()` and `live.events()` tests here could not connect. That is a real
+        // constraint on Workers users, not a test artifact: a Worker pinned to an earlier
+        // compatibility date cannot use either API. Same reasoning and same date as
+        // `vitest.workerd.config.ts`; see the longer note there.
+        compatibilityDate: '2024-11-11',
         compatibilityFlags: [],
       },
     }),
