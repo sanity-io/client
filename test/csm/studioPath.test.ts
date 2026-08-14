@@ -23,16 +23,16 @@ const srcObject = {
 
 describe('fromString', () => {
   test('throws if not a string', () => {
-    // @ts-expect-error
+    // @ts-expect-error -- fromString() requires a string argument
     expect(() => fromString()).toThrow('Path is not a string')
-    // @ts-expect-error
+    // @ts-expect-error -- fromString() requires a string, not a number
     expect(() => fromString(13)).toThrow('Path is not a string')
 
     expect(
       // @ts-expect-error -- fromString() requires a string, not null
       () => fromString(null),
     ).toThrow('Path is not a string')
-    // @ts-expect-error
+    // @ts-expect-error -- fromString() requires a string, not a boolean
     expect(() => fromString(false)).toThrow('Path is not a string')
   })
 
@@ -82,7 +82,7 @@ describe('fromString', () => {
 
 describe('toString', () => {
   test('throws if not an array', () => {
-    // @ts-expect-error
+    // @ts-expect-error -- toString() requires an array argument
     expect(() => toString()).toThrow('Path is not an array')
 
     expect(
