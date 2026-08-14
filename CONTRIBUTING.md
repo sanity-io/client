@@ -205,6 +205,8 @@ Supply a matching token alongside any override: the default tokens are scoped to
 - Unique ids per run, built with `crypto.randomUUID()`, so concurrent runs cannot collide.
 - Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset.
 - No `skipIf`/`runIf`/`.skip`/`.todo`, same rule as the rest of the suite. If a feature cannot be exercised with the tokens and provisioning available, document the gap here instead of writing a test that never runs.
+- Never query for a document you just wrote without polling. Content Lake acknowledges a write before the query index has caught up, so `create()` can resolve, and the document be readable through the `/doc` endpoint, while a GROQ query for it still returns nothing. Use `fetchUntilVisible()` from `test/integration/helpers.ts`. This lag is usually far under the first poll interval, which is what makes it dangerous: a single fetch passes every time locally and fails occasionally in CI. `getDocument()` and `getDocuments()` read the document store directly and need no polling.
+- Keep assertions outside the polling helper, and let request errors propagate. `fetchUntilVisible()` retries only on absence, so a wrong value or a 401 fails immediately instead of being retried until the deadline.
 
 This suite runs on every pull request commit and nightly (see `.github/workflows/live.yml`).
 

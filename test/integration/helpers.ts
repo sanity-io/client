@@ -73,6 +73,64 @@ export function uniqueDocumentId(feature: string): string {
 }
 
 /**
+ * How long to wait for a just-written document to become queryable, and how
+ * often to re-check. The 15s ceiling sits well inside this suite's 30s
+ * `testTimeout` so that exhausting it reports as "never became visible" rather
+ * than as an opaque test timeout, while leaving room for the surrounding
+ * create and delete.
+ */
+const QUERY_VISIBILITY_TIMEOUT_MS = 15_000
+const QUERY_VISIBILITY_INTERVAL_MS = 250
+
+/**
+ * Re-runs a query until its result shows up, then returns it.
+ *
+ * Writes to Content Lake are acknowledged before the query index has caught
+ * up: `create()` can resolve, and the document be readable through the `/doc`
+ * endpoint, while a GROQ query for it still returns nothing. That delay is
+ * normally imperceptible, which is exactly what makes it dangerous in a test -
+ * it passes locally and fails occasionally in CI. Any test that queries for a
+ * document it just wrote has to poll rather than assume.
+ *
+ * Only absence is retried. Errors from `fetch` propagate immediately: a 401 or
+ * a malformed query is never going to resolve by waiting, and retrying would
+ * turn a clear failure into a slow one. For the same reason the caller's
+ * assertions stay outside this helper, so a wrong value fails at once instead
+ * of being re-polled until the deadline.
+ *
+ * `isVisible` is required rather than defaulted: what counts as "not there
+ * yet" differs per query (`null`, an empty array, a missing source map), and
+ * guessing wrong would silently return too early and reintroduce the flake.
+ */
+export async function fetchUntilVisible<T>(
+  label: string,
+  fetch: () => Promise<T>,
+  isVisible: (result: T) => boolean,
+): Promise<T> {
+  const startedAt = Date.now()
+  let attempts = 0
+
+  for (;;) {
+    const result = await fetch()
+    attempts++
+    if (isVisible(result)) {
+      return result
+    }
+
+    const elapsed = Date.now() - startedAt
+    if (elapsed + QUERY_VISIBILITY_INTERVAL_MS >= QUERY_VISIBILITY_TIMEOUT_MS) {
+      throw new Error(
+        `${label} never became queryable: still not visible after ${attempts} attempts over ` +
+          `${elapsed}ms. The document was written successfully, so either the query index is ` +
+          `lagging far beyond ${QUERY_VISIBILITY_TIMEOUT_MS}ms or the query does not match it.`,
+      )
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, QUERY_VISIBILITY_INTERVAL_MS))
+  }
+}
+
+/**
  * Creates a client for the integration smoke suite, reading the token from
  * `SANITY_INTEGRATION_TOKEN`.
  *

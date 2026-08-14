@@ -1,6 +1,11 @@
 import {expect, test} from 'vitest'
 
-import {createIntegrationClient, smokeDocumentType, uniqueDocumentId} from './helpers'
+import {
+  createIntegrationClient,
+  fetchUntilVisible,
+  smokeDocumentType,
+  uniqueDocumentId,
+} from './helpers'
 
 /**
  * Smoke test for `client.fetch()` against the real API.
@@ -18,9 +23,14 @@ test('fetch() resolves the published package and queries the real API', async ()
 
   await client.create({_id: id, _type: smokeDocumentType, label: 'query smoke test'})
   try {
-    const result = await client.fetch<{_id: string; label: string} | null>(
-      '*[_id == $id][0]{_id, label}',
-      {id},
+    // Polls rather than querying once: the write is acknowledged before the
+    // query index has necessarily caught up, so a single fetch would flake.
+    // The assertion stays out here, so a document that is visible but wrong
+    // fails immediately instead of being polled until the deadline.
+    const result = await fetchUntilVisible(
+      `document ${id}`,
+      () => client.fetch<{_id: string; label: string} | null>('*[_id == $id][0]{_id, label}', {id}),
+      (value) => value !== null,
     )
     expect(result).toEqual({_id: id, label: 'query smoke test'})
   } finally {

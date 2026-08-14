@@ -1,6 +1,11 @@
 import {expect, test} from 'vitest'
 
-import {createIntegrationClient, smokeDocumentType, uniqueDocumentId} from './helpers'
+import {
+  createIntegrationClient,
+  fetchUntilVisible,
+  smokeDocumentType,
+  uniqueDocumentId,
+} from './helpers'
 
 /**
  * Smoke test for content source maps / stega: `client.fetch()` with
@@ -18,10 +23,21 @@ test('fetch() returns a resultSourceMap for content source maps', async () => {
     items: [{_key: 'a', label: 'first'}],
   })
   try {
-    const response = await client.fetch<unknown>(
-      '*[_id == $id][0]',
-      {id},
-      {filterResponse: false, resultSourceMap: 'withKeyArraySelector'},
+    // Same eventual-consistency guard as the query smoke test: poll on the
+    // result appearing, then assert the source map. Waiting on `result` rather
+    // than on `resultSourceMap` keeps the two concerns apart - the source map
+    // is produced by the same query execution, so if it is missing once the
+    // document is visible, that is a real regression and should fail at once
+    // rather than be retried until the deadline.
+    const response = await fetchUntilVisible(
+      `document ${id}`,
+      () =>
+        client.fetch<unknown>(
+          '*[_id == $id][0]',
+          {id},
+          {filterResponse: false, resultSourceMap: 'withKeyArraySelector'},
+        ),
+      ({result}) => result !== null,
     )
 
     expect(response.resultSourceMap?.documents).toEqual(
