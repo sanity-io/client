@@ -3034,9 +3034,10 @@ describe('client', async () => {
         {id: 'abc123', operation: 'delete'},
         {id: 'abc456', operation: 'delete'},
       ]
-      nock(projectHost())
-        .post('/v1/data/mutate/foo?returnIds=true&visibility=sync', expectedBody)
-        .reply(200, {transactionId: 'abc123', results})
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {body: expectedBody})
+        .respond({status: 200, body: {transactionId: 'abc123', results}})
 
       const res = await getClient().delete({query}, {returnFirst: false, returnDocuments: false})
       expect(res.documentIds, 'returns all document ids').toEqual(['abc123', 'abc456'])
@@ -3050,14 +3051,17 @@ describe('client', async () => {
         {_id: 'abc456', _type: 'post', name: 'Velociraptor'},
       ]
       const expectedBody = {mutations: docs.map((doc) => ({create: doc}))}
-      nock(projectHost())
-        .post(
-          '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync',
-          expectedBody,
-        )
-        .reply(200, {
-          transactionId: 'abc123',
-          results: docs.map((doc) => ({id: doc._id, document: doc, operation: 'create'})),
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+          body: expectedBody,
+        })
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'abc123',
+            results: docs.map((doc) => ({id: doc._id, document: doc, operation: 'create'})),
+          },
         })
 
       const res = await getClient().mutate(

@@ -2,7 +2,7 @@ import {getPublishedId} from '@sanity/client/csm'
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
-import {_request} from '../data/dataMethods'
+import {_requestObservable} from '../data/dataMethods'
 import {encodeQueryString} from '../data/encodeQueryString'
 import {
   _connectListenEventSource,
@@ -112,7 +112,7 @@ function write<T>(
   body: unknown,
   options: CollaborationCommentsWriteOptions = {},
 ): Observable<T> {
-  return _request<T>(client, httpRequest, {
+  return _requestObservable<T>(client, httpRequest, {
     method,
     uri: url,
     body,
@@ -232,7 +232,7 @@ export function _fetch<R>(
     return throwError(() => new Error('Query too large for request URL'))
   }
 
-  return _request<{result: R}>(client, httpRequest, {
+  return _requestObservable<{result: R}>(client, httpRequest, {
     method: 'GET',
     uri,
     ...pick(options || {}, possibleRequestOptions),

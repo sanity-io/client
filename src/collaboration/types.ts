@@ -49,7 +49,12 @@ export type CollaborationCommentStatus = 'open' | 'resolved'
  * @alpha
  */
 export type CollaborationCommentReactionShortName =
-  ':-1:' | ':+1:' | ':eyes:' | ':heart:' | ':heavy_plus_sign:' | ':rocket:'
+  | ':-1:'
+  | ':+1:'
+  | ':eyes:'
+  | ':heart:'
+  | ':heavy_plus_sign:'
+  | ':rocket:'
 
 /**
  * A single Portable Text block, as used in comment messages and content snapshots.
