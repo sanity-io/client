@@ -153,7 +153,6 @@ export function _listen<
 
   const listenFor = (options.events ? options.events : ['mutation']) satisfies Opts['events']
 
-<<<<<<< HEAD
   return _connectListenEventSource<ListenEventFromOptions<R, Opts>>(this, uri, listenFor)
 }
 
@@ -163,16 +162,12 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
   uri: string,
   listenFor: string[],
 ): Observable<TEvent> {
-  const {token, withCredentials, headers: configHeaders} = client.config()
+  const config = client.config()
+  const {token, withCredentials, headers: configHeaders} = config
 
-  const esOptions: EventSourceInit & {headers?: Record<string, string>} = {}
-  if (withCredentials) {
-    esOptions.withCredentials = true
-=======
   const headers: Record<string, string> = {}
   if (token) {
     headers.Authorization = `Bearer ${token}`
->>>>>>> main
   }
   if (configHeaders) {
     Object.assign(headers, configHeaders)
