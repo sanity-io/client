@@ -1,3 +1,4 @@
+import type {MediaLibraryAssetDocument, SanityImageAssetDocument} from '@sanity/client'
 import {expect, test} from 'vitest'
 
 import {createMediaLibraryClient, mediaLibraryId, videoAssetId} from './helpers'
@@ -35,9 +36,19 @@ test('assets.upload() uploads to the Media Library, and the asset can be read ba
   expect(client.config().resource).toEqual({type: 'media-library', id: mediaLibraryId})
 
   const bytes = uniqueJpegBytes()
-  const uploaded = await client.assets.upload('image', new Blob([bytes]), {
-    filename: 'client-integration-media-library.jpg',
-  })
+  // Annotated as the union rather than left to inference, because `upload()`
+  // declares only the Content Lake shape: against a Media Library it resolves a
+  // `MediaLibraryAssetDocument` at runtime, which its type cannot express
+  // without a breaking change (see the note on `upload()`). Without this, the
+  // `currentVersion` narrowing below would silently resolve through
+  // `SanityImageAssetDocument`'s index signature and assert against `any`.
+  // Widening the annotation is safe and needs no cast, since the declared
+  // return type is assignable to this union.
+  const uploaded: SanityImageAssetDocument | MediaLibraryAssetDocument = await client.assets.upload(
+    'image',
+    new Blob([bytes]),
+    {filename: 'client-integration-media-library.jpg'},
+  )
 
   /**
    * Deletes everything the upload created. Safe to call twice: deleting an

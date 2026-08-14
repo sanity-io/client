@@ -1,8 +1,8 @@
 ---
-'@sanity/client': major
+'@sanity/client': patch
 ---
 
-fix!: correct the return type of `delete()` and `mutate()` when called with no options
+fix: correct the return type of `delete()` and `mutate()` when called with no options
 
 `client.delete(id)` and `client.mutate(mutations)` were typed to resolve to a
 document (`SanityDocument<R>`) when called without an options argument, but
@@ -17,7 +17,9 @@ Both methods now correctly type as resolving to `MultipleMutationResult` by
 default, matching the (unchanged) runtime behavior, on both the
 promise-based and observable clients.
 
-If you were relying on the old (incorrect) type:
+Released as a patch rather than a major even though a declared type changed. Code that read `._id` off the result was reading `undefined` at runtime, so no working application can have depended on the old type: anything that type-checked against it was already broken when it ran. What changes is that the mistake is now visible at compile time instead of at runtime.
+
+If `tsc` starts failing on one of these calls, that failure is pointing at a real bug. To fix it:
 
 - To get the document back, pass `{returnFirst: true, returnDocuments: true}`
   explicitly: `await client.delete(id, {returnFirst: true, returnDocuments: true})`.

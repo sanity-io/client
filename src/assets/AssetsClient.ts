@@ -38,7 +38,7 @@ export class ObservableAssetsClient {
     assetType: 'file',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<UploadEvent<{document: SanityAssetDocument} | {asset: MediaLibraryAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityAssetDocument}>>
 
   /**
    * Uploads an image asset to the configured dataset
@@ -51,9 +51,7 @@ export class ObservableAssetsClient {
     assetType: 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<
-    UploadEvent<{document: SanityImageAssetDocument} | {asset: MediaLibraryAssetDocument}>
-  >
+  ): Observable<UploadEvent<{document: SanityImageAssetDocument}>>
   /**
    * Uploads a file or an image asset to the configured dataset
    *
@@ -65,12 +63,7 @@ export class ObservableAssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<
-    UploadEvent<
-      | {document: SanityAssetDocument | SanityImageAssetDocument}
-      | {asset: MediaLibraryAssetDocument}
-    >
-  >
+  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
@@ -97,6 +90,16 @@ export class AssetsClient {
   /**
    * Uploads a file asset to the configured dataset
    *
+   * Note: when the client is configured against a Media Library
+   * (`resource: {type: 'media-library', id}`), this resolves to a
+   * {@link MediaLibraryAssetDocument} at runtime, not to a
+   * {@link SanityAssetDocument}. The declared type cannot express that: the
+   * shape depends on the client's configuration rather than on the arguments,
+   * so an overload cannot discriminate it, and widening the return type into a
+   * union would be a breaking change for every existing caller. Narrow the
+   * result yourself (for example, check for `currentVersion`) if you upload to
+   * a Media Library. Typing this honestly is deferred to the next major.
+   *
    * @param assetType - Asset type (file)
    * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
    * @param options - Options to use for the upload
@@ -105,9 +108,13 @@ export class AssetsClient {
     assetType: 'file',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityAssetDocument | MediaLibraryAssetDocument>
+  ): Promise<SanityAssetDocument>
   /**
    * Uploads an image asset to the configured dataset
+   *
+   * Note: against a Media Library this resolves to a
+   * {@link MediaLibraryAssetDocument} at runtime. See the `'file'` overload
+   * above for why the declared type cannot say so.
    *
    * @param assetType - Asset type (image)
    * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
@@ -117,7 +124,7 @@ export class AssetsClient {
     assetType: 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityImageAssetDocument | MediaLibraryAssetDocument>
+  ): Promise<SanityImageAssetDocument>
   /**
    * Uploads a file or an image asset to the configured dataset
    *
@@ -129,7 +136,7 @@ export class AssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityAssetDocument | SanityImageAssetDocument | MediaLibraryAssetDocument>
+  ): Promise<SanityAssetDocument | SanityImageAssetDocument>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
