@@ -13,6 +13,10 @@ import {createAgentActionsClient} from './helpers'
  * The assertion is on shape, not content. Asking an LLM to reply with an exact
  * word and then asserting that word would make this test flake on model
  * nondeterminism, which is the opposite of what a smoke test is for.
+ *
+ * Carries no inline timeout: inference latency is why the suite-wide
+ * `testTimeout` is 60s (see `vitest.integration.config.ts`), so an override
+ * here would only duplicate that ceiling and drift from it.
  */
 test('a prompt action returns a string response', async () => {
   const client = createAgentActionsClient()
@@ -24,4 +28,4 @@ test('a prompt action returns a string response', async () => {
 
   expect(typeof response).toBe('string')
   expect(response.length).toBeGreaterThan(0)
-}, 60_000)
+})
