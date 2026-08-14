@@ -7,8 +7,13 @@
 import {createClient} from '@sanity/client'
 import type {SanityClient} from '@sanity/client'
 
-/** Private project provisioned for this suite. Holds only system documents, no user content. */
-export const projectId = 'ab2gqfft'
+/**
+ * Project provisioned solely for this suite, in its own organization (Sanity
+ * Client CI) so a CI-writable token cannot reach anything else. The `test`
+ * dataset is private and holds only system documents; every test creates and
+ * deletes its own fixtures.
+ */
+export const projectId = 'ufeo1jge'
 export const dataset = 'test'
 
 /**
