@@ -2262,3 +2262,44 @@ export interface VideoPlaybackTokens {
 
 /** @public */
 export type MediaLibraryAssetInstanceIdentifier = string | SanityReference
+
+/**
+ * A single tracked version of a Media Library asset - one uploaded instance,
+ * referencing the underlying (Content Lake shaped) asset document it wraps.
+ *
+ * @public
+ */
+export interface MediaLibraryAssetVersion {
+  _key: string
+  _type: 'sanity.asset.version'
+  title?: string
+  instance: SanityReference
+}
+
+/**
+ * The document returned by the Media Library upload endpoint
+ * (`POST /media-libraries/:id/upload`).
+ *
+ * This is _not_ the same shape as {@link SanityAssetDocument} /
+ * {@link SanityImageAssetDocument}: a Media Library asset is a `sanity.asset`
+ * document that tracks one or more uploaded versions, each pointing at its
+ * own underlying Content Lake asset document via `currentVersion`/`versions`.
+ *
+ * Modelled directly on an observed API response. Fields whose full shape has
+ * not been confirmed (`parent`, `rootDirectory`, `aspects`) are typed loosely
+ * on purpose - widen them once their shape is confirmed.
+ *
+ * @public
+ */
+export interface MediaLibraryAssetDocument {
+  _id: string
+  _type: 'sanity.asset'
+  assetType: string
+  title?: string
+  cdnAccessPolicy?: string
+  currentVersion: SanityReference
+  versions: MediaLibraryAssetVersion[]
+  aspects?: Record<string, Any>
+  parent?: SanityReference | null
+  rootDirectory?: Any
+}

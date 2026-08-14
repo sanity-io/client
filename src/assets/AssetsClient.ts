@@ -8,6 +8,7 @@ import type {
   Any,
   HttpRequest,
   InitializedClientConfig,
+  MediaLibraryAssetDocument,
   SanityAssetDocument,
   SanityImageAssetDocument,
   UploadBody,
@@ -37,7 +38,7 @@ export class ObservableAssetsClient {
     assetType: 'file',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<UploadEvent<{document: SanityAssetDocument}>>
+  ): Observable<UploadEvent<{document: SanityAssetDocument} | {asset: MediaLibraryAssetDocument}>>
 
   /**
    * Uploads an image asset to the configured dataset
@@ -50,7 +51,9 @@ export class ObservableAssetsClient {
     assetType: 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<UploadEvent<{document: SanityImageAssetDocument}>>
+  ): Observable<
+    UploadEvent<{document: SanityImageAssetDocument} | {asset: MediaLibraryAssetDocument}>
+  >
   /**
    * Uploads a file or an image asset to the configured dataset
    *
@@ -62,12 +65,22 @@ export class ObservableAssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>>
+  ): Observable<
+    UploadEvent<
+      | {document: SanityAssetDocument | SanityImageAssetDocument}
+      | {asset: MediaLibraryAssetDocument}
+    >
+  >
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+  ): Observable<
+    UploadEvent<
+      | {document: SanityAssetDocument | SanityImageAssetDocument}
+      | {asset: MediaLibraryAssetDocument}
+    >
+  > {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
 }
@@ -92,7 +105,7 @@ export class AssetsClient {
     assetType: 'file',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityAssetDocument>
+  ): Promise<SanityAssetDocument | MediaLibraryAssetDocument>
   /**
    * Uploads an image asset to the configured dataset
    *
@@ -104,7 +117,7 @@ export class AssetsClient {
     assetType: 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityImageAssetDocument>
+  ): Promise<SanityImageAssetDocument | MediaLibraryAssetDocument>
   /**
    * Uploads a file or an image asset to the configured dataset
    *
@@ -116,24 +129,53 @@ export class AssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityAssetDocument | SanityImageAssetDocument>
+  ): Promise<SanityAssetDocument | SanityImageAssetDocument | MediaLibraryAssetDocument>
   upload(
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
-    type Doc = {document: SanityAssetDocument | SanityImageAssetDocument}
+  ): Promise<SanityAssetDocument | SanityImageAssetDocument | MediaLibraryAssetDocument> {
+    type Doc =
+      | {document: SanityAssetDocument | SanityImageAssetDocument}
+      | {asset: MediaLibraryAssetDocument}
     const observable = _upload<Doc>(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
         filter((event): event is UploadResponseEvent<Doc> => event.type === 'response'),
-        map((event) => event.body.document),
+        map((event) => pluckUploadedAsset(event.body)),
       ),
     )
   }
 }
 
-function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>(
+/**
+ * Content Lake's upload endpoint responds with `{document: ...}`; the Media
+ * Library upload endpoint responds with `{asset: ...}` instead (a
+ * `sanity.asset` document, not a Content Lake asset document). Narrowing on
+ * the response body itself - rather than on the client's `resource` config -
+ * keeps this correct regardless of how the two are ever wired together.
+ */
+function isMediaLibraryUploadBody(
+  body:
+    | {document: SanityAssetDocument | SanityImageAssetDocument}
+    | {asset: MediaLibraryAssetDocument},
+): body is {asset: MediaLibraryAssetDocument} {
+  return 'asset' in body
+}
+
+function pluckUploadedAsset(
+  body:
+    | {document: SanityAssetDocument | SanityImageAssetDocument}
+    | {asset: MediaLibraryAssetDocument},
+): SanityAssetDocument | SanityImageAssetDocument | MediaLibraryAssetDocument {
+  return isMediaLibraryUploadBody(body) ? body.asset : body.document
+}
+
+function _upload<
+  T =
+    | {document: SanityAssetDocument | SanityImageAssetDocument}
+    | {asset: MediaLibraryAssetDocument},
+>(
   client: SanityClient | ObservableSanityClient,
   _httpRequest: HttpRequest,
   assetType: 'image' | 'file',

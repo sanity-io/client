@@ -19,7 +19,7 @@ describe('ASSETS', () => {
       .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
     const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath))
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads have no timeout by default, even with a client-level timeout', async () => {
@@ -54,7 +54,7 @@ describe('ASSETS', () => {
     expect(inits[0].signal?.aborted, 'no timeout abort mid-upload').not.toBe(true)
 
     const document = await upload
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads images with request tag if given', async () => {
@@ -69,7 +69,7 @@ describe('ASSETS', () => {
     const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
       tag: 'galaxy.images',
     })
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads images with prefixed request tag if given', async () => {
@@ -86,7 +86,7 @@ describe('ASSETS', () => {
       fs.createReadStream(fixturePath),
       {tag: 'images'},
     )
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads images with given content type', async () => {
@@ -104,7 +104,7 @@ describe('ASSETS', () => {
     const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
       contentType: 'image/jpeg',
     })
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads images with specified metadata to be extracted', async () => {
@@ -122,7 +122,7 @@ describe('ASSETS', () => {
       fs.createReadStream(fixturePath),
       options,
     )
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('empty extract array sends `none` as metadata', async () => {
@@ -140,7 +140,7 @@ describe('ASSETS', () => {
       fs.createReadStream(fixturePath),
       options,
     )
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads images without progress events in Node', async () => {
@@ -175,7 +175,7 @@ describe('ASSETS', () => {
     const body = await getClient().assets.upload('image', fs.createReadStream(fixturePath), {
       label: label,
     })
-    expect(body.label).toEqual(label)
+    expect(body).toMatchObject({label})
   })
 
   test('uploads files', async () => {
@@ -188,7 +188,7 @@ describe('ASSETS', () => {
       .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
     const document = await getClient().assets.upload('file', fs.createReadStream(fixturePath))
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('uploads images and can cast to promise', async () => {
@@ -201,7 +201,7 @@ describe('ASSETS', () => {
       .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
 
     const document = await getClient().assets.upload('image', fs.createReadStream(fixturePath))
-    expect(document.url).toEqual('https://some.asset.url')
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
   test('delete assets', async () => {

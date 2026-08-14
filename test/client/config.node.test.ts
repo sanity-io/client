@@ -93,7 +93,7 @@ describe('base client', () => {
                   'image',
                   fs.createReadStream(fixturePath),
                 )
-                expect(document.url).toEqual('https://some.asset.url')
+                expect(document).toMatchObject({url: 'https://some.asset.url'})
               })
             })
           }
