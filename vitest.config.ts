@@ -76,6 +76,14 @@ export default defineConfig({
       // `dist/` would double-count everything in `src/`, and coverage of
       // `test/` measures how thoroughly the tests test themselves.
       exclude: ['dist/**', 'node_modules/**', 'test/**'],
+      // Without this, the exclusions above are applied only BEFORE coverage is
+      // remapped through source maps, so anything the remap reintroduces slips
+      // back in. That is not hypothetical here: `dist/rolldown-runtime-*.js`,
+      // `@vercel/stega` out of `node_modules`, and `test/integration/*.ts`
+      // were all landing in `coverage-final.json` while matching `exclude`.
+      // Note the text reporter groups rows by basename, so these are invisible
+      // there and only show up in the JSON.
+      excludeAfterRemap: true,
       reportOnFailure: true,
       clean: true,
     },
