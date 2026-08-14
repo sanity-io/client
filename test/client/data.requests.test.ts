@@ -336,16 +336,18 @@ describe('createVersion()', () => {
   test('throws when creating version of a document that is missing _type', async () => {
     const publishedId = 'pub123'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- createVersion() document requires a `_type` property
       await getClient().createVersion({document: {title: 'Missing type'}, publishedId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch('`createVersion()` requires that the document contains a type')
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch('`createVersion()` requires that the document contains a type')
   })
 
   test('throws when draft document ID does not match generated version ID', async () => {
@@ -353,15 +355,17 @@ describe('createVersion()', () => {
     const publishedId = 'pub123'
     // This will generate drafts.pub123 which doesn't match document._id
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().createVersion({document, publishedId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       'The provided document ID (`drafts.wrongId123`) does not match the generated version ID (`drafts.pub123`)',
     )
   })
@@ -376,15 +380,17 @@ describe('createVersion()', () => {
     const releaseId = 'release456'
     // This will generate versions.release456.pub123 which doesn't match document._id
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().createVersion({document, publishedId, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       'The provided document ID (`versions.wrongRelease.wrongId123`) does not match the generated version ID (`versions.release456.pub123`)',
     )
   })
@@ -393,16 +399,18 @@ describe('createVersion()', () => {
     // no _id passed in document
     const document = {_type: 'post', title: 'No ID'}
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- publishedId must be a string, not undefined
       await getClient().createVersion({document, publishedId: undefined})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`createVersion()` requires either a publishedId or a document with an `_id`',
     )
   })
@@ -412,16 +420,18 @@ describe('createVersion()', () => {
     // Providing releaseId but no publishedId
     const releaseId = 'release456'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- publishedId must be a string, not undefined
       await getClient().createVersion({document, releaseId, publishedId: undefined})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`createVersion()` requires either a publishedId or a document with an `_id`',
     )
   })
@@ -490,15 +500,17 @@ describe('createVersion()', () => {
       title: 'Regular ID',
     }
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().createVersion({document})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`createVersion()` requires a document with an `_id` that is a version or draft ID',
     )
   })
@@ -513,15 +525,17 @@ describe('createVersion()', () => {
       title: 'Draft ID',
     }
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().createVersion({document, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       `\`createVersion()\` was called with a document ID (\`${documentId}\`) that is a draft ID, but a release ID (\`${releaseId}\`) was also provided.`,
     )
   })
@@ -537,15 +551,17 @@ describe('createVersion()', () => {
       title: 'Version ID mismatch',
     }
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().createVersion({document, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       `\`createVersion()\` was called with a document ID (\`${versionId}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${wrongReleaseId}\`).`,
     )
   })
@@ -657,16 +673,18 @@ describe('createVersion()', () => {
   })
 
   test('throws when neither document nor baseId are provided', async () => {
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- createVersion() requires a document, or a baseId and publishedId
       await getClient().createVersion({})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`createVersion()` requires `baseId` when no `document` is provided',
     )
   })
@@ -705,16 +723,18 @@ describe('createVersion()', () => {
     const baseId = 'baseDoc123'
     const releaseId = 'release456'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- createVersion() with baseId also requires publishedId
       await getClient().createVersion({baseId, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`createVersion()` requires `publishedId` when `baseId` is provided',
     )
   })
@@ -723,16 +743,18 @@ describe('createVersion()', () => {
     const releaseId = 'release456'
     const publishedId = 'targetDoc123'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- createVersion() requires a document or a baseId
       await getClient().createVersion({releaseId, publishedId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`createVersion()` requires `baseId` when no `document` is provided',
     )
   })

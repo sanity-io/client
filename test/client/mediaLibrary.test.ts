@@ -153,7 +153,9 @@ describe('mediaLibrary', () => {
         // Should not reach here
         expect.fail(`Expected error for ref: ${_ref}`)
       } catch (err) {
-        expect((err as Error).message).toContain(expectedError)
+        expect(err).toBeInstanceOf(Error)
+        if (!(err instanceof Error)) throw err
+        expect(err.message).toContain(expectedError)
       }
     }
   })
@@ -161,13 +163,15 @@ describe('mediaLibrary', () => {
   test('video.getPlaybackInfo throws error for invalid asset instance id', async () => {
     const client = getClient(mediaLibraryClientConfig)
 
-    expect.assertions(2)
+    expect.assertions(4)
 
     try {
       // @ts-expect-error -- getPlaybackInfo() requires a string id or a SanityReference, not {}
       await client.mediaLibrary.video.getPlaybackInfo({})
     } catch (err) {
-      expect((err as Error).message).toBe(
+      expect(err).toBeInstanceOf(Error)
+      if (!(err instanceof Error)) throw err
+      expect(err.message).toBe(
         'Invalid video asset instance identifier "[object Object]": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library',
       )
     }
@@ -176,7 +180,9 @@ describe('mediaLibrary', () => {
       // @ts-expect-error -- SanityReference `_ref` must be a string, not a number
       await client.mediaLibrary.video.getPlaybackInfo({_ref: 123})
     } catch (err) {
-      expect((err as Error).message).toBe(
+      expect(err).toBeInstanceOf(Error)
+      if (!(err instanceof Error)) throw err
+      expect(err.message).toBe(
         'Invalid video asset instance identifier "123": must be a valid video instance id or a Global Dataset Reference (GDR) to the video asset in the Media Library',
       )
     }

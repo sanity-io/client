@@ -1,3 +1,4 @@
+import {ClientError} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {anyValue, getActiveMock} from '../helpers/mockFetch'
@@ -131,15 +132,16 @@ describe('discardVersion()', () => {
   test('throws when publishedId is missing', async () => {
     const args = {} as Partial<{publishedId: string; releaseId?: string}>
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- publishedId is required
       await getClient().discardVersion(args)
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
+    expect(error).toBeInstanceOf(Error)
   })
 })
 describe('unpublishVersion()', () => {
@@ -208,16 +210,18 @@ describe('unpublishVersion()', () => {
   test('throws when releaseId is drafts', async () => {
     const args = {releaseId: 'drafts'}
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- publishedId is required
       await getClient().unpublishVersion(args)
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch('Version can not be "published" or "drafts"')
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch('Version can not be "published" or "drafts"')
   })
 
   test('throws when data request fails', async () => {
@@ -234,15 +238,17 @@ describe('unpublishVersion()', () => {
         },
       })
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().unpublishVersion(args)
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch('Invalid document ID - Document ID must be a string')
+    expect(error).toBeInstanceOf(ClientError)
+    if (!(error instanceof ClientError)) throw error
+    expect(error.message).toMatch('Invalid document ID - Document ID must be a string')
   })
 })
 describe('replaceVersion()', () => {
@@ -371,15 +377,17 @@ describe('replaceVersion()', () => {
     const publishedId = 'doc123'
     const releaseId = 'release456'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().replaceVersion({document, publishedId, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       'The provided document ID (`doc123`) does not match the generated version ID (`versions.release456.doc123`)',
     )
   })
@@ -389,15 +397,17 @@ describe('replaceVersion()', () => {
     const publishedId = 'doc123'
     const releaseId = 'release456'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().replaceVersion({document, publishedId, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       'The provided document ID (`drafts.doc123`) does not match the generated version ID (`versions.release456.doc123`)',
     )
   })
@@ -407,30 +417,34 @@ describe('replaceVersion()', () => {
     const publishedId = 'doc123'
     const releaseId = 'drafts'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().replaceVersion({document, publishedId, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch('Version can not be "published" or "drafts"')
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch('Version can not be "published" or "drafts"')
   })
 
   test('throws when neither publishedId nor document._id are provided', async () => {
     const document = {_type: 'post', title: 'No ID'}
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- replaceVersion() requires publishedId when document has no `_id`
       await getClient().replaceVersion({document})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`replaceVersion()` requires either a publishedId or a document with an `_id`',
     )
   })
@@ -452,16 +466,18 @@ describe('replaceVersion()', () => {
     getActiveMock().clear()
     const publishedId = 'typeless123'
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       // @ts-expect-error -- replaceVersion() document requires a `_type` property
       await getClient().replaceVersion({document: {title: 'Missing Type'}, publishedId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`replaceVersion()` requires that the document contains a type (`_type` property)',
     )
   })
@@ -473,15 +489,17 @@ describe('replaceVersion()', () => {
       title: 'Regular ID',
     }
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().replaceVersion({document})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       '`replaceVersion()` requires a document with an `_id` that is a version or draft ID',
     )
   })
@@ -496,15 +514,17 @@ describe('replaceVersion()', () => {
       title: 'Draft ID',
     }
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().replaceVersion({document, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       `\`replaceVersion()\` was called with a document ID (\`${documentId}\`) that is a draft ID, but a release ID (\`${releaseId}\`) was also provided.`,
     )
   })
@@ -520,15 +540,17 @@ describe('replaceVersion()', () => {
       title: 'Version ID mismatch',
     }
 
-    let error: Error | null = null
+    let error: unknown = null
     try {
       await getClient().replaceVersion({document, releaseId})
     } catch (err) {
-      error = err as Error
+      error = err
     }
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(
+    expect(error).toBeInstanceOf(Error)
+    if (!(error instanceof Error)) throw error
+    expect(error.message).toMatch(
       `\`replaceVersion()\` was called with a document ID (\`${versionId}\`) that is a version ID, but the release ID (\`${releaseId}\`) does not match the document's version ID (\`${wrongReleaseId}\`).`,
     )
   })
