@@ -37,9 +37,9 @@ pnpm lint        # oxlint
 pnpm format      # oxfmt
 ```
 
-One honest caveat about those last two:
+`pnpm knip` is expected to exit 0. It carries a few narrow, documented ignores in `knip.json` rather than a blanket rule downgrade, so read the comments there before adding another.
 
-- The workerd CI job runs with `continue-on-error: true`. workerd's native `MessageEvent` drops `lastEventId` from its constructor init dict, so server-sent event IDs arrive empty on Cloudflare Workers. See the comment above the `workerd-runtime` job in `.github/workflows/ci.yml` for the full story. The fix lands in the `eventsource` package, not here.
+One note on dependencies: the `eventsource` floor is `>= 5.1.0` for a reason. Earlier versions relied on `MessageEvent`'s constructor init dict round-tripping `lastEventId`, which workerd does not do, so server-sent event IDs arrived empty on Cloudflare Workers. Do not relax that floor without confirming `pnpm test:workerd` still passes.
 
 Before you write code, read the sections below. They hold the rules for TypeScript and for tests.
 

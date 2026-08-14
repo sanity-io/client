@@ -126,32 +126,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test:vercel-edge
 
-  # KNOWN, DELIBERATE FAILURE - READ BEFORE TOUCHING `continue-on-error` BELOW.
-  #
-  # 6 tests in `test/live.test.ts` fail here: workerd's native `MessageEvent` silently
-  # drops the `lastEventId` member of its constructor init dict. The HTML Living
-  # Standard's `MessageEventInit` includes `lastEventId`, and every other environment
-  # this suite runs in (Node, happy-dom, real browsers, vercel-edge, Bun, Deno) honours
-  # it; bare Cloudflare Workers does not. `src/data/eventsource.ts` reads
-  # `message.lastEventId` to populate the `id` of every `ServerSentEvent`, so on workerd
-  # that id silently arrives empty. Confirmed independently with a throwaway
-  # `new MessageEvent('message', {lastEventId: '1'})` probe - this is a real shipping
-  # bug in workerd, not a gap in this test harness.
-  #
-  # This failure is expected and deliberate: the fix lands in the `eventsource` package
-  # (which Sanity owns), plus a filing upstream against workerd, rather than a
-  # workaround here. `continue-on-error: true` exists ONLY so this one known-red job
-  # doesn't turn into an indefinitely-failing required check that blocks every unrelated
-  # PR in the repo. Do not skip this job, do not exclude these tests, and do not weaken
-  # their assertions to make it pass.
-  #
-  # REMOVE `continue-on-error: true` the moment the `eventsource` fix ships and this job
-  # goes green again.
+  # This job is why `eventsource` is pinned to >= 5.1.0. workerd's native `MessageEvent`
+  # drops the `lastEventId` member of its constructor init dict, which every other
+  # environment this suite runs in honours. `src/data/eventsource.ts` reads
+  # `message.lastEventId` to populate the `id` of every `ServerSentEvent`, so before
+  # eventsource 5.1.0 that id arrived empty on bare Cloudflare Workers. Do not relax the
+  # `eventsource` floor without checking these tests still pass here.
   workerd-runtime:
     # No `needs: [build]`: see the comment on `vercel-edge` above - same reasoning,
     # `vitest.workerd.config.ts` also resolves through `sourceAlias`.
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

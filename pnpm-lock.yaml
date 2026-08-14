@@ -12,8 +12,8 @@ importers:
         specifier: ^4.4.0
         version: 4.4.3(supports-color@10.2.2)
       eventsource:
-        specifier: ^5.0.0
-        version: 5.0.0
+        specifier: ^5.1.0
+        version: 5.1.0
       get-it:
         specifier: ^9.4.1
         version: 9.4.1(vitest@4.1.10)
@@ -2720,8 +2720,8 @@ packages:
     resolution: {integrity: sha512-aIpvYxbqTx4KYWw73KpCt1Rh22tEAJ144F1qR76CT3Ex+LNMEPKf5HFrK5Yz9fMP1EVT0GrfA35VZvWQhMPuSQ==}
     engines: {node: '>=22.12'}
 
-  eventsource@5.0.0:
-    resolution: {integrity: sha512-iNd5IgeR56Om1Aje0ACZTd5oRQ+u5i6RfRkKdIuhlykeH3o+f0vIiiT0i9t1SXABfTnsfxVPadAB2T4cLS32Sw==}
+  eventsource@5.1.0:
+    resolution: {integrity: sha512-+errgX9LYbcpibagHh7CEjEZJvQbIDZB2yY7SbUAhHGv4Ircri3T9LH33TUtcXHDy/pFYel1xCi4VOcBnr3wmw==}
     engines: {node: '>=22.12.0'}
 
   expect-type@1.4.0:
@@ -6766,7 +6766,7 @@ snapshots:
 
   eventsource-parser@4.0.0: {}
 
-  eventsource@5.0.0:
+  eventsource@5.1.0:
     dependencies:
       eventsource-parser: 4.0.0
 

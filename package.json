@@ -108,7 +108,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "eventsource": "^5.0.0",
+    "eventsource": "^5.1.0",
     "get-it": "^9.4.1",
     "nanoid": "^6.0.1",
     "obug": "^2.1.4",
