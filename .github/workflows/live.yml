@@ -5,13 +5,12 @@ on:
     # 04:00 UTC daily
     - cron: '0 4 * * *'
   workflow_dispatch:
-  # The changesets version pull request, so a release is never cut without a live
-  # check. `main` (v8) and `v7` (the maintenance branch) both cut releases through
-  # changesets (see release.yml), so both are covered here. To promote this to every
-  # PR, delete the `branches`/`paths` filters below.
+  # Every pull request commit. The integration suite is a small per-feature smoke
+  # layer (one test per feature, see CONTRIBUTING.md), so the cost is a handful of
+  # real API calls per runtime rather than a full second suite. Running it per commit
+  # means a change that breaks a real API contract fails on the PR that introduced
+  # it, instead of in a nightly run nobody is watching.
   pull_request:
-    branches: [main, v7]
-    paths: ['.changeset/**']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -25,9 +24,11 @@ jobs:
     name: Live API on ${{ matrix.runtime }}
     # Fork pull requests never receive repo secrets, so `SANITY_INTEGRATION_TOKEN`
     # would be empty and every test would fail on the missing-token check in
-    # `test/integration/helpers.ts`. Skip the job instead of running it token-less:
-    # this only matters for the `pull_request` trigger above (the changesets version
-    # PR), which always originates from this repository, not a fork - but keep the
+    # `test/integration/helpers.ts`. Skip the job instead of running it token-less.
+    # Now that this runs on every pull request, that means a contributor working from
+    # a fork gets no integration coverage on their PR; a maintainer pushing the same
+    # branch to this repository does. Accepted: the alternative is a job that always
+    # fails for outside contributors. Keep the
     # guard in case that ever changes.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest

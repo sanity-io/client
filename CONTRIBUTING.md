@@ -25,7 +25,7 @@ The suite also runs against every other supported environment: happy-dom, real b
 - `pnpm test:deno` - Deno.
 - `pnpm test:next` - typecheck only. It checks the Next.js App Router typings for fetch `cache`, `next.revalidate`, and `next.tags`; it runs no runtime tests.
 - `pnpm test:packaging` - needs a build (`pnpm build` first). Runs against `dist/` and the real `package.json` `exports` map, to catch failures a source-aliased suite cannot see.
-- `pnpm test:integration` - needs a build AND network access. This is the integration smoke suite (see "Integration smoke tests" below), the only suite that talks to the real Sanity API. It runs nightly and on version pull requests, not on every PR, so you will rarely need it locally.
+- `pnpm test:integration` - needs a build AND network access. This is the integration smoke suite (see "Integration smoke tests" below), the only suite that talks to the real Sanity API. It runs on every pull request commit as well as nightly, so a change that breaks a real API contract fails on the pull request that introduced it. Running it locally needs a token; see that section.
 
 Other useful commands:
 
@@ -188,7 +188,9 @@ pnpm run test:integration
 - Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset.
 - No `skipIf`/`runIf`/`.skip`/`.todo`, same rule as the rest of the suite. If a feature cannot be exercised with the tokens and provisioning available, document the gap here instead of writing a test that never runs.
 
-This suite runs on a schedule and on version pull requests (see `.github/workflows/live.yml`), not on every PR. Fork pull requests never run it: they do not receive the `SANITY_INTEGRATION_TOKEN` secret, and the workflow is guarded to skip the job rather than run it without one.
+This suite runs on every pull request commit and nightly (see `.github/workflows/live.yml`).
+
+Fork pull requests are the one exception: they do not receive the `SANITY_INTEGRATION_TOKEN` secret, and the workflow skips the job rather than run it token-less and fail. So a contributor working from a fork gets no integration coverage on their pull request, while a maintainer pushing the same branch to this repository does. If you are reviewing a fork pull request that touches request building, response parsing, or the SSE paths, push the branch here to get the integration run before merging.
 
 ## Pull requests, changesets, and releases
 
