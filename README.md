@@ -127,6 +127,16 @@ export async function updateDocumentTitle(_id, title) {
       - [Archive Release Action](#archive-release)
       - [Unarchive Release Action](#unarchive-release)
       - [Delete Release Action](#delete-release)
+    - [Variant actions](#variant-actions)
+      - [Create Variant Action](#create-variant)
+      - [Edit Variant Action](#edit-variant)
+      - [Delete Variant Action](#delete-variant)
+      - [Publish Variant Action](#publish-variant)
+      - [Unpublish Variant Action](#unpublish-variant)
+    - [Variant definition actions](#variant-definition-actions)
+      - [Create Variant Definition Action](#create-variant-definition)
+      - [Edit Variant Definition Action](#edit-variant-definition)
+      - [Delete Variant Definition Action](#delete-variant-definition)
   - [Agent Actions](#agent-actions-api)
     - [Overview](#overview)
     - [Generating Content](#generating-content)
@@ -1759,6 +1769,219 @@ client
   })
   .catch((err) => {
     console.error('Delete release failed: ', err.message)
+  })
+```
+
+## Variant actions
+
+Variant documents are addressed by the `publishedId`, `variantId` and `bundleId` triple, rather than by document ID, as the API derives the document ID from those three values.
+
+### Create variant
+
+Create a variant of a document from full document content.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.document.variant.create',
+    publishedId: 'bike-123',
+    variantId: 'nb-NO',
+    bundleId: 'drafts',
+    document: {
+      _type: 'bike',
+      name: 'Sykkel 123',
+    },
+  })
+  .then(() => {
+    console.log('Norwegian draft variant of `bike-123` created')
+  })
+  .catch((error) => {
+    console.error('Create variant failed: ', error.message)
+  })
+```
+
+> [!NOTE]
+> `bundleId` selects the bundle the variant is created in, and may be `'$published'` (the default), `'drafts'`, or a release id.
+
+Passing `baseId` instead of `document` copies the content from an existing document, optionally only if that document is a given revision.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.document.variant.create',
+    publishedId: 'bike-123',
+    variantId: 'nb-NO',
+    baseId: 'bike-123',
+    ifBaseRevisionId: 'exp29Ru1',
+  })
+  .then(() => {
+    console.log('Norwegian variant of `bike-123` created from the published document')
+  })
+  .catch((error) => {
+    console.error('Create variant failed: ', error.message)
+  })
+```
+
+### Edit variant
+
+Modify a variant of a document by applying a patch. If no such variant document exists it is first created, by copying the variant's published sibling, or the published document if the variant was never published.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.document.variant.edit',
+    publishedId: 'bike-123',
+    variantId: 'nb-NO',
+    bundleId: 'drafts',
+    patch: {
+      set: {name: 'Sykkel 123'},
+    },
+  })
+  .then(() => {
+    console.log('Norwegian draft variant of `bike-123` updated')
+  })
+  .catch((error) => {
+    console.error('Edit variant failed: ', error.message)
+  })
+```
+
+### Delete variant
+
+Delete a variant of a document. Pass `purge: true` to also delete the document history.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.document.variant.delete',
+    publishedId: 'bike-123',
+    variantId: 'nb-NO',
+    bundleId: 'drafts',
+    purge: true,
+  })
+  .then(() => {
+    console.log('Norwegian draft variant of `bike-123` deleted')
+  })
+  .catch((error) => {
+    console.error('Delete variant failed: ', error.message)
+  })
+```
+
+### Publish variant
+
+Publish a variant of a document, replacing the published variant and removing the source variant document.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.document.variant.publish',
+    publishedId: 'bike-123',
+    variantId: 'nb-NO',
+    bundleId: 'drafts',
+    ifVersionRevisionId: 'exp29Ru1',
+    ifPublishedVariantRevisionId: 'exp29Ru0',
+  })
+  .then(() => {
+    console.log('Norwegian variant of `bike-123` published')
+  })
+  .catch((error) => {
+    console.error('Publish variant failed: ', error.message)
+  })
+```
+
+> [!NOTE]
+> `bundleId` is required here, and must be `'drafts'` or a release id, as `'$published'` would make the source and target the same document.
+
+### Unpublish variant
+
+Unpublish a variant of a document. By default the published variant is removed and preserved as a draft variant.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.document.variant.unpublish',
+    publishedId: 'bike-123',
+    variantId: 'nb-NO',
+  })
+  .then(() => {
+    console.log('Norwegian variant of `bike-123` unpublished')
+  })
+  .catch((error) => {
+    console.error('Unpublish variant failed: ', error.message)
+  })
+```
+
+> [!NOTE]
+> Replacing the default `'$published'` `bundleId` with a release id stages the removal in that release instead, so it takes effect when the release is published. `'drafts'` is not accepted.
+
+## Variant definition actions
+
+Variant definitions are `system.variant` documents, addressed by the bare variant name used in `_.variants.{variantName}`, rather than by document ID.
+
+### Create variant definition
+
+Create a new variant definition.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.variant.definition.create',
+    variantId: 'nb-NO',
+    conditions: {locale: 'nb-NO'},
+    priority: 10,
+    metadata: {title: 'Norwegian Bokmål'},
+  })
+  .then(() => {
+    console.log('`nb-NO` variant definition created')
+  })
+  .catch((error) => {
+    console.error('Create variant definition failed: ', error.message)
+  })
+```
+
+> [!NOTE]
+> `conditions` are used to select the variant, and `priority` (`0` by default) decides which variant wins when several of them match.
+
+### Edit variant definition
+
+Edit an existing variant definition by applying a patch.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.variant.definition.edit',
+    variantId: 'nb-NO',
+    patch: {
+      set: {priority: 20},
+    },
+    ifRevisionId: 'exp29Ru1',
+  })
+  .then(() => {
+    console.log('`nb-NO` variant definition changed to priority 20')
+  })
+  .catch((error) => {
+    console.error('Edit variant definition failed: ', error.message)
+  })
+```
+
+> [!NOTE]
+> When `ifRevisionId` is set, the action fails unless the variant definition is that revision.
+
+### Delete variant definition
+
+Delete a variant definition. Deletion fails if any document holds a strong reference to the variant.
+
+```ts
+client
+  .action({
+    actionType: 'sanity.action.variant.definition.delete',
+    variantId: 'nb-NO',
+    ifRevisionId: 'exp29Ru1',
+  })
+  .then(() => {
+    console.log('`nb-NO` variant definition deleted')
+  })
+  .catch((error) => {
+    console.error('Delete variant definition failed: ', error.message)
   })
 ```
 
