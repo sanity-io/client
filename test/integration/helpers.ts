@@ -75,6 +75,21 @@ export function uniqueDocumentId(feature: string): string {
 }
 
 /**
+ * Builds a release id unique to this run.
+ *
+ * Deliberately terser than {@link uniqueDocumentId}, because a release id is not
+ * used on its own: a document in a release is stored as
+ * `versions.<releaseId>.<documentId>`, and the client rejects any document id
+ * over 128 characters. Two descriptive ids joined that way overrun that limit, so
+ * the release side is kept compact (the dashes are stripped from the UUID for the
+ * same reason) while keeping the collision resistance that matters when several
+ * runtimes run this suite concurrently.
+ */
+export function uniqueReleaseId(): string {
+  return `rel${crypto.randomUUID().replace(/-/g, '')}`
+}
+
+/**
  * How long to wait for a just-written document to become queryable, and how
  * often to re-check. The 15s ceiling sits well inside this suite's 30s
  * `testTimeout` so that exhausting it reports as "never became visible" rather
@@ -163,6 +178,36 @@ function requireProjectToken(): string {
   }
 
   return token
+}
+
+/**
+ * API version Content Releases requires.
+ *
+ * Probed against the real API rather than guessed: every release action is
+ * rejected with `action index 0: not supported for this API version` (HTTP 400)
+ * on this suite's pinned `2024-08-01`, and equally on `2024-09-01`,
+ * `2024-11-01`, `2025-01-01` and `2025-02-01`. `2025-02-19` is the first dated
+ * version that accepts them. Pinned to that exact date rather than moved to
+ * `vX`, so releases keep the same determinism the rest of the suite gets from a
+ * dated version.
+ */
+export const releasesApiVersion = '2025-02-19'
+
+/**
+ * Creates a client for the releases smoke test, on {@link releasesApiVersion}.
+ *
+ * Its own factory rather than a parameter on {@link createIntegrationClient},
+ * so the version bump and the reason for it stay next to each other, matching
+ * how {@link createAgentActionsClient} carries its `vX` requirement.
+ */
+export function createReleasesClient(): SanityClient {
+  return createClient({
+    projectId,
+    dataset,
+    apiVersion: releasesApiVersion,
+    useCdn: false,
+    token: requireProjectToken(),
+  })
 }
 
 /**
