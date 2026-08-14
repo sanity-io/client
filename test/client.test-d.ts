@@ -1,12 +1,16 @@
 import {
   type ContentSourceMap,
   createClient,
+  type MultipleMutationResult,
   type QueryOptions,
   type QueryParams,
   type QueryWithoutParams,
   type RawQueryResponse,
+  type SanityDocument,
+  type SingleMutationResult,
   type VideoPlaybackInfoSigned,
 } from '@sanity/client'
+import {firstValueFrom} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
 import {getPlaybackTokens} from '../src/media-library'
@@ -367,6 +371,55 @@ describe('client.fetch', () => {
         {next: {revalidate: false, tags: ['post']}},
       ),
     ).toMatchTypeOf<any>()
+  })
+})
+
+describe('client.delete', () => {
+  const client = createClient({})
+
+  test('with no options resolves to a mutation result, not a document', async () => {
+    expectTypeOf(await client.delete('some-id')).toEqualTypeOf<MultipleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.delete('some-id')),
+    ).toEqualTypeOf<MultipleMutationResult>()
+
+    expectTypeOf(
+      await client.delete({query: '*[_type == "post"]'}),
+    ).toEqualTypeOf<MultipleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.delete({query: '*[_type == "post"]'})),
+    ).toEqualTypeOf<MultipleMutationResult>()
+  })
+
+  test('with `returnFirst: true, returnDocuments: true` still resolves to a document', async () => {
+    expectTypeOf(
+      await client.delete('some-id', {returnFirst: true, returnDocuments: true}),
+    ).toEqualTypeOf<SanityDocument>()
+    expectTypeOf(
+      await firstValueFrom(
+        client.observable.delete('some-id', {returnFirst: true, returnDocuments: true}),
+      ),
+    ).toEqualTypeOf<SanityDocument>()
+  })
+
+  test('with `returnDocuments: false` resolves to a mutation result', async () => {
+    expectTypeOf(
+      await client.delete('some-id', {returnDocuments: false}),
+    ).toEqualTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.delete('some-id', {returnDocuments: false})),
+    ).toEqualTypeOf<SingleMutationResult>()
+  })
+})
+
+describe('client.mutate', () => {
+  const client = createClient({})
+
+  test('with no options resolves to a mutation result, not a document', async () => {
+    expectTypeOf(await client.mutate([])).toEqualTypeOf<MultipleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.mutate([])),
+    ).toEqualTypeOf<MultipleMutationResult>()
   })
 })
 
