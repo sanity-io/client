@@ -28,8 +28,8 @@ jobs:
     # Now that this runs on every pull request, that means a contributor working from
     # a fork gets no integration coverage on their PR; a maintainer pushing the same
     # branch to this repository does. Accepted: the alternative is a job that always
-    # fails for outside contributors. Keep the
-    # guard in case that ever changes.
+    # fails for outside contributors. Keep the guard even if the trigger changes:
+    # a `pull_request` run from a fork never receives secrets, approved or not.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     strategy:
