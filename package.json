@@ -95,7 +95,8 @@
     "test:vercel-edge": "vitest run --config ./vitest.vercel-edge.config.ts",
     "test:workerd": "vitest run --config ./vitest.workerd.config.ts",
     "format": "oxfmt",
-    "format:check": "oxfmt --check"
+    "format:check": "oxfmt --check",
+    "generate:context": "pnpm --package=typescript@5.9.3 --package=openapi-typescript@7.13.0 dlx openapi-typescript src/context/openapi.json -o src/context/types.gen.ts && oxfmt src/context/openapi.json src/context/types.gen.ts"
   },
   "dependencies": {
     "eventsource": "^5.0.0",
