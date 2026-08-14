@@ -162,7 +162,14 @@ jobs:
           node-version: lts/*
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
-      - run: pnpm run test:browser -- --coverage
+      # No `--coverage`: this ran as `pnpm run test:browser -- --coverage`, which
+      # pnpm forwards literally, so vitest received `--coverage` as a positional
+      # argument and silently collected nothing. Passing it properly does not
+      # work either - `@vitest/coverage-v8` refuses to run against more than one
+      # `browser.instances` entry, and this config runs three. Browser coverage
+      # would therefore mean a chromium-only run that largely duplicates what
+      # the `coverage` job already reports, so this job just runs the tests.
+      - run: pnpm run test:browser
 
   test-happy-dom:
     # No `needs: [build]`: `vitest.happy-dom.config.ts` resolves through `sourceAlias`,

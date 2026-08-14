@@ -14,8 +14,18 @@
 // glob keeps working if a file ever needs to live outside `test/integration/`.
 import {defineConfig} from 'vitest/config'
 
+import {coverageConfig} from './vitest.config'
+
 export default defineConfig({
   test: {
+    // Importing `coverageConfig` and nothing else is deliberate: it is the one
+    // export from `vitest.config.ts` that is safe here, since it carries no
+    // `setupFiles` and so cannot drag in the fetch mock this suite must not
+    // have. This suite is not run with `--coverage` today, and coverage of it
+    // would be of `dist/` remapped back to source rather than of source
+    // directly, but wiring it means a future `--coverage` run reports the same
+    // shape as every other suite instead of vitest's unfiltered defaults.
+    coverage: coverageConfig,
     include: ['test/**/*.integration.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
 
