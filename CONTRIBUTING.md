@@ -74,6 +74,21 @@ if (isMyType(response)) {
 
 If `JSON.parse` returns `unknown` and you need a specific shape, write a type guard for that shape. If a library returns `any`, wrap it with a type guard at the boundary. Use no shortcuts.
 
+### Testing invalid input
+
+The rule above is about types that fail to match by accident. Sometimes a test needs to pass input that is invalid on purpose, to check that the client rejects it at runtime. For that, use `@ts-expect-error` with a reason after `--`:
+
+```ts
+expect(
+  // @ts-expect-error -- set() requires an object, not a string
+  () => patch.set(null),
+).toThrow(/set\(\) takes an object of properties/)
+```
+
+This is not the same as suppressing a type error. Silencing a genuine mismatch in `src` so `pnpm typecheck` goes green is never acceptable, by this or any other mechanism. Asserting in a test that a call must fail to typecheck is acceptable, because `@ts-expect-error` self-invalidates: if a later change makes the call legal, `tsc --noEmit` fails with "Unused '@ts-expect-error' directive". An `as any` cast on the same line would not catch that. It would keep compiling forever, so the test could silently stop testing what its name claims.
+
+The reason after `--` is mandatory, matching every other `@ts-expect-error` in this codebase. A directive suppresses every error on its line, so the reason is what stops it from later swallowing an unrelated one.
+
 ## Testing: the client, not the transport
 
 `get-it` and `eventsource` are the transports, and they have their own test suites in their own repositories. This suite tests **the client**: the URLs it builds, the payloads it assembles, the responses it parses, the errors it maps.
