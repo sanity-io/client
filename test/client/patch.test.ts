@@ -68,7 +68,8 @@ describe('patch ops', () => {
     expect(() =>
       getClient()
         .patch('abc123')
-        .unset('bitter' as any)
+        // @ts-expect-error -- unset() requires an array of attribute paths, not a string
+        .unset('bitter')
         .serialize(),
     ).toThrow(/non-array given/)
   })
@@ -91,19 +92,22 @@ describe('patch ops', () => {
     expect(() =>
       getClient()
         .patch('abc123')
-        .insert('bitter' as any, 'sel', ['raf']),
+        // @ts-expect-error -- insert() requires one of 'before' | 'after' | 'replace', not 'bitter'
+        .insert('bitter', 'sel', ['raf']),
     ).toThrow(/one of: "before", "after", "replace"/)
 
     expect(() =>
       getClient()
         .patch('abc123')
-        .insert('before', 123 as any, ['raf']),
+        // @ts-expect-error -- insert() selector must be a string, not a number
+        .insert('before', 123, ['raf']),
     ).toThrow(/must be a string/)
 
     expect(() =>
       getClient()
         .patch('abc123')
-        .insert('before', 'prop', 'blah' as any),
+        // @ts-expect-error -- insert() items must be an array, not a string
+        .insert('before', 'prop', 'blah'),
     ).toThrow(/must be an array/)
   })
 
@@ -155,7 +159,8 @@ describe('patch ops', () => {
   test('serializing invalid selectors throws', () => {
     expect(() =>
       getClient()
-        .patch(123 as any)
+        // @ts-expect-error -- patch() selection must be a string, array of strings, or a mutation selector, not a number
+        .patch(123)
         .serialize(),
     ).toThrow(/unknown selection/i)
   })
@@ -176,21 +181,31 @@ describe('patch ops', () => {
 
   test('all patch methods throw on non-objects being passed as argument', () => {
     const patch = getClient().patch('abc123')
-    expect(() => patch.set(null as any), 'set throws').toThrow(
-      /set\(\) takes an object of properties/,
-    )
-    expect(() => patch.setIfMissing('foo' as any), 'setIfMissing throws').toThrow(
-      /setIfMissing\(\) takes an object of properties/,
-    )
-    expect(() => patch.inc('foo' as any), 'inc throws').toThrow(
-      /inc\(\) takes an object of properties/,
-    )
-    expect(() => patch.dec('foo' as any), 'dec throws').toThrow(
-      /dec\(\) takes an object of properties/,
-    )
-    expect(() => patch.diffMatchPatch('foo' as any), 'diffMatchPatch throws').toThrow(
-      /diffMatchPatch\(\) takes an object of properties/,
-    )
+    expect(
+      // @ts-expect-error -- set() requires an object of properties, not null
+      () => patch.set(null),
+      'set throws',
+    ).toThrow(/set\(\) takes an object of properties/)
+    expect(
+      // @ts-expect-error -- setIfMissing() requires an object of properties, not a string
+      () => patch.setIfMissing('foo'),
+      'setIfMissing throws',
+    ).toThrow(/setIfMissing\(\) takes an object of properties/)
+    expect(
+      // @ts-expect-error -- inc() requires an object of properties, not a string
+      () => patch.inc('foo'),
+      'inc throws',
+    ).toThrow(/inc\(\) takes an object of properties/)
+    expect(
+      // @ts-expect-error -- dec() requires an object of properties, not a string
+      () => patch.dec('foo'),
+      'dec throws',
+    ).toThrow(/dec\(\) takes an object of properties/)
+    expect(
+      // @ts-expect-error -- diffMatchPatch() requires an object of properties, not a string
+      () => patch.diffMatchPatch('foo'),
+      'diffMatchPatch throws',
+    ).toThrow(/diffMatchPatch\(\) takes an object of properties/)
   })
 
   test('executes patch when commit() is called', async () => {

@@ -28,7 +28,10 @@ describe('fromString', () => {
     // @ts-expect-error
     expect(() => fromString(13)).toThrow('Path is not a string')
 
-    expect(() => fromString(null as any)).toThrow('Path is not a string')
+    expect(
+      // @ts-expect-error -- fromString() requires a string, not null
+      () => fromString(null),
+    ).toThrow('Path is not a string')
     // @ts-expect-error
     expect(() => fromString(false)).toThrow('Path is not a string')
   })
@@ -82,10 +85,19 @@ describe('toString', () => {
     // @ts-expect-error
     expect(() => toString()).toThrow('Path is not an array')
 
-    expect(() => toString(13 as any)).toThrow('Path is not an array')
+    expect(
+      // @ts-expect-error -- toString() requires an array, not a number
+      () => toString(13),
+    ).toThrow('Path is not an array')
 
-    expect(() => toString(null as any)).toThrow('Path is not an array')
-    expect(() => toString(false as any)).toThrow('Path is not an array')
+    expect(
+      // @ts-expect-error -- toString() requires an array, not null
+      () => toString(null),
+    ).toThrow('Path is not an array')
+    expect(
+      // @ts-expect-error -- toString() requires an array, not a boolean
+      () => toString(false),
+    ).toThrow('Path is not an array')
   })
 
   test('handles plain property segments', () => {
@@ -126,18 +138,33 @@ describe('toString', () => {
   })
 
   test('throws on unrecognized segment types', () => {
-    expect(() => toString([{foo: 'bar'} as any])).toThrow(
-      'Unsupported path segment `{"foo":"bar"}`',
-    )
+    expect(() =>
+      toString([
+        // @ts-expect-error -- {foo: 'bar'} is not a valid path segment
+        {foo: 'bar'},
+      ]),
+    ).toThrow('Unsupported path segment `{"foo":"bar"}`')
   })
 })
 
 describe('get', () => {
   test('throws on non-array/non-string path', () => {
-    expect(() => get(srcObject, null as any)).toThrow('Path must be an array or a string')
-    expect(() => get(srcObject, 13 as any)).toThrow('Path must be an array or a string')
-    expect(() => get(srcObject, false as any)).toThrow('Path must be an array or a string')
-    expect(() => get(srcObject, true as any)).toThrow('Path must be an array or a string')
+    expect(
+      // @ts-expect-error -- get() requires an array or string path, not null
+      () => get(srcObject, null),
+    ).toThrow('Path must be an array or a string')
+    expect(
+      // @ts-expect-error -- get() requires an array or string path, not a number
+      () => get(srcObject, 13),
+    ).toThrow('Path must be an array or a string')
+    expect(
+      // @ts-expect-error -- get() requires an array or string path, not a boolean
+      () => get(srcObject, false),
+    ).toThrow('Path must be an array or a string')
+    expect(
+      // @ts-expect-error -- get() requires an array or string path, not a boolean
+      () => get(srcObject, true),
+    ).toThrow('Path must be an array or a string')
   })
 
   test('can get simple props', () => {

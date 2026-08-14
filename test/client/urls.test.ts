@@ -133,7 +133,8 @@ describe('discardVersion()', () => {
 
     let error: Error | null = null
     try {
-      await getClient().discardVersion(args as any)
+      // @ts-expect-error -- publishedId is required
+      await getClient().discardVersion(args)
     } catch (err) {
       error = err as Error
     }
@@ -205,10 +206,11 @@ describe('unpublishVersion()', () => {
   })
 
   test('throws when releaseId is drafts', async () => {
-    const args = {releaseId: 'drafts'} as any
+    const args = {releaseId: 'drafts'}
 
     let error: Error | null = null
     try {
+      // @ts-expect-error -- publishedId is required
       await getClient().unpublishVersion(args)
     } catch (err) {
       error = err as Error
@@ -219,7 +221,7 @@ describe('unpublishVersion()', () => {
   })
 
   test('throws when data request fails', async () => {
-    const args = {publishedId: 'doc123', releaseId: 'release456'} as any
+    const args = {publishedId: 'doc123', releaseId: 'release456'}
 
     getActiveMock()
       .scope(projectHost())
@@ -421,7 +423,8 @@ describe('replaceVersion()', () => {
 
     let error: Error | null = null
     try {
-      await getClient().replaceVersion({document} as any)
+      // @ts-expect-error -- replaceVersion() requires publishedId when document has no `_id`
+      await getClient().replaceVersion({document})
     } catch (err) {
       error = err as Error
     }
@@ -448,11 +451,11 @@ describe('replaceVersion()', () => {
   test('throws when document is missing _type property', async () => {
     getActiveMock().clear()
     const publishedId = 'typeless123'
-    const document = {title: 'Missing Type'} as any
 
     let error: Error | null = null
     try {
-      await getClient().replaceVersion({document, publishedId})
+      // @ts-expect-error -- replaceVersion() document requires a `_type` property
+      await getClient().replaceVersion({document: {title: 'Missing Type'}, publishedId})
     } catch (err) {
       error = err as Error
     }

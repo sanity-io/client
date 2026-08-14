@@ -96,12 +96,14 @@ describe('transactions', () => {
   })
 
   test('throws if patch builder does not return patch', () => {
+    const noopBuilder = () => {
+      /* intentional noop */
+    }
     expect(() =>
       getClient()
         .transaction()
-        .patch('moofoo', (() => {
-          /* intentional noop */
-        }) as any),
+        // @ts-expect-error -- patch builder must return a Patch, not undefined
+        .patch('moofoo', noopBuilder),
     ).toThrow(/must return the patch/)
   })
 
@@ -197,26 +199,38 @@ describe('transactions', () => {
 
   test('throws when passing incorrect input to transaction operations', () => {
     const trans = getClient().transaction()
-    expect(() => trans.create('foo' as any), 'throws on create()').toThrow(/object of prop/)
-    expect(() => trans.createIfNotExists('foo' as any), 'throws on createIfNotExists()').toThrow(
-      /object of prop/,
-    )
-    expect(() => trans.createOrReplace('foo' as any), 'throws on createOrReplace()').toThrow(
-      /object of prop/,
-    )
-    expect(() => trans.delete({id: 'moofoo'} as any), 'throws on delete()').toThrow(
-      /not a valid document ID/,
-    )
+    expect(
+      // @ts-expect-error -- create() requires an object, not a string
+      () => trans.create('foo'),
+      'throws on create()',
+    ).toThrow(/object of prop/)
+    expect(
+      // @ts-expect-error -- createIfNotExists() requires an object, not a string
+      () => trans.createIfNotExists('foo'),
+      'throws on createIfNotExists()',
+    ).toThrow(/object of prop/)
+    expect(
+      // @ts-expect-error -- createOrReplace() requires an object, not a string
+      () => trans.createOrReplace('foo'),
+      'throws on createOrReplace()',
+    ).toThrow(/object of prop/)
+    expect(
+      // @ts-expect-error -- delete() requires a document ID string, not an object
+      () => trans.delete({id: 'moofoo'}),
+      'throws on delete()',
+    ).toThrow(/not a valid document ID/)
   })
 
   test('throws when not including document ID in createOrReplace/createIfNotExists in transaction', () => {
     const trans = getClient().transaction()
     expect(
-      () => trans.createIfNotExists({_type: 'movie', a: 1} as any),
+      // @ts-expect-error -- createIfNotExists() requires a document with an `_id`
+      () => trans.createIfNotExists({_type: 'movie', a: 1}),
       'throws on createIfNotExists()',
     ).toThrow(/contains an ID/)
     expect(
-      () => trans.createOrReplace({_type: 'movie', a: 1} as any),
+      // @ts-expect-error -- createOrReplace() requires a document with an `_id`
+      () => trans.createOrReplace({_type: 'movie', a: 1}),
       'throws on createOrReplace()',
     ).toThrow(/contains an ID/)
   })

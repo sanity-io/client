@@ -334,12 +334,12 @@ describe('createVersion()', () => {
   })
 
   test('throws when creating version of a document that is missing _type', async () => {
-    const document = {title: 'Missing type'} as any
     const publishedId = 'pub123'
 
     let error: Error | null = null
     try {
-      await getClient().createVersion({document, publishedId})
+      // @ts-expect-error -- createVersion() document requires a `_type` property
+      await getClient().createVersion({document: {title: 'Missing type'}, publishedId})
     } catch (err) {
       error = err as Error
     }
@@ -395,7 +395,8 @@ describe('createVersion()', () => {
 
     let error: Error | null = null
     try {
-      await getClient().createVersion({document, publishedId: undefined as any})
+      // @ts-expect-error -- publishedId must be a string, not undefined
+      await getClient().createVersion({document, publishedId: undefined})
     } catch (err) {
       error = err as Error
     }
@@ -413,7 +414,8 @@ describe('createVersion()', () => {
 
     let error: Error | null = null
     try {
-      await getClient().createVersion({document, releaseId, publishedId: undefined as any})
+      // @ts-expect-error -- publishedId must be a string, not undefined
+      await getClient().createVersion({document, releaseId, publishedId: undefined})
     } catch (err) {
       error = err as Error
     }
@@ -657,7 +659,8 @@ describe('createVersion()', () => {
   test('throws when neither document nor baseId are provided', async () => {
     let error: Error | null = null
     try {
-      await getClient().createVersion({} as any)
+      // @ts-expect-error -- createVersion() requires a document, or a baseId and publishedId
+      await getClient().createVersion({})
     } catch (err) {
       error = err as Error
     }
@@ -704,7 +707,8 @@ describe('createVersion()', () => {
 
     let error: Error | null = null
     try {
-      await getClient().createVersion({baseId, releaseId} as any)
+      // @ts-expect-error -- createVersion() with baseId also requires publishedId
+      await getClient().createVersion({baseId, releaseId})
     } catch (err) {
       error = err as Error
     }
@@ -721,7 +725,8 @@ describe('createVersion()', () => {
 
     let error: Error | null = null
     try {
-      await getClient().createVersion({releaseId, publishedId} as any)
+      // @ts-expect-error -- createVersion() requires a document or a baseId
+      await getClient().createVersion({releaseId, publishedId})
     } catch (err) {
       error = err as Error
     }
