@@ -70,6 +70,12 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'json', 'json-summary'],
       include: ['src/**'],
+      // Redundant against `include: ['src/**']` on its own, but stated so that
+      // widening `include` later cannot silently pull the built output, the
+      // dependency tree, or the tests themselves into the report. Coverage of
+      // `dist/` would double-count everything in `src/`, and coverage of
+      // `test/` measures how thoroughly the tests test themselves.
+      exclude: ['dist/**', 'node_modules/**', 'test/**'],
       reportOnFailure: true,
       clean: true,
     },
