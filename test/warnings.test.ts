@@ -103,6 +103,41 @@ describe('Client config warnings', async () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
 
+  test('warns about `baseId` only when `createVersion()` is given a document', async () => {
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('POST', '/v1/data/actions/foo')
+      .respond({status: 200, body: {transactionId: 'abc123'}})
+      .respond({status: 200, body: {transactionId: 'def456'}})
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      useCdn: false,
+      apiVersion: '1',
+    })
+
+    // The `baseId` form goes first, deliberately. The warning is wrapped in
+    // `once()`, so if this call warned, the assertion after the second call
+    // could not tell a real warning from a leftover one.
+    await client.createVersion({baseId: 'base123', publishedId: 'pub123', releaseId: 'release456'})
+    expect(warn).not.toHaveBeenCalled()
+
+    // The `document` form is legitimate: it is the only way to create a version
+    // of a document that does not exist yet, since `baseId` needs something to
+    // branch from. So the warning is a conditional nudge, not a correction, and
+    // this asserts that wording rather than just that something was printed.
+    await client.createVersion({
+      publishedId: 'pub123',
+      releaseId: 'release456',
+      document: {_id: 'versions.release456.pub123', _type: 'post'},
+    })
+    expect(warn).toHaveBeenCalledWith(
+      'You have called `createVersion()` with a defined `document`. If you are creating a version of a document that already exists, prefer providing `baseId` and `releaseId` instead.',
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
   test('warns if server sends warning back', async () => {
     expect.assertions(1)
 

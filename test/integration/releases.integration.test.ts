@@ -188,10 +188,10 @@ test('releases walks a full lifecycle: create, edit, schedule, archive, publish,
     await waitForRelease(client, releaseId, 'active', (r) => r?.state === 'active')
 
     // A release needs a document before `publish` does anything observable.
-    // Passing `document` rather than the recommended `baseId` (which warns on
-    // stderr) is deliberate: `baseId` versions an existing published document, so
-    // the published id would already exist before `publish` ran and the assertion
-    // below would prove nothing. Creating the version from scratch means the
+    // Passing `document` rather than `baseId` is deliberate: `baseId` versions an
+    // existing published document, so the published id would already exist
+    // before `publish` ran and the assertion below would prove nothing. Creating
+    // the version from scratch means the
     // published document can only appear because the release published it.
     await client.createVersion({
       releaseId,
