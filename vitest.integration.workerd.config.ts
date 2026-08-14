@@ -29,5 +29,12 @@ export default defineConfig({
   test: {
     include: ['test/integration/**/*.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
+    // Same values, and the same reasoning, as `vitest.integration.config.ts`:
+    // read the comment there. They are repeated rather than imported because
+    // this config deliberately shares nothing with the others. Without them the
+    // suite inherits vitest's 5s default, which is shorter than a single real
+    // Media Library upload or release lifecycle takes.
+    testTimeout: 60_000,
+    slowTestThreshold: 20_000,
   },
 })

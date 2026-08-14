@@ -28,6 +28,14 @@ export default defineConfig({
   test: {
     include: ['test/integration/**/*.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
+    // Same values, and the same reasoning, as `vitest.integration.config.ts`:
+    // read the comment there. They are repeated rather than imported because
+    // this config deliberately shares nothing with the others. Without them the
+    // suite inherits vitest's 5s default, which is shorter than a single real
+    // Media Library upload or release lifecycle takes, so those tests fail here
+    // on duration alone while passing everywhere else.
+    testTimeout: 60_000,
+    slowTestThreshold: 20_000,
     environment: 'edge-runtime',
     alias: {
       '@sanity/client/csm': new URL(pkg.exports['./csm'].default, import.meta.url).pathname,
