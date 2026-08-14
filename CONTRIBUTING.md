@@ -25,7 +25,7 @@ The suite also runs against every other supported environment: happy-dom, real b
 - `pnpm test:deno` - Deno.
 - `pnpm test:next` - typecheck only. It checks the Next.js App Router typings for fetch `cache`, `next.revalidate`, and `next.tags`; it runs no runtime tests.
 - `pnpm test:packaging` - needs a build (`pnpm build` first). Runs against `dist/` and the real `package.json` `exports` map, to catch failures a source-aliased suite cannot see.
-- `pnpm test:integration` - needs a build AND network access. This is the only suite that talks to the real Sanity API. It runs nightly and on version pull requests, not on every PR, so you will rarely need it locally.
+- `pnpm test:integration` - needs a build AND network access. This is the integration smoke suite (see "Integration smoke tests" below), the only suite that talks to the real Sanity API. It runs nightly and on version pull requests, not on every PR, so you will rarely need it locally.
 
 Other useful commands:
 
@@ -140,6 +140,55 @@ Move a test into a suffixed file only after you have established the dependency 
 - `fs.createReadStream` fixture uploads - only Node has `fs`.
 
 Each time, the fix was to measure first: run the test unguarded in the environment it was moved out of, and see whether it actually fails there. Two of the three times, most of the moved tests turned out to have no real dependency at all and moved back.
+
+## Integration smoke tests
+
+Every other suite in this repo mocks the transport: requests go through the client's `resolveFetch` seam into `get-it/mock`, and nothing reaches the network (see "Testing: the client, not the transport" above). That stays the default. It is what makes the rest of the suite hermetic and fast.
+
+`test/**/*.integration.test.ts` is the exception. Each file in it makes real requests, with a real token, against a real Sanity project and dataset. Mocks are only as good as the assumptions behind them, and those assumptions can drift from what the API actually does. This suite exists to catch that drift before it reaches users.
+
+Keep it minimal. One smoke test per feature that could significantly change the client's behavior, asserting that the round trip works: a query returns the document you just wrote, a listener connects, a mutation lands. This is not the place for a matrix of every flag and option a feature supports. The hermetic suite already covers that, without needing the network.
+
+The features currently covered, one test each:
+
+- Query - `client.fetch()`
+- Document fetch - `client.getDocument()`, the `/doc` endpoint
+- Listener - `client.listen()`
+- Live Content API - `client.live.events()`
+- Content source maps / stega - `client.fetch()` with `resultSourceMap`
+- Mutations - `client.create()` then `client.delete()`
+
+Two features are known gaps, not oversights:
+
+- Agent actions need `apiVersion: 'vX'` and the `sanity.organization/read` grant. Every project-scoped token role lacks an org-level grant, so no token issued for a single project can exercise this. Testing it needs an org-level token or a different grant model.
+- Media library needs a library provisioned on the project, and provisioning one is an organization-level action, not something the project CLI can do. `client.request({url: '/media-libraries', method: 'GET'})` already works and returns an empty list; there is nothing to fetch until a library exists.
+
+If either becomes testable, give it its own `test/integration/<feature>.integration.test.ts`, one minimal smoke test, same as the rest.
+
+### Naming
+
+Integration smoke tests live in `test/integration/` and are named `<feature>.integration.test.ts`. The doubled suffix is deliberate: `test/live.test.ts` is a hermetic unit suite, and a bare `test/integration/live.test.ts` would collide with it on basename in editor tabs and test output. `vitest.integration.config.ts` collects tests by the `.integration.test.ts` suffix rather than by directory, so the same naming rule is what selects a test into this suite even if a file ever needs to live outside `test/integration/`.
+
+### Running locally
+
+You need your own token. Create an Editor-role token for the integration project's dataset rather than sharing one, and never commit a token or put one in a fixture.
+
+```bash
+export SANITY_INTEGRATION_TOKEN=your-token-here
+pnpm run build
+pnpm run test:integration
+```
+
+`createIntegrationClient()` in `test/integration/helpers.ts` throws immediately if `SANITY_INTEGRATION_TOKEN` is missing, rather than skipping. CI always has the secret, so a missing token locally means the suite was invoked without the setup above, and that should fail loudly instead of silently passing or skipping.
+
+### Rules for this suite
+
+- Self-contained: a test that needs a document creates it and deletes it in a `finally`. Never depend on seeded content, and never leave anything behind.
+- Unique ids per run, built with `crypto.randomUUID()`, so concurrent runs cannot collide.
+- Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset.
+- No `skipIf`/`runIf`/`.skip`/`.todo`, same rule as the rest of the suite. If a feature cannot be exercised with the tokens and provisioning available, document the gap here instead of writing a test that never runs.
+
+This suite runs on a schedule and on version pull requests (see `.github/workflows/live.yml`), not on every PR. Fork pull requests never run it: they do not receive the `SANITY_INTEGRATION_TOKEN` secret, and the workflow is guarded to skip the job rather than run it without one.
 
 ## Pull requests, changesets, and releases
 

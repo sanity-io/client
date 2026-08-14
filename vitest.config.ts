@@ -6,7 +6,10 @@ import pkg from './package.json' with {type: 'json'}
 /** Suites that must not run under the source-alias configs. */
 export const baseExclude = [
   ...configDefaults.exclude,
-  'test/integration/**',
+  // Selects by the `.integration.test.ts` suffix, not by directory, matching
+  // `vitest.integration.config.ts`'s `include` - so this keeps excluding the
+  // integration smoke suite even if a file ever lands outside `test/integration/`.
+  'test/**/*.integration.test.ts',
   'test/packaging/**',
   'test/next/**',
 ]

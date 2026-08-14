@@ -23,11 +23,20 @@ permissions:
 jobs:
   live:
     name: Live API on ${{ matrix.runtime }}
+    # Fork pull requests never receive repo secrets, so `SANITY_INTEGRATION_TOKEN`
+    # would be empty and every test would fail on the missing-token check in
+    # `test/integration/helpers.ts`. Skip the job instead of running it token-less:
+    # this only matters for the `pull_request` trigger above (the changesets version
+    # PR), which always originates from this repository, not a fork - but keep the
+    # guard in case that ever changes.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         runtime: [node, bun, deno, workerd, vercel-edge]
+    env:
+      SANITY_INTEGRATION_TOKEN: ${{ secrets.SANITY_INTEGRATION_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -36,9 +45,9 @@ jobs:
           cache: pnpm
           node-version: lts/*
       - run: pnpm install --frozen-lockfile
-      # This is the only place `test/integration/live.test.ts` runs: it resolves
-      # `@sanity/client` through the real `exports` map, so it needs a real build
-      # against `dist/`, not a source alias.
+      # This is the only place the integration smoke suite (test/**/*.integration.test.ts)
+      # runs: it resolves `@sanity/client` through the real `exports` map, so it needs a
+      # real build against `dist/`, not a source alias.
       - run: pnpm run build
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         if: matrix.runtime == 'bun'
