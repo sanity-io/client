@@ -10,6 +10,7 @@ import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
+import {FunctionsClient, ObservableFunctionsClient} from './functions/FunctionsClient'
 import {
   MediaLibraryVideoClient,
   ObservableMediaLibraryVideoClient,
@@ -119,6 +120,12 @@ export class ObservableSanityClient {
     action: ObservableAgentsActionClient
   }
   /**
+   * Invoke Sanity Functions and inspect their results
+   *
+   * @category Functions
+   */
+  functions: ObservableFunctionsClient
+  /**
    * Create and manage content releases and their scheduled publishing
    *
    * @category Releases
@@ -151,6 +158,7 @@ export class ObservableSanityClient {
     this.agent = {
       action: new ObservableAgentsActionClient(this, this.#httpRequest),
     }
+    this.functions = new ObservableFunctionsClient(this, this.#httpRequest)
     this.releases = new ObservableReleasesClient(this, this.#httpRequest)
   }
 
@@ -1269,6 +1277,12 @@ export class SanityClient {
     action: AgentActionsClient
   }
   /**
+   * Invoke Sanity Functions and inspect their results
+   *
+   * @category Functions
+   */
+  functions: FunctionsClient
+  /**
    * Create and manage content releases and their scheduled publishing
    *
    * @category Releases
@@ -1308,6 +1322,7 @@ export class SanityClient {
     this.agent = {
       action: new AgentActionsClient(this, this.#httpRequest),
     }
+    this.functions = new FunctionsClient(this, this.#httpRequest)
     this.releases = new ReleasesClient(this, this.#httpRequest)
 
     this.observable = new ObservableSanityClient(httpRequest, config)

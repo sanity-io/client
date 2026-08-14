@@ -145,6 +145,10 @@ export async function updateDocumentTitle(_id, title) {
     - [Getting video playback information](#getting-video-playback-information)
     - [Working with signed playback information](#working-with-signed-playback-information)
     - [Downloading MP4 renditions](#downloading-mp4-renditions)
+  - [Invoking functions](#invoking-functions)
+    - [Choosing a stack](#choosing-a-stack)
+    - [Scoping to an organization](#scoping-to-an-organization)
+    - [Return values and timeouts](#return-values-and-timeouts)
 - [License](#license)
 - [Migrate](#migrate)
 
@@ -2446,6 +2450,94 @@ if (playbackInfo.renditions?.length) {
 ```
 
 Available resolutions depend on the source video but typically include `1080p`, `480p`, and `270p`.
+
+### Invoking functions
+
+Call a Sanity Pubsub Function on demand. These APIs are available on the `client.functions` namespace.
+
+Only `sanity.function.pubsub` functions can be invoked this way. Every other type is driven by its own trigger.
+
+Functions are addressed by the `name` they are declared with in your blueprint. Names are unique within a stack. The client needs a `stackId` in order to resolve. Configure it once on the client, or pass it per call.
+
+```js
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  projectId: 'your-project-id',
+  apiVersion: '2025-02-19',
+  token: 'valid-token',
+  stackId: 'your-stack-id',
+})
+
+const result = await client.functions.invoke('my-function', {
+  event: {data: {hello: 'world'}},
+})
+```
+
+The payload given as `event.data` is what the function receives as `event.data`. It defaults to `{}` when omitted.
+
+Both Promise and Observable forms are available:
+
+- `client.functions.invoke(name, request)` resolves with the function's return value
+- `client.observable.functions.invoke(name, request)` emits it and completes
+
+```ts
+// The return value is typed through the generic; it is not validated at runtime
+const summary = await client.functions.invoke<{words: number}>('summarize', {
+  event: {data: {documentId: 'abc123'}},
+})
+```
+
+#### Choosing a stack
+
+`stackId` on the request wins over `stackId` in the client config, which lets one client reach functions in more than one stack:
+
+```js
+await client.functions.invoke('my-function', {stackId: 'another-stack-id'})
+```
+
+Resolving the name takes one extra request per call: the client reads the stack to find the function, then invokes it. If neither the request nor the config supplies a `stackId`, the call rejects without touching the network.
+
+Invoking a name the stack doesn't declare or a non-pubsub function rejects.
+
+#### Scoping to an organization
+
+Project scope is the default. For an organization-scoped stack, set `organizationId`:
+
+```js
+const client = createClient({
+  projectId: 'your-project-id',
+  apiVersion: '2025-02-19',
+  token: 'valid-token',
+  stackId: 'your-stack-id',
+  organizationId: 'your-organization-id',
+})
+```
+
+It can also be passed per call, and wins over the client config:
+
+```js
+await client.functions.invoke('my-function', {organizationId: 'another-organization-id'})
+```
+
+An `organizationId` takes precedence over `projectId`, since a stack is only ever resolvable at one scope. `projectId` becomes optional in that case, provided the client is also configured with `useProjectHostname: false`.
+
+Scope has to match the token. A project-scoped token gets `403` on an organization-scoped stack; mint one that matches with `sanity blueprints mint-deploy-token --organization-id <id>`.
+
+#### Return values and timeouts
+
+The request stays open until the function finishes, and resolves with whatever it returned. A function that returns nothing resolves to `undefined`.
+
+Requests time out after five minutes by default, so a longer-running function needs an explicit `timeout` (in milliseconds, `0` to disable it). A call can be aborted with an `AbortSignal` like any other request:
+
+```js
+const controller = new AbortController()
+
+const result = await client.functions.invoke('slow-function', {
+  timeout: 0, // or e.g. 600000 for a ten minute deadline
+  signal: controller.signal,
+})
+```
 
 ## License
 
