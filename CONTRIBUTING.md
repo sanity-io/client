@@ -157,13 +157,21 @@ The features currently covered, one test each:
 - Live Content API - `client.live.events()`
 - Content source maps / stega - `client.fetch()` with `resultSourceMap`
 - Mutations - `client.create()` then `client.delete()`
+- Media Library - a client configured with `resource: {type: 'media-library', id}`
+- Agent Actions - `client.agent.action.prompt()`
 
-Two features are known gaps, not oversights:
+### Two tokens, and why
 
-- Agent actions need `apiVersion: 'vX'` and the `sanity.organization/read` grant. Every project-scoped token role lacks an org-level grant, so no token issued for a single project can exercise this. Testing it needs an org-level token or a different grant model.
-- Media library needs a library provisioned on the project, and provisioning one is an organization-level action, not something the project CLI can do. `client.request({url: '/media-libraries', method: 'GET'})` already works and returns an empty list; there is nothing to fetch until a library exists.
+Most of the suite uses `SANITY_INTEGRATION_TOKEN`, a project-scoped Editor token.
 
-If either becomes testable, give it its own `test/integration/<feature>.integration.test.ts`, one minimal smoke test, same as the rest.
+Agent Actions needs `SANITY_INTEGRATION_ORG_TOKEN` instead, an organization-scoped token. It requires the `sanity.organization/read` grant, which no project token can carry however broad its project role. The two are kept separate on purpose: the other tests have no business holding organization-wide credentials. Note that an organization token also needs a role that actually grants org read; the organization's default `member` role does not, and a token without it authenticates fine but sees no organizations.
+
+Agent Actions is also the one test that departs from the suite's pinned `apiVersion`, because it rejects dated versions and requires `vX`.
+
+Two limits worth knowing before extending these:
+
+- Media Library reads work with the project token, but writes need the organization token. The smoke test is read-only, which keeps the broader credential out of that path. Exercising `client.mediaLibrary.video.getPlaybackInfo()` would need a real video asset uploaded to the library; it fails client-side validation without one.
+- The Agent Actions test asserts the response is a non-empty string rather than matching exact content. Asking a model for an exact word and asserting it would flake on nondeterminism, which defeats the purpose. It also costs real inference per run, so keep it to one call.
 
 ### Naming
 

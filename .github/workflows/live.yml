@@ -38,6 +38,10 @@ jobs:
         runtime: [node, bun, deno, workerd, vercel-edge]
     env:
       SANITY_INTEGRATION_TOKEN: ${{ secrets.SANITY_INTEGRATION_TOKEN }}
+      # Agent Actions needs the `sanity.organization/read` grant, which a project
+      # token cannot carry however broad its project role. Kept as a separate
+      # secret so the other tests do not hold organization-wide credentials.
+      SANITY_INTEGRATION_ORG_TOKEN: ${{ secrets.SANITY_INTEGRATION_ORG_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
