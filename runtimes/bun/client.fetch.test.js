@@ -1,6 +1,6 @@
 import {expect, test} from 'bun:test'
 
-import {createClient} from '../../dist/index.browser'
+import {createClient} from '../../dist/index.js'
 
 const projectId = '81pocpw8'
 const dataset = 'production'

@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  push:
+    branches:
+      # The current major. Owns the `latest` npm tag and the "Latest" GitHub release badge.
+      - main
+      # Maintenance branches for older majors. Add the next one here when main moves on.
+      - v7
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read # for checkout
+
+jobs:
+  release:
+    name: Create version pull request or publish to npm
+    if: github.repository_owner == 'sanity-io'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # for checkout
+      id-token: write # to enable use of OIDC for npm provenance
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+
+      # Only the current major may take the `latest` dist-tag on npm and the "Latest" badge on
+      # GitHub, otherwise `npm install @sanity/client` would resolve to an old major every time a
+      # maintenance patch goes out. Note that a dist-tag must not be a valid semver range, so the
+      # tag is `latest-v7` rather than `v7`.
+      - name: Resolve release line
+        id: line
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "$BRANCH" = 'main' ]; then
+            echo "npm-tag=latest" >> "$GITHUB_OUTPUT"
+            echo "gh-latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "npm-tag=latest-$BRANCH" >> "$GITHUB_OUTPUT"
+            echo "gh-latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          # Lets the version pull request and the release tag be pushed back
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Get app token user id
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Set up git user
+        run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+
+      # Publishing uses npm trusted publishing (OIDC), so there is no npm token anywhere in this
+      # job. `changeset publish` shells out to `pnpm publish`, which in turn spawns `npm publish`,
+      # and the OIDC token only survives that chain on pnpm >= 11.0.9 with pnpm/action-setup
+      # >= v6.0.6. Do not pin either below that, and do not set `registry-url` on setup-node: it
+      # writes an `_authToken` line into .npmrc that takes precedence over the OIDC exchange.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          cache: pnpm
+          node-version: lts/*
+      # Temporary until setup-node ships an npm version with OIDC support by default
+      - name: Update npm to use trusted publishing (OIDC)
+        run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create version pull request or publish to npm
+        id: changesets
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
+        with:
+          publish: pnpm run release --tag ${{ steps.line.outputs.npm-tag }}
+          # Conventional-commit title/commit so the version pull request stays green against the
+          # validate-pr-title check.
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
+          setupGitUser: false
+          # The action creates GitHub releases without `make_latest`, which would let a 7.x patch
+          # steal the "Latest" badge from the current major. We create the release ourselves below.
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          NPM_CONFIG_PROVENANCE: true
+
+      # `createGithubReleases: false` also stops the action from pushing the git tag that
+      # `changeset publish` created locally, so push it here before creating the release.
+      - name: Create GitHub release
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MAKE_LATEST: ${{ steps.line.outputs.gh-latest }}
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          git push origin "refs/tags/v$version"
+
+          node .github/scripts/release-notes.mjs "$version" > "$RUNNER_TEMP/release-notes.md"
+
+          prerelease=()
+          case "$version" in *-*) prerelease=(--prerelease) ;; esac
+
+          gh release create "v$version" \
+            --title "v$version" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            --latest="$MAKE_LATEST" \
+            --verify-tag \
+            "${prerelease[@]}"

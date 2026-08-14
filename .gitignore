@@ -10,8 +10,8 @@ coverage
 # Dependency directories
 node_modules
 
-# UMD bundle
-umd
+# Deno cache lockfile (created by `npm run test:deno`)
+deno.lock
 
 # MacOS
 .DS_Store
@@ -20,3 +20,7 @@ tsconfig.vitest-temp.json
 #Jetbrains
 .idea
 *.iml
+
+# Deno runtime test fixtures (created by `npm run test:deno`)
+runtimes/deno/*.tgz
+runtimes/deno/package-lock.json

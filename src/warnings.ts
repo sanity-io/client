@@ -3,7 +3,7 @@ import {type Any} from './types'
 import {once} from './util/once'
 
 const createWarningPrinter = (message: string[]) =>
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   once((...args: Any[]) => console.warn(message.join(' '), ...args))
 
 export const printCdnAndWithCredentialsWarning = createWarningPrinter([
@@ -49,6 +49,11 @@ export const printNoDefaultExport = createWarningPrinter([
 
 export const printCreateVersionWithBaseIdWarning = createWarningPrinter([
   'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `releaseId` instead.',
+])
+
+export const printDeprecatedUriOptionWarning = createWarningPrinter([
+  'The `uri` request option has been renamed to `url`.',
+  'Please update your code to use `url` instead. Support for `uri` will be removed in a future version.',
 ])
 
 export const printDeprecatedResourceConfigWarning = createWarningPrinter([

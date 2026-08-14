@@ -33,11 +33,17 @@ export type ContentSourceMapParsedPathKeyedSegment = {_key: string; _index: numb
 
 /** @alpha */
 export type ContentSourceMapParsedPath = (
-  string | number | ContentSourceMapParsedPathKeyedSegment
+  | string
+  | number
+  | ContentSourceMapParsedPathKeyedSegment
 )[]
 
 /** @alpha */
-export type StudioBaseUrl = `/${string}` | `${string}.sanity.studio` | `https://${string}` | string
+export type StudioBaseUrl =
+  | `/${string}`
+  | `${string}.sanity.studio`
+  | `https://${string}`
+  | (string & {})
 
 /** @alpha */
 export type StudioBaseRoute = {baseUrl: StudioBaseUrl; workspace?: string; tool?: string}

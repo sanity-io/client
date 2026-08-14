@@ -1,12 +1,12 @@
-import {lastValueFrom, type Observable} from 'rxjs'
+import {type Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {Any, HttpRequest, IdentifiedSanityDocumentStub} from '../../types'
-import {_generate, type GenerateInstruction} from './generate'
+import {_generate, _generateObservable, type GenerateInstruction} from './generate'
 import {_patch, type PatchDocument} from './patch'
 import {_prompt, type PromptRequest} from './prompt'
-import {_transform, type TransformDocument} from './transform'
-import {_translate, type TranslateDocument} from './translate'
+import {_transform, _transformObservable, type TransformDocument} from './transform'
+import {_translate, _translateObservable, type TranslateDocument} from './translate'
 
 /** @public */
 export class ObservableAgentsActionClient {
@@ -28,7 +28,7 @@ export class ObservableAgentsActionClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _generate(this.#client, this.#httpRequest, request)
+    return _generateObservable(this.#client, this.#httpRequest, request)
   }
 
   /**
@@ -42,7 +42,7 @@ export class ObservableAgentsActionClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _transform(this.#client, this.#httpRequest, request)
+    return _transformObservable(this.#client, this.#httpRequest, request)
   }
 
   /**
@@ -56,7 +56,7 @@ export class ObservableAgentsActionClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return _translate(this.#client, this.#httpRequest, request)
+    return _translateObservable(this.#client, this.#httpRequest, request)
   }
 }
 
@@ -80,7 +80,7 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return lastValueFrom(_generate(this.#client, this.#httpRequest, request))
+    return _generate(this.#client, this.#httpRequest, request)
   }
 
   /**
@@ -94,7 +94,7 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return lastValueFrom(_transform(this.#client, this.#httpRequest, request))
+    return _transform(this.#client, this.#httpRequest, request)
   }
 
   /**
@@ -108,7 +108,7 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return lastValueFrom(_translate(this.#client, this.#httpRequest, request))
+    return _translate(this.#client, this.#httpRequest, request)
   }
 
   /**
@@ -118,7 +118,7 @@ export class AgentActionsClient {
   prompt<const DocumentShape extends Record<string, Any>>(
     request: PromptRequest<DocumentShape>,
   ): Promise<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
-    return lastValueFrom(_prompt(this.#client, this.#httpRequest, request))
+    return _prompt(this.#client, this.#httpRequest, request)
   }
 
   /**
@@ -133,6 +133,6 @@ export class AgentActionsClient {
       ? {_id: string}
       : IdentifiedSanityDocumentStub & DocumentShape
   > {
-    return lastValueFrom(_patch(this.#client, this.#httpRequest, request))
+    return _patch(this.#client, this.#httpRequest, request)
   }
 }

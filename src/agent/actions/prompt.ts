@@ -1,6 +1,6 @@
 import {type Observable} from 'rxjs'
 
-import {_request} from '../../data/dataMethods'
+import {_request, _requestObservable} from '../../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../../SanityClient'
 import type {AgentActionParams, Any, HttpRequest} from '../../types'
 import {hasDataset} from '../../validators'
@@ -101,7 +101,7 @@ export interface PromptRequestBase {
  * @beta
  */
 // need the unused generic here to allow for optional callsite casting
-// eslint-disable-next-line unused-imports/no-unused-vars
+// oxlint-disable-next-line no-unused-vars
 interface PromptJsonResponse<T extends Record<string, Any> = Record<string, Any>> {
   /**
    *
@@ -120,19 +120,33 @@ interface PromptTextResponse {
 
 /** @beta */
 export type PromptRequest<T extends Record<string, Any> = Record<string, Any>> = (
-  PromptTextResponse | PromptJsonResponse<T>
+  | PromptTextResponse
+  | PromptJsonResponse<T>
 ) &
   PromptRequestBase
 
-export function _prompt<const DocumentShape extends Record<string, Any>>(
+export function _promptObservable<const DocumentShape extends Record<string, Any>>(
   client: SanityClient | ObservableSanityClient,
   httpRequest: HttpRequest,
   request: PromptRequest<DocumentShape>,
 ): Observable<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
   const dataset = hasDataset(client.config())
+  return _requestObservable(client, httpRequest, {
+    method: 'POST',
+    url: `/agent/action/prompt/${dataset}`,
+    body: request,
+  })
+}
+
+export function _prompt<const DocumentShape extends Record<string, Any>>(
+  client: SanityClient | ObservableSanityClient,
+  httpRequest: HttpRequest,
+  request: PromptRequest<DocumentShape>,
+): Promise<(typeof request)['format'] extends 'json' ? DocumentShape : string> {
+  const dataset = hasDataset(client.config())
   return _request(client, httpRequest, {
     method: 'POST',
-    uri: `/agent/action/prompt/${dataset}`,
+    url: `/agent/action/prompt/${dataset}`,
     body: request,
   })
 }

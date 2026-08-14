@@ -1,6 +1,6 @@
-import {lastValueFrom, type Observable} from 'rxjs'
+import {type Observable} from 'rxjs'
 
-import {_request} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   HttpRequest,
@@ -42,12 +42,12 @@ export class ObservableMediaLibraryVideoClient {
       )
     }
 
-    const uri = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
+    const url = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
     const queryParams = buildQueryParams(options)
 
-    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
+    return _requestObservable<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
       method: 'GET',
-      uri,
+      url,
       query: queryParams,
     })
   }
@@ -72,12 +72,27 @@ export class MediaLibraryVideoClient {
     assetIdentifier: MediaLibraryAssetInstanceIdentifier,
     options: MediaLibraryPlaybackInfoOptions = {},
   ): Promise<VideoPlaybackInfo> {
-    return lastValueFrom(
-      new ObservableMediaLibraryVideoClient(
-        this.#client.observable,
-        this.#httpRequest,
-      ).getPlaybackInfo(assetIdentifier, options),
-    )
+    const config = this.#client.config()
+    const resource = config.resource || config['~experimental_resource']
+    const configMediaLibraryId = resource?.id
+
+    const {instanceId, libraryId} = parseAssetInstanceId(assetIdentifier)
+    const effectiveLibraryId = libraryId || configMediaLibraryId
+
+    if (!effectiveLibraryId) {
+      throw new Error(
+        'Could not determine Media Library ID - you need to provide a valid Media Library ID in the client config or a Media Library GDR',
+      )
+    }
+
+    const url = buildVideoPlaybackInfoUrl(instanceId, effectiveLibraryId)
+    const queryParams = buildQueryParams(options)
+
+    return _request<VideoPlaybackInfo>(this.#client, this.#httpRequest, {
+      method: 'GET',
+      url,
+      query: queryParams,
+    })
   }
 }
 

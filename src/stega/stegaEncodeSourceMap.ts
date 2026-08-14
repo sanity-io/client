@@ -5,6 +5,11 @@ import {jsonPathToStudioPath} from '../csm/jsonPath'
 import {resolveStudioBaseRoute} from '../csm/resolveEditInfo'
 import {reKeySegment, toString as studioPathToString} from '../csm/studioPath'
 import {encodeIntoResult} from './encodeIntoResult'
+// Re-export so `encodeIntoResult` is a genuine export of this module - which
+// forms its own output chunk via the dynamic import in `dataMethods`. Without
+// this, rolldown absorbs `encodeIntoResult` into the chunk but omits it from
+// the chunk's exports, breaking `@sanity/client/stega`'s re-export of it.
+export {encodeIntoResult} from './encodeIntoResult'
 import {filterDefault} from './filterDefault'
 import {
   type ContentSourceMap,
