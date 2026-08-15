@@ -11,42 +11,19 @@ import {browserOnlyExclude, nonNodeExclude, sharedConfig, sourceAlias} from './v
 export default defineConfig({
   plugins: [
     cloudflareTest({
-      // Intentionally no `compatibilityFlags: ['nodejs_compat']` - the point of
-      // this suite is to prove the client runs on a stock worker.
-      //
-      // `2024-11-11` is the earliest date at which workerd implements the
-      // `cache` field on a request init, which `eventsource` sets to
-      // `no-store` on every SSE connection. Before that date workerd throws
-      // "The 'cache' field on 'RequestInitializerDict' is not implemented"
-      // rather than ignoring it, so `client.listen()` and
-      // `client.live.events()` cannot connect at all. Equivalent to enabling
-      // the `cache_option_enabled` flag on an older date; both were verified
-      // by probing miniflare directly. Do not pin this earlier.
+      // Note: no `nodejs_compat` - we want cloudflare workers to function
+      // without any compatibility with it. We do need a compatiblity date for
+      // eventsource to not throw.
       miniflare: {compatibilityDate: '2024-11-11'},
     }),
   ],
   test: {
     ...sharedConfig,
     exclude: [...nonNodeExclude, ...browserOnlyExclude],
-    // Mirror the other runtime suites: resolve `@sanity/client` to source so we
-    // don't depend on `npm run build`. The real `exports` map is exercised by
-    // the packaging-resolution guard in `test/exports.test.ts` instead.
     alias: sourceAlias('default'),
-    server: {
-      deps: {
-        // The pool externalizes deps and resolves them Node-side, where Node always
-        // injects the `node` condition - so get-it would resolve its undici build
-        // regardless of the conditions below. Inline it so Vite resolves it with
-        // the bare-worker conditions instead.
-        inline: [/get-it/],
-      },
-    },
   },
   ssr: {
     resolve: {
-      // Model bare workerd: `node` is NOT active without `nodejs_compat`, so it is
-      // deliberately omitted. Anything resolvable only via `node` fails here,
-      // which is the point.
       conditions: ['workerd', 'worker', 'browser', 'module', 'import'],
     },
   },
