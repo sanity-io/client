@@ -3,13 +3,10 @@ import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
 
 describe('Client config warnings', async () => {
-  const isEdge = typeof EdgeRuntime === 'string'
-  // The conditional specifier means TS can only resolve this import's type
-  // when `dist/` has been built (it types as `any` otherwise, e.g. in the CI
-  // test job), so the shim below anchors its type to the source entry
-  // point — a type-only reference that always resolves and is erased at
-  // runtime.
-  const {createClient: createCoreClient} = await import(isEdge ? '../dist/index.js' : '../src')
+  // Imported dynamically, not statically, because these tests assert on
+  // warnings emitted during client construction: the module has to load after
+  // the `console.warn` spy below is installed.
+  const {createClient: createCoreClient} = await import('../src')
   // Clients in this suite go through the per-test mock, injected via the
   // public `resolveFetch` config option.
   const createClient: typeof import('../src').createClient = (config) =>

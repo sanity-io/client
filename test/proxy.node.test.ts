@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs'
 import {createServer, type IncomingMessage, type Server} from 'node:http'
 import {type AddressInfo, type Socket} from 'node:net'
 import {join as joinPath} from 'node:path'
-import {getCACertificates, setDefaultCACertificates, TLSSocket} from 'node:tls'
+import {TLSSocket} from 'node:tls'
 
 // Load pre-generated test certificates - a server cert signed by the test CA
 // in `certs/ca.pem`, so the client can verify it for real instead of
@@ -168,6 +168,12 @@ describe('proxy configuration', () => {
     let proxyPort: number
     let connectRequests: {method: string; url: string; headers: IncomingMessage['headers']}[]
     let tunneledRequests: {method: string; url: string; headers: Record<string, string>}[]
+    // Every socket the CONNECT handler takes over, so teardown can destroy
+    // them. A tunnelled socket is detached from the HTTP server's own
+    // connection tracking, so `server.close()` waits on it forever: with a
+    // client that never completes the TLS handshake (see the HTTPS_PROXY test
+    // below), `afterEach` hangs until the hook times out.
+    let tunnelSockets: Socket[]
 
     beforeEach(async () => {
       // TLS verification here is provided by createCaTrustingProxyFetch()
@@ -181,6 +187,7 @@ describe('proxy configuration', () => {
       // `UNABLE_TO_VERIFY_LEAF_SIGNATURE`.
       connectRequests = []
       tunneledRequests = []
+      tunnelSockets = []
 
       // Create a mock HTTP proxy server that handles CONNECT for tunneling
       proxyServer = createServer()
@@ -198,6 +205,8 @@ describe('proxy configuration', () => {
           url: req.url || '',
           headers: req.headers,
         })
+
+        tunnelSockets.push(clientSocket)
 
         // Tell the client the tunnel is established
         clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
@@ -277,6 +286,7 @@ describe('proxy configuration', () => {
     })
 
     afterEach(async () => {
+      for (const socket of tunnelSockets) socket.destroy()
       await new Promise<void>((resolve) => proxyServer.close(() => resolve()))
     })
 
@@ -495,17 +505,19 @@ describe('proxy configuration', () => {
       vi.stubEnv('HTTPS_PROXY', `http://127.0.0.1:${proxyPort}`)
 
       // The production dispatcher takes no `ca` option (unlike
-      // `createCaTrustingProxyFetch()` above), so it TLS-verifies the
-      // tunnelled connection against Node's real default trust store. The
-      // `beforeEach` comment already ruled out `NODE_EXTRA_CA_CERTS` (read
-      // once at process start); `tls.setDefaultCACertificates()` is the
-      // runtime equivalent, so extend the real default store with the test
-      // CA instead. Target `localhost` (via `apiHost`/`useProjectHostname`,
-      // rather than the usual `abc123.api.sanity.io`) so the requested
-      // hostname matches the test cert's SAN list.
-      const originalCaCertificates = getCACertificates('default')
-      setDefaultCACertificates([...originalCaCertificates, testCaCert])
-
+      // `createCaTrustingProxyFetch()` above), so it TLS-verifies the tunnelled
+      // connection against Node's real trust store, which does not contain the
+      // test CA. The request therefore cannot succeed, and that is fine: what
+      // this test asserts is that HTTPS_PROXY was honoured, and the proxy
+      // records the CONNECT before any TLS handshake with the origin is
+      // attempted. The CONNECT is the evidence.
+      //
+      // Extending the trust store at runtime would need
+      // `tls.setDefaultCACertificates()`, which only exists from Node 22.15,
+      // while this package supports 22.12 and CI tests that floor. The
+      // `beforeEach` comment rules out `NODE_EXTRA_CA_CERTS` separately (read
+      // once at process start). Target `localhost` (via
+      // `apiHost`/`useProjectHostname`) so the CONNECT target is predictable.
       try {
         const client = createCoreClient({
           projectId: 'abc123',
@@ -517,12 +529,14 @@ describe('proxy configuration', () => {
           // No explicit proxy option - should use env var
         })
 
-        await client.fetch('*[_type == "post"]')
+        // Rejects on TLS verification, as explained above. Asserted rather
+        // than swallowed, so this fails loudly if it ever starts succeeding
+        // (which would mean the request stopped being verified).
+        await expect(client.fetch('*[_type == "post"]')).rejects.toThrow()
 
         expect(connectRequests.length).toBe(1)
         expect(connectRequests[0].url).toBe('localhost:443')
       } finally {
-        setDefaultCACertificates(originalCaCertificates)
         vi.unstubAllEnvs()
       }
     })
