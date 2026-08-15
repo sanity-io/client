@@ -1,7 +1,6 @@
 // The packaging suite runs against the BUILT package (dist/, pkg.exports) to
 // catch failure modes source-aliased tests structurally cannot see: chunk
-// splicing between rollup passes, and CJS/require resolution. No source
-// alias: that is deliberate, and it needs no network.
+// splicing between rollup passes, and CJS/require resolution.
 //
 // Requires `pnpm build` first. A missing `dist/` must fail loudly here, not
 // skip silently - unlike the source-aliased suites, this one has no source

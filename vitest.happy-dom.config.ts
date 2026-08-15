@@ -1,5 +1,3 @@
-// Simulated browser environment (happy-dom). See vitest.browser.config.ts for
-// the real thing.
 import {defineConfig} from 'vitest/config'
 
 import {browserOnlyExclude, nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
