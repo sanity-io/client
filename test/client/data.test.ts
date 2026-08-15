@@ -34,10 +34,10 @@ describe('data', () => {
     },
   } satisfies ContentSourceMap
   test('can query for documents', async () => {
-    const query = 'beerfiesta.beer[.title == $beerName]'
+    const query = '*[_type == "beer" && title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const qs =
-      'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
+      '*%5B_type%20%3D%3D%20%22beer%22%20%26%26%20title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
     getActiveMock()
       .scope(projectHost())
@@ -56,10 +56,10 @@ describe('data', () => {
   })
 
   test('can query for documents and return full response', async () => {
-    const query = 'beerfiesta.beer[.title == $beerName]'
+    const query = '*[_type == "beer" && title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const qs =
-      'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
+      '*%5B_type%20%3D%3D%20%22beer%22%20%26%26%20title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
     getActiveMock()
       .scope(projectHost())
@@ -81,10 +81,10 @@ describe('data', () => {
   })
 
   test('can explicitly ask to include query in response', async () => {
-    const query = 'beerfiesta.beer[.title == $beerName]'
+    const query = '*[_type == "beer" && title == $beerName]'
     const params = {beerName: 'Headroom Double IPA'}
     const qs =
-      'beerfiesta.beer%5B.title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
+      '*%5B_type%20%3D%3D%20%22beer%22%20%26%26%20title%20%3D%3D%20%24beerName%5D&%24beerName=%22Headroom%20Double%20IPA%22'
 
     getActiveMock()
       .scope(projectHost())
