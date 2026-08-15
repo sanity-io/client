@@ -63,5 +63,30 @@ export default defineConfig({
     // Media Library upload or release lifecycle takes.
     testTimeout: 60_000,
     slowTestThreshold: 20_000,
+
+    // Set here and nowhere else in the repo. workerd reports a rejection as
+    // unhandled the instant it happens with no handler attached, then retracts
+    // it with `rejectionHandled` once a handler lands a microtask later. Vitest
+    // subscribes to the first event and has no counterpart for the second, so
+    // the retracted report stays in the run's error list and fails it at exit
+    // while every test passes. Node defers the check until the microtask queue
+    // drains, which is why only this runtime is affected.
+    //
+    // Confirmed to be nothing to do with this client. A test that does
+    // `Promise.reject()` and attaches `.catch()` inside `queueMicrotask()`,
+    // with no `@sanity/client` code involved, exits 0 under the node pool and 1
+    // here, and a probe registering both listeners inside the pool observes
+    // `['unhandledRejection', 'rejectionHandled']` in that order. The
+    // rejections in this suite come from aborting an in-flight response body
+    // when an SSE subscription is torn down, and the stream consumer handles
+    // them. A real Worker sees the retraction, so there is no production
+    // problem here to fix.
+    //
+    // The cost is real: a genuine unhandled rejection in this suite will not
+    // fail it. What keeps that narrow is that the same tests run on node, bun,
+    // deno and vercel-edge, where unhandled rejections do fail the run, so a
+    // real one still has four places to surface. Remove this once vitest
+    // honours `rejectionHandled`.
+    dangerouslyIgnoreUnhandledErrors: true,
   },
 })
