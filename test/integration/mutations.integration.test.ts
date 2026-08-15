@@ -40,7 +40,7 @@ test('create() and delete() round-trip a document', async () => {
  * serialise chained operations into the wire format the mutate endpoint expects:
  * two different operations here (`set` and `inc`) so the result depends on both
  * being present and correctly named, and both wrapped in a transaction envelope.
- * Every hermetic test of this asserts against the payload we believe is correct.
+ * Every offline test of this asserts against the payload we believe is correct.
  * Only a real request proves the API agrees, and `inc` makes that provable
  * without ambiguity: the stored value is 3 only if the server actually applied
  * an increment to the existing 1, rather than overwriting it.

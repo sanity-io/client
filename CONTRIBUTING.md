@@ -143,11 +143,11 @@ Each time, the fix was to measure first: run the test unguarded in the environme
 
 ## Integration smoke tests
 
-Every other suite in this repo mocks the transport: requests go through the client's `resolveFetch` seam into `get-it/mock`, and nothing reaches the network (see "Testing: the client, not the transport" above). That stays the default. It is what makes the rest of the suite hermetic and fast.
+Every other suite in this repo mocks the transport: requests go through the client's `resolveFetch` seam into `get-it/mock`, and nothing reaches the network (see "Testing: the client, not the transport" above). That stays the default. It is what makes the rest of the suite offline and fast.
 
 `test/**/*.integration.test.ts` is the exception. Each file in it makes real requests, with a real token, against a real Sanity project and dataset. Mocks are only as good as the assumptions behind them, and those assumptions can drift from what the API actually does. This suite exists to catch that drift before it reaches users.
 
-Keep it minimal. One smoke test per feature that could significantly change the client's behavior, asserting that the round trip works: a query returns the document you just wrote, a listener connects, a mutation lands. This is not the place for a matrix of every flag and option a feature supports. The hermetic suite already covers that, without needing the network.
+Keep it minimal. One smoke test per feature that could significantly change the client's behavior, asserting that the round trip works: a query returns the document you just wrote, a listener connects, a mutation lands. This is not the place for a matrix of every flag and option a feature supports. The offline suite already covers that, without needing the network.
 
 For what is covered today, read `test/integration/`: one file per feature, named after it. Every test there carries a docblock explaining why it needs the network and what a mock could not catch. Write that docblock when you add one; it is the part that stops the next person from deleting the test as redundant.
 
@@ -181,7 +181,7 @@ Two more limits worth knowing:
 
 ### Naming
 
-Integration smoke tests live in `test/integration/` and are named `<feature>.integration.test.ts`. The doubled suffix is deliberate: `test/live.test.ts` is a hermetic unit suite, and a bare `test/integration/live.test.ts` would collide with it on basename in editor tabs and test output. `vitest.integration.config.ts` collects tests by the `.integration.test.ts` suffix rather than by directory, so the same naming rule is what selects a test into this suite even if a file ever needs to live outside `test/integration/`.
+Integration smoke tests live in `test/integration/` and are named `<feature>.integration.test.ts`. The doubled suffix is deliberate: `test/live.test.ts` is a offline unit suite, and a bare `test/integration/live.test.ts` would collide with it on basename in editor tabs and test output. `vitest.integration.config.ts` collects tests by the `.integration.test.ts` suffix rather than by directory, so the same naming rule is what selects a test into this suite even if a file ever needs to live outside `test/integration/`.
 
 ### Running locally
 
@@ -211,7 +211,7 @@ Supply a matching token alongside any override: the default tokens are scoped to
 - Self-contained: a test that needs a document creates it and deletes it in a `finally`. Never depend on seeded content, and never leave anything behind. The single exception is the video asset behind `getPlaybackInfo` (above), which cannot be provisioned synchronously; if you find yourself wanting a second exception, say why in the test rather than quietly adding one.
 - Unique ids per run, built with `crypto.randomUUID()`, so concurrent runs cannot collide.
 - Assert the round trip, not the shape of the whole world. Do not assert on event payloads that depend on other activity in the dataset, and do not assert on anything administered outside this suite: assert that a dataset or project is in a list, never how many there are, or whose name they carry.
-- Nothing may depend on which of two concurrent things wins. Cancelling a request, for example, aborts the signal _before_ the call rather than on a timer, because `setTimeout(() => abort(), n)` races the network and either passes for the wrong reason or flakes in CI. Cover the deterministic half here and leave the racy half hermetic.
+- Nothing may depend on which of two concurrent things wins. Cancelling a request, for example, aborts the signal _before_ the call rather than on a timer, because `setTimeout(() => abort(), n)` races the network and either passes for the wrong reason or flakes in CI. Cover the deterministic half here and leave the racy half to the offline suite.
 - Assert what all five runtimes agree on. The runtime's own `fetch` produces an aborted request's rejection, so match on `name === 'AbortError'` (which the DOM standard fixes) rather than on a concrete class.
 - No `skipIf`/`runIf`/`.skip`/`.todo`, same rule as the rest of the suite. If a feature cannot be exercised with the tokens and provisioning available, document the gap here instead of writing a test that never runs.
 - Never query for a document you just wrote without polling. Content Lake acknowledges a write before the query index has caught up, so `create()` can resolve, and the document be readable through the `/doc` endpoint, while a GROQ query for it still returns nothing. Use `fetchUntilVisible()` from `test/integration/helpers.ts`. This lag is usually far under the first poll interval, which is what makes it dangerous: a single fetch passes every time locally and fails occasionally in CI. `getDocument()` and `getDocuments()` read the document store directly and need no polling.

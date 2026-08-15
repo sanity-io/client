@@ -24,7 +24,7 @@ function hasName(value: unknown): value is {name: string} {
  * the network: on a fast connection the request completes first and the test
  * passes for the wrong reason, or fails intermittently in CI. The tradeoff is
  * that this covers the pre-aborted branch only, which is the deterministic half,
- * and mid-flight abort stays hermetic.
+ * and mid-flight abort stays in the offline suite.
  */
 test('fetch() rejects with an AbortError when the signal is already aborted', async () => {
   const client = createIntegrationClient()

@@ -25,7 +25,7 @@ import {
  * Studio edit URL for it, `walkMap` and `jsonPath` to place it - and hides that
  * URL inside the string as invisible Unicode. That whole chain runs off a source
  * map the client does not author, so a change in the map's shape breaks the
- * encoding while every hermetic test (which is handed the map it expects) stays
+ * encoding while every offline test (which is handed the map it expects) stays
  * green. That is the drift this exists to catch.
  *
  * Asserts the round trip in both directions: the string really was encoded (it

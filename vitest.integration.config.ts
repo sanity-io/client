@@ -106,7 +106,7 @@ export default defineConfig({
     include: ['test/**/*.integration.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
 
-    // Real network calls need more headroom than the hermetic suites' defaults.
+    // Real network calls need more headroom than the offline suites' defaults.
     // Measured across two developer machines, these tests run from ~100ms (a
     // bare SSE connect) to 7-12s for the Media Library lifecycle (upload, read
     // back, two deletes) - the same test, varying by a factor of ~1.7 with
@@ -131,7 +131,7 @@ export default defineConfig({
     testTimeout: 60_000,
 
     // Vitest flags any test slower than this in yellow, then red. The default
-    // (300ms) is calibrated for hermetic unit tests and marks literally every
+    // (300ms) is calibrated for offline unit tests and marks literally every
     // test in this suite, which is noise: a test here is *expected* to make
     // real network round trips. Set above the slowest observed run (12s, not
     // the 7s the same test takes elsewhere) so that normal variation between
