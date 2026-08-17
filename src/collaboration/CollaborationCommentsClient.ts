@@ -152,8 +152,14 @@ export class ObservableCollaborationCommentsClient {
   /**
    * Fetch comments on the configured resource.
    *
-   * Mirrors `client.fetch`. Comment documents are of type `sanity.comment`, so
-   * queries typically filter on `_type == "sanity.comment"`.
+   * Takes the same `query` and `params` as `client.fetch`, but queries the
+   * comments endpoint, which is GET-only: it accepts none of the query options
+   * `client.fetch` does (`perspective`, `useCdn`, `filterResponse`,
+   * `resultSourceMap`, stega), and a query too long for the request URL is
+   * rejected rather than retried as a POST.
+   *
+   * Comment documents are of type `sanity.comment`, so queries typically filter
+   * on `_type == "sanity.comment"`.
    *
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
@@ -322,8 +328,14 @@ export class CollaborationCommentsClient {
   /**
    * Fetch comments on the configured resource.
    *
-   * Mirrors `client.fetch`. Comment documents are of type `sanity.comment`, so
-   * queries typically filter on `_type == "sanity.comment"`.
+   * Takes the same `query` and `params` as `client.fetch`, but queries the
+   * comments endpoint, which is GET-only: it accepts none of the query options
+   * `client.fetch` does (`perspective`, `useCdn`, `filterResponse`,
+   * `resultSourceMap`, stega), and a query too long for the request URL is
+   * rejected rather than retried as a POST.
+   *
+   * Comment documents are of type `sanity.comment`, so queries typically filter
+   * on `_type == "sanity.comment"`.
    *
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters

@@ -44,6 +44,35 @@ const replyDocument: CollaborationCommentDocument = {
   parentCommentId: 'comment-1',
 }
 
+/**
+ * An inline comment, as the API stores it: the `path` and `range` sent on
+ * create come back as `target.path.field` and `target.path.selection`, with the
+ * selected text wrapped in marker characters, plus a snapshot of the content
+ * the comment was anchored to.
+ */
+const inlineCommentDocument: CollaborationCommentDocument = {
+  ...commentDocument,
+  _id: 'comment-2',
+  target: {
+    ...commentDocument.target,
+    documentRevisionId: 'rev-1',
+    path: {
+      field: 'body',
+      selection: {
+        type: 'text',
+        value: [{_key: 'block-1', text: 'Hello \uF000World\uF001 again'}],
+      },
+    },
+  },
+  contentSnapshot: [
+    {
+      _type: 'block',
+      _key: 'block-1',
+      children: [{_type: 'span', _key: 'block-1', text: 'World'}],
+    },
+  ],
+}
+
 /** The write endpoints pass the org-store mutate envelope through as-is. */
 const mutationResponse = (
   results: {
@@ -154,6 +183,93 @@ describe('collaboration.comments', () => {
     await expect(getMockClient().collaboration.comments.create(body)).resolves.toEqual(
       commentDocument,
     )
+  })
+
+  test.skipIf(isEdge)('creates field and inline selection comments', async () => {
+    const fieldComment = {
+      message,
+      target: {documentId: 'doc-1', documentType: 'article', path: 'title'},
+    }
+    const inlineComment = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        range: {
+          start: {_key: 'block-1', offset: 6},
+          end: {_key: 'block-1', offset: 11},
+        },
+      },
+    }
+
+    // The stored target is shaped differently from the created one: `path`
+    // becomes `target.path.field`, and `range` is resolved into a selection.
+    const fieldCommentDocument: CollaborationCommentDocument = {
+      ...commentDocument,
+      target: {...commentDocument.target, path: {field: 'title'}},
+    }
+
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery, body: fieldComment})
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-1', operation: 'create', document: fieldCommentDocument},
+        ]),
+      })
+    scope
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery, body: inlineComment})
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-2', operation: 'create', document: inlineCommentDocument},
+        ]),
+      })
+
+    const {comments} = getMockClient().collaboration
+    const field = await comments.create(fieldComment)
+    const inline = await comments.create(inlineComment)
+
+    expect(field.target.path, 'a field comment stores the path, and no selection').toEqual({
+      field: 'title',
+    })
+    expect(inline.target.path, 'an inline comment stores a marker-wrapped selection').toEqual({
+      field: 'body',
+      selection: {type: 'text', value: [{_key: 'block-1', text: 'Hello \uF000World\uF001 again'}]},
+    })
+    expect(inline.contentSnapshot, 'the snapshot holds the selected fragment').toEqual([
+      {
+        _type: 'block',
+        _key: 'block-1',
+        children: [{_type: 'span', _key: 'block-1', text: 'World'}],
+      },
+    ])
+  })
+
+  test.skipIf(isEdge)('updates the message of an existing comment', async () => {
+    const edited = [{_type: 'block', children: [{_type: 'span', text: 'Edited'}]}]
+    const editedDocument: CollaborationCommentDocument = {
+      ...commentDocument,
+      message: edited,
+      lastEditedAt: '2026-07-22T10:15:00.000Z',
+    }
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {message: edited},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'update', document: editedDocument}]),
+      })
+
+    await expect(
+      getMockClient().collaboration.comments.update('comment-1', {message: edited}),
+    ).resolves.toEqual(editedDocument)
   })
 
   test.skipIf(isEdge)('uses resource query parameters', async () => {
@@ -287,27 +403,105 @@ describe('collaboration.comments', () => {
     await client.collaboration.comments.removeReaction('comment-1', ':heart:', options)
   })
 
-  test.skipIf(isEdge)('returns the comment when a status change cascades to replies', async () => {
-    const resolved: CollaborationCommentDocument = {...commentDocument, status: 'resolved'}
-    const resolvedReply: CollaborationCommentDocument = {...replyDocument, status: 'resolved'}
+  test.skipIf(isEdge)('applies the request tag prefix on every write and on fetch', async () => {
+    const client = getMockClient({requestTagPrefix: 'comments'})
+    const groq = '*[_type == "sanity.comment"]'
 
-    getActiveMock()
-      .scope(apiHost)
+    const scope = getActiveMock().scope(apiHost)
+    scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
-        body: {status: 'resolved'},
+        query: {...commonQuery, tag: 'comments.update'},
       })
       .respond({
         status: 200,
-        body: mutationResponse([
-          {id: 'comment-1', operation: 'update', document: resolved},
-          {id: 'reply-1', operation: 'update', document: resolvedReply},
-        ]),
+        body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      })
+    scope
+      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: {...commonQuery, tag: 'comments.delete'},
+      })
+      .respond({status: 200, body: mutationResponse([{id: 'comment-1', operation: 'delete'}])})
+    scope
+      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {
+        query: {...commonQuery, tag: 'comments.react'},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      })
+    scope
+      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1/reactions/%3Aheart%3A', {
+        query: {...commonQuery, tag: 'comments.unreact'},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      })
+    scope
+      .on('GET', '/v2026-07-18/collaboration/comments/query', {
+        query: {...commonQuery, query: groq, tag: 'comments.fetch'},
+      })
+      .respond({status: 200, body: {result: []}})
+
+    const {comments} = client.collaboration
+    await comments.update('comment-1', {status: 'resolved'}, {tag: 'update'})
+    await comments.delete('comment-1', {tag: 'delete'})
+    await comments.addReaction('comment-1', ':heart:', {tag: 'react'})
+    await comments.removeReaction('comment-1', ':heart:', {tag: 'unreact'})
+    await comments.fetch(groq, undefined, {tag: 'fetch'})
+  })
+
+  // A status change is a patch on the comment plus a query-based patch on its
+  // replies, and the API does not order the results of the two, so the comment
+  // has to be picked out by id rather than taken from the front.
+  test.skipIf(isEdge).each([
+    ['comment first', ['comment-1', 'reply-1']],
+    ['reply first', ['reply-1', 'comment-1']],
+  ])(
+    'returns the comment when a status change cascades to replies (%s)',
+    async (_, [firstId, secondId]) => {
+      const resolved: CollaborationCommentDocument = {...commentDocument, status: 'resolved'}
+      const resolvedReply: CollaborationCommentDocument = {...replyDocument, status: 'resolved'}
+      const documents: Record<string, CollaborationCommentDocument> = {
+        'comment-1': resolved,
+        'reply-1': resolvedReply,
+      }
+
+      getActiveMock()
+        .scope(apiHost)
+        .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+          query: commonQuery,
+          body: {status: 'resolved'},
+        })
+        .respond({
+          status: 200,
+          body: mutationResponse(
+            [firstId, secondId].map((id) => ({
+              id,
+              operation: 'update' as const,
+              document: documents[id],
+            })),
+          ),
+        })
+
+      await expect(
+        getMockClient().collaboration.comments.update('comment-1', {status: 'resolved'}),
+      ).resolves.toEqual(resolved)
+    },
+  )
+
+  test.skipIf(isEdge)('rejects when a write response carries only replies', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'reply-1', operation: 'update', document: replyDocument}]),
       })
 
     await expect(
       getMockClient().collaboration.comments.update('comment-1', {status: 'resolved'}),
-    ).resolves.toEqual(resolved)
+    ).rejects.toThrow('Comment write did not return a comment document')
   })
 
   test.skipIf(isEdge)('returns the deleted comment and reply ids', async () => {
@@ -523,6 +717,40 @@ describe('collaboration.comments', () => {
     },
   )
 
+  test.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
+    'cancels a write with an abort controller signal',
+    async () => {
+      expect.assertions(2)
+
+      getActiveMock()
+        .scope(apiHost)
+        .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery})
+        .respond({
+          status: 200,
+          body: mutationResponse([
+            {id: 'comment-1', operation: 'create', document: commentDocument},
+          ]),
+          delay: 100,
+        })
+
+      const abortController = new AbortController()
+      const promise = getMockClient().collaboration.comments.create(
+        {target: {documentId: 'doc-1', documentType: 'article'}, message},
+        {signal: abortController.signal},
+      )
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      try {
+        abortController.abort()
+        await promise
+      } catch (err: any) {
+        if (err.name === 'AssertionError') throw err
+        expect(err).toBeInstanceOf(Error)
+        expect(err.name, 'should throw AbortError').toBe('AbortError')
+      }
+    },
+  )
+
   test('throws when organizationId or resource is missing', () => {
     const query = '*[_type == "sanity.comment"]'
     const withoutOrg = getMockClient({organizationId: undefined})
@@ -591,6 +819,16 @@ describe('collaboration.comments', () => {
     expect(comments.getTargetDocumentRef('drafts.doc-1')).toBe('canvas:canvas-123:doc-1')
     expect(comments.getTargetDocumentRef('versions.summer-drop.doc-1')).toBe(
       'canvas:canvas-123:doc-1',
+    )
+  })
+
+  test('keeps dots in the published part of a target document reference', () => {
+    const {comments} = getMockClient().collaboration
+
+    expect(comments.getTargetDocumentRef('foo.doc-1')).toBe('canvas:canvas-123:foo.doc-1')
+    expect(comments.getTargetDocumentRef('drafts.foo.doc-1')).toBe('canvas:canvas-123:foo.doc-1')
+    expect(comments.getTargetDocumentRef('versions.summer-drop.foo.doc-1')).toBe(
+      'canvas:canvas-123:foo.doc-1',
     )
   })
 
@@ -914,6 +1152,29 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
         {type: 'welcome', listenerName: 'listener-1'},
         {type: 'mutation', documentId: 'comment-1'},
       ])
+
+      server.close()
+    })
+
+    test('listens from the observable namespace', async () => {
+      expect.assertions(2)
+
+      const server = await createSseServer(({request, channel}) => {
+        expect(request.url!.split('?')[0]).toBe('/v2026-07-18/collaboration/comments/listen')
+
+        channel!.send({event: 'mutation', data: {documentId: 'comment-1'}})
+        process.nextTick(() => channel!.close())
+      })
+
+      const client = getClient({
+        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      })
+
+      await expect(
+        firstValueFrom(
+          client.observable.collaboration.comments.listen('*[_type == "sanity.comment"]'),
+        ),
+      ).resolves.toEqual({type: 'mutation', documentId: 'comment-1'})
 
       server.close()
     })

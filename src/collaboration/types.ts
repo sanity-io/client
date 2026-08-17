@@ -75,6 +75,21 @@ export interface CollaborationCommentPortableTextBlock {
 export type CollaborationCommentMessage = CollaborationCommentPortableTextBlock[]
 
 /**
+ * The text an inline comment was anchored to, resolved by the API when the
+ * comment was created.
+ *
+ * Holds one entry per Portable Text block the selection spans, keyed by the
+ * block it came from. `text` is the plain text of that block with the selected
+ * part wrapped in the marker characters `\uF000` (start) and `\uF001` (end).
+ *
+ * @alpha
+ */
+export interface CollaborationCommentSelection {
+  type: 'text'
+  value: {_key: string; text: string}[]
+}
+
+/**
  * A comment document, as stored by the Comments API.
  *
  * @alpha
@@ -109,12 +124,20 @@ export interface CollaborationCommentDocument extends SanityDocument {
     /** The exact document ID the comment was created against, e.g. a draft or version ID */
     sourceDocumentId: string
     documentRevisionId?: string
+    /**
+     * Set for field and inline comments. `field` is the `path` the comment was
+     * created with; `selection` is set for inline comments only.
+     */
     path?: {
       field: string
-      selection?: Record<string, Any>
+      selection?: CollaborationCommentSelection
     }
   }
-  /** Copy of the commented content, as it looked when the comment was created */
+  /**
+   * Copy of the commented content, as it looked when the comment was created.
+   * Set for inline comments only, and holds just the selected fragment of each
+   * Portable Text block the selection spans.
+   */
   contentSnapshot?: CollaborationCommentPortableTextBlock[]
   status: CollaborationCommentStatus
   /** Set when the message has been updated after creation */
@@ -124,6 +147,10 @@ export interface CollaborationCommentDocument extends SanityDocument {
 /**
  * Target for a top-level comment. Inline selections require both `path` and
  * `range`; field-level comments may set `path` alone.
+ *
+ * The created comment stores this in a different shape: `path` becomes
+ * `target.path.field`, and `range` is resolved against the document into
+ * `target.path.selection` and `contentSnapshot` rather than being stored.
  *
  * @alpha
  */
@@ -137,7 +164,8 @@ export type CollaborationCommentTarget = {
       path: string
       /**
        * Inline text selection within `path`.
-       * Each endpoint identifies a keyed Portable Text child and a character offset.
+       * Each endpoint pairs the `_key` of a Portable Text block with a character
+       * offset into that block's plain text.
        */
       range: {
         start: {_key: string; offset: number}

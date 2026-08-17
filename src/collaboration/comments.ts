@@ -97,8 +97,10 @@ interface CommentMutationResponse {
 }
 
 /**
- * Writes that mutate a single comment always come back with the document, since
- * the API requests documents from the org store and 404s when nothing matched.
+ * Writes that return a comment come back with the document, since the API
+ * requests documents from the org store and 404s when nothing matched. A
+ * status update carries one result per cascaded reply on top of the comment
+ * itself.
  */
 interface CommentDocumentMutationResponse extends CommentMutationResponse {
   results: {id: string; operation: MutationOperation; document: CollaborationCommentDocument}[]
@@ -124,14 +126,23 @@ function write<T>(
   })
 }
 
-function writeDocument(...args: WriteArgs): Observable<CollaborationCommentDocument> {
+/**
+ * `commentId` picks the written comment out of the results: a status update
+ * cascades to the comment's replies, and the API leaves the results unordered.
+ * Creates pass the requested `_id`, which is undefined when the API assigns
+ * one, and always come back with a single result.
+ */
+function writeDocument(
+  commentId: string | undefined,
+  ...args: WriteArgs
+): Observable<CollaborationCommentDocument> {
   return write<CommentDocumentMutationResponse>(...args).pipe(
     map(({results}) => {
-      const document = results[0]?.document
-      if (!document) {
+      const result = commentId ? results.find(({id}) => id === commentId) : results[0]
+      if (!result?.document) {
         throw new Error('Comment write did not return a comment document')
       }
-      return document
+      return result.document
     }),
   )
 }
@@ -153,7 +164,15 @@ export function _create(
   body: CollaborationCommentCreate,
   options?: CollaborationCommentsWriteOptions,
 ): Observable<CollaborationCommentDocument> {
-  return writeDocument(client, httpRequest, 'POST', '/collaboration/comments', body, options)
+  return writeDocument(
+    body._id,
+    client,
+    httpRequest,
+    'POST',
+    '/collaboration/comments',
+    body,
+    options,
+  )
 }
 
 /** @internal */
@@ -164,7 +183,7 @@ export function _update(
   body: CollaborationCommentUpdate,
   options?: CollaborationCommentsWriteOptions,
 ): Observable<CollaborationCommentDocument> {
-  return writeDocument(client, httpRequest, 'PATCH', commentUrl(id), body, options)
+  return writeDocument(id, client, httpRequest, 'PATCH', commentUrl(id), body, options)
 }
 
 /** @internal */
@@ -186,6 +205,7 @@ export function _addReaction(
   options?: CollaborationCommentsWriteOptions,
 ): Observable<CollaborationCommentDocument> {
   return writeDocument(
+    id,
     client,
     httpRequest,
     'POST',
@@ -204,6 +224,7 @@ export function _removeReaction(
   options?: CollaborationCommentsWriteOptions,
 ): Observable<CollaborationCommentDocument> {
   return writeDocument(
+    id,
     client,
     httpRequest,
     'DELETE',

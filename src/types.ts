@@ -1950,6 +1950,7 @@ export type {
   CollaborationCommentMessage,
   CollaborationCommentPortableTextBlock,
   CollaborationCommentReactionShortName,
+  CollaborationCommentSelection,
   CollaborationCommentsListenOptions,
   CollaborationCommentsRequestOptions,
   CollaborationCommentStatus,

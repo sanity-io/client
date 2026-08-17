@@ -2497,7 +2497,7 @@ const reply = await client.collaboration.comments.create({
 })
 ```
 
-To comment on a single field, pass a `path` in the target. Inline selections additionally require a `range`, where each endpoint points at a keyed Portable Text child and a character offset:
+To comment on a single field, pass a `path` in the target. Inline selections additionally require a `range`, where each endpoint pairs the `_key` of a Portable Text block with a character offset into that block's plain text:
 
 ```js
 await client.collaboration.comments.create({
@@ -2507,12 +2507,33 @@ await client.collaboration.comments.create({
     documentType: 'article',
     path: 'body',
     range: {
-      start: {_key: 'span-1', offset: 0},
-      end: {_key: 'span-1', offset: 12},
+      start: {_key: 'block-1', offset: 6},
+      end: {_key: 'block-1', offset: 11},
     },
   },
 })
 ```
+
+The created comment stores the target in a different shape from the one you send, which matters when you query it. The `path` string becomes `target.path.field`, so a GROQ filter reads `target.path.field == "body"`, not `target.path == "body"`. The `range` is not stored at all: the API resolves it against the document at create time into `target.path.selection`, which holds the plain text of each Portable Text block the selection spans, with the selected part wrapped in the marker characters `\uF000` and `\uF001`, and into `contentSnapshot`, which holds just the selected fragment of those blocks:
+
+```js
+{
+  target: {
+    document: {_ref: 'canvas:your-canvas-id:doc-1', _type: 'globalDocumentReference', _weak: true},
+    documentType: 'article',
+    sourceDocumentId: 'doc-1',
+    path: {
+      field: 'body',
+      selection: {type: 'text', value: [{_key: 'block-1', text: 'Hello \uF000World\uF001 again'}]},
+    },
+  },
+  contentSnapshot: [
+    {_type: 'block', _key: 'block-1', children: [{_type: 'span', _key: 'block-1', text: 'World'}]},
+  ],
+}
+```
+
+Field comments get a `target.path` with only `field` set, and no `contentSnapshot`. Because the range is resolved when the comment is created, `selection` and `contentSnapshot` keep pointing at the text as it was then, even after the document changes.
 
 #### Updating and deleting comments
 
@@ -2539,7 +2560,7 @@ await client.collaboration.comments.removeReaction('comment-1', ':+1:')
 
 #### Fetching comments
 
-`fetch()` mirrors `client.fetch()`, and queries the comments stored for the configured resource. Comment documents are of type `sanity.comment`:
+`fetch()` runs a GROQ query against the comments stored for the configured resource. It takes the same `query` and `params` arguments as `client.fetch()`, but it queries the comments endpoint rather than the Content Lake, so it accepts none of `client.fetch()`'s query options — `perspective`, `useCdn`, `filterResponse`, `resultSourceMap` and stega do not apply. Comment documents are of type `sanity.comment`:
 
 ```js
 const comments = await client.collaboration.comments.fetch(
@@ -2591,6 +2612,8 @@ const versionComments = await client.collaboration.comments.fetch(
 ```
 
 Pass untrusted values as parameters rather than interpolating them into the query string. A third argument takes request options such as `signal` and `tag`.
+
+> **Note:** comment queries are always sent as a `GET`. Where `client.fetch()` switches to a `POST` for queries too large to fit in a URL, `fetch()` rejects with `Query too large for request URL` once the request URL exceeds roughly 14.8 kB. Parameters are encoded into the query string too, so moving values into `params` does not raise that ceiling.
 
 The result type defaults to `unknown`, since the query decides the shape. In TypeScript, pass the expected shape as a type parameter:
 

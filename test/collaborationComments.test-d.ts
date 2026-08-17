@@ -1,8 +1,16 @@
 import {
   type CollaborationCommentCreate,
   type CollaborationCommentDocument,
+  type CollaborationCommentSelection,
   createClient,
+  type ListenEvent,
   type MultipleMutationResult,
+  type MutationEvent,
+  type OpenEvent,
+  type ReconnectEvent,
+  type ResetEvent,
+  type WelcomeBackEvent,
+  type WelcomeEvent,
 } from '@sanity/client'
 import type {Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
@@ -88,6 +96,23 @@ describe('CollaborationCommentCreate', () => {
   })
 })
 
+describe('CollaborationCommentDocument', () => {
+  const document = {} as CollaborationCommentDocument
+
+  test('the stored target is shaped differently from the created one', () => {
+    // Create takes `path: 'body'`, while the stored document nests it under
+    // `field`, so a query filters on `target.path.field`.
+    expectTypeOf(document.target.path).toEqualTypeOf<
+      {field: string; selection?: CollaborationCommentSelection} | undefined
+    >()
+
+    // `range` is resolved into the selection at create time, and never stored
+    expectTypeOf(document.target.path?.selection?.value).toEqualTypeOf<
+      {_key: string; text: string}[] | undefined
+    >()
+  })
+})
+
 describe('collaboration.comments write results', () => {
   const {comments} = createClient({}).collaboration
   const observableComments = createClient({}).observable.collaboration.comments
@@ -144,5 +169,101 @@ describe('collaboration.comments write results', () => {
 
     // @ts-expect-error - delete resolves to a mutation result
     expectTypeOf(comments.delete('comment-1')).toEqualTypeOf<Promise<void>>()
+  })
+})
+
+describe('collaboration.comments.fetch', () => {
+  const {comments} = createClient({}).collaboration
+  const observableComments = createClient({}).observable.collaboration.comments
+  const query = '*[_type == "sanity.comment"]'
+
+  test('the result type defaults to unknown, since the query decides the shape', () => {
+    expectTypeOf(comments.fetch(query)).toEqualTypeOf<Promise<unknown>>()
+    expectTypeOf(observableComments.fetch(query)).toEqualTypeOf<Observable<unknown>>()
+  })
+
+  test('an explicit result type is passed through', () => {
+    expectTypeOf(comments.fetch<CollaborationCommentDocument[]>(query)).toEqualTypeOf<
+      Promise<CollaborationCommentDocument[]>
+    >()
+    expectTypeOf(observableComments.fetch<CollaborationCommentDocument[]>(query)).toEqualTypeOf<
+      Observable<CollaborationCommentDocument[]>
+    >()
+
+    expectTypeOf(
+      comments.fetch<{open: CollaborationCommentDocument[]}>(
+        '{"open": *[_type == "sanity.comment" && status == "open"]}',
+      ),
+    ).toEqualTypeOf<Promise<{open: CollaborationCommentDocument[]}>>()
+  })
+})
+
+describe('collaboration.comments.listen', () => {
+  const {comments} = createClient({}).collaboration
+  const observableComments = createClient({}).observable.collaboration.comments
+  const query = '*[_type == "sanity.comment"]'
+
+  test('event types', () => {
+    // mutation event is the default, and it carries the comment document
+    expectTypeOf(comments.listen(query)).toEqualTypeOf<
+      Observable<MutationEvent<CollaborationCommentDocument>>
+    >()
+
+    // @ts-expect-error - WelcomeEvent should not be emitted
+    expectTypeOf(comments.listen(query)).toEqualTypeOf<Observable<WelcomeEvent>>()
+
+    expectTypeOf(comments.listen(query, undefined, {events: ['welcome']})).toEqualTypeOf<
+      Observable<WelcomeEvent>
+    >()
+
+    expectTypeOf(comments.listen(query, undefined, {events: ['welcome']})).toEqualTypeOf<
+      // @ts-expect-error - only WelcomeEvents should be emitted
+      Observable<MutationEvent<CollaborationCommentDocument>>
+    >()
+
+    expectTypeOf(comments.listen(query, undefined, {events: []})).toEqualTypeOf<Observable<never>>()
+
+    expectTypeOf(
+      comments.listen(query, undefined, {events: ['welcome', 'mutation', 'open', 'reconnect']}),
+    ).toEqualTypeOf<
+      Observable<
+        WelcomeEvent | MutationEvent<CollaborationCommentDocument> | ReconnectEvent | OpenEvent
+      >
+    >()
+  })
+
+  test('welcomeback and reset require enableResume', () => {
+    // Without `enableResume` the event names are rejected, and the literal
+    // names can no longer be inferred, so the return type falls back to the
+    // full `ListenEvent` union.
+    expectTypeOf(
+      // @ts-expect-error - welcomeback and reset require `enableResume`
+      comments.listen(query, undefined, {events: ['welcomeback', 'reset']}),
+    ).toEqualTypeOf<Observable<ListenEvent<CollaborationCommentDocument>>>()
+
+    expectTypeOf(
+      comments.listen(query, undefined, {enableResume: true, events: ['welcomeback', 'reset']}),
+    ).toEqualTypeOf<Observable<WelcomeBackEvent | ResetEvent>>()
+
+    expectTypeOf(
+      comments.listen(query, undefined, {enableResume: true, events: ['welcome', 'mutation']}),
+    ).toEqualTypeOf<Observable<WelcomeEvent | MutationEvent<CollaborationCommentDocument>>>()
+  })
+
+  test('the observable namespace narrows identically', () => {
+    expectTypeOf(observableComments.listen(query)).toEqualTypeOf<
+      Observable<MutationEvent<CollaborationCommentDocument>>
+    >()
+
+    expectTypeOf(observableComments.listen(query, undefined, {events: ['welcome']})).toEqualTypeOf<
+      Observable<WelcomeEvent>
+    >()
+
+    expectTypeOf(
+      observableComments.listen(query, undefined, {
+        enableResume: true,
+        events: ['welcome', 'mutation'],
+      }),
+    ).toEqualTypeOf<Observable<WelcomeEvent | MutationEvent<CollaborationCommentDocument>>>()
   })
 })

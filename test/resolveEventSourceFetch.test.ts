@@ -56,6 +56,29 @@ describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefine
       expect(globalFetch).toHaveBeenCalledTimes(1)
     })
 
+    test('withCredentials forwards credentials so the browser attaches cookies', async () => {
+      const envFetch = spyFetch()
+      const config = {...getConfig(), resolveFetch: vi.fn(() => envFetch)}
+
+      await resolveEventSourceFetch(config, {withCredentials: true})('https://example.com/sse')
+
+      expect(envFetch.mock.calls[0][1]).toMatchObject({credentials: 'include'})
+    })
+
+    test('credentials are left unset when withCredentials is not enabled', async () => {
+      const envFetch = spyFetch()
+      const config = {...getConfig(), resolveFetch: vi.fn(() => envFetch)}
+      const eventSourceFetch = resolveEventSourceFetch(config)
+
+      await eventSourceFetch('https://example.com/sse')
+      await resolveEventSourceFetch(config, {withCredentials: false})('https://example.com/sse')
+
+      // Not merely `undefined`: some runtimes reject the option outright, so the
+      // key must be absent from the init object entirely.
+      expect(envFetch.mock.calls[0][1]).not.toHaveProperty('credentials')
+      expect(envFetch.mock.calls[1][1]).not.toHaveProperty('credentials')
+    })
+
     test('the Node entry supplies an environment fetch resolver on the config', () => {
       // Guards the wiring end to end: nodeMiddleware -> defineCreateClient ->
       // client.config(). Without it, EventSource falls back to global fetch
