@@ -224,7 +224,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: 2.9.5
       - run: pnpm run test:deno
 
   bun-runtime:
