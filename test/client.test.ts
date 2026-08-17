@@ -9,10 +9,13 @@ import {
   type ContentSourceMap,
   type CreateAction,
   createClient as createCoreClient,
+  type CreateVariantDefinitionAction,
   type DatasetsResponse,
   type DeleteAction,
+  type DeleteVariantDefinitionAction,
   type DiscardAction,
   type EditAction,
+  type EditVariantDefinitionAction,
   type EmbeddingsSettings,
   type FilteredResponseQueryOptions,
   Patch,
@@ -3321,6 +3324,45 @@ describe('client', async () => {
       await expect(
         getClient().action([action1, action2, action3, action4, action5, action6, action7]),
       ).resolves.not.toThrow()
+    })
+
+    test.skipIf(isEdge)('action() performs variant definition operations', async () => {
+      const action1: CreateVariantDefinitionAction = {
+        actionType: 'sanity.action.variant.definition.create',
+        variantId: 'variant1',
+        conditions: {locale: 'en-US'},
+        priority: 10,
+        metadata: {title: 'US English'},
+      }
+
+      const action2: EditVariantDefinitionAction = {
+        actionType: 'sanity.action.variant.definition.edit',
+        variantId: 'variant2',
+        patch: {set: {priority: 20}},
+        ifRevisionId: 'rev2',
+      }
+
+      const action3: DeleteVariantDefinitionAction = {
+        actionType: 'sanity.action.variant.definition.delete',
+        variantId: 'variant3',
+        ifRevisionId: 'rev3',
+      }
+
+      getActiveMock()
+        .scope(projectHost())
+        .on('POST', '/v1/data/actions/foo', {
+          body: {
+            actions: [action1, action2, action3],
+          },
+        })
+        .respond({
+          status: 200,
+          body: {
+            transactionId: 'foo',
+          },
+        })
+
+      await expect(getClient().action([action1, action2, action3])).resolves.not.toThrow()
     })
 
     test.skipIf(isEdge)('action() accepts optional parameters', async () => {

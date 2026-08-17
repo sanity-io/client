@@ -785,6 +785,15 @@ export type ReleaseAction =
   | DeleteReleaseAction
   | ImportReleaseAction
 
+/**
+ * @public
+ * @beta
+ */
+export type VariantDefinitionAction =
+  | CreateVariantDefinitionAction
+  | EditVariantDefinitionAction
+  | DeleteVariantDefinitionAction
+
 /** @public */
 export type VersionAction =
   | CreateVersionAction
@@ -803,6 +812,7 @@ export type Action =
   | UnpublishAction
   | VersionAction
   | ReleaseAction
+  | VariantDefinitionAction
 
 /** @public */
 export type ImportReleaseAction =
@@ -958,6 +968,88 @@ export interface UnpublishVersionAction {
   actionType: 'sanity.action.document.version.unpublish'
   versionId: string
   publishedId: string
+}
+
+/**
+ * Creates a new `system.variant` definition document.
+ *
+ * @public
+ * @beta
+ */
+export interface CreateVariantDefinitionAction {
+  actionType: 'sanity.action.variant.definition.create'
+
+  /**
+   * Name of the variant definition to create, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Conditions used to select this variant.
+   */
+  conditions?: ClientVariantConditions
+
+  /**
+   * Selection priority. Higher values are preferred when multiple variants
+   * match.
+   *
+   * Defaults to `0`.
+   */
+  priority?: number
+
+  metadata?: Record<string, Any>
+}
+
+/**
+ * Edits an existing variant definition.
+ *
+ * @public
+ * @beta
+ */
+export interface EditVariantDefinitionAction {
+  actionType: 'sanity.action.variant.definition.edit'
+
+  /**
+   * Name of the variant definition to edit, as in `_.variants.{variantName}`.
+   * Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Patch operations to apply.
+   */
+  patch: PatchOperations
+
+  /**
+   * When set, the action fails unless the current revision of the variant
+   * definition matches this value.
+   */
+  ifRevisionId?: string
+}
+
+/**
+ * Deletes a variant definition.
+ *
+ * Deletion fails if any document holds a strong reference to this variant.
+ *
+ * @public
+ * @beta
+ */
+export interface DeleteVariantDefinitionAction {
+  actionType: 'sanity.action.variant.definition.delete'
+
+  /**
+   * Name of the variant definition to delete, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * When set, the action fails unless the current revision of the variant
+   * definition matches this value.
+   */
+  ifRevisionId?: string
 }
 
 /**
