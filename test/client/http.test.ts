@@ -1,4 +1,5 @@
-import {ClientError, ServerError} from '@sanity/client'
+import {ClientError, type RequestHandler, ServerError} from '@sanity/client'
+import {firstValueFrom} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
 import {getActiveMock} from '../helpers/mockFetch'
@@ -113,6 +114,69 @@ describe('CDN API USAGE', () => {
   })
 })
 describe('http requests', () => {
+  test('allows a request handler to inspect client errors and retry the request', async () => {
+    const path = '/v1/users/me'
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', path)
+      .respond({status: 503, body: {error: {description: 'Temporarily unavailable'}}})
+      .respond({status: 200, body: {id: 'me'}})
+
+    const errors: Error[] = []
+    const requestHandler: RequestHandler = async (request, next) => {
+      try {
+        return await next(request)
+      } catch (error) {
+        if (!(error instanceof ServerError)) throw error
+        errors.push(error)
+        return next(request)
+      }
+    }
+
+    const user = await getClient({maxRetries: 0, requestHandler}).users.getById('me')
+
+    expect(user).toEqual({id: 'me'})
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toHaveProperty('statusCode', 503)
+  })
+
+  test('allows a request handler to return a synthetic body to promise and observable clients', async () => {
+    const requests: string[] = []
+    const requestHandler: RequestHandler = async (request) => {
+      requests.push(request.url)
+      return {id: 'synthetic'}
+    }
+
+    const client = getClient({requestHandler})
+    const user = await client.users.getById('me')
+    const observableUser = await firstValueFrom(client.observable.users.getById('me'))
+
+    expect(user).toEqual({id: 'synthetic'})
+    expect(observableUser).toEqual({id: 'synthetic'})
+    expect(requests).toEqual([`${projectHost()}/v1/users/me`, `${projectHost()}/v1/users/me`])
+    expect(getActiveMock().getRequests()).toHaveLength(0)
+  })
+
+  test('reads the request handler from derived client config', async () => {
+    const order: string[] = []
+    const parentHandler: RequestHandler = async (request) => {
+      order.push('parent')
+      return {id: request.url}
+    }
+    const parent = getClient({requestHandler: parentHandler})
+    const currentHandler = parent.config().requestHandler
+    if (!currentHandler) throw new Error('Expected the parent request handler')
+
+    const childHandler: RequestHandler = async (request, next) => {
+      order.push('child')
+      return currentHandler(request, next)
+    }
+    const user = await parent.withConfig({requestHandler: childHandler}).users.getById('me')
+
+    expect(user).toEqual({id: `${projectHost()}/v1/users/me`})
+    expect(order).toEqual(['child', 'parent'])
+  })
+
   test('includes token if set', async () => {
     const qs = '?query=foo.bar&returnQuery=false'
     const token = 'abcdefghijklmnopqrstuvwxyz'

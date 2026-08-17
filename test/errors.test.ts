@@ -1,4 +1,8 @@
-import {createClient as createCoreClient} from '@sanity/client'
+import {
+  createClient as createCoreClient,
+  isTimeoutError,
+  type TimeoutErrorLike,
+} from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
 import {
@@ -8,7 +12,7 @@ import {
   isHttpError,
   ServerError,
 } from '../src/http/errors'
-import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
+import {getActiveFetch, getActiveMock, testResolveFetch} from './helpers/mockFetch'
 
 // Clients in this suite go through the per-test mock, injected via the
 // public `resolveFetch` config option.
@@ -112,6 +116,31 @@ describe('groq errors', () => {
 })
 
 describe('http errors', () => {
+  test('uses the final response URL after redirects', async () => {
+    const finalUrl = 'https://login.sanity.io/session-expired'
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('GET', '/v1/projects/n1f7y')
+      .respond({status: 401, body: {error: 'Unauthorized', message: 'Session expired'}})
+    const client = createCoreClient({
+      useCdn: true,
+      apiVersion: '1',
+      useProjectHostname: false,
+      apiHost: `https://${apiHost}`,
+      maxRetries: 0,
+      resolveFetch: () => async (input, init) => {
+        const response = await getActiveFetch()(input, init)
+        return {...response, redirected: true, url: finalUrl}
+      },
+    })
+
+    const error = await client.projects.getById('n1f7y').catch((reason) => reason)
+
+    expect(isHttpError(error)).toBe(true)
+    if (!isHttpError(error)) throw error
+    expect(error.response.url).toBe(finalUrl)
+  })
+
   test('yields ServerError on 503 (non-sanity api response)', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)
@@ -428,5 +457,16 @@ describe('isHttpError', () => {
       },
     }
     expect(isHttpError(error)).toBe(false)
+  })
+})
+
+describe('isTimeoutError', () => {
+  test('is exported with its narrowing type', () => {
+    const error: unknown = new DOMException('The operation timed out', 'TimeoutError')
+
+    expect(isTimeoutError(error)).toBe(true)
+    if (!isTimeoutError(error)) throw error
+    const timeoutError: TimeoutErrorLike = error
+    expect(timeoutError.name).toBe('TimeoutError')
   })
 })

@@ -1154,7 +1154,7 @@ function _observe<R>(
  */
 export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
   const reqOptions = _prepareRequest(client, options)
-  return httpRequest(reqOptions).then((body) => body as R)
+  return httpRequest(reqOptions, client.config().requestHandler).then((body) => body as R)
 }
 
 /**

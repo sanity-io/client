@@ -76,6 +76,7 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
             statusText: xhr.statusText,
             headers: errorHeaders,
             body: parseJsonText(xhr.responseText, errorHeaders),
+            url: xhr.responseURL,
           },
           url,
           method,
