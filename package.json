@@ -83,6 +83,7 @@
   "scripts": {
     "build": "pkg build --strict && pkg --strict",
     "coverage": "vitest run --coverage",
+    "docs:build": "pnpm --filter @sanity/client-docs exec typedoc --options ../../typedoc.json",
     "lint": "oxlint",
     "prepublishOnly": "pnpm run build",
     "release": "changeset publish",

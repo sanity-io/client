@@ -4,7 +4,10 @@ import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest} from '../types'
 import {_invoke, type InvokeFunctionRequest} from './invoke'
 
-/** @public */
+/**
+ * @public
+ * @inline
+ */
 export class ObservableFunctionsClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -30,7 +33,10 @@ export class ObservableFunctionsClient {
   }
 }
 
-/** @public */
+/**
+ * @public
+ * @inline
+ */
 export class FunctionsClient {
   #client: SanityClient
   #httpRequest: HttpRequest

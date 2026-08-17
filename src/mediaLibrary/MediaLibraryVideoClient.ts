@@ -10,7 +10,10 @@ import type {
   VideoPlaybackInfo,
 } from '../types'
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class ObservableMediaLibraryVideoClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -53,7 +56,10 @@ export class ObservableMediaLibraryVideoClient {
   }
 }
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class MediaLibraryVideoClient {
   #client: SanityClient
   #httpRequest: HttpRequest
