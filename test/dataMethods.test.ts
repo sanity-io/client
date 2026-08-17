@@ -21,8 +21,7 @@ const clientConfig = {
   useCdn: false,
 }
 
-const isEdge = typeof EdgeRuntime === 'string'
-const {createClient}: typeof import('../src') = await import(isEdge ? '../dist/index.js' : '../src')
+const {createClient} = await import('../src')
 
 const getClient = (conf?: ClientConfig) => createClient({...clientConfig, ...conf})
 

@@ -40,8 +40,9 @@ export interface ResponseEvent {
 }
 
 /**
- * Legacy "requester" type — the result of `defineHttpRequest`. Returns a
- * single-event Observable for compatibility with the rest of the codebase.
+ * Legacy "requester" type - the observable half of `defineRequester`'s
+ * result. Returns a single-event Observable for compatibility with the rest
+ * of the codebase.
  *
  * @internal
  */
@@ -161,14 +162,6 @@ export function defineRequester(
     })
 
   return {promise, observable}
-}
-
-/** @internal */
-export function defineHttpRequest(
-  envOptions: EnvironmentOptions,
-  config: HttpRequestConfig = {},
-): LegacyRequester {
-  return defineRequester(envOptions, config).observable
 }
 
 /**

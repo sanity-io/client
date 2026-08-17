@@ -934,6 +934,8 @@ Likewise, you can also have the client return the document _before_ the mutation
 
 If it's not relevant to know what mutations that was applied, you can also set `includeMutation` to `false` in the options, which will save some additional bandwidth by omitting the `mutation` property from the received events.
 
+On Cloudflare Workers, `client.listen()` and `client.live.events()` need a [`compatibility_date`](https://developers.cloudflare.com/workers/configuration/compatibility-dates/) of `2024-11-11` or later (or the `cache_option_enabled` compatibility flag). Both open a server-sent events connection, which sets the `cache` field on the request; earlier compatibility dates throw rather than ignore it. Other runtimes are unaffected.
+
 ### Fetch a single document
 
 This will fetch a document from the [Doc endpoint](https://www.sanity.io/docs/http-doc). This endpoint cuts through any caching/indexing middleware that may involve delayed processing. As it is less scalable/performant than the other query mechanisms, it should be used sparingly. Performing a query is usually a better option.

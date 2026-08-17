@@ -1,0 +1,63 @@
+name: Live API
+
+on:
+  schedule:
+    # 04:00 UTC daily
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  # Every pull request commit. The integration suite is a small per-feature smoke
+  # layer (one test per feature, see CONTRIBUTING.md), so the cost is a handful of
+  # real API calls per runtime rather than a full second suite. Running it per commit
+  # means a change that breaks a real API contract fails on the PR that introduced
+  # it, instead of in a nightly run nobody is watching.
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Live API on ${{ matrix.runtime }}
+    # Fork pull requests never receive repo secrets, so `SANITY_INTEGRATION_TOKEN`
+    # would be empty and every test would fail on the missing-token check in
+    # `test/integration/helpers.ts`. Skip the job instead of running it token-less.
+    # Now that this runs on every pull request, that means a contributor working from
+    # a fork gets no integration coverage on their PR; a maintainer pushing the same
+    # branch to this repository does. Accepted: the alternative is a job that always
+    # fails for outside contributors. Keep the guard even if the trigger changes:
+    # a `pull_request` run from a fork never receives secrets, approved or not.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [node, bun, deno, workerd, vercel-edge]
+    env:
+      SANITY_INTEGRATION_TOKEN: ${{ secrets.SANITY_INTEGRATION_TOKEN }}
+      # Agent Actions needs the `sanity.organization/read` grant, which a project
+      # token cannot carry however broad its project role. Kept as a separate
+      # secret so the other tests do not hold organization-wide credentials.
+      SANITY_INTEGRATION_ORG_TOKEN: ${{ secrets.SANITY_INTEGRATION_ORG_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          cache: pnpm
+          node-version: lts/*
+      - run: pnpm install --frozen-lockfile
+      # This is the only place the integration smoke suite (test/**/*.integration.test.ts)
+      # runs: it resolves `@sanity/client` through the real `exports` map, so it needs a
+      # real build against `dist/`, not a source alias.
+      - run: pnpm run build
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: matrix.runtime == 'bun'
+      - uses: denoland/setup-deno@v2
+        if: matrix.runtime == 'deno'
+        with:
+          deno-version: v2.x
+      - run: pnpm run test:integration:${{ matrix.runtime }}

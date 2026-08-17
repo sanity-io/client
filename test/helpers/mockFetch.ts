@@ -20,8 +20,9 @@
  * response option), query-param coercion, request-header matching (the
  * `headers` match option), binary/streamed request bodies (recorded as
  * `Uint8Array`, matched with `bodyBytes()`) and streaming response bodies
- * (`streamBody()` with `streamDelay`/`streamStall`/`streamError` directives —
- * used to model long-lived SSE connections) are all handled natively by
+ * (`streamBody()` with `streamStall`/`streamError` directives - used to
+ * model long-lived SSE connections, or `streamDelay` imported directly from
+ * `get-it/mock` if a test ever needs it) are all handled natively by
  * `get-it/mock` (9.3.0 and later), so this module only layers on the
  * transport wiring the suite needs.
  *
@@ -31,21 +32,16 @@
 import type {FetchFunction} from 'get-it'
 import {createMockFetch, type MockFetch} from 'get-it/mock'
 
-export type {AsymmetricMatcher, MockFetch, MockResponseDef, MockScope} from 'get-it/mock'
+export type {MockFetch} from 'get-it/mock'
 // Re-export the asymmetric matchers so tests can reach them through the same
-// (edge-guarded, dynamically imported) helper module instead of importing
-// `get-it/mock` directly.
+// helper module instead of importing `get-it/mock` directly.
 export {
   anyValue,
-  arrayContaining,
   bodyBytes,
   objectContaining,
-  queryContaining,
   streamBody,
-  streamDelay,
   streamError,
   streamStall,
-  stringMatching,
 } from 'get-it/mock'
 
 let activeMock: MockFetch | null = null

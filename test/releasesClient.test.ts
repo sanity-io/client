@@ -8,7 +8,6 @@ import type {
   ApiError,
   ArchiveReleaseAction,
   BaseActionOptions,
-  CreateReleaseAction,
   DeleteReleaseAction,
   EditReleaseAction,
   HttpRequest,
@@ -17,17 +16,17 @@ import type {
   ReleaseAction,
   ReleaseDocument,
   ReleaseType,
-  RequestOptions,
   ScheduleReleaseAction,
   SingleActionResult,
   UnarchiveReleaseAction,
   UnscheduleReleaseAction,
 } from '../src/types'
-import * as createVersionIdModule from '../src/util/createVersionId'
 
-vi.mock('../src/util/createVersionId', () => ({
-  generateReleaseId: vi.fn().mockReturnValue('generatedReleaseId'),
-}))
+// `generateReleaseId` is `customAlphabet(...)`, 8 characters from
+// `[A-Za-z0-9]`. Tests that need to assert on a generated id match this
+// shape rather than a hardcoded literal, since the real generator produces
+// a different value every run.
+const GENERATED_RELEASE_ID_PATTERN = /^[A-Za-z0-9]{8}$/
 
 const TEST_PROJECT_ID = 'test123'
 const TEST_DATASET = 'test-dataset'
@@ -123,8 +122,6 @@ describe('ReleasesClient', () => {
     httpRequest.mockClear()
 
     releasesClient = new ReleasesClient(client, httpRequest)
-
-    vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
   })
 
   afterEach(() => {
@@ -282,13 +279,16 @@ describe('ReleasesClient', () => {
 
       const result = await releasesClient.create({metadata})
 
-      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
-
       expect(httpRequest).toHaveBeenCalledTimes(1)
+      const requestArgs = httpRequest.mock.calls[0][0]
+      const action = requestArgs.body.actions[0]
 
+      // The result's releaseId must be the same value that was sent on the
+      // outgoing request, not just something that looks right in isolation.
+      expect(result.releaseId).toEqual(action.releaseId)
       expect(result).toEqual({
         transactionId: TEST_TXN_ID,
-        releaseId: 'generatedReleaseId',
+        releaseId: expect.stringMatching(GENERATED_RELEASE_ID_PATTERN),
         metadata,
       })
     })
@@ -319,18 +319,17 @@ describe('ReleasesClient', () => {
 
       const result = await releasesClient.create({})
 
-      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = httpRequest.mock.calls[0][0]
       const action = requestArgs.body.actions[0]
 
-      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.releaseId).toEqual(expect.stringMatching(GENERATED_RELEASE_ID_PATTERN))
       expect(action.metadata.releaseType).toEqual('undecided')
 
       expect(result).toEqual({
         transactionId: TEST_TXN_ID,
-        releaseId: 'generatedReleaseId',
+        releaseId: action.releaseId,
         metadata: {
           releaseType: 'undecided',
         },
@@ -347,7 +346,6 @@ describe('ReleasesClient', () => {
 
       const result = await releasesClient.create(options)
 
-      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
       expect(httpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = httpRequest.mock.calls[0][0]
@@ -355,12 +353,12 @@ describe('ReleasesClient', () => {
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
       const action = requestArgs.body.actions[0]
-      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.releaseId).toEqual(expect.stringMatching(GENERATED_RELEASE_ID_PATTERN))
       expect(action.metadata.releaseType).toEqual('undecided')
 
       expect(result).toEqual({
         transactionId: options.transactionId,
-        releaseId: 'generatedReleaseId',
+        releaseId: action.releaseId,
         metadata: {
           releaseType: 'undecided',
         },
@@ -678,51 +676,41 @@ describe('ObservableReleasesClient', () => {
         name: 'Generated ID Release',
       }
 
-      vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
-      vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
-
-      observableHttpRequest.mockImplementationOnce((options: RequestOptions) => {
-        const action = (options.body as {actions: CreateReleaseAction[]}).actions[0]
-        action.releaseId = 'generatedReleaseId'
-
-        return Promise.resolve({
-          transactionId: TEST_TXN_ID,
-          releaseId: 'generatedReleaseId',
-          metadata,
-        })
-      })
+      observableHttpRequest.mockResolvedValueOnce({transactionId: TEST_TXN_ID})
 
       const result = observableReleasesClient.create({metadata})
-
-      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
-
       const response = await firstValueFrom(result)
+
+      expect(observableHttpRequest).toHaveBeenCalledTimes(1)
+      const requestArgs = observableHttpRequest.mock.calls[0][0]
+      const action = requestArgs.body.actions[0]
+
       expect(response.transactionId).toEqual(TEST_TXN_ID)
-      expect(response.releaseId).toEqual('generatedReleaseId')
+      // The response's releaseId must be the same value that was sent on
+      // the outgoing request, not just something that looks right in
+      // isolation.
+      expect(response.releaseId).toEqual(action.releaseId)
+      expect(response.releaseId).toEqual(expect.stringMatching(GENERATED_RELEASE_ID_PATTERN))
       expect(response.metadata).toEqual(metadata)
     })
 
     test('auto-generates both releaseId and metadata.releaseType when neither is provided', async () => {
-      vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
-      vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
-
       observableHttpRequest.mockResolvedValueOnce({transactionId: TEST_TXN_ID})
 
       const result = observableReleasesClient.create({})
       const response = await firstValueFrom(result)
 
-      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
       expect(observableHttpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = observableHttpRequest.mock.calls[0][0]
       const action = requestArgs.body.actions[0]
 
-      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.releaseId).toEqual(expect.stringMatching(GENERATED_RELEASE_ID_PATTERN))
       expect(action.metadata.releaseType).toEqual('undecided')
 
       expect(response).toEqual({
         transactionId: TEST_TXN_ID,
-        releaseId: 'generatedReleaseId',
+        releaseId: action.releaseId,
         metadata: {
           releaseType: 'undecided',
         },
@@ -730,9 +718,6 @@ describe('ObservableReleasesClient', () => {
     })
 
     test('handles options as the first parameter and auto-generates release data', async () => {
-      vi.mocked(createVersionIdModule.generateReleaseId).mockClear()
-      vi.mocked(createVersionIdModule.generateReleaseId).mockReturnValue('generatedReleaseId')
-
       const options = {
         transactionId: 'options-txn',
         tag: 'releases.create.options',
@@ -743,7 +728,6 @@ describe('ObservableReleasesClient', () => {
       const result = observableReleasesClient.create(options)
       const response = await firstValueFrom(result)
 
-      expect(vi.mocked(createVersionIdModule.generateReleaseId)).toHaveBeenCalled()
       expect(observableHttpRequest).toHaveBeenCalledTimes(1)
 
       const requestArgs = observableHttpRequest.mock.calls[0][0]
@@ -751,12 +735,12 @@ describe('ObservableReleasesClient', () => {
       expect(requestArgs.body.transactionId).toEqual(options.transactionId)
 
       const action = requestArgs.body.actions[0]
-      expect(action.releaseId).toEqual('generatedReleaseId')
+      expect(action.releaseId).toEqual(expect.stringMatching(GENERATED_RELEASE_ID_PATTERN))
       expect(action.metadata.releaseType).toEqual('undecided')
 
       expect(response).toEqual({
         transactionId: options.transactionId,
-        releaseId: 'generatedReleaseId',
+        releaseId: action.releaseId,
         metadata: {
           releaseType: 'undecided',
         },

@@ -1,27 +1,26 @@
-// Simulates a browser environment until `@vitest/browser` is ready for production and
-// we can run the tests in a real browser
+// Real browsers: chromium, firefox and webkit via Playwright.
+import {playwright} from '@vitest/browser-playwright'
+import {defineConfig} from 'vitest/config'
 
-import {defineConfig, mergeConfig} from 'vitest/config'
+import {coverageConfig, nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
 
-import pkg from './package.json'
-import viteConfig from './vite.config'
-
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'happy-dom',
-      alias: {
-        '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
-        '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
-        '@sanity/client': new URL(pkg.exports['.'].source, import.meta.url).pathname,
-      },
-      typecheck: {
-        enabled: false,
-      },
+export default defineConfig({
+  test: {
+    ...sharedConfig,
+    exclude: nonNodeExclude,
+    alias: sourceAlias('default'),
+    typecheck: {enabled: false},
+    coverage: coverageConfig,
+    globalSetup: ['./test/helpers/globalSetup.upload.ts'],
+    browser: {
+      enabled: true,
+      provider: playwright(),
+      instances: [
+        {browser: 'chromium', headless: true},
+        {browser: 'firefox', headless: true},
+        {browser: 'webkit', headless: true},
+      ],
     },
-    resolve: {
-      conditions: ['browser', 'module', 'import'],
-    },
-  }),
-)
+  },
+  resolve: {conditions: ['browser', 'module', 'import']},
+})

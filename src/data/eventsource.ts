@@ -1,14 +1,16 @@
+import type {ErrorEvent, EventSourceConstructor} from 'eventsource'
 import {defer, isObservable, mergeMap, Observable, of} from 'rxjs'
 
 import {formatQueryParseError, isQueryParseError} from '../http/errors'
-import {type Any} from '../types'
+import {isRecord} from '../util/isRecord'
 
 /**
- * @public
  * Thrown when the EventSource connection could not be established, or was rejected by the server.
  * Transient failures (network drops, 5xx, 408, 429) are reconnected internally and emitted as
  * `reconnect` events; a permanent rejection (any other 4xx, eg an expired token) errors the
  * stream with this class so consumers can react — check `status` for the rejection code.
+ *
+ * @public
  */
 export class ConnectionFailedError extends Error {
   readonly name = 'ConnectionFailedError'
@@ -28,8 +30,9 @@ export class ConnectionFailedError extends Error {
 
 /**
  * The listener has been told to explicitly disconnect.
- *  This is a rare situation, but may occur if the API knows reconnect attempts will fail,
- *  eg in the case of a deleted dataset, a blocked project or similar events.
+ * This is a rare situation, but may occur if the API knows reconnect attempts will fail,
+ * eg in the case of a deleted dataset, a blocked project or similar events.
+ *
  * @public
  */
 export class DisconnectError extends Error {
@@ -42,8 +45,9 @@ export class DisconnectError extends Error {
 }
 
 /**
- * @public
  * The server sent a `channelError` message. Usually indicative of a bad or malformed request
+ *
+ * @public
  */
 export class ChannelError extends Error {
   readonly name = 'ChannelError'
@@ -55,8 +59,9 @@ export class ChannelError extends Error {
 }
 
 /**
- * @public
  * The server sent an `error`-event to tell the client that an unexpected error has happened.
+ *
+ * @public
  */
 export class MessageError extends Error {
   readonly name = 'MessageError'
@@ -68,8 +73,9 @@ export class MessageError extends Error {
 }
 
 /**
- * @public
  * An error occurred while parsing the message sent by the server as JSON. Should normally not happen.
+ *
+ * @public
  */
 export class MessageParseError extends Error {
   readonly name = 'MessageParseError'
@@ -95,7 +101,7 @@ export type EventSourceEvent<Name extends string> = ServerSentEvent<Name>
 /**
  * @internal
  */
-export type EventSourceInstance = InstanceType<typeof globalThis.EventSource>
+export type EventSourceInstance = InstanceType<EventSourceConstructor>
 
 /**
  * Sanity API specific EventSource handler shared between the listen and live APIs
@@ -123,9 +129,7 @@ export function connectEventSource<EventName extends string>(
   return defer(() => {
     const es = initEventSource()
     return isObservable(es) ? es : of(es)
-  }).pipe(mergeMap((es) => connectWithESInstance(es, events))) as Observable<
-    ServerSentEvent<EventName>
-  >
+  }).pipe(mergeMap((es) => connectWithESInstance(es, events)))
 }
 
 /**
@@ -140,21 +144,30 @@ function connectWithESInstance<EventTypeName extends string>(
   events: EventTypeName[],
 ) {
   return new Observable<EventSourceEvent<EventTypeName>>((observer) => {
-    const emitOpen = (events as string[]).includes('open')
-    const emitReconnect = (events as string[]).includes('reconnect')
+    // Events actually requested by the caller. Backs `isRequestedEvent`, the type
+    // guard used below to narrow plain strings (eg `message.type`) to `EventTypeName`
+    // without a cast.
+    const requestedEvents = new Set<string>(events)
+    const isRequestedEvent = (type: string): type is EventTypeName => requestedEvents.has(type)
+    const emitOpen = isRequestedEvent('open')
 
     // EventSource will emit a regular Event if it fails to connect, however the API may also emit an `error` MessageEvent
     // So we need to handle both cases
-    function onError(evt: MessageEvent | Event) {
+    function onError(evt: ErrorEvent | MessageEvent) {
       // If the event has a `data` property, then it`s a MessageEvent emitted by the API and we should forward the error
       if ('data' in evt) {
-        const [parseError, event] = parseEvent(evt as MessageEvent)
+        const [parseError, event] = parseEvent(evt)
         observer.error(
-          parseError
+          parseError || !event
             ? new MessageParseError('Unable to parse EventSource error message', {
                 cause: parseError,
               })
-            : new MessageError((event.data as {message: string}).message, event),
+            : new MessageError(
+                isRecord(event.data) && typeof event.data.message === 'string'
+                  ? event.data.message
+                  : '',
+                event,
+              ),
         )
         return
       }
@@ -169,29 +182,35 @@ function connectWithESInstance<EventTypeName extends string>(
       // regardless of readyState — implementations disagree on whether the connection
       // closes before or after the error event is dispatched — and let
       // `reconnectOnConnectionFailure` classify it (4xx fatal, otherwise retried).
-      const rawStatus = (evt as {code?: unknown}).code
-      const status = typeof rawStatus === 'number' ? rawStatus : undefined
-      if (status !== undefined) {
-        observer.error(new ConnectionFailedError('EventSource connection failed', {status}))
+      if (evt.code !== undefined) {
+        observer.error(
+          new ConnectionFailedError('EventSource connection failed', {status: evt.code}),
+        )
         return
       }
 
       if (es.readyState === es.CLOSED) {
         // In these cases we'll signal to consumers (via the error path) that a retry/reconnect is needed.
         observer.error(new ConnectionFailedError('EventSource connection failed'))
-      } else if (emitReconnect) {
-        observer.next({type: 'reconnect' as EventTypeName})
+      } else {
+        const type = 'reconnect'
+        if (isRequestedEvent(type)) {
+          observer.next({type})
+        }
       }
     }
 
     function onOpen() {
       // The open event of the EventSource API is fired when a connection with an event source is opened.
-      observer.next({type: 'open' as EventTypeName})
+      const type = 'open'
+      if (isRequestedEvent(type)) {
+        observer.next({type})
+      }
     }
 
     function onMessage(message: MessageEvent) {
       const [parseError, event] = parseEvent(message)
-      if (parseError) {
+      if (parseError || !event) {
         observer.error(
           new MessageParseError('Unable to parse EventSource message', {cause: parseError}),
         )
@@ -212,17 +231,25 @@ function connectWithESInstance<EventTypeName extends string>(
         observer.error(
           new DisconnectError(
             `Server disconnected client: ${
-              (event.data as {reason?: string})?.reason || 'unknown error'
+              (isRecord(event.data) &&
+                typeof event.data.reason === 'string' &&
+                event.data.reason) ||
+              'unknown error'
             }`,
           ),
         )
         return
       }
-      observer.next({
-        type: message.type as EventTypeName,
-        id: message.lastEventId,
-        ...(event.data ? {data: event.data} : {}),
-      })
+      // `onMessage` is only ever registered for `REQUIRED_EVENTS` (handled above, and always
+      // returned from before reaching here) and the caller-requested `events` (see
+      // `cleanedEvents` below), so `message.type` is guaranteed to be a requested event here.
+      if (isRequestedEvent(message.type)) {
+        observer.next({
+          type: message.type,
+          id: message.lastEventId,
+          ...(event.data ? {data: event.data} : {}),
+        })
+      }
     }
 
     es.addEventListener('error', onError)
@@ -251,7 +278,7 @@ function connectWithESInstance<EventTypeName extends string>(
 
 function parseEvent(
   message: MessageEvent,
-): [null, {type: string; id: string; data?: unknown}] | [Error, null] {
+): [null, {type: string; id: string; data?: unknown}] | [unknown, null] {
   try {
     const data = typeof message.data === 'string' && JSON.parse(message.data)
     return [
@@ -263,23 +290,26 @@ function parseEvent(
       },
     ]
   } catch (err) {
-    return [err as Error, null]
+    return [err, null]
   }
 }
 
-function extractErrorMessage(err: Any, tag?: string | null) {
-  const error = err.error
+function extractErrorMessage(err: unknown, tag?: string | null): string {
+  const error = isRecord(err) ? err.error : undefined
 
   if (!error) {
-    return err.message || 'Unknown listener error'
+    const message = isRecord(err) ? err.message : undefined
+    return (typeof message === 'string' && message) || 'Unknown listener error'
   }
 
-  if (isQueryParseError(error)) {
-    return formatQueryParseError(error, tag)
-  }
+  if (isRecord(error)) {
+    if (isQueryParseError(error)) {
+      return formatQueryParseError(error, tag)
+    }
 
-  if (error.description) {
-    return error.description
+    if (typeof error.description === 'string') {
+      return error.description
+    }
   }
 
   return typeof error === 'string' ? error : JSON.stringify(error, null, 2)

@@ -88,7 +88,15 @@ export type EventSourceFetch = (
   init?: EventSourceFetchInit,
 ) => Promise<FetchLikeResponse>
 
-function pickBaseFetch(config: InitializedClientConfig): FetchFunction {
+/**
+ * The fetch the client's own transport resolves for this config: the
+ * configured `resolveFetch` (honouring an explicit `proxy`) if present,
+ * otherwise the global fetch. Shared by the EventSource connection and the
+ * `/check/cors` probe so both resolve identically.
+ *
+ * @internal
+ */
+export function pickBaseFetch(config: InitializedClientConfig): FetchFunction {
   if (config.resolveFetch) {
     return config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
   }

@@ -43,7 +43,7 @@ export const requireDocumentId = (op: string, doc: Record<string, Any>) => {
   validateDocumentId(op, doc._id)
 }
 
-export const validateDocumentType = (op: string, type: string) => {
+const validateDocumentType = (op: string, type: string) => {
   if (typeof type !== 'string') {
     throw new Error(`\`${op}()\`: \`${type}\` is not a valid document type`)
   }

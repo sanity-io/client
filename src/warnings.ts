@@ -47,8 +47,14 @@ export const printNoDefaultExport = createWarningPrinter([
   'The default export of @sanity/client has been deprecated. Use the named export `createClient` instead.',
 ])
 
+// Phrased as a condition rather than as a correction, because the client cannot
+// tell the two cases apart. `baseId` creates a version of a document that
+// already exists, so a caller creating a genuinely new document inside a release
+// has no alternative to `document` - and the previous wording told them they had
+// picked the wrong approach when they had not.
 export const printCreateVersionWithBaseIdWarning = createWarningPrinter([
-  'You have called `createVersion()` with a defined `document`. The recommended approach is to provide a `baseId` and `releaseId` instead.',
+  'You have called `createVersion()` with a defined `document`.',
+  'If you are creating a version of a document that already exists, prefer providing `baseId` and `releaseId` instead.',
 ])
 
 export const printDeprecatedUriOptionWarning = createWarningPrinter([

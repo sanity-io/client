@@ -24,3 +24,7 @@ tsconfig.vitest-temp.json
 # Deno runtime test fixtures (created by `npm run test:deno`)
 runtimes/deno/*.tgz
 runtimes/deno/package-lock.json
+
+# Test CA private key - only needed to regenerate test/certs/server, and
+# committing it would invite reuse. See test/certs/README.md.
+test/certs/ca.key

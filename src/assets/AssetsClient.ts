@@ -8,6 +8,7 @@ import type {
   Any,
   HttpRequest,
   InitializedClientConfig,
+  MediaLibraryAssetDocument,
   SanityAssetDocument,
   SanityImageAssetDocument,
   UploadBody,
@@ -67,7 +68,12 @@ export class ObservableAssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Observable<UploadEvent<{document: SanityAssetDocument | SanityImageAssetDocument}>> {
+  ): Observable<
+    UploadEvent<
+      | {document: SanityAssetDocument | SanityImageAssetDocument}
+      | {asset: MediaLibraryAssetDocument}
+    >
+  > {
     return _upload(this.#client, this.#httpRequest, assetType, body, options)
   }
 }
@@ -84,6 +90,16 @@ export class AssetsClient {
   /**
    * Uploads a file asset to the configured dataset
    *
+   * Note: when the client is configured against a Media Library
+   * (`resource: {type: 'media-library', id}`), this resolves to a
+   * {@link MediaLibraryAssetDocument} at runtime, not to a
+   * {@link SanityAssetDocument}. The declared type cannot express that: the
+   * shape depends on the client's configuration rather than on the arguments,
+   * so an overload cannot discriminate it, and widening the return type into a
+   * union would be a breaking change for every existing caller. Narrow the
+   * result yourself (for example, check for `currentVersion`) if you upload to
+   * a Media Library. Typing this honestly is deferred to the next major.
+   *
    * @param assetType - Asset type (file)
    * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
    * @param options - Options to use for the upload
@@ -95,6 +111,10 @@ export class AssetsClient {
   ): Promise<SanityAssetDocument>
   /**
    * Uploads an image asset to the configured dataset
+   *
+   * Note: against a Media Library this resolves to a
+   * {@link MediaLibraryAssetDocument} at runtime. See the `'file'` overload
+   * above for why the declared type cannot say so.
    *
    * @param assetType - Asset type (image)
    * @param body - Asset content - can be a browser File instance, a Blob, a Node.js Buffer instance or a Node.js ReadableStream.
@@ -121,19 +141,48 @@ export class AssetsClient {
     assetType: 'file' | 'image',
     body: UploadBody,
     options?: UploadClientConfig,
-  ): Promise<SanityAssetDocument | SanityImageAssetDocument> {
-    type Doc = {document: SanityAssetDocument | SanityImageAssetDocument}
+  ): Promise<SanityAssetDocument | SanityImageAssetDocument | MediaLibraryAssetDocument> {
+    type Doc =
+      | {document: SanityAssetDocument | SanityImageAssetDocument}
+      | {asset: MediaLibraryAssetDocument}
     const observable = _upload<Doc>(this.#client, this.#httpRequest, assetType, body, options)
     return lastValueFrom(
       observable.pipe(
         filter((event): event is UploadResponseEvent<Doc> => event.type === 'response'),
-        map((event) => event.body.document),
+        map((event) => pluckUploadedAsset(event.body)),
       ),
     )
   }
 }
 
-function _upload<T = {document: SanityAssetDocument | SanityImageAssetDocument}>(
+/**
+ * Content Lake's upload endpoint responds with `{document: ...}`; the Media
+ * Library upload endpoint responds with `{asset: ...}` instead (a
+ * `sanity.asset` document, not a Content Lake asset document). Narrowing on
+ * the response body itself - rather than on the client's `resource` config -
+ * keeps this correct regardless of how the two are ever wired together.
+ */
+function isMediaLibraryUploadBody(
+  body:
+    | {document: SanityAssetDocument | SanityImageAssetDocument}
+    | {asset: MediaLibraryAssetDocument},
+): body is {asset: MediaLibraryAssetDocument} {
+  return 'asset' in body
+}
+
+function pluckUploadedAsset(
+  body:
+    | {document: SanityAssetDocument | SanityImageAssetDocument}
+    | {asset: MediaLibraryAssetDocument},
+): SanityAssetDocument | SanityImageAssetDocument | MediaLibraryAssetDocument {
+  return isMediaLibraryUploadBody(body) ? body.asset : body.document
+}
+
+function _upload<
+  T =
+    | {document: SanityAssetDocument | SanityImageAssetDocument}
+    | {asset: MediaLibraryAssetDocument},
+>(
   client: SanityClient | ObservableSanityClient,
   _httpRequest: HttpRequest,
   assetType: 'image' | 'file',

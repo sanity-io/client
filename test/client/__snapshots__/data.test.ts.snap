@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`data > gets helpful error messages on query errors (with tag) 1`] = `
+[Error: GROQ query parse error:
+> 1 | *[_type == "event]
+    |           ^^^^^^^ unexpected token "\\"event]", expected expression
+
+Tag: get-events]
+`;

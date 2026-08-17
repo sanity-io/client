@@ -3,12 +3,10 @@ import {parseJsonPath} from './jsonPath'
 import {resolveMapping} from './resolveMapping'
 import * as paths from './studioPath'
 import type {
-  Any,
   ApplySourceDocumentsUpdateFunction,
   ClientPerspective,
   ContentSourceMap,
   ContentSourceMapDocuments,
-  Path,
   SanityDocument,
 } from './types'
 import {walkMap} from './walkMap'
@@ -55,7 +53,7 @@ export function applySourceDocuments<Result = unknown>(
 
     if (sourceDocument) {
       const parsedPath = parseJsonPath(sourcePath + pathSuffix)
-      const stringifiedPath = paths.toString(parsedPath as Path)
+      const stringifiedPath = paths.toString(parsedPath)
       const cachedDocument = cachedDocuments[mapping.source.document]
 
       if (!cachedDocument) {
@@ -67,7 +65,7 @@ export function applySourceDocuments<Result = unknown>(
         : value
       return value === changedValue
         ? value
-        : updateFn<Result[keyof Result]>(changedValue as Any, {
+        : updateFn<Result[keyof Result]>(changedValue as Result[keyof Result], {
             cachedDocument,
             previousValue: value as Result[keyof Result],
             sourceDocument,

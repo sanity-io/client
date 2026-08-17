@@ -8,7 +8,7 @@ import {
   isHttpError,
   ServerError,
 } from '../src/http/errors'
-import {testResolveFetch} from './helpers/mockFetch'
+import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
 
 // Clients in this suite go through the per-test mock, injected via the
 // public `resolveFetch` config option.
@@ -111,17 +111,8 @@ describe('groq errors', () => {
   })
 })
 
-describe('http errors', async () => {
-  const isEdge = typeof EdgeRuntime === 'string'
-  let getActiveMock: typeof import('./helpers/mockFetch').getActiveMock = () => {
-    throw new Error('Not supported in EdgeRuntime')
-  }
-  if (!isEdge) {
-    const mod = await import('./helpers/mockFetch')
-    getActiveMock = mod.getActiveMock
-  }
-
-  test.skipIf(isEdge)('yields ServerError on 503 (non-sanity api response)', async () => {
+describe('http errors', () => {
+  test('yields ServerError on 503 (non-sanity api response)', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)
       .on('GET', '/v1/projects/n1f7y')
@@ -144,7 +135,7 @@ describe('http errors', async () => {
     expect(isHttpError(err)).toBe(true)
   })
 
-  test.skipIf(isEdge)('yields ServerError on 503 (sanity api response)', async () => {
+  test('yields ServerError on 503 (sanity api response)', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)
       .on('GET', '/v1/projects/n1f7y')
@@ -174,7 +165,7 @@ describe('http errors', async () => {
     expect(isHttpError(err)).toBe(true)
   })
 
-  test.skipIf(isEdge)('yields ClientError on 400 (non-sanity api response)', async () => {
+  test('yields ClientError on 400 (non-sanity api response)', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)
       .on('GET', '/v1/projects/n1f7y')
@@ -198,7 +189,7 @@ describe('http errors', async () => {
     expect(isHttpError(err)).toBe(true)
   })
 
-  test.skipIf(isEdge)('yields ClientError on 400 (sanity api response)', async () => {
+  test('yields ClientError on 400 (sanity api response)', async () => {
     getActiveMock()
       .scope(`https://${apiHost}`)
       .on('GET', '/v1/projects/n1f7y')

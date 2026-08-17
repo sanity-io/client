@@ -667,23 +667,6 @@ function _mapDataResponse(
 /**
  * @internal
  */
-export function _dataRequestObservable(
-  client: Client,
-  httpRequest: HttpRequest,
-  endpoint: string,
-  body: Any,
-  options: Any = {},
-): Observable<Any> {
-  return _observe(options.signal, (signal) =>
-    _dataRequest(client, httpRequest, endpoint, body, {...options, signal}),
-  )
-}
-
-/**
- * Promise-based sibling of {@link _dataRequestObservable}.
- *
- * @internal
- */
 export function _dataRequest(
   client: Client,
   httpRequest: HttpRequest,
@@ -1139,7 +1122,7 @@ export function _prepareRequest(client: Client, options: RequestObservableOption
  *
  * @internal
  */
-export function _observe<R>(
+function _observe<R>(
   userSignal: AbortSignal | undefined,
   run: (signal: AbortSignal) => Promise<R>,
 ): Observable<R> {
