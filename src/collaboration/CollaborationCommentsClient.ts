@@ -152,11 +152,11 @@ export class ObservableCollaborationCommentsClient {
   /**
    * Fetch comments on the configured resource.
    *
-   * Takes the same `query` and `params` as `client.fetch`, but queries the
-   * comments endpoint, which is GET-only: it accepts none of the query options
+   * Takes the same `query` and `params` as `client.fetch`, and switches from a
+   * GET to a POST for queries too large for the request URL in the same way,
+   * but queries the comments endpoint, which accepts none of the query options
    * `client.fetch` does (`perspective`, `useCdn`, `filterResponse`,
-   * `resultSourceMap`, stega), and a query too long for the request URL is
-   * rejected rather than retried as a POST.
+   * `resultSourceMap`, stega).
    *
    * Comment documents are of type `sanity.comment`, so queries typically filter
    * on `_type == "sanity.comment"`.
@@ -328,11 +328,11 @@ export class CollaborationCommentsClient {
   /**
    * Fetch comments on the configured resource.
    *
-   * Takes the same `query` and `params` as `client.fetch`, but queries the
-   * comments endpoint, which is GET-only: it accepts none of the query options
+   * Takes the same `query` and `params` as `client.fetch`, and switches from a
+   * GET to a POST for queries too large for the request URL in the same way,
+   * but queries the comments endpoint, which accepts none of the query options
    * `client.fetch` does (`perspective`, `useCdn`, `filterResponse`,
-   * `resultSourceMap`, stega), and a query too long for the request URL is
-   * rejected rather than retried as a POST.
+   * `resultSourceMap`, stega).
    *
    * Comment documents are of type `sanity.comment`, so queries typically filter
    * on `_type == "sanity.comment"`.

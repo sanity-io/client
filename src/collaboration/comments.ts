@@ -2,7 +2,7 @@ import {getPublishedId} from '@sanity/client/csm'
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
-import {_requestObservable} from '../data/dataMethods'
+import {_requestObservable, getQuerySizeLimit} from '../data/dataMethods'
 import {encodeQueryString} from '../data/encodeQueryString'
 import {
   _connectListenEventSource,
@@ -242,20 +242,24 @@ export function _fetch<R>(
   params?: QueryParams,
   options?: CollaborationCommentsRequestOptions,
 ): Observable<R> {
-  const qs = encodeQueryString({
-    query,
-    params,
-    options: resourceQuery(client),
-  })
+  const search = resourceQuery(client)
 
-  const uri = `/collaboration/comments/query${qs}`
-  if (client.getUrl(uri).length > MAX_URL_LENGTH) {
-    return throwError(() => new Error('Query too large for request URL'))
-  }
+  // Mirrors `client.fetch`: GET while the query fits in the URL, POST beyond that.
+  const useGet = encodeQueryString({query, params}).length < getQuerySizeLimit
+  const request = useGet
+    ? {
+        method: 'GET',
+        uri: `/collaboration/comments/query${encodeQueryString({query, params, options: search})}`,
+      }
+    : {
+        method: 'POST',
+        uri: '/collaboration/comments/query',
+        query: search,
+        body: {query, params: params ?? {}},
+      }
 
   return _requestObservable<{result: R}>(client, httpRequest, {
-    method: 'GET',
-    uri,
+    ...request,
     ...pick(options || {}, possibleRequestOptions),
   }).pipe(map((response) => response.result))
 }

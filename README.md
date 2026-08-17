@@ -2613,7 +2613,7 @@ const versionComments = await client.collaboration.comments.fetch(
 
 Pass untrusted values as parameters rather than interpolating them into the query string. A third argument takes request options such as `signal` and `tag`.
 
-> **Note:** comment queries are always sent as a `GET`. Where `client.fetch()` switches to a `POST` for queries too large to fit in a URL, `fetch()` rejects with `Query too large for request URL` once the request URL exceeds roughly 14.8 kB. Parameters are encoded into the query string too, so moving values into `params` does not raise that ceiling.
+> **Note:** as with `client.fetch()`, comment queries go out as a `GET` while the encoded query and parameters fit in the request URL, and switch to a `POST` past roughly 11 kB, where `query` and `params` travel in the request body instead.
 
 The result type defaults to `unknown`, since the query decides the shape. In TypeScript, pass the expected shape as a type parameter:
 

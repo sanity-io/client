@@ -853,16 +853,65 @@ describe('collaboration.comments', () => {
     expect(comments.getTargetDocumentRef('drafts.doc-1')).toBe('canvas:canvas-123:doc-1')
   })
 
-  test('rejects queries that exceed the max URL length', async () => {
+  test('rejects listener queries that exceed the max URL length', async () => {
     const query = `*[_type == "sanity.comment" && title == "${'x'.repeat(20000)}"]`
-
-    await expect(getMockClient().collaboration.comments.fetch(query)).rejects.toThrow(
-      'Query too large for request URL',
-    )
 
     await expect(
       firstValueFrom(getMockClient().collaboration.comments.listen(query)),
     ).rejects.toThrow('Query too large for listener')
+  })
+
+  /**
+   * Builds a query whose encoded query string is exactly `target` characters,
+   * to pin the tests either side of the GET/POST switchover. `x` survives
+   * form-encoding unchanged, so each padding character adds exactly one.
+   */
+  const queryOfEncodedLength = (target: number) => {
+    const build = (padding: number) =>
+      `*[_type == "sanity.comment" && title == "${'x'.repeat(padding)}"]`
+    return build(target - `?${new URLSearchParams({query: build(0)})}`.length)
+  }
+
+  test.skipIf(isEdge)('sends a query that still fits in the URL as a GET', async () => {
+    const query = queryOfEncodedLength(11263)
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...commonQuery, query}})
+      .respond({status: 200, body: {result: []}})
+
+    await expect(getMockClient().collaboration.comments.fetch(query)).resolves.toEqual([])
+  })
+
+  test.skipIf(isEdge)('falls back to a POST for a query too large for the URL', async () => {
+    const query = queryOfEncodedLength(11264)
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-07-18/collaboration/comments/query', {
+        query: commonQuery,
+        body: {query, params: {}},
+      })
+      .respond({status: 200, body: {result: []}})
+
+    await expect(getMockClient().collaboration.comments.fetch(query)).resolves.toEqual([])
+  })
+
+  test.skipIf(isEdge)('moves params into the body when falling back to a POST', async () => {
+    const query = `*[_type == "sanity.comment" && target.document._ref == $ref && title == "${'x'.repeat(20000)}"]`
+    const params = {ref: 'canvas:canvas-123:doc-1'}
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-07-18/collaboration/comments/query', {
+        query: commonQuery,
+        body: {query, params},
+      })
+      .respond({status: 200, body: {result: [commentDocument]}})
+
+    await expect(getMockClient().collaboration.comments.fetch(query, params)).resolves.toEqual([
+      commentDocument,
+    ])
   })
 
   test.skipIf(isEdge)('supports the observable comments namespace', async () => {
