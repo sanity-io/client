@@ -1,5 +1,95 @@
 # @sanity/client
 
+## 8.1.0
+
+### Minor Changes
+
+- add `client.functions.invoke()` for calling deployed functions on demand ([#1258](https://github.com/sanity-io/client/pull/1258)) ([4c2f718](https://github.com/sanity-io/client/commit/4c2f7181cfcc07e5f7543275079500603fb65741))
+
+  Invoke a Sanity Pubsub Function by the `name`. Only `sanity.function.pubsub` functions can be
+  invoked on demand.
+
+  Available in two forms, `client.functions.invoke()` resolves with the function's return value, `client.observable.functions.invoke()` emits it and accepts an `event.data` payload,
+  a per-call `timeout` and an `AbortSignal`.
+
+  Names are only unique within a stack, so resolving one requires a `stackId`, either from the new
+  `stackId` client config option or from the request. That resolution costs one extra request per
+  call. A function that returns nothing resolves to `undefined`.
+
+  Stacks deployed at organization scope are reached with the new `organizationId` client config
+  option, or a per-call `organizationId`. It takes precedence over `projectId`, which becomes
+  optional in that case.
+
+- add request handler for client integrations ([#1286](https://github.com/sanity-io/client/pull/1286)) ([a9db52f](https://github.com/sanity-io/client/commit/a9db52f59c660244e37eec19e437b29d295ac6f5))
+- add variant definition actions ([#1278](https://github.com/sanity-io/client/pull/1278)) ([7c98361](https://github.com/sanity-io/client/commit/7c98361beca9e0ad7694a4a8da04a76a55d8a5ee))
+
+  Adds `CreateVariantDefinitionAction`, `EditVariantDefinitionAction` and
+  `DeleteVariantDefinitionAction`, along with a `VariantDefinitionAction` union, covering the
+  `sanity.action.variant.definition.*` actions. They are included in the `Action` union, so
+  `client.action()` accepts them.
+
+  Note that `Action` widening is a breaking change for code that exhaustively switches on
+  `Action['actionType']` with a `never` fallthrough, which will need to handle the new cases.
+
+### Patch Changes
+
+- route the live-events CORS probe through the configured transport ([#1282](https://github.com/sanity-io/client/pull/1282)) ([aaada67](https://github.com/sanity-io/client/commit/aaada6723fc86ba7ea002b7d221b9cf409ad98d8))
+
+  The `/check/cors` probe that `client.live.events()` uses to distinguish a CORS
+  rejection from other connection failures called the global `fetch` directly, so
+  a custom `resolveFetch` or an explicit `proxy` was not applied to it. It now
+  resolves the same fetch the EventSource connection uses.
+
+- reword the `createVersion()` warning about `baseId` ([#1282](https://github.com/sanity-io/client/pull/1282)) ([aaada67](https://github.com/sanity-io/client/commit/aaada6723fc86ba7ea002b7d221b9cf409ad98d8))
+
+  `createVersion({document})` warned that "the recommended approach is to provide a `baseId` and `releaseId` instead", which reads as a correction even when the caller had no other option: `baseId` creates a version of a document that already exists, so creating a genuinely new document inside a release can only be done by passing `document`.
+
+  The client cannot tell those two cases apart, so the warning is now phrased as a condition rather than a correction: "If you are creating a version of a document that already exists, prefer providing `baseId` and `releaseId` instead." No behavior changed, and both forms remain supported.
+
+- correct the return type of `delete()` and `mutate()` when called with no options ([#1282](https://github.com/sanity-io/client/pull/1282)) ([aaada67](https://github.com/sanity-io/client/commit/aaada6723fc86ba7ea002b7d221b9cf409ad98d8))
+
+  `client.delete(id)` and `client.mutate(mutations)` were typed to resolve to a
+  document (`SanityDocument<R>`) when called without an options argument, but
+  they actually resolve to a mutation result object
+  (`{transactionId, documentIds, results}`, `MultipleMutationResult`). The
+  document is genuinely mutated, but code that read `._id` off the resolved
+  value was reading `undefined` at runtime without any type error. The
+  underlying method (`create()`) does return the document by default, so this
+  was easy to assume also held for `delete()` and `mutate()` - it does not.
+
+  Both methods now correctly type as resolving to `MultipleMutationResult` by
+  default, matching the (unchanged) runtime behavior, on both the
+  promise-based and observable clients.
+
+  Released as a patch rather than a major even though a declared type changed. Code that read `._id` off the result was reading `undefined` at runtime, so no working application can have depended on the old type: anything that type-checked against it was already broken when it ran. What changes is that the mistake is now visible at compile time instead of at runtime.
+
+  If `tsc` starts failing on one of these calls, that failure is pointing at a real bug. To fix it:
+
+  - To get the document back, pass `{returnFirst: true, returnDocuments: true}`
+    explicitly: `await client.delete(id, {returnFirst: true, returnDocuments: true})`.
+  - To keep the mutation-result shape, read `documentIds` (or `documentId` with
+    `returnFirst: true`) off the result instead of `_id`.
+
+  No runtime behavior changed - this only corrects the public types.
+
+- populate server-sent event IDs on Cloudflare Workers ([#1282](https://github.com/sanity-io/client/pull/1282)) ([aaada67](https://github.com/sanity-io/client/commit/aaada6723fc86ba7ea002b7d221b9cf409ad98d8))
+
+  `client.live.events()` and `client.listen()` read `lastEventId` off the
+  `MessageEvent` that `eventsource` constructs. workerd does not carry that member
+  through the `MessageEvent` constructor's init dict, so on bare Cloudflare Workers
+  every event arrived with an empty `id`. Raising the `eventsource` floor to
+  `>= 5.1.0` picks up the fix.
+
+- return the asset from `assets.upload()` against a Media Library ([#1282](https://github.com/sanity-io/client/pull/1282)) ([aaada67](https://github.com/sanity-io/client/commit/aaada6723fc86ba7ea002b7d221b9cf409ad98d8))
+
+  `client.assets.upload()` resolved to `undefined` when the client was configured against a Media Library (`resource: {type: 'media-library', id}`), even though the upload succeeded server-side. Content Lake's upload endpoint responds with `{document: {...}}`, and `upload()` unwrapped that key unconditionally - but the Media Library upload endpoint responds with `{asset: {...}}` instead, so the unwrap produced `undefined`.
+
+  `upload()` now unwraps `.asset` for a Media Library response and `.document` otherwise, on both the promise-based and observable clients. It resolves to the uploaded asset instead of `undefined`.
+
+  The Media Library asset shape is not the same as a Content Lake asset document: it is a `sanity.asset` document that tracks one or more uploaded versions via `currentVersion`/`versions`, rather than a document with `url`, `size`, `mimeType`, and so on. That shape is now exported as `MediaLibraryAssetDocument`.
+
+  **The declared return type is knowingly incomplete, and this is a patch on purpose.** Which shape you get back depends on how the client is configured, not on the arguments to `upload()`, so no overload can discriminate it. Expressing it would mean widening the return type into a union that every existing caller has to narrow - a breaking change for all users, to correct the typing of a much less common configuration. So the declared type still describes only the Content Lake shape. If you upload to a Media Library, narrow the result yourself (for example, check for `currentVersion`) or annotate it as `SanityImageAssetDocument | MediaLibraryAssetDocument`. Typing this accurately is deferred to the next major.
+
 ## 8.0.0
 
 ### Major Changes
