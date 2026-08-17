@@ -110,7 +110,6 @@
   "dependencies": {
     "eventsource": "^5.1.0",
     "get-it": "^9.5.0",
-    "nanoid": "^6.0.1",
     "obug": "^2.1.4",
     "rxjs": "^7.8.2"
   },
