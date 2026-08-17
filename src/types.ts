@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-empty-interface
 
-import type {FetchFunction} from 'get-it'
+import type {FetchFunction, RequestOptions as GetItRequestOptions} from 'get-it'
 import type {Observable} from 'rxjs'
 
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
@@ -45,6 +45,30 @@ export interface RequestOptions {
   body?: Any
   signal?: AbortSignal
 }
+
+/**
+ * The fully resolved request passed to a {@link RequestHandler}.
+ *
+ * @public
+ */
+export type RequestHandlerOptions = GetItRequestOptions
+
+/**
+ * Intercepts a client request around the normal HTTP pipeline.
+ *
+ * Call `next(request)` to execute the request. It resolves to the parsed
+ * response body and rejects with the same errors the client normally exposes,
+ * including {@link ClientError} and {@link ServerError}. A handler can modify
+ * the request, retry it by calling `next` again, or return a synthetic body.
+ *
+ * Browser asset uploads and server-sent event connections do not use this handler.
+ *
+ * @public
+ */
+export type RequestHandler = (
+  request: RequestHandlerOptions,
+  next: (request: RequestHandlerOptions) => Promise<unknown>,
+) => Promise<unknown>
 
 /**
  * @public
@@ -159,6 +183,20 @@ export interface ClientConfig {
    * Optional request tag prefix for all request tags
    */
   requestTagPrefix?: string
+
+  /**
+   * Intercepts requests after the client has resolved their URL, headers, and
+   * transport options. The handler wraps the normal client pipeline, so errors
+   * from `next` are already converted to {@link ClientError} or
+   * {@link ServerError}.
+   *
+   * A handler supplied through `withConfig()` replaces the current handler.
+   * To compose handlers, read the current handler from `client.config()` and
+   * call it from the replacement.
+   *
+   * Browser asset uploads and server-sent event connections are not intercepted.
+   */
+  requestHandler?: RequestHandler
 
   /**
    * Optional default headers to include with all requests
@@ -494,7 +532,7 @@ export interface ErrorProps {
  * @internal
  */
 export type HttpRequest = {
-  (options: Any): Promise<unknown>
+  (options: Any, requestHandler?: RequestHandler): Promise<unknown>
 }
 
 /**
