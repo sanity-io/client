@@ -170,14 +170,6 @@ describe('collaboration.comments write results', () => {
       CollaborationCommentDocument['target']['document']['_ref']
     >()
   })
-
-  test('writes are not void', () => {
-    // @ts-expect-error - create resolves to the created comment
-    expectTypeOf(comments.create(body)).toEqualTypeOf<Promise<void>>()
-
-    // @ts-expect-error - delete resolves to a mutation result
-    expectTypeOf(comments.delete('comment-1')).toEqualTypeOf<Promise<void>>()
-  })
 })
 
 describe('collaboration.comments.fetch', () => {

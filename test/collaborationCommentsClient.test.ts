@@ -430,6 +430,12 @@ describe('collaboration.comments', () => {
     await client.collaboration.comments.delete('comment-1', options)
     await client.collaboration.comments.addReaction('comment-1', ':heart:', options)
     await client.collaboration.comments.removeReaction('comment-1', ':heart:', options)
+
+    expect(
+      getActiveMock()
+        .getRequests()
+        .map((request) => request.query.transactionId),
+    ).toEqual(['txn-123', 'txn-123', 'txn-123', 'txn-123'])
   })
 
   test('applies the request tag prefix on every write and on fetch', async () => {
@@ -478,6 +484,18 @@ describe('collaboration.comments', () => {
     await comments.addReaction('comment-1', ':heart:', {tag: 'react'})
     await comments.removeReaction('comment-1', ':heart:', {tag: 'unreact'})
     await comments.fetch(groq, undefined, {tag: 'fetch'})
+
+    expect(
+      getActiveMock()
+        .getRequests()
+        .map((request) => request.query.tag),
+    ).toEqual([
+      'comments.update',
+      'comments.delete',
+      'comments.react',
+      'comments.unreact',
+      'comments.fetch',
+    ])
   })
 
   // A status change is a patch on the comment plus a query-based patch on its

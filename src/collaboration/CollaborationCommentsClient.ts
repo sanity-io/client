@@ -158,8 +158,8 @@ export class ObservableCollaborationCommentsClient {
    * `client.fetch` does (`perspective`, `useCdn`, `filterResponse`,
    * `resultSourceMap`, stega).
    *
-   * Comment documents are of type `sanity.comment`, so queries typically filter
-   * on `_type == "sanity.comment"`.
+   * The query runs against the organization store, which is not scoped to
+   * comments, so filter on `_type == "sanity.comment"`.
    *
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
@@ -192,7 +192,8 @@ export class ObservableCollaborationCommentsClient {
    *
    * @param query - GROQ-filter to listen to changes for
    * @param params - Optional query parameters
-   * @param options - Listener options, such as `events`, `includeResult` and `tag`
+   * @param options - The same listener options `client.listen` takes, forwarded
+   *   to the organization store's listener
    */
   listen<Opts extends CollaborationCommentsListenOptions>(
     query: string,
@@ -334,8 +335,8 @@ export class CollaborationCommentsClient {
    * `client.fetch` does (`perspective`, `useCdn`, `filterResponse`,
    * `resultSourceMap`, stega).
    *
-   * Comment documents are of type `sanity.comment`, so queries typically filter
-   * on `_type == "sanity.comment"`.
+   * The query runs against the organization store, which is not scoped to
+   * comments, so filter on `_type == "sanity.comment"`.
    *
    * @param query - GROQ-query to perform
    * @param params - Optional query parameters
@@ -368,7 +369,8 @@ export class CollaborationCommentsClient {
    *
    * @param query - GROQ-filter to listen to changes for
    * @param params - Optional query parameters
-   * @param options - Listener options, such as `events`, `includeResult` and `tag`
+   * @param options - The same listener options `client.listen` takes, forwarded
+   *   to the organization store's listener
    */
   listen<Opts extends CollaborationCommentsListenOptions>(
     query: string,

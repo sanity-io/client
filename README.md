@@ -2625,7 +2625,7 @@ When querying, the field is stored as `target.path.field`, so filter with `targe
 
 #### Updating and deleting comments
 
-`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to clear the selection:
+`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field and source document it already targets; pass `null` to clear the selection:
 
 ```js
 await client.collaboration.comments.update('comment-1', {status: 'resolved'})
@@ -2652,7 +2652,7 @@ await client.collaboration.comments.removeReaction('comment-1', ':+1:')
 
 #### Fetching comments
 
-`fetch()` runs GROQ against the comments for the configured resource. Same `query` / `params` shape as `client.fetch()`, but Content Lake options like `perspective` and `useCdn` do not apply. Comments are `_type == "sanity.comment"`:
+`fetch()` runs GROQ against the organization store holding the comments for the configured resource. Same `query` / `params` shape as `client.fetch()`, but Content Lake options like `perspective` and `useCdn` do not apply. The store is not scoped to comments, so filter on `_type == "sanity.comment"`:
 
 ```js
 const comments = await client.collaboration.comments.fetch(

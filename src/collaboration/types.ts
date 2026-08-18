@@ -32,9 +32,14 @@ export type CollaborationCommentsWriteOptions = CollaborationCommentsRequestOpti
 /**
  * Listener options for `collaboration.comments.listen`.
  *
+ * `includeAllVersions` is left out: comments are stored as `sanity.comment`
+ * documents with no drafts or versions, so it would never make a difference.
+ *
  * @alpha
  */
-export type CollaborationCommentsListenOptions = ListenOptions | ResumableListenOptions
+export type CollaborationCommentsListenOptions =
+  | Omit<ListenOptions, 'includeAllVersions'>
+  | Omit<ResumableListenOptions, 'includeAllVersions'>
 
 /**
  * Status of a comment thread. Replies always share the status of their parent comment.
@@ -239,8 +244,9 @@ export interface CollaborationCommentUpdate {
   /** Cascades to the comment's replies */
   status?: CollaborationCommentStatus
   /**
-   * Re-anchors the comment within the field it already targets.
-   * Pass `null` to remove the selection and leave a field-level comment.
+   * Re-anchors the comment within the field and source document it already
+   * targets. Pass `null` to remove the selection and leave a field-level
+   * comment.
    */
   range?: CollaborationCommentRange | null
 }
