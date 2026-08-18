@@ -127,9 +127,7 @@ export interface ClientConfig {
   projectId?: string
   dataset?: string
   /**
-   * ID of the organization that organization-scoped APIs address: required by
-   * `client.collaboration.comments`, and the owner of the blueprints stack
-   * `functions.invoke()` resolves function names against
+   * Organization ID for organization-scoped APIs.
    */
   organizationId?: string
   /** @defaultValue true */
