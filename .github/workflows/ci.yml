@@ -20,7 +20,7 @@ jobs:
       contents: read
       # Required to put a comment into the pull-request
       pull-requests: write
-    name: Build and lint
+    name: 'Build & lint: Node.js LTS'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -53,7 +53,7 @@ jobs:
       contents: read
       # Required to put a comment into the pull-request
       pull-requests: write
-    name: Test and report coverage
+    name: 'Test: Node.js LTS w/coverage'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -68,6 +68,7 @@ jobs:
         if: always()
 
   test:
+    name: 'Test: Node.js ${{ matrix.node }}, ${{ matrix.platform }}'
     needs: [build, coverage]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -78,13 +79,22 @@ jobs:
         #   22.12.0 - the minimum supported version (must match `engines.node`)
         #   24      - the active LTS release
         #   26      - the latest/current release
-        os: [ubuntu-latest]
-        node: ['22.12.0', '24', '26']
-        # Additionally verify the active LTS release on the other major operating systems.
         include:
+          - os: ubuntu-latest
+            platform: Ubuntu
+            node: '22.12.0'
+          - os: ubuntu-latest
+            platform: Ubuntu
+            node: '24'
+          - os: ubuntu-latest
+            platform: Ubuntu
+            node: '26'
+          # Additionally verify the active LTS release on the other major operating systems.
           - os: macos-latest
+            platform: macOS
             node: '24'
           - os: windows-latest
+            platform: Windows
             node: '24'
     steps:
       - uses: actions/checkout@v7
@@ -112,6 +122,7 @@ jobs:
         run: npx vitest run
 
   vercel-edge:
+    name: 'Test: Vercel Edge'
     # No `needs: [build]`: this job resolves `@sanity/client` through `sourceAlias`
     # (see `vitest.vercel-edge.config.ts`), so it never touches `dist/` and gains
     # nothing from waiting on, or restoring the artifact from, the `build` job.
@@ -136,6 +147,7 @@ jobs:
   # Upstream fix: https://github.com/cloudflare/workerd/pull/6995. Once that ships and
   # the floor can be lowered again, this job is the check that proves it.
   workerd-runtime:
+    name: 'Test: workerd'
     # No `needs: [build]`: see the comment on `vercel-edge` above - same reasoning,
     # `vitest.workerd.config.ts` also resolves through `sourceAlias`.
     runs-on: ubuntu-latest
@@ -150,6 +162,7 @@ jobs:
       - run: pnpm run test:workerd
 
   browser-runtime:
+    name: 'Test: Chrome, Firefox, WebKit'
     # No `needs: [build]`: see the comment on `vercel-edge` above - same reasoning,
     # `vitest.browser.config.ts` also resolves through `sourceAlias`.
     runs-on: ubuntu-latest
@@ -174,7 +187,7 @@ jobs:
   test-happy-dom:
     # No `needs: [build]`: `vitest.happy-dom.config.ts` resolves through `sourceAlias`,
     # same reasoning as `vercel-edge` above.
-    name: Test Happy DOM
+    name: 'Test: happy-dom, Node.js LTS'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -189,7 +202,7 @@ jobs:
   test-react-server:
     # No `needs: [build]`: `vitest.react-server.config.ts` resolves through
     # `sourceAlias`, same reasoning as `vercel-edge` above.
-    name: Test React Server
+    name: 'Test: React Server Components'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -202,6 +215,7 @@ jobs:
       - run: pnpm run test:react-server
 
   deno-runtime:
+    name: 'Test: Deno'
     # No `needs: [build]`: `vitest.deno.config.ts` resolves through `sourceAlias`, same
     # reasoning as `vercel-edge` above - this job never touches `dist/`.
     runs-on: ubuntu-latest
@@ -228,6 +242,7 @@ jobs:
       - run: pnpm run test:deno
 
   bun-runtime:
+    name: 'Test: Bun'
     # No `needs: [build]`: the default `vitest.config.ts` this job runs against also
     # resolves through `sourceAlias`, same reasoning as `vercel-edge` above.
     runs-on: ubuntu-latest
@@ -254,7 +269,7 @@ jobs:
   # (`test/packaging/distGraph.test.ts`). Both need a real build, not `dist/` aliased to
   # source, so this job builds fresh rather than restoring the `build` job's artifact.
   test-packaging:
-    name: Test Packaging
+    name: 'Test: Packaging'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -268,6 +283,7 @@ jobs:
       - run: pnpm run test:packaging
 
   next-runtime:
+    name: 'Typecheck: Next.js App Router'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
