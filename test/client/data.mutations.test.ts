@@ -1,15 +1,20 @@
 import {
   type BaseActionOptions,
   type CreateAction,
+  type CreateVariantAction,
   type CreateVariantDefinitionAction,
   type DeleteAction,
+  type DeleteVariantAction,
   type DeleteVariantDefinitionAction,
   type DiscardAction,
   type EditAction,
+  type EditVariantAction,
   type EditVariantDefinitionAction,
   type PublishAction,
+  type PublishVariantAction,
   type ReplaceDraftAction,
   type UnpublishAction,
+  type UnpublishVariantAction,
 } from '@sanity/client'
 import {describe, expect, test} from 'vitest'
 
@@ -698,6 +703,141 @@ describe('mutations', () => {
       })
 
     await expect(getClient().action([action1, action2, action3])).resolves.not.toThrow()
+  })
+
+  test('action() performs variant document operations', async () => {
+    const action1: CreateVariantAction = {
+      actionType: 'sanity.action.document.variant.create',
+      publishedId: 'post1',
+      variantId: 'nb-NO',
+      bundleId: 'drafts',
+      document: {_type: 'post', title: 'Norwegian variant'},
+    }
+
+    const action2: CreateVariantAction = {
+      actionType: 'sanity.action.document.variant.create',
+      publishedId: 'post2',
+      variantId: 'nb-NO',
+      baseId: 'post2',
+      ifBaseRevisionId: 'rev2',
+    }
+
+    const action3: EditVariantAction = {
+      actionType: 'sanity.action.document.variant.edit',
+      publishedId: 'post3',
+      variantId: 'nb-NO',
+      bundleId: 'drafts',
+      patch: {set: {title: 'Updated variant'}},
+    }
+
+    const action4: DeleteVariantAction = {
+      actionType: 'sanity.action.document.variant.delete',
+      publishedId: 'post4',
+      variantId: 'nb-NO',
+      purge: true,
+    }
+
+    const action5: PublishVariantAction = {
+      actionType: 'sanity.action.document.variant.publish',
+      publishedId: 'post5',
+      variantId: 'nb-NO',
+      bundleId: 'drafts',
+      ifVersionRevisionId: 'rev5',
+      ifPublishedVariantRevisionId: 'rev5-published',
+    }
+
+    const action6: UnpublishVariantAction = {
+      actionType: 'sanity.action.document.variant.unpublish',
+      publishedId: 'post6',
+      variantId: 'nb-NO',
+    }
+
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/actions/foo', {
+        body: {
+          actions: [action1, action2, action3, action4, action5, action6],
+        },
+      })
+      .respond({
+        status: 200,
+        body: {
+          transactionId: 'foo',
+        },
+      })
+
+    await expect(
+      getClient().action([action1, action2, action3, action4, action5, action6]),
+    ).resolves.not.toThrow()
+  })
+
+  test('action() performs variant document operations in a content release', async () => {
+    const action1: CreateVariantAction = {
+      actionType: 'sanity.action.document.variant.create',
+      publishedId: 'post1',
+      variantId: 'nb-NO',
+      bundleId: 'release456',
+      document: {_type: 'post', title: 'Norwegian variant'},
+    }
+
+    const action2: CreateVariantAction = {
+      actionType: 'sanity.action.document.variant.create',
+      publishedId: 'post2',
+      variantId: 'nb-NO',
+      bundleId: 'release456',
+      baseId: 'post2',
+      ifBaseRevisionId: 'rev2',
+    }
+
+    const action3: EditVariantAction = {
+      actionType: 'sanity.action.document.variant.edit',
+      publishedId: 'post3',
+      variantId: 'nb-NO',
+      bundleId: 'release456',
+      patch: {set: {title: 'Updated variant'}},
+    }
+
+    const action4: DeleteVariantAction = {
+      actionType: 'sanity.action.document.variant.delete',
+      publishedId: 'post4',
+      variantId: 'nb-NO',
+      bundleId: 'release456',
+      purge: true,
+    }
+
+    const action5: PublishVariantAction = {
+      actionType: 'sanity.action.document.variant.publish',
+      publishedId: 'post5',
+      variantId: 'nb-NO',
+      bundleId: 'release456',
+      ifVersionRevisionId: 'rev5',
+      ifPublishedVariantRevisionId: 'rev5-published',
+    }
+
+    const action6: UnpublishVariantAction = {
+      actionType: 'sanity.action.document.variant.unpublish',
+      publishedId: 'post6',
+      variantId: 'nb-NO',
+      bundleId: 'release456',
+    }
+
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/actions/foo', {
+        body: {
+          actions: [action1, action2, action3, action4, action5, action6],
+        },
+      })
+      .respond({
+        status: 200,
+        body: {
+          transactionId: 'foo',
+        },
+      })
+
+    await expect(
+      getClient().action([action1, action2, action3, action4, action5, action6]),
+    ).resolves.not.toThrow()
   })
 
   test('action() accepts optional parameters', async () => {
