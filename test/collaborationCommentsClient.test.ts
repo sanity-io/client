@@ -6,6 +6,10 @@ import {describe, expect, test} from 'vitest'
 import {getActiveMock, streamBody, streamStall, testResolveFetch} from './helpers/mockFetch'
 
 const apiHost = 'https://api.sanity.url'
+const projectHost = (projectId: string) => {
+  const url = new URL(apiHost)
+  return `${url.protocol}//${projectId}.${url.host}`
+}
 const organizationId = 'org-123'
 const resource = {type: 'canvas' as const, id: 'canvas-123'}
 
@@ -258,6 +262,43 @@ describe('collaboration.comments', () => {
     await expect(
       getMockClient().collaboration.comments.update('comment-1', {message: edited}),
     ).resolves.toEqual(editedDocument)
+  })
+
+  test('updates and clears the range of an existing comment', async () => {
+    const range = {
+      start: {_key: 'block-1', offset: 0},
+      end: {_key: 'block-1', offset: 12},
+    }
+
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {range},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-1', operation: 'update', document: inlineCommentDocument},
+        ]),
+      })
+    scope
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {range: null},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      })
+
+    const client = getMockClient()
+    await expect(client.collaboration.comments.update('comment-1', {range})).resolves.toEqual(
+      inlineCommentDocument,
+    )
+    await expect(client.collaboration.comments.update('comment-1', {range: null})).resolves.toEqual(
+      commentDocument,
+    )
   })
 
   test('uses resource query parameters', async () => {
@@ -731,12 +772,13 @@ describe('collaboration.comments', () => {
     }
   })
 
-  test('throws when organizationId or resource is missing', () => {
+  test('throws when organizationId or resource/project config is missing', () => {
     const query = '*[_type == "sanity.comment"]'
     const withoutOrg = getMockClient({organizationId: undefined})
     const withoutResource = getMockClient({resource: undefined})
     const orgError = '`organizationId` must be configured to use collaboration comments'
-    const resourceError = '`resource` must be configured to use collaboration comments'
+    const resourceError =
+      '`resource` or `projectId` and `dataset` must be configured to use collaboration comments'
 
     expect(() => withoutOrg.collaboration.comments.fetch(query)).toThrow(orgError)
     expect(() => withoutOrg.collaboration.comments.listen(query)).toThrow(orgError)
@@ -765,6 +807,89 @@ describe('collaboration.comments', () => {
         message,
       }),
     ).toThrow(resourceError)
+  })
+
+  test('derives dataset resource and uses the project API domain without an explicit resource', async () => {
+    const projectId = 'project-123'
+    const dataset = 'production'
+    const projectQuery = {
+      organizationId,
+      resourceId: `${projectId}.${dataset}`,
+      resourceType: 'dataset',
+    }
+    const datasetComment: CollaborationCommentDocument = {
+      ...commentDocument,
+      target: {
+        ...commentDocument.target,
+        document: {
+          ...commentDocument.target.document,
+          _ref: `dataset:${projectId}.${dataset}:doc-1`,
+        },
+      },
+    }
+
+    getActiveMock()
+      .scope(projectHost(projectId))
+      .on('POST', '/v2026-07-18/collaboration/comments', {
+        query: projectQuery,
+        body: {target: {documentId: 'doc-1', documentType: 'article'}, message},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'create', document: datasetComment}]),
+      })
+
+    const client = getMockClient({
+      projectId,
+      dataset,
+      resource: undefined,
+      useProjectHostname: true,
+    })
+
+    await expect(
+      client.collaboration.comments.create({
+        target: {documentId: 'doc-1', documentType: 'article'},
+        message,
+      }),
+    ).resolves.toEqual(datasetComment)
+
+    expect(client.collaboration.comments.getTargetDocumentRef('drafts.doc-1')).toBe(
+      `dataset:${projectId}.${dataset}:doc-1`,
+    )
+  })
+
+  test('uses an explicit resource over projectId/dataset and stays on the global API host', async () => {
+    const projectId = 'project-123'
+    const dataset = 'production'
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-07-18/collaboration/comments', {
+        query: commonQuery,
+        body: {target: {documentId: 'doc-1', documentType: 'article'}, message},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+      })
+
+    const client = getMockClient({
+      projectId,
+      dataset,
+      resource,
+      useProjectHostname: true,
+    })
+
+    await expect(
+      client.collaboration.comments.create({
+        target: {documentId: 'doc-1', documentType: 'article'},
+        message,
+      }),
+    ).resolves.toEqual(commentDocument)
+
+    expect(client.collaboration.comments.getTargetDocumentRef('doc-1')).toBe(
+      'canvas:canvas-123:doc-1',
+    )
   })
 
   test('throws when the comment ID is empty', () => {
@@ -821,9 +946,25 @@ describe('collaboration.comments', () => {
   test('throws when building a target document reference without a resource or id', () => {
     expect(() =>
       getMockClient({resource: undefined}).collaboration.comments.getTargetDocumentRef('doc-1'),
-    ).toThrow('`resource` must be configured to use collaboration comments')
+    ).toThrow(
+      '`resource` or `projectId` and `dataset` must be configured to use collaboration comments',
+    )
     expect(() => getMockClient().collaboration.comments.getTargetDocumentRef('')).toThrow(
       'Document ID must be provided',
+    )
+  })
+
+  test('builds target document references from projectId and dataset', () => {
+    const comments = getMockClient({
+      projectId: 'project-123',
+      dataset: 'production',
+      resource: undefined,
+      useProjectHostname: true,
+    }).collaboration.comments
+
+    expect(comments.getTargetDocumentRef('doc-1')).toBe('dataset:project-123.production:doc-1')
+    expect(comments.getTargetDocumentRef('drafts.doc-1')).toBe(
+      'dataset:project-123.production:doc-1',
     )
   })
 

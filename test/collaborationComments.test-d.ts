@@ -126,6 +126,14 @@ describe('collaboration.comments write results', () => {
     expectTypeOf(comments.update('comment-1', {status: 'resolved'})).toEqualTypeOf<
       Promise<CollaborationCommentDocument>
     >()
+    expectTypeOf(
+      comments.update('comment-1', {
+        range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+      }),
+    ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
+    expectTypeOf(comments.update('comment-1', {range: null})).toEqualTypeOf<
+      Promise<CollaborationCommentDocument>
+    >()
     expectTypeOf(comments.addReaction('comment-1', ':heart:')).toEqualTypeOf<
       Promise<CollaborationCommentDocument>
     >()

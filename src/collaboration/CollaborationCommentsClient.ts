@@ -30,9 +30,9 @@ import type {
 } from './types'
 
 /**
- * Comments on the configured `resource`.
+ * Comments on the configured organization resource.
  *
- * Requires `organizationId` and `resource` to be set in the client configuration.
+ * Requires `organizationId`, plus either `resource` or `projectId` and `dataset`.
  *
  * @alpha
  */
@@ -62,7 +62,7 @@ export class ObservableCollaborationCommentsClient {
   }
 
   /**
-   * Update the message and/or status of an existing comment.
+   * Update an existing comment.
    *
    * Updating `status` cascades to the comment's replies.
    *
@@ -209,9 +209,9 @@ export class ObservableCollaborationCommentsClient {
 }
 
 /**
- * Comments on the configured `resource`.
+ * Comments on the configured organization resource.
  *
- * Requires `organizationId` and `resource` to be set in the client configuration.
+ * Requires `organizationId`, plus either `resource` or `projectId` and `dataset`.
  *
  * @alpha
  */
@@ -241,7 +241,7 @@ export class CollaborationCommentsClient {
   }
 
   /**
-   * Update the message and/or status of an existing comment.
+   * Update an existing comment.
    *
    * Updating `status` cascades to the comment's replies.
    *

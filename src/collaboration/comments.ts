@@ -42,16 +42,30 @@ function commentUrl(id: string): string {
   return `/collaboration/comments/${encodeURIComponent(id)}`
 }
 
+function resolveCommentResource(client: Client): {type: string; id: string} {
+  const {resource, projectId, dataset} = client.config()
+
+  if (resource) {
+    return resource
+  }
+
+  if (projectId && dataset) {
+    return {type: 'dataset', id: `${projectId}.${dataset}`}
+  }
+
+  throw new Error(
+    '`resource` or `projectId` and `dataset` must be configured to use collaboration comments',
+  )
+}
+
 function resourceQuery(client: Client): Record<string, string> {
-  const {organizationId, resource} = client.config()
+  const {organizationId} = client.config()
 
   if (!organizationId) {
     throw new Error('`organizationId` must be configured to use collaboration comments')
   }
 
-  if (!resource) {
-    throw new Error('`resource` must be configured to use collaboration comments')
-  }
+  const resource = resolveCommentResource(client)
 
   return {
     organizationId,
@@ -69,11 +83,7 @@ export function _getTargetDocumentRef(
     throw new Error('Document ID must be provided')
   }
 
-  const {resource} = client.config()
-
-  if (!resource) {
-    throw new Error('`resource` must be configured to use collaboration comments')
-  }
+  const resource = resolveCommentResource(client)
 
   return `${resource.type}:${resource.id}:${getPublishedId(documentId)}`
 }

@@ -2094,6 +2094,7 @@ export type {
   CollaborationCommentsWriteOptions,
   CollaborationCommentTarget,
   CollaborationCommentUpdate,
+  CollaborationCommentRange,
 } from './collaboration/types'
 export type {
   ContentSourceMapParsedPath,

@@ -145,6 +145,18 @@ export interface CollaborationCommentDocument extends SanityDocument {
 }
 
 /**
+ * Inline text selection within a Portable Text field.
+ * Each endpoint pairs the `_key` of a Portable Text block with a character
+ * offset into that block's plain text.
+ *
+ * @alpha
+ */
+export interface CollaborationCommentRange {
+  start: {_key: string; offset: number}
+  end: {_key: string; offset: number}
+}
+
+/**
  * Target for a top-level comment. Inline selections require both `path` and
  * `range`; field-level comments may set `path` alone.
  *
@@ -162,15 +174,7 @@ export type CollaborationCommentTarget = {
   | {
       /** Path to the field containing the inline comment selection */
       path: string
-      /**
-       * Inline text selection within `path`.
-       * Each endpoint pairs the `_key` of a Portable Text block with a character
-       * offset into that block's plain text.
-       */
-      range: {
-        start: {_key: string; offset: number}
-        end: {_key: string; offset: number}
-      }
+      range: CollaborationCommentRange
     }
   | {
       /** Path to the commented field */
@@ -234,4 +238,9 @@ export interface CollaborationCommentUpdate {
   message?: CollaborationCommentMessage
   /** Cascades to the comment's replies */
   status?: CollaborationCommentStatus
+  /**
+   * Re-anchors the comment within the field it already targets.
+   * Pass `null` to remove the selection and leave a field-level comment.
+   */
+  range?: CollaborationCommentRange | null
 }

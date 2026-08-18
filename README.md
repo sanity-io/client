@@ -2556,7 +2556,7 @@ The Collaboration Comments API lets you read and write comments on documents in 
 
 #### Configuration
 
-Comments are organization-scoped, so the client needs both an `organizationId` and a `resource`:
+Comments are organization-scoped, so the client needs an `organizationId`, plus either a `resource` or `projectId` and `dataset`:
 
 ```js
 import {createClient} from '@sanity/client'
@@ -2570,6 +2570,19 @@ const client = createClient({
     type: 'canvas',
     id: 'your-canvas-id',
   },
+})
+```
+
+A project-based client (with `projectId` and `dataset`) only needs an `organizationId` added; the dataset resource is derived from the project configuration:
+
+```js
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'production',
+  apiVersion: '2026-07-18',
+  token: 'valid-token',
+  useCdn: false,
+  organizationId: 'your-organization-id',
 })
 ```
 
@@ -2631,10 +2644,14 @@ Field comments get a `target.path` with only `field` set, and no `contentSnapsho
 
 #### Updating and deleting comments
 
-`update()` can change the `message`, the `status`, or both, and resolves with the updated comment. Changing the status cascades to the comment's replies.
+`update()` can change the `message`, the `status`, and/or the `range`, and resolves with the updated comment. Changing the status cascades to the comment's replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to remove the selection and leave a field-level comment.
 
 ```js
 await client.collaboration.comments.update('comment-1', {status: 'resolved'})
+await client.collaboration.comments.update('comment-1', {
+  range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+})
+await client.collaboration.comments.update('comment-1', {range: null})
 ```
 
 Deleting a comment also deletes its replies, so the returned `documentIds` covers the comment and every deleted reply:
