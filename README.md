@@ -2550,13 +2550,13 @@ const result = await client.functions.invoke('slow-function', {
 
 ### Collaboration Comments API
 
-The Collaboration Comments API lets you read and write comments on documents in an organization resource, such as a Canvas or a dataset. These methods are available on the `client.collaboration.comments` namespace, with Observable equivalents on `client.observable.collaboration.comments`.
+Read and write comments on documents in an organization resource. Available on `client.collaboration.comments`, with Observable equivalents on `client.observable.collaboration.comments`.
 
 > **Note:** This API is currently in alpha and may change in future releases.
 
 #### Configuration
 
-Comments are organization-scoped, so the client needs an `organizationId`, plus either a `resource` or `projectId` and `dataset`:
+Comments are organization-scoped. The client needs an `organizationId`, plus either a `resource` or `projectId` and `dataset`:
 
 ```js
 import {createClient} from '@sanity/client'
@@ -2573,7 +2573,7 @@ const client = createClient({
 })
 ```
 
-A project-based client (with `projectId` and `dataset`) only needs an `organizationId` added; the dataset resource is derived from the project configuration:
+A project-based client only needs `organizationId` added; the dataset resource is derived from `projectId` and `dataset`:
 
 ```js
 const client = createClient({
@@ -2588,7 +2588,7 @@ const client = createClient({
 
 #### Creating comments and replies
 
-A top-level comment requires a `target`, while a reply requires a `parentCommentId`. Replies inherit `target`, `status` and `threadId` from the comment they reply to. The `message` is an array of Portable Text blocks.
+A top-level comment needs a `target`. A reply needs a `parentCommentId` instead, and inherits `target`, `status`, and `threadId` from the parent. The `message` is Portable Text:
 
 ```js
 const message = [{_type: 'block', children: [{_type: 'span', text: 'Looks good to me'}]}]
@@ -2604,7 +2604,7 @@ const reply = await client.collaboration.comments.create({
 })
 ```
 
-To comment on a single field, pass a `path` in the target. Inline selections additionally require a `range`, where each endpoint pairs the `_key` of a Portable Text block with a character offset into that block's plain text:
+Field comments pass a `path`. Inline comments also pass a `range` (block `_key` + character offset):
 
 ```js
 await client.collaboration.comments.create({
@@ -2621,30 +2621,11 @@ await client.collaboration.comments.create({
 })
 ```
 
-The created comment stores the target in a different shape from the one you send, which matters when you query it. The `path` string becomes `target.path.field`, so a GROQ filter reads `target.path.field == "body"`, not `target.path == "body"`. The `range` is not stored at all: the API resolves it against the document at create time into `target.path.selection`, which holds the plain text of each Portable Text block the selection spans, with the selected part wrapped in the marker characters `\uF000` and `\uF001`, and into `contentSnapshot`, which holds just the selected fragment of those blocks:
-
-```js
-{
-  target: {
-    document: {_ref: 'canvas:your-canvas-id:doc-1', _type: 'globalDocumentReference', _weak: true},
-    documentType: 'article',
-    sourceDocumentId: 'doc-1',
-    path: {
-      field: 'body',
-      selection: {type: 'text', value: [{_key: 'block-1', text: 'Hello \uF000World\uF001 again'}]},
-    },
-  },
-  contentSnapshot: [
-    {_type: 'block', _key: 'block-1', children: [{_type: 'span', _key: 'block-1', text: 'World'}]},
-  ],
-}
-```
-
-Field comments get a `target.path` with only `field` set, and no `contentSnapshot`. Because the range is resolved when the comment is created, `selection` and `contentSnapshot` keep pointing at the text as it was then, even after the document changes.
+When querying, the field is stored as `target.path.field`, so filter with `target.path.field == "body"`, not `target.path == "body"`. The `range` itself is not stored: the API resolves it into a selection (and content snapshot) when the comment is written.
 
 #### Updating and deleting comments
 
-`update()` can change the `message`, the `status`, and/or the `range`, and resolves with the updated comment. Changing the status cascades to the comment's replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to remove the selection and leave a field-level comment.
+`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to clear the selection:
 
 ```js
 await client.collaboration.comments.update('comment-1', {status: 'resolved'})
@@ -2654,7 +2635,7 @@ await client.collaboration.comments.update('comment-1', {
 await client.collaboration.comments.update('comment-1', {range: null})
 ```
 
-Deleting a comment also deletes its replies, so the returned `documentIds` covers the comment and every deleted reply:
+`delete()` also deletes replies. The returned `documentIds` covers the comment and every deleted reply:
 
 ```js
 const {documentIds} = await client.collaboration.comments.delete('comment-1')
@@ -2671,7 +2652,7 @@ await client.collaboration.comments.removeReaction('comment-1', ':+1:')
 
 #### Fetching comments
 
-`fetch()` runs a GROQ query against the comments stored for the configured resource. It takes the same `query` and `params` arguments as `client.fetch()`, but it queries the comments endpoint rather than the Content Lake, so it accepts none of `client.fetch()`'s query options — `perspective`, `useCdn`, `filterResponse`, `resultSourceMap` and stega do not apply. Comment documents are of type `sanity.comment`:
+`fetch()` runs GROQ against the comments for the configured resource. Same `query` / `params` shape as `client.fetch()`, but Content Lake options like `perspective` and `useCdn` do not apply. Comments are `_type == "sanity.comment"`:
 
 ```js
 const comments = await client.collaboration.comments.fetch(
@@ -2679,31 +2660,23 @@ const comments = await client.collaboration.comments.fetch(
 )
 ```
 
-A comment points at the document it belongs to through `target.document._ref`, a global document reference of the form `resourceType:resourceId:documentId`. It always uses the published document ID, even for comments created on a draft or a version, so to fetch the comments for a single document, pass that reference as a parameter:
-
-```js
-const comments = await client.collaboration.comments.fetch(
-  '*[_type == "sanity.comment" && target.document._ref == $ref]',
-  {ref: 'canvas:your-canvas-id:doc-1'},
-)
-```
-
-`getTargetDocumentRef()` builds that reference from the configured resource, and normalizes draft and version IDs to the published ID:
+Use `getTargetDocumentRef()` to build the global document ref (`resourceType:resourceId:publishedId`) for filters. Draft and version ids are normalized to the published id:
 
 ```js
 client.collaboration.comments.getTargetDocumentRef('doc-1') // 'canvas:your-canvas-id:doc-1'
 client.collaboration.comments.getTargetDocumentRef('drafts.doc-1') // 'canvas:your-canvas-id:doc-1'
 
+const ref = client.collaboration.comments.getTargetDocumentRef('doc-1')
+
 const comments = await client.collaboration.comments.fetch(
   '*[_type == "sanity.comment" && target.document._ref == $ref]',
-  {ref: client.collaboration.comments.getTargetDocumentRef('doc-1')},
+  {ref},
 )
 ```
 
-Because `target.document._ref` is normalized to the published ID, that query returns the comments for the published document, its drafts and all of its versions. `target.sourceDocumentId` holds the exact document ID the comment was created against, so filter on it to narrow the result to a single draft or version:
+That returns comments across published, draft, and versions of the document. Narrow to one perspective with `target.sourceDocumentId`:
 
 ```js
-// Comments created on the draft only
 const draftComments = await client.collaboration.comments.fetch(
   '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
   {
@@ -2711,22 +2684,9 @@ const draftComments = await client.collaboration.comments.fetch(
     sourceDocumentId: 'drafts.doc-1',
   },
 )
-
-// Comments created on a single version only
-const versionComments = await client.collaboration.comments.fetch(
-  '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
-  {
-    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
-    sourceDocumentId: 'versions.summer-release.doc-1',
-  },
-)
 ```
 
-Pass untrusted values as parameters rather than interpolating them into the query string. A third argument takes request options such as `signal` and `tag`.
-
-> **Note:** as with `client.fetch()`, comment queries go out as a `GET` while the encoded query and parameters fit in the request URL, and switch to a `POST` past roughly 11 kB, where `query` and `params` travel in the request body instead.
-
-The result type defaults to `unknown`, since the query decides the shape. In TypeScript, pass the expected shape as a type parameter:
+Pass a type parameter when you know the result shape:
 
 ```ts
 import type {CollaborationCommentDocument} from '@sanity/client'
@@ -2738,18 +2698,17 @@ const comments = await client.collaboration.comments.fetch<CollaborationCommentD
 
 #### Listening for comment changes
 
-`listen()` mirrors `client.listen()` and returns an Observable of mutation events. It takes the same query and parameters as `fetch()`, followed by listener options such as `events` and `includeResult`:
+`listen()` mirrors `client.listen()` and returns an Observable of mutation events:
 
 ```js
 const subscription = client.collaboration.comments
   .listen('*[_type == "sanity.comment" && target.document._ref == $ref]', {
-    ref: 'canvas:your-canvas-id:doc-1',
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
   })
   .subscribe((event) => {
     console.log(event.documentId, event.transition)
   })
 
-// Later, when you no longer need the updates
 subscription.unsubscribe()
 ```
 
