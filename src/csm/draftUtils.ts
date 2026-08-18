@@ -32,11 +32,24 @@ export function isPublishedId(id: string): id is PublishedId {
   return !isDraftId(id) && !isVersionId(id)
 }
 
+/**
+ * A phantom brand like `DraftId` has no runtime representation, so it can never be produced
+ * by narrowing a string - there's nothing to check. These two functions are the only places
+ * allowed to assert a plain string into a branded id.
+ */
+function asDraftId(value: string): DraftId {
+  return value as DraftId
+}
+
+function asPublishedId(value: string): PublishedId {
+  return value as PublishedId
+}
+
 /** @internal */
 export function getDraftId(id: string): DraftId {
   if (isVersionId(id)) {
     const publishedId = getPublishedId(id)
-    return (DRAFTS_PREFIX + publishedId) as DraftId
+    return asDraftId(DRAFTS_PREFIX + publishedId)
   }
 
   return isDraftId(id) ? id : ((DRAFTS_PREFIX + id) as DraftId)
@@ -69,12 +82,18 @@ export function getVersionFromId(id: string): string | undefined {
 export function getPublishedId(id: string): PublishedId {
   if (isVersionId(id)) {
     // make sure to only remove the versions prefix and the bundle name
-    return id.split(PATH_SEPARATOR).slice(2).join(PATH_SEPARATOR) as PublishedId
+    return asPublishedId(id.split(PATH_SEPARATOR).slice(2).join(PATH_SEPARATOR))
   }
 
   if (isDraftId(id)) {
-    return id.slice(DRAFTS_PREFIX.length) as PublishedId
+    return asPublishedId(id.slice(DRAFTS_PREFIX.length))
   }
 
-  return id as PublishedId
+  if (isPublishedId(id)) {
+    return id
+  }
+
+  // Unreachable: `isPublishedId` is defined as `!isDraftId(id) && !isVersionId(id)`, both of
+  // which were already checked (and found false) above, so this can never execute.
+  throw new Error(`Unable to resolve a published id from "${id}"`)
 }

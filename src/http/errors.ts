@@ -39,6 +39,7 @@ export function httpResponseFromFetch(
     statusText: string
     headers: Headers
     body: unknown
+    url: string
   },
   reqUrl: string,
   reqMethod: string,
@@ -48,7 +49,7 @@ export function httpResponseFromFetch(
     statusMessage: res.statusText || null,
     headers: headersToRecord(res.headers),
     body: res.body,
-    url: reqUrl,
+    url: res.url || reqUrl,
     method: reqMethod,
   }
 }

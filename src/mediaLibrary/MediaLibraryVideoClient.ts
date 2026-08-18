@@ -111,7 +111,7 @@ function isSanityReference(
  * @param assetIdentifier - The asset identifier - either a asset instance id or a Media Library GDR
  * @returns The asset instance id and library id
  */
-export function parseAssetInstanceId(assetIdentifier: MediaLibraryAssetInstanceIdentifier): {
+function parseAssetInstanceId(assetIdentifier: MediaLibraryAssetInstanceIdentifier): {
   instanceId: string
   libraryId?: string
 } {

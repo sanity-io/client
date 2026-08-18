@@ -14,6 +14,7 @@ import {LiveClient} from './data/live'
 import {ObservablePatch, Patch} from './data/patch'
 import {ObservableTransaction, Transaction} from './data/transaction'
 import {DatasetsClient, ObservableDatasetsClient} from './datasets/DatasetsClient'
+import {FunctionsClient, ObservableFunctionsClient} from './functions/FunctionsClient'
 import {
   MediaLibraryVideoClient,
   ObservableMediaLibraryVideoClient,
@@ -91,6 +92,7 @@ export class ObservableSanityClient {
     /** @alpha */
     comments: ObservableCollaborationCommentsClient
   }
+  functions: ObservableFunctionsClient
   releases: ObservableReleasesClient
 
   /**
@@ -123,6 +125,7 @@ export class ObservableSanityClient {
     this.collaboration = {
       comments: new ObservableCollaborationCommentsClient(this, this.#httpRequest),
     }
+    this.functions = new ObservableFunctionsClient(this, this.#httpRequest)
     this.releases = new ObservableReleasesClient(this, this.#httpRequest)
   }
 
@@ -720,15 +723,12 @@ export class ObservableSanityClient {
   delete(id: string, options: AllDocumentIdsMutationOptions): Observable<MultipleMutationResult>
   /**
    * Deletes a document with the given document ID.
-   * Returns an observable that resolves to the deleted document.
+   * Returns an observable that resolves to a mutation result object containing the deleted document ID.
    *
    * @param id - Document ID to delete
    * @param options - Options for the mutation
    */
-  delete<R extends Record<string, Any> = Record<string, Any>>(
-    id: string,
-    options?: BaseMutationOptions,
-  ): Observable<SanityDocument<R>>
+  delete(id: string, options?: BaseMutationOptions): Observable<MultipleMutationResult>
   /**
    * Deletes one or more documents matching the given query or document ID.
    * Returns an observable that resolves to first deleted document.
@@ -775,15 +775,15 @@ export class ObservableSanityClient {
   ): Observable<MultipleMutationResult>
   /**
    * Deletes one or more documents matching the given query or document ID.
-   * Returns an observable that resolves to first deleted document.
+   * Returns an observable that resolves to a mutation result object containing the document IDs that were deleted.
    *
    * @param selection - An object with either an `id` or `query` key defining what to delete
    * @param options - Options for the mutation
    */
-  delete<R extends Record<string, Any> = Record<string, Any>>(
+  delete(
     selection: MutationSelection,
     options?: BaseMutationOptions,
-  ): Observable<SanityDocument<R>>
+  ): Observable<MultipleMutationResult>
   delete<R extends Record<string, Any> = Record<string, Any>>(
     selection: string | MutationSelection,
     options?:
@@ -1033,7 +1033,7 @@ export class ObservableSanityClient {
   ): Observable<MultipleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns an observable that resolves to the first mutated document.
+   * Returns an observable that resolves to a mutation result object containing the mutated document IDs.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -1041,7 +1041,7 @@ export class ObservableSanityClient {
   mutate<R extends Record<string, Any> = Record<string, Any>>(
     operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
     options?: BaseMutationOptions,
-  ): Observable<SanityDocument<R>>
+  ): Observable<MultipleMutationResult>
   mutate<R extends Record<string, Any> = Record<string, Any>>(
     operations: Mutation<R>[] | ObservablePatch | ObservableTransaction,
     options?:
@@ -1165,6 +1165,7 @@ export class SanityClient {
     /** @alpha */
     comments: CollaborationCommentsClient
   }
+  functions: FunctionsClient
   releases: ReleasesClient
 
   /**
@@ -1202,6 +1203,7 @@ export class SanityClient {
     this.collaboration = {
       comments: new CollaborationCommentsClient(this, this.#httpRequest),
     }
+    this.functions = new FunctionsClient(this, this.#httpRequest)
     this.releases = new ReleasesClient(this, this.#httpRequest)
 
     this.observable = new ObservableSanityClient(httpRequest, config)
@@ -1793,15 +1795,12 @@ export class SanityClient {
   delete(id: string, options: AllDocumentIdsMutationOptions): Promise<MultipleMutationResult>
   /**
    * Deletes a document with the given document ID.
-   * Returns a promise that resolves to the deleted document.
+   * Returns a promise that resolves to a mutation result object containing the deleted document ID.
    *
    * @param id - Document ID to delete
    * @param options - Options for the mutation
    */
-  delete<R extends Record<string, Any> = Record<string, Any>>(
-    id: string,
-    options?: BaseMutationOptions,
-  ): Promise<SanityDocument<R>>
+  delete(id: string, options?: BaseMutationOptions): Promise<MultipleMutationResult>
   /**
    * Deletes one or more documents matching the given query or document ID.
    * Returns a promise that resolves to first deleted document.
@@ -1848,15 +1847,15 @@ export class SanityClient {
   ): Promise<MultipleMutationResult>
   /**
    * Deletes one or more documents matching the given query or document ID.
-   * Returns a promise that resolves to first deleted document.
+   * Returns a promise that resolves to a mutation result object containing the document IDs that were deleted.
    *
    * @param selection - An object with either an `id` or `query` key defining what to delete
    * @param options - Options for the mutation
    */
-  delete<R extends Record<string, Any> = Record<string, Any>>(
+  delete(
     selection: MutationSelection,
     options?: BaseMutationOptions,
-  ): Promise<SanityDocument<R>>
+  ): Promise<MultipleMutationResult>
   delete<R extends Record<string, Any> = Record<string, Any>>(
     selection: string | MutationSelection,
     options?:
@@ -2090,7 +2089,7 @@ export class SanityClient {
   ): Promise<MultipleMutationResult>
   /**
    * Perform mutation operations against the configured dataset
-   * Returns a promise that resolves to the first mutated document.
+   * Returns a promise that resolves to a mutation result object containing the mutated document IDs.
    *
    * @param operations - Mutation operations to execute
    * @param options - Mutation options
@@ -2098,7 +2097,7 @@ export class SanityClient {
   mutate<R extends Record<string, Any> = Record<string, Any>>(
     operations: Mutation<R>[] | Patch | Transaction,
     options?: BaseMutationOptions,
-  ): Promise<SanityDocument<R>>
+  ): Promise<MultipleMutationResult>
   mutate<R extends Record<string, Any> = Record<string, Any>>(
     operations: Mutation<R>[] | Patch | Transaction,
     options?:

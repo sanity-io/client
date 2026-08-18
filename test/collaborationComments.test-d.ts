@@ -97,18 +97,18 @@ describe('CollaborationCommentCreate', () => {
 })
 
 describe('CollaborationCommentDocument', () => {
-  const document = {} as CollaborationCommentDocument
+  type StoredPath = CollaborationCommentDocument['target']['path']
 
   test('the stored target is shaped differently from the created one', () => {
     // Create takes `path: 'body'`, while the stored document nests it under
     // `field`, so a query filters on `target.path.field`.
-    expectTypeOf(document.target.path).toEqualTypeOf<
+    expectTypeOf<StoredPath>().toEqualTypeOf<
       {field: string; selection?: CollaborationCommentSelection} | undefined
     >()
 
     // `range` is resolved into the selection at create time, and never stored
-    expectTypeOf(document.target.path?.selection?.value).toEqualTypeOf<
-      {_key: string; text: string}[] | undefined
+    expectTypeOf<NonNullable<NonNullable<StoredPath>['selection']>['value']>().toEqualTypeOf<
+      {_key: string; text: string}[]
     >()
   })
 })

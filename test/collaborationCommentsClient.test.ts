@@ -1,11 +1,9 @@
-import type {AddressInfo} from 'node:net'
-
 import {type ClientConfig, type CollaborationCommentDocument, createClient} from '@sanity/client'
+import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, take, toArray} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
-import {getActiveMock, testResolveFetch} from './helpers/mockFetch'
-import {createSseServer} from './helpers/sseServer'
+import {getActiveMock, streamBody, streamStall, testResolveFetch} from './helpers/mockFetch'
 
 const apiHost = 'https://api.sanity.url'
 const organizationId = 'org-123'
@@ -92,58 +90,48 @@ const baseConfig = {
 }
 
 /**
- * Client whose requests go to the real network. Only useful for the listener
- * tests, which point `apiHost` at a local SSE server.
+ * Client whose requests - including the EventSource connection `listen()`
+ * opens - go to the per-test `get-it/mock` transport.
  */
-const getClient = (config: Partial<ClientConfig> = {}) => createClient({...baseConfig, ...config})
-
-/** Client whose requests go to the per-test `get-it/mock` transport. */
 const getMockClient = (config: Partial<ClientConfig> = {}) =>
-  getClient({resolveFetch: testResolveFetch, ...config})
+  createClient({...baseConfig, resolveFetch: testResolveFetch, ...config})
 
 describe('collaboration.comments', () => {
-  const isEdge = typeof EdgeRuntime === 'string'
-
   const commonQuery = {
     organizationId,
     resourceId: resource.id,
     resourceType: resource.type,
   }
 
-  test.skipIf(isEdge)(
-    'creates comments with resource query parameters and write options',
-    async () => {
-      getActiveMock()
-        .scope(apiHost)
-        .on('POST', '/v2026-07-18/collaboration/comments', {
-          query: {...commonQuery, tag: 'comments.create', transactionId: 'txn-123'},
-          body: {target: {documentId: 'doc-1', documentType: 'article'}, message},
-        })
-        .respond({
-          status: 200,
-          body: mutationResponse([
-            {id: 'comment-1', operation: 'create', document: commentDocument},
-          ]),
-        })
+  test('creates comments with resource query parameters and write options', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-07-18/collaboration/comments', {
+        query: {...commonQuery, tag: 'comments.create', transactionId: 'txn-123'},
+        body: {target: {documentId: 'doc-1', documentType: 'article'}, message},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+      })
 
-      const client = getMockClient({requestTagPrefix: 'comments'})
+    const client = getMockClient({requestTagPrefix: 'comments'})
 
-      const created = await client.collaboration.comments.create(
-        {
-          target: {
-            documentId: 'doc-1',
-            documentType: 'article',
-          },
-          message,
+    const created = await client.collaboration.comments.create(
+      {
+        target: {
+          documentId: 'doc-1',
+          documentType: 'article',
         },
-        {tag: 'create', transactionId: 'txn-123'},
-      )
+        message,
+      },
+      {tag: 'create', transactionId: 'txn-123'},
+    )
 
-      expect(created).toEqual(commentDocument)
-    },
-  )
+    expect(created).toEqual(commentDocument)
+  })
 
-  test.skipIf(isEdge)('creates replies with parentCommentId', async () => {
+  test('creates replies with parentCommentId', async () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', '/v2026-07-18/collaboration/comments', {
@@ -163,7 +151,7 @@ describe('collaboration.comments', () => {
     expect(reply).toEqual(replyDocument)
   })
 
-  test.skipIf(isEdge)('creates comments with an explicit id, threadId and context', async () => {
+  test('creates comments with an explicit id, threadId and context', async () => {
     const body = {
       _id: 'comment-1',
       message,
@@ -185,7 +173,7 @@ describe('collaboration.comments', () => {
     )
   })
 
-  test.skipIf(isEdge)('creates field and inline selection comments', async () => {
+  test('creates field and inline selection comments', async () => {
     const fieldComment = {
       message,
       target: {documentId: 'doc-1', documentType: 'article', path: 'title'},
@@ -248,7 +236,7 @@ describe('collaboration.comments', () => {
     ])
   })
 
-  test.skipIf(isEdge)('updates the message of an existing comment', async () => {
+  test('updates the message of an existing comment', async () => {
     const edited = [{_type: 'block', children: [{_type: 'span', text: 'Edited'}]}]
     const editedDocument: CollaborationCommentDocument = {
       ...commentDocument,
@@ -272,7 +260,7 @@ describe('collaboration.comments', () => {
     ).resolves.toEqual(editedDocument)
   })
 
-  test.skipIf(isEdge)('uses resource query parameters', async () => {
+  test('uses resource query parameters', async () => {
     const resources = [
       {type: 'canvas' as const, id: 'canvas-123'},
       {type: 'dataset' as const, id: 'project-123.production'},
@@ -311,7 +299,7 @@ describe('collaboration.comments', () => {
     ).toEqual(['canvas-123', 'project-123.production'])
   })
 
-  test.skipIf(isEdge)('maps update, delete, and reaction requests', async () => {
+  test('maps update, delete, and reaction requests', async () => {
     const client = getMockClient()
     const resolved: CollaborationCommentDocument = {...commentDocument, status: 'resolved'}
     const reacted: CollaborationCommentDocument = {
@@ -373,7 +361,7 @@ describe('collaboration.comments', () => {
     ).resolves.toEqual(commentDocument)
   })
 
-  test.skipIf(isEdge)('forwards the transaction id on every write', async () => {
+  test('forwards the transaction id on every write', async () => {
     const client = getMockClient()
     const query = {...commonQuery, transactionId: 'txn-123'}
     const options = {transactionId: 'txn-123'}
@@ -403,7 +391,7 @@ describe('collaboration.comments', () => {
     await client.collaboration.comments.removeReaction('comment-1', ':heart:', options)
   })
 
-  test.skipIf(isEdge)('applies the request tag prefix on every write and on fetch', async () => {
+  test('applies the request tag prefix on every write and on fetch', async () => {
     const client = getMockClient({requestTagPrefix: 'comments'})
     const groq = '*[_type == "sanity.comment"]'
 
@@ -454,7 +442,7 @@ describe('collaboration.comments', () => {
   // A status change is a patch on the comment plus a query-based patch on its
   // replies, and the API does not order the results of the two, so the comment
   // has to be picked out by id rather than taken from the front.
-  test.skipIf(isEdge).each([
+  test.each([
     ['comment first', ['comment-1', 'reply-1']],
     ['reply first', ['reply-1', 'comment-1']],
   ])(
@@ -490,7 +478,7 @@ describe('collaboration.comments', () => {
     },
   )
 
-  test.skipIf(isEdge)('rejects when a write response carries only replies', async () => {
+  test('rejects when a write response carries only replies', async () => {
     getActiveMock()
       .scope(apiHost)
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
@@ -504,7 +492,7 @@ describe('collaboration.comments', () => {
     ).rejects.toThrow('Comment write did not return a comment document')
   })
 
-  test.skipIf(isEdge)('returns the deleted comment and reply ids', async () => {
+  test('returns the deleted comment and reply ids', async () => {
     getActiveMock()
       .scope(apiHost)
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
@@ -526,7 +514,7 @@ describe('collaboration.comments', () => {
     })
   })
 
-  test.skipIf(isEdge)('resolves delete with no document ids when nothing matched', async () => {
+  test('resolves delete with no document ids when nothing matched', async () => {
     getActiveMock()
       .scope(apiHost)
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
@@ -539,7 +527,7 @@ describe('collaboration.comments', () => {
     })
   })
 
-  test.skipIf(isEdge)('rejects when a write response carries no comment document', async () => {
+  test('rejects when a write response carries no comment document', async () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
@@ -558,7 +546,7 @@ describe('collaboration.comments', () => {
     )
   })
 
-  test.skipIf(isEdge)('rejects when a write does not match a comment', async () => {
+  test('rejects when a write does not match a comment', async () => {
     const notFound = {
       status: 404,
       body: {
@@ -594,7 +582,7 @@ describe('collaboration.comments', () => {
     ).rejects.toThrow('Comment comment-1 not found')
   })
 
-  test.skipIf(isEdge)('fetches comment documents with a GROQ query and params', async () => {
+  test('fetches comment documents with a GROQ query and params', async () => {
     const comments: CollaborationCommentDocument[] = [commentDocument]
     const query =
       '*[_type == "sanity.comment" && target.document._ref == $ref] | order(_createdAt desc)[0...50]'
@@ -617,7 +605,7 @@ describe('collaboration.comments', () => {
     ).resolves.toEqual(comments)
   })
 
-  test.skipIf(isEdge)('fetches comments with a projection', async () => {
+  test('fetches comments with a projection', async () => {
     const query =
       '{"open": *[_type == "sanity.comment" && status == "open" && target.document._ref == $ref]}'
 
@@ -639,7 +627,7 @@ describe('collaboration.comments', () => {
     ).resolves.toEqual({open: []})
   })
 
-  test.skipIf(isEdge)('forwards token and header request options', async () => {
+  test('forwards token and header request options', async () => {
     const query = '*[_type == "sanity.comment"]'
     const headers = {Authorization: 'Bearer request-token', 'x-custom': 'yes'}
 
@@ -669,7 +657,7 @@ describe('collaboration.comments', () => {
     ).resolves.toEqual(commentDocument)
   })
 
-  test.skipIf(isEdge)('honors the timeout request option', async () => {
+  test('honors the timeout request option', async () => {
     const query = '*[_type == "sanity.comment"]'
 
     getActiveMock()
@@ -688,68 +676,60 @@ describe('collaboration.comments', () => {
     expect(error.name).toBe('TimeoutError')
   })
 
-  test.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
-    'cancels a fetch with an abort controller signal',
-    async () => {
-      expect.assertions(2)
+  test('cancels a fetch with an abort controller signal', async () => {
+    expect.assertions(2)
 
-      const query = '*[_type == "sanity.comment"]'
+    const query = '*[_type == "sanity.comment"]'
 
-      getActiveMock()
-        .scope(apiHost)
-        .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...commonQuery, query}})
-        .respond({status: 200, body: {result: []}, delay: 100})
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...commonQuery, query}})
+      .respond({status: 200, body: {result: []}, delay: 100})
 
-      const abortController = new AbortController()
-      const promise = getMockClient().collaboration.comments.fetch(query, undefined, {
-        signal: abortController.signal,
+    const abortController = new AbortController()
+    const promise = getMockClient().collaboration.comments.fetch(query, undefined, {
+      signal: abortController.signal,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    try {
+      abortController.abort()
+      await promise
+    } catch (err: any) {
+      if (err.name === 'AssertionError') throw err
+      expect(err).toBeInstanceOf(Error)
+      expect(err.name, 'should throw AbortError').toBe('AbortError')
+    }
+  })
+
+  test('cancels a write with an abort controller signal', async () => {
+    expect.assertions(2)
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery})
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+        delay: 100,
       })
-      await new Promise((resolve) => setTimeout(resolve, 10))
 
-      try {
-        abortController.abort()
-        await promise
-      } catch (err: any) {
-        if (err.name === 'AssertionError') throw err
-        expect(err).toBeInstanceOf(Error)
-        expect(err.name, 'should throw AbortError').toBe('AbortError')
-      }
-    },
-  )
+    const abortController = new AbortController()
+    const promise = getMockClient().collaboration.comments.create(
+      {target: {documentId: 'doc-1', documentType: 'article'}, message},
+      {signal: abortController.signal},
+    )
+    await new Promise((resolve) => setTimeout(resolve, 10))
 
-  test.skipIf(isEdge || typeof globalThis.AbortController === 'undefined')(
-    'cancels a write with an abort controller signal',
-    async () => {
-      expect.assertions(2)
-
-      getActiveMock()
-        .scope(apiHost)
-        .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery})
-        .respond({
-          status: 200,
-          body: mutationResponse([
-            {id: 'comment-1', operation: 'create', document: commentDocument},
-          ]),
-          delay: 100,
-        })
-
-      const abortController = new AbortController()
-      const promise = getMockClient().collaboration.comments.create(
-        {target: {documentId: 'doc-1', documentType: 'article'}, message},
-        {signal: abortController.signal},
-      )
-      await new Promise((resolve) => setTimeout(resolve, 10))
-
-      try {
-        abortController.abort()
-        await promise
-      } catch (err: any) {
-        if (err.name === 'AssertionError') throw err
-        expect(err).toBeInstanceOf(Error)
-        expect(err.name, 'should throw AbortError').toBe('AbortError')
-      }
-    },
-  )
+    try {
+      abortController.abort()
+      await promise
+    } catch (err: any) {
+      if (err.name === 'AssertionError') throw err
+      expect(err).toBeInstanceOf(Error)
+      expect(err.name, 'should throw AbortError').toBe('AbortError')
+    }
+  })
 
   test('throws when organizationId or resource is missing', () => {
     const query = '*[_type == "sanity.comment"]'
@@ -872,7 +852,7 @@ describe('collaboration.comments', () => {
     return build(target - `?${new URLSearchParams({query: build(0)})}`.length)
   }
 
-  test.skipIf(isEdge)('sends a query that still fits in the URL as a GET', async () => {
+  test('sends a query that still fits in the URL as a GET', async () => {
     const query = queryOfEncodedLength(11263)
 
     getActiveMock()
@@ -883,7 +863,7 @@ describe('collaboration.comments', () => {
     await expect(getMockClient().collaboration.comments.fetch(query)).resolves.toEqual([])
   })
 
-  test.skipIf(isEdge)('falls back to a POST for a query too large for the URL', async () => {
+  test('falls back to a POST for a query too large for the URL', async () => {
     const query = queryOfEncodedLength(11264)
 
     getActiveMock()
@@ -897,7 +877,7 @@ describe('collaboration.comments', () => {
     await expect(getMockClient().collaboration.comments.fetch(query)).resolves.toEqual([])
   })
 
-  test.skipIf(isEdge)('moves params into the body when falling back to a POST', async () => {
+  test('moves params into the body when falling back to a POST', async () => {
     const query = `*[_type == "sanity.comment" && target.document._ref == $ref && title == "${'x'.repeat(20000)}"]`
     const params = {ref: 'canvas:canvas-123:doc-1'}
 
@@ -914,7 +894,7 @@ describe('collaboration.comments', () => {
     ])
   })
 
-  test.skipIf(isEdge)('supports the observable comments namespace', async () => {
+  test('supports the observable comments namespace', async () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('GET', '/v2026-07-18/collaboration/comments/query', {
@@ -978,254 +958,204 @@ describe('collaboration.comments', () => {
     )
   })
 })
+describe('collaboration.comments.listen', () => {
+  const listenPath = '/v2026-07-18/collaboration/comments/listen'
+  const query = '*[_type == "sanity.comment" && target.document._ref == $ref]'
+  const params = {ref: 'canvas:canvas-123:doc-1'}
 
-describe.skipIf(typeof EdgeRuntime === 'string' || typeof document !== 'undefined')(
-  'collaboration.comments.listen',
-  () => {
-    test('opens an EventSource with resource query parameters', async () => {
-      expect.assertions(4)
+  const frame = (event: string, data: unknown = {}) => encode({event, data: JSON.stringify(data)})
 
-      const server = await createSseServer(({request, channel}) => {
-        const [pathname, rawSearch = ''] = request.url!.split('?')
-        const search = new URLSearchParams(rawSearch)
+  /** A listener connection that stays open, like a real one, until the client closes it. */
+  const connection = (...frames: string[]) => ({
+    status: 200,
+    body: streamBody(...frames, streamStall()),
+    headers: {'content-type': 'text/event-stream; charset=utf-8'},
+  })
 
-        expect(pathname).toBe('/v2026-07-18/collaboration/comments/listen')
-        expect(Object.fromEntries(search)).toEqual({
-          $ref: JSON.stringify('canvas:canvas-123:doc-1'),
-          includeResult: 'true',
-          organizationId,
-          query: '*[_type == "sanity.comment" && target.document._ref == $ref]',
-          resourceId: resource.id,
-          resourceType: resource.type,
-          tag: 'comments.listen',
-        })
-        expect(request.headers.authorization).toBe('Bearer token-123')
+  test('opens an EventSource with resource query parameters', async () => {
+    expect.assertions(3)
 
-        channel!.send({
-          event: 'mutation',
-          data: {
-            documentId: 'comment-1',
-            eventId: 'event-1',
-            identity: 'user-1',
-            mutations: [],
-            timestamp: '2026-07-22T09:58:00.000Z',
-            transactionCurrentEvent: 0,
-            transactionId: 'txn-1',
-            transactionTotalEvents: 1,
-            transition: 'appear',
-            visibility: 'query',
-          },
-        })
-        process.nextTick(() => channel!.close())
-      })
+    const mutation = {
+      documentId: 'comment-1',
+      eventId: 'event-1',
+      identity: 'user-1',
+      mutations: [],
+      timestamp: '2026-07-22T09:58:00.000Z',
+      transactionCurrentEvent: 0,
+      transactionId: 'txn-1',
+      transactionTotalEvents: 1,
+      transition: 'appear',
+      visibility: 'query',
+    }
 
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-        requestTagPrefix: 'comments',
-        token: 'token-123',
-      })
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(connection(frame('mutation', mutation)))
 
-      const event = await firstValueFrom(
-        client.collaboration.comments.listen(
-          '*[_type == "sanity.comment" && target.document._ref == $ref]',
-          {ref: 'canvas:canvas-123:doc-1'},
-          {
-            includeResult: true,
-            tag: 'listen',
-          },
-        ),
-      )
+    const client = getMockClient({requestTagPrefix: 'comments', token: 'token-123'})
 
-      expect(event).toEqual({
-        type: 'mutation',
-        documentId: 'comment-1',
-        eventId: 'event-1',
-        identity: 'user-1',
-        mutations: [],
-        timestamp: '2026-07-22T09:58:00.000Z',
-        transactionCurrentEvent: 0,
-        transactionId: 'txn-1',
-        transactionTotalEvents: 1,
-        transition: 'appear',
+    const event = await firstValueFrom(
+      client.collaboration.comments.listen(query, params, {includeResult: true, tag: 'listen'}),
+    )
+
+    expect(event).toEqual({type: 'mutation', ...mutation})
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.query).toEqual({
+      $ref: JSON.stringify(params.ref),
+      includeResult: 'true',
+      organizationId,
+      query,
+      resourceId: resource.id,
+      resourceType: resource.type,
+      tag: 'comments.listen',
+    })
+    expect(request).toHaveHeader('authorization', 'Bearer token-123')
+  })
+
+  test('forwards configured headers to the listen endpoint', async () => {
+    expect.assertions(2)
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(connection(frame('mutation', {documentId: 'comment-1'})))
+
+    const client = getMockClient({headers: {'x-custom': 'yes'}, token: 'token-123'})
+
+    await firstValueFrom(client.collaboration.comments.listen('*[_type == "sanity.comment"]'))
+
+    const [request] = getActiveMock().getRequests()
+    expect(request).toHaveHeader('authorization', 'Bearer token-123')
+    expect(request).toHaveHeader('x-custom', 'yes')
+  })
+
+  test('listens without listener options', async () => {
+    expect.assertions(1)
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(connection(frame('mutation', {documentId: 'comment-1'})))
+
+    await firstValueFrom(getMockClient().collaboration.comments.listen(query, params))
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.query).toEqual({
+      $ref: JSON.stringify(params.ref),
+      includeResult: 'true',
+      organizationId,
+      query,
+      resourceId: resource.id,
+      resourceType: resource.type,
+    })
+  })
+
+  test('emits the events opted into, and filters out the rest', async () => {
+    expect.assertions(2)
+
+    // Two successive connections: the handlers are one-shot and served in
+    // registration order, so the second listen() call gets the same frames.
+    const frames = [
+      frame('welcome', {listenerName: 'listener-1'}),
+      frame('mutation', {documentId: 'comment-1'}),
+    ]
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(connection(...frames))
+      .respond(connection(...frames))
+
+    const client = getMockClient()
+    const commentQuery = '*[_type == "sanity.comment"]'
+
+    const optedIn = await lastValueFrom(
+      client.collaboration.comments
+        .listen(commentQuery, undefined, {events: ['welcome', 'mutation']})
+        .pipe(take(2), toArray()),
+    )
+    expect(optedIn).toEqual([
+      {type: 'welcome', listenerName: 'listener-1'},
+      {type: 'mutation', documentId: 'comment-1'},
+    ])
+
+    // The welcome event is still sent, but only mutations are emitted by default
+    await expect(
+      firstValueFrom(client.collaboration.comments.listen(commentQuery)),
+    ).resolves.toEqual({
+      type: 'mutation',
+      documentId: 'comment-1',
+    })
+  })
+
+  test('forwards listener options to the listen endpoint', async () => {
+    expect.assertions(1)
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(connection(frame('welcome', {listenerName: 'listener-1'})))
+
+    await firstValueFrom(
+      getMockClient().collaboration.comments.listen('*[_type == "sanity.comment"]', undefined, {
+        effectFormat: 'mendoza',
+        enableResume: true,
+        events: ['welcome'],
         visibility: 'query',
-      })
-      server.close()
+      }),
+    )
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.query).toMatchObject({
+      effectFormat: 'mendoza',
+      enableResume: 'true',
+      visibility: 'query',
     })
+  })
 
-    test('forwards configured headers to the listen endpoint', async () => {
-      expect.assertions(2)
+  test('emits resumable listener events', async () => {
+    expect.assertions(1)
 
-      const server = await createSseServer(({request, channel}) => {
-        expect(request.headers.authorization).toBe('Bearer token-123')
-        expect(request.headers['x-custom']).toBe('yes')
-
-        channel!.send({event: 'mutation', data: {documentId: 'comment-1'}})
-        process.nextTick(() => channel!.close())
-      })
-
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-        headers: {'x-custom': 'yes'},
-        token: 'token-123',
-      })
-
-      await firstValueFrom(client.collaboration.comments.listen('*[_type == "sanity.comment"]'))
-
-      server.close()
-    })
-
-    test('listens without listener options', async () => {
-      expect.assertions(2)
-
-      const server = await createSseServer(({request, channel}) => {
-        const [pathname, rawSearch = ''] = request.url!.split('?')
-        const search = new URLSearchParams(rawSearch)
-
-        expect(pathname).toBe('/v2026-07-18/collaboration/comments/listen')
-        expect(Object.fromEntries(search)).toEqual({
-          $ref: JSON.stringify('canvas:canvas-123:doc-1'),
-          includeResult: 'true',
-          organizationId,
-          query: '*[_type == "sanity.comment" && target.document._ref == $ref]',
-          resourceId: resource.id,
-          resourceType: resource.type,
-        })
-
-        channel!.send({
-          event: 'mutation',
-          data: {documentId: 'comment-1'},
-        })
-        process.nextTick(() => channel!.close())
-      })
-
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-      })
-
-      await firstValueFrom(
-        client.collaboration.comments.listen(
-          '*[_type == "sanity.comment" && target.document._ref == $ref]',
-          {ref: 'canvas:canvas-123:doc-1'},
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(
+        connection(
+          frame('welcome', {listenerName: 'listener-1'}),
+          frame('mutation', {documentId: 'comment-1'}),
         ),
       )
 
-      server.close()
-    })
-
-    test('emits the events opted into, and filters out the rest', async () => {
-      expect.assertions(2)
-
-      const server = await createSseServer(({channel}) => {
-        channel!.send({event: 'welcome', data: {listenerName: 'listener-1'}})
-        channel!.send({event: 'mutation', data: {documentId: 'comment-1'}})
-        process.nextTick(() => channel!.close())
-      })
-
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-      })
-      const query = '*[_type == "sanity.comment"]'
-
-      const optedIn = await lastValueFrom(
-        client.collaboration.comments
-          .listen(query, undefined, {events: ['welcome', 'mutation']})
-          .pipe(take(2), toArray()),
-      )
-      expect(optedIn).toEqual([
-        {type: 'welcome', listenerName: 'listener-1'},
-        {type: 'mutation', documentId: 'comment-1'},
-      ])
-
-      // The welcome event is still sent, but only mutations are emitted by default
-      await expect(firstValueFrom(client.collaboration.comments.listen(query))).resolves.toEqual({
-        type: 'mutation',
-        documentId: 'comment-1',
-      })
-
-      server.close()
-    })
-
-    test('forwards listener options to the listen endpoint', async () => {
-      expect.assertions(3)
-
-      const server = await createSseServer(({request, channel}) => {
-        const search = new URLSearchParams(request.url!.split('?')[1] ?? '')
-
-        expect(search.get('effectFormat')).toBe('mendoza')
-        expect(search.get('visibility')).toBe('query')
-        expect(search.get('enableResume')).toBe('true')
-
-        channel!.send({event: 'welcome'})
-      })
-
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-      })
-
-      await firstValueFrom(
-        client.collaboration.comments.listen('*[_type == "sanity.comment"]', undefined, {
-          effectFormat: 'mendoza',
+    const events = await lastValueFrom(
+      getMockClient()
+        .collaboration.comments.listen('*[_type == "sanity.comment"]', undefined, {
           enableResume: true,
-          events: ['welcome'],
-          visibility: 'query',
-        }),
-        {defaultValue: null},
-      )
+          events: ['welcome', 'mutation'],
+        })
+        .pipe(take(2), toArray()),
+    )
 
-      server.close()
-    })
+    expect(events).toEqual([
+      {type: 'welcome', listenerName: 'listener-1'},
+      {type: 'mutation', documentId: 'comment-1'},
+    ])
+  })
 
-    test('emits resumable listener events', async () => {
-      expect.assertions(1)
+  test('listens from the observable namespace', async () => {
+    expect.assertions(2)
 
-      const server = await createSseServer(({channel}) => {
-        channel!.send({event: 'welcome', data: {listenerName: 'listener-1'}})
-        channel!.send({event: 'mutation', data: {documentId: 'comment-1'}})
-        process.nextTick(() => channel!.close())
-      })
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', listenPath)
+      .respond(connection(frame('mutation', {documentId: 'comment-1'})))
 
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-      })
+    await expect(
+      firstValueFrom(
+        getMockClient().observable.collaboration.comments.listen('*[_type == "sanity.comment"]'),
+      ),
+    ).resolves.toEqual({type: 'mutation', documentId: 'comment-1'})
 
-      const events = await lastValueFrom(
-        client.collaboration.comments
-          .listen('*[_type == "sanity.comment"]', undefined, {
-            enableResume: true,
-            events: ['welcome', 'mutation'],
-          })
-          .pipe(take(2), toArray()),
-      )
-
-      expect(events).toEqual([
-        {type: 'welcome', listenerName: 'listener-1'},
-        {type: 'mutation', documentId: 'comment-1'},
-      ])
-
-      server.close()
-    })
-
-    test('listens from the observable namespace', async () => {
-      expect.assertions(2)
-
-      const server = await createSseServer(({request, channel}) => {
-        expect(request.url!.split('?')[0]).toBe('/v2026-07-18/collaboration/comments/listen')
-
-        channel!.send({event: 'mutation', data: {documentId: 'comment-1'}})
-        process.nextTick(() => channel!.close())
-      })
-
-      const client = getClient({
-        apiHost: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-      })
-
-      await expect(
-        firstValueFrom(
-          client.observable.collaboration.comments.listen('*[_type == "sanity.comment"]'),
-        ),
-      ).resolves.toEqual({type: 'mutation', documentId: 'comment-1'})
-
-      server.close()
-    })
-  },
-)
+    expect(getActiveMock()).toHaveReceivedRequest('GET', listenPath)
+  })
+})

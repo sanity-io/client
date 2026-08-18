@@ -110,10 +110,10 @@ describe('StegaString', () => {
 
   test('still assignable to string, and string operations keep working', () => {
     const branded = stegaBrand({title: 'foo'}).title
-    expectTypeOf(branded).toMatchTypeOf<string>()
-    expectTypeOf(branded.toUpperCase()).toMatchTypeOf<string>()
-    expectTypeOf(branded.length).toMatchTypeOf<number>()
-    expectTypeOf(`/${branded}`).toMatchTypeOf<string>()
+    expectTypeOf(branded).toExtend<string>()
+    expectTypeOf(branded.toUpperCase()).toExtend<string>()
+    expectTypeOf(branded.length).toExtend<number>()
+    expectTypeOf(`/${branded}`).toExtend<string>()
     // Comparing against a non-literal string is allowed
     const anyString = 'foo' as string
     if (branded === anyString) {
@@ -243,7 +243,7 @@ describe('StegaBranded', () => {
     test('branded results stay assignable to clean types when all real strings are wide', () => {
       // This is the template-upgrade scenario: props typed with clean TypeGen
       // results receiving branded sanityFetch data.
-      expectTypeOf<StegaBranded<ProjectQueryResult>>().toMatchTypeOf<ProjectQueryResult>()
+      expectTypeOf<StegaBranded<ProjectQueryResult>>().toExtend<ProjectQueryResult>()
     })
 
     test('stegaClean round-trip recovers the clean type', () => {
@@ -342,7 +342,7 @@ describe('client.fetch with ClientReturnStega', () => {
       {},
       {filterResponse: false},
     )
-    expectTypeOf(resp).toMatchTypeOf<RawQueryResponse<StegaBranded<PostQueryResult>>>()
+    expectTypeOf(resp).toExtend<RawQueryResponse<StegaBranded<PostQueryResult>>>()
     expectTypeOf(resp.result.title).toEqualTypeOf<StegaString<string>>()
   })
 })

@@ -116,7 +116,7 @@ function write<T>(
 ): Observable<T> {
   return _requestObservable<T>(client, httpRequest, {
     method,
-    uri: url,
+    url,
     body,
     query: {
       ...resourceQuery(client),
@@ -249,11 +249,11 @@ export function _fetch<R>(
   const request = useGet
     ? {
         method: 'GET',
-        uri: `/collaboration/comments/query${encodeQueryString({query, params, options: search})}`,
+        url: `/collaboration/comments/query${encodeQueryString({query, params, options: search})}`,
       }
     : {
         method: 'POST',
-        uri: '/collaboration/comments/query',
+        url: '/collaboration/comments/query',
         query: search,
         body: {query, params: params ?? {}},
       }

@@ -1,13 +1,14 @@
 // deno-lint-ignore-file no-empty-interface
 
-import type {FetchFunction} from 'get-it'
+import type {FetchFunction, RequestOptions as GetItRequestOptions} from 'get-it'
 import type {Observable} from 'rxjs'
 
 import type {InitializedStegaConfig, StegaConfig} from './stega/types'
 
 /**
- * Low-level requester returned by `defineHttpRequest`. Surfaces as
- * `client.config().requester` and as the named `requester` export.
+ * Low-level requester returned by `defineRequester(...).observable`.
+ * Surfaces as `client.config().requester` and as the named `requester`
+ * export.
  *
  * Defined locally rather than imported from `http/request` so api-extractor
  * inlines it into the bundled `.d.ts` instead of emitting a relative import
@@ -44,6 +45,30 @@ export interface RequestOptions {
   body?: Any
   signal?: AbortSignal
 }
+
+/**
+ * The fully resolved request passed to a {@link RequestHandler}.
+ *
+ * @public
+ */
+export type RequestHandlerOptions = GetItRequestOptions
+
+/**
+ * Intercepts a client request around the normal HTTP pipeline.
+ *
+ * Call `next(request)` to execute the request. It resolves to the parsed
+ * response body and rejects with the same errors the client normally exposes,
+ * including {@link ClientError} and {@link ServerError}. A handler can modify
+ * the request, retry it by calling `next` again, or return a synthetic body.
+ *
+ * Browser asset uploads and server-sent event connections do not use this handler.
+ *
+ * @public
+ */
+export type RequestHandler = (
+  request: RequestHandlerOptions,
+  next: (request: RequestHandlerOptions) => Promise<unknown>,
+) => Promise<unknown>
 
 /**
  * @public
@@ -102,9 +127,9 @@ export interface ClientConfig {
   projectId?: string
   dataset?: string
   /**
-   * Organization ID, required by organization-scoped APIs such as `client.collaboration.comments`
-   *
-   * @alpha
+   * ID of the organization that organization-scoped APIs address: required by
+   * `client.collaboration.comments`, and the owner of the blueprints stack
+   * `functions.invoke()` resolves function names against
    */
   organizationId?: string
   /** @defaultValue true */
@@ -164,6 +189,20 @@ export interface ClientConfig {
    * Optional request tag prefix for all request tags
    */
   requestTagPrefix?: string
+
+  /**
+   * Intercepts requests after the client has resolved their URL, headers, and
+   * transport options. The handler wraps the normal client pipeline, so errors
+   * from `next` are already converted to {@link ClientError} or
+   * {@link ServerError}.
+   *
+   * A handler supplied through `withConfig()` replaces the current handler.
+   * To compose handlers, read the current handler from `client.config()` and
+   * call it from the replacement.
+   *
+   * Browser asset uploads and server-sent event connections are not intercepted.
+   */
+  requestHandler?: RequestHandler
 
   /**
    * Optional default headers to include with all requests
@@ -262,6 +301,11 @@ export interface ClientConfig {
    * Lineage token for recursion control
    */
   lineage?: string
+  /**
+   * ID of the blueprints stack that `functions.invoke()` resolves function
+   * names against. Function names are unique within a stack
+   */
+  stackId?: string
 }
 
 /** @public */
@@ -490,7 +534,7 @@ export interface ErrorProps {
  * @internal
  */
 export type HttpRequest = {
-  (options: Any): Promise<unknown>
+  (options: Any, requestHandler?: RequestHandler): Promise<unknown>
 }
 
 /**
@@ -782,6 +826,15 @@ export type ReleaseAction =
   | DeleteReleaseAction
   | ImportReleaseAction
 
+/**
+ * @public
+ * @beta
+ */
+export type VariantDefinitionAction =
+  | CreateVariantDefinitionAction
+  | EditVariantDefinitionAction
+  | DeleteVariantDefinitionAction
+
 /** @public */
 export type VersionAction =
   | CreateVersionAction
@@ -800,6 +853,7 @@ export type Action =
   | UnpublishAction
   | VersionAction
   | ReleaseAction
+  | VariantDefinitionAction
 
 /** @public */
 export type ImportReleaseAction =
@@ -955,6 +1009,88 @@ export interface UnpublishVersionAction {
   actionType: 'sanity.action.document.version.unpublish'
   versionId: string
   publishedId: string
+}
+
+/**
+ * Creates a new `system.variant` definition document.
+ *
+ * @public
+ * @beta
+ */
+export interface CreateVariantDefinitionAction {
+  actionType: 'sanity.action.variant.definition.create'
+
+  /**
+   * Name of the variant definition to create, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Conditions used to select this variant.
+   */
+  conditions?: ClientVariantConditions
+
+  /**
+   * Selection priority. Higher values are preferred when multiple variants
+   * match.
+   *
+   * Defaults to `0`.
+   */
+  priority?: number
+
+  metadata?: Record<string, Any>
+}
+
+/**
+ * Edits an existing variant definition.
+ *
+ * @public
+ * @beta
+ */
+export interface EditVariantDefinitionAction {
+  actionType: 'sanity.action.variant.definition.edit'
+
+  /**
+   * Name of the variant definition to edit, as in `_.variants.{variantName}`.
+   * Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * Patch operations to apply.
+   */
+  patch: PatchOperations
+
+  /**
+   * When set, the action fails unless the current revision of the variant
+   * definition matches this value.
+   */
+  ifRevisionId?: string
+}
+
+/**
+ * Deletes a variant definition.
+ *
+ * Deletion fails if any document holds a strong reference to this variant.
+ *
+ * @public
+ * @beta
+ */
+export interface DeleteVariantDefinitionAction {
+  actionType: 'sanity.action.variant.definition.delete'
+
+  /**
+   * Name of the variant definition to delete, as in
+   * `_.variants.{variantName}`. Must be a bare name, not a full document ID.
+   */
+  variantId: string
+
+  /**
+   * When set, the action fails unless the current revision of the variant
+   * definition matches this value.
+   */
+  ifRevisionId?: string
 }
 
 /**
@@ -1944,6 +2080,7 @@ export type {
   TranslateTarget,
   TranslateTargetInclude,
 } from './agent/actions/translate'
+export type {InvokeFunctionEvent, InvokeFunctionRequest} from './functions/invoke'
 export type {
   CollaborationCommentCreate,
   CollaborationCommentDocument,
@@ -2179,3 +2316,44 @@ export interface VideoPlaybackTokens {
 
 /** @public */
 export type MediaLibraryAssetInstanceIdentifier = string | SanityReference
+
+/**
+ * A single tracked version of a Media Library asset - one uploaded instance,
+ * referencing the underlying (Content Lake shaped) asset document it wraps.
+ *
+ * @public
+ */
+export interface MediaLibraryAssetVersion {
+  _key: string
+  _type: 'sanity.asset.version'
+  title?: string
+  instance: SanityReference
+}
+
+/**
+ * The document returned by the Media Library upload endpoint
+ * (`POST /media-libraries/:id/upload`).
+ *
+ * This is _not_ the same shape as {@link SanityAssetDocument} /
+ * {@link SanityImageAssetDocument}: a Media Library asset is a `sanity.asset`
+ * document that tracks one or more uploaded versions, each pointing at its
+ * own underlying Content Lake asset document via `currentVersion`/`versions`.
+ *
+ * Modelled directly on an observed API response. Fields whose full shape has
+ * not been confirmed (`parent`, `rootDirectory`, `aspects`) are typed loosely
+ * on purpose - widen them once their shape is confirmed.
+ *
+ * @public
+ */
+export interface MediaLibraryAssetDocument {
+  _id: string
+  _type: 'sanity.asset'
+  assetType: string
+  title?: string
+  cdnAccessPolicy?: string
+  currentVersion: SanityReference
+  versions: MediaLibraryAssetVersion[]
+  aspects?: Record<string, Any>
+  parent?: SanityReference | null
+  rootDirectory?: Any
+}

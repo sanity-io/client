@@ -1,4 +1,5 @@
 import {EventSource} from 'eventsource'
+import type {FetchFunction} from 'get-it'
 import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
@@ -14,11 +15,12 @@ import type {
   LiveEventWelcome,
   SyncTag,
 } from '../types'
+import {isRecord} from '../util/isRecord'
 import {shareReplayLatest} from '../util/shareReplayLatest'
 import {_getDataUrl} from './dataMethods'
 import {connectEventSource} from './eventsource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
-import {resolveEventSourceFetch} from './resolveEventSourceFetch'
+import {pickBaseFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
 
@@ -132,6 +134,7 @@ export class LiveClient {
       new URL(this.#client.getUrl('/check/cors', false)),
       projectId,
       eventSourceWithCredentials,
+      pickBaseFetch(config),
     )
 
     const observable = events
@@ -221,35 +224,40 @@ function checkCorsObservable(
   url: URL,
   projectId: string | undefined,
   requireCredentials: boolean,
+  fetcher: FetchFunction,
 ): Observable<void> {
   return new Observable<void>((observer) => {
     const controller = new AbortController()
     const {signal} = controller
-    fetch(url, {method: 'GET', mode: 'cors', credentials: 'omit', signal})
+    fetcher(url.href, {method: 'GET', credentials: 'omit', signal})
       .then((response) => {
         // Aborted or non-2xx: not a confirmed CORS rejection. Fall through with
         // an undefined body so the next step takes the silent-completion path.
-        if (signal.aborted || !response.ok) return
-        return response.json() as Promise<{
-          result?: {allowed?: boolean; withCredentials?: boolean}
-        }>
+        if (signal.aborted || !response.ok) return undefined
+        return response.text()
       })
-      .then((body) => {
+      .then((text) => {
         if (signal.aborted) return
+        // `get-it`'s `FetchResponse` only guarantees `.text()`/`.arrayBuffer()`,
+        // not `.json()`, so the body is parsed by hand here. An empty/aborted
+        // fall-through (`text === undefined`) and malformed JSON both leave
+        // `result` unresolved, taking the same "no signal either way" path.
+        const parsed: unknown = text === undefined ? undefined : JSON.parse(text)
+        const result = isRecord(parsed) ? parsed.result : undefined
         // Check the credentialed case first: if the EventSource was about to
         // send credentials but the project's CORS config doesn't permit them,
         // the credentialed request would fail with a missing
         // `access-control-allow-credentials` header. Surface this as a CORS
         // rejection with `credentials: true` so the deep-link pre-selects the
         // "Allow credentials" toggle.
-        if (requireCredentials && body?.result?.withCredentials === false) {
+        if (requireCredentials && isRecord(result) && result.withCredentials === false) {
           observer.error(new CorsOriginError({projectId, credentials: true}))
           return
         }
         // Generic case: the server actively rejected this origin. Propagate
         // `credentials: requireCredentials` so the deep-link still pre-selects
         // credentials when the caller needed them.
-        if (body?.result?.allowed === false) {
+        if (isRecord(result) && result.allowed === false) {
           observer.error(new CorsOriginError({projectId, credentials: requireCredentials}))
           return
         }

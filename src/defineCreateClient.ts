@@ -1,6 +1,8 @@
 import {defineRequester, type EnvironmentOptions} from './http/request'
 import type {ClientConfig, HttpRequest} from './types'
 
+export {isTimeoutError, type TimeoutErrorLike} from 'get-it'
+
 export {validateApiPerspective} from './config'
 export {
   ChannelError,
@@ -55,10 +57,12 @@ export default function defineCreateClientExports<
     // this in `new Observable(...)` (see `_observe` in dataMethods).
     // Redirects are surfaced rather than followed unless a request opts in
     // (via the public `maxRedirects` option, translated in `requestOptions`).
-    const httpRequest: HttpRequest = async (options) => {
+    const performRequest = async (options: Parameters<HttpRequest>[0]): Promise<unknown> => {
       const event = await clientRequesterPromise({redirect: 'manual', ...options})
       return event.body
     }
+    const httpRequest: HttpRequest = (options, requestHandler) =>
+      requestHandler ? requestHandler(options, performRequest) : performRequest(options)
     // Populate `requester` on the initialized config so internal paths
     // (e.g. the asset upload event stream) can reach the underlying transport.
     // `resolveFetch` is threaded onto the config so request building and

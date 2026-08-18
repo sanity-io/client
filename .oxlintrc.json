@@ -8,7 +8,7 @@
   "categories": {
     "correctness": "error"
   },
-  "ignorePatterns": ["dist", "coverage", "runtimes/deno", "runtimes/node"],
+  "ignorePatterns": ["dist", "coverage"],
   "rules": {
     "no-console": "error",
     "no-warning-comments": ["warn", {"location": "start", "terms": ["todo", "@todo", "fixme"]}],
@@ -36,7 +36,7 @@
   },
   "overrides": [
     {
-      "files": ["test/**/*.ts", "test-next/**/*.ts"],
+      "files": ["test/**/*.ts"],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off"

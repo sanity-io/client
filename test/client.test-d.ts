@@ -1,18 +1,25 @@
 import {
   type ContentSourceMap,
   createClient,
+  type MultipleMutationResult,
   type QueryOptions,
   type QueryParams,
   type QueryWithoutParams,
   type RawQueryResponse,
+  type SanityDocument,
+  type SingleMutationResult,
+  type VideoPlaybackInfoSigned,
 } from '@sanity/client'
+import {firstValueFrom} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
+
+import {getPlaybackTokens} from '../src/media-library'
 
 describe('client.request', () => {
   const client = createClient({})
   test('exactly one of `url` or the deprecated `uri` alias is required', async () => {
-    expectTypeOf(await client.request({url: '/ping'})).toMatchTypeOf<any>()
-    expectTypeOf(await client.request({uri: '/ping'})).toMatchTypeOf<any>()
+    expectTypeOf(await client.request({url: '/ping'})).toExtend<any>()
+    expectTypeOf(await client.request({uri: '/ping'})).toExtend<any>()
     client.observable.request({url: '/ping'})
     client.observable.request({uri: '/ping'})
     // @ts-expect-error -- should fail: one of `url` or `uri` is required
@@ -33,102 +40,98 @@ describe('client.fetch', () => {
           : never
       ]-?: QueryParams[K] extends never ? true : never
     }
-    expectTypeOf<QueryParamsKeys>().toMatchTypeOf<Record<string, never>>()
+    expectTypeOf<QueryParamsKeys>().toExtend<Record<string, never>>()
     // Any params not conflicting with QueryOptions should be allowed
-    expectTypeOf({type: 'post'}).toMatchTypeOf<QueryParams>()
+    expectTypeOf({type: 'post'}).toExtend<QueryParams>()
     // While those conflicting should error
-    expectTypeOf({filterResponse: true}).not.toMatchTypeOf<QueryParams>()
+    expectTypeOf({filterResponse: true}).not.toExtend<QueryParams>()
   })
   test('simple query', async () => {
-    expectTypeOf(await client.fetch('*')).toMatchTypeOf<any>()
-    expectTypeOf(await client.fetch('*', undefined)).toMatchTypeOf<any>()
-    expectTypeOf(await client.fetch('*', {})).toMatchTypeOf<any>()
-    expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toMatchTypeOf<any>()
-    expectTypeOf(await client.fetch('*', undefined, {filterResponse: false})).toMatchTypeOf<
+    expectTypeOf(await client.fetch('*')).toExtend<any>()
+    expectTypeOf(await client.fetch('*', undefined)).toExtend<any>()
+    expectTypeOf(await client.fetch('*', {})).toExtend<any>()
+    expectTypeOf(await client.fetch('*[_type == $type]', {type: 'post'})).toExtend<any>()
+    expectTypeOf(await client.fetch('*', undefined, {filterResponse: false})).toExtend<
       RawQueryResponse<any>
     >()
     expectTypeOf(
       await client.fetch<any, {filterResponse?: undefined}>('*', {} satisfies QueryParams, {
         filterResponse: false,
       }),
-    ).toMatchTypeOf<RawQueryResponse<any>>()
+    ).toExtend<RawQueryResponse<any>>()
     expectTypeOf(
       await client.fetch('*[_type == $type]', {type: 'post'}, {filterResponse: false}),
-    ).toMatchTypeOf<RawQueryResponse<any>>()
+    ).toExtend<RawQueryResponse<any>>()
   })
   test('generics', async () => {
-    expectTypeOf(await client.fetch<number>('count(*)')).toMatchTypeOf<number>()
+    expectTypeOf(await client.fetch<number>('count(*)')).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {type: string}>('count(*[_type == $type])', {type: 'post'}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {type: string}>('count(*[_type == $type])', {
         // @ts-expect-error -- should fail
         _type: 'post',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch<number, never>('count(*[_type == $type])', {type: 'post'}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, undefined>(
         'count(*[_type == $type])',
         // @ts-expect-error -- should fail
         {type: 'post'},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, Record<string, never>>(
         'count(*[_type == $type])',
         // @ts-expect-error -- should fail
         {type: 'post'},
       ),
-    ).toMatchTypeOf<number>()
-    expectTypeOf(
-      await client.fetch<number, never>('count(*[_type == $type])'),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
+    expectTypeOf(await client.fetch<number, never>('count(*[_type == $type])')).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, never>('count(*[_type == $type])', undefined),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, never>('count(*[_type == $type])', {}),
-    ).toMatchTypeOf<number>()
-    expectTypeOf(
-      await client.fetch<number, never>('count(*[_type == $type])'),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
+    expectTypeOf(await client.fetch<number, never>('count(*[_type == $type])')).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, never>('count(*[_type == $type])', undefined),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, never>('count(*[_type == $type])', {}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch<number, never>('count(*[_type == $type])', {type: 'post'}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, Record<string, never>>('count(*[_type == $type])'),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, Record<string, never>>('count(*[_type == $type])', undefined),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, Record<string, never>>('count(*[_type == $type])', {}),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, Record<string, never>>(
         'count(*[_type == $type])',
         // @ts-expect-error -- should fail
         {type: 'post'},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number>('count(*[_type == $type])', {
         // @ts-expect-error -- should fail
         filterResponse: false,
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<
         number,
@@ -137,14 +140,14 @@ describe('client.fetch', () => {
       >('count(*[_type == $type])', {
         filterResponse: false,
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number>('count(*[_type == $type])', {
         type: 'post',
         // @ts-expect-error -- should fail
         filterResponse: true,
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<
         number,
@@ -154,19 +157,19 @@ describe('client.fetch', () => {
         filterResponse: true,
         type: 'post',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, QueryWithoutParams>('count(*[_type == $type])', undefined, {
         filterResponse: true,
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, QueryWithoutParams>(
         'count(*[_type == $type])',
         {},
         {filterResponse: true},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, QueryWithoutParams>(
         'count(*[_type == $type])',
@@ -174,19 +177,19 @@ describe('client.fetch', () => {
         {type: 'post'},
         {filterResponse: true},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, QueryWithoutParams>('count(*[_type == $type])', undefined, {
         filterResponse: false,
       }),
-    ).toMatchTypeOf<RawQueryResponse<number>>()
+    ).toExtend<RawQueryResponse<number>>()
     expectTypeOf(
       await client.fetch<number, QueryWithoutParams>(
         'count(*[_type == $type])',
         {},
         {filterResponse: false},
       ),
-    ).toMatchTypeOf<RawQueryResponse<number>>()
+    ).toExtend<RawQueryResponse<number>>()
     expectTypeOf(
       await client.fetch<number, QueryWithoutParams>(
         'count(*[_type == $type])',
@@ -194,15 +197,13 @@ describe('client.fetch', () => {
         {type: 'post'},
         {filterResponse: false},
       ),
-    ).not.toMatchTypeOf<RawQueryResponse<number>>()
+    ).not.toExtend<RawQueryResponse<number>>()
   })
   test('filterResponse: false', async () => {
     expectTypeOf(
       await client.fetch<number>('count(*)', {}, {filterResponse: true}),
-    ).toMatchTypeOf<number>()
-    expectTypeOf(
-      await client.fetch<number>('count(*)', {}, {filterResponse: false}),
-    ).toMatchTypeOf<{
+    ).toExtend<number>()
+    expectTypeOf(await client.fetch<number>('count(*)', {}, {filterResponse: false})).toExtend<{
       result: number
       ms: number
       query: string
@@ -214,14 +215,14 @@ describe('client.fetch', () => {
         {type: 'post'},
         {filterResponse: true},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {type: string}>(
         'count(*[_type == $type])',
         {type: 'post'},
         {filterResponse: false},
       ),
-    ).toMatchTypeOf<{
+    ).toExtend<{
       result: number
       ms: number
       query: string
@@ -229,23 +230,23 @@ describe('client.fetch', () => {
     }>()
   })
   test('stega: false', async () => {
-    expectTypeOf(await client.fetch('*', {}, {stega: false})).toMatchTypeOf<any>()
+    expectTypeOf(await client.fetch('*', {}, {stega: false})).toExtend<any>()
   })
   test('params can use properties that conflict with Next.js-defined properties', async () => {
     // `client.fetch` has type checking to prevent the common mistake of passing `cache` and `next` options as params (2nd parameter) in Next.js projects, where they should be passed as options (the 3rd parameter)
     // the below checks ensures that the type guard doesn't prevent valid calls in non-Next.js projects
-    expectTypeOf(await client.fetch('count(*[cache == $cache])', {})).toMatchTypeOf<any>()
+    expectTypeOf(await client.fetch('count(*[cache == $cache])', {})).toExtend<any>()
     expectTypeOf(
       await client.fetch<number>('count(*[cache == $cache])', {
         cache: 'no-store',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
 
     expectTypeOf(
       await client.fetch<number, {cache: RequestInit['cache']}>('count(*[cache == $cache])', {
         cache: 'no-store',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number>(
         'count(*)',
@@ -255,22 +256,22 @@ describe('client.fetch', () => {
           cache: 'no-store',
         },
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
 
     expectTypeOf(
       await client.fetch('count(*[next.revalidate == $next.revalidate])', {next: {revalidate: 60}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch<number, {next: any}>('count(*[next.revalidate == $next.revalidate])', {
         next: {revalidate: 60},
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {next: {revalidate: number}}>(
         'count(*[next.revalidate == $next.revalidate])',
         {next: {revalidate: 60}},
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {next: {revalidate: number}}>(
         'count(*[next.revalidate == $next.revalidate])',
@@ -279,7 +280,7 @@ describe('client.fetch', () => {
           next: {revalidate: false},
         },
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {next: {revalidate: number}}>(
         'count(*[next.revalidate == $next.revalidate])',
@@ -288,7 +289,7 @@ describe('client.fetch', () => {
           'invalid-key': 'no-store',
         },
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number>(
         'count(*)',
@@ -298,56 +299,56 @@ describe('client.fetch', () => {
           next: {revalidate: 60},
         },
       ),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
 
     expectTypeOf(
       await client.fetch('count(*[next.tags == $next.tags])', {next: {tags: ['post']}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch<number>('count(*[next.tags == $next.tags])', {
         next: {tags: ['post']},
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {next: {tags: string[]}}>('count(*[next.tags == $next.tags])', {
         next: {tags: ['post']},
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {next: {tags: string[]}}>('count(*[next.tags == $next.tags])', {
         // @ts-expect-error -- should fail
         next: {tags: 'post'},
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
     expectTypeOf(
       await client.fetch<number, {next: {tags: string[]}}>('count(*[next.tags == $next.tags])', {
         // @ts-expect-error -- should fail
         'invalid-key': 'no-store',
       }),
-    ).toMatchTypeOf<number>()
+    ).toExtend<number>()
   })
 
   test('options for Next.js App Router are not allowed outside Next.js', async () => {
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch('*[_type == $type]', {type: 'post'}, {cache: 'no-store'}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {revalidate: 60}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {revalidate: false}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       // @ts-expect-error -- should fail
       await client.fetch('*[_type == $type]', {type: 'post'}, {next: {tags: ['post']}}),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch(
         '*[_type == $type]',
@@ -355,7 +356,7 @@ describe('client.fetch', () => {
         // @ts-expect-error -- should fail
         {next: {revalidate: 60, tags: ['post']}},
       ),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
     expectTypeOf(
       await client.fetch(
         '*[_type == $type]',
@@ -363,6 +364,73 @@ describe('client.fetch', () => {
         // @ts-expect-error -- should fail
         {next: {revalidate: false, tags: ['post']}},
       ),
-    ).toMatchTypeOf<any>()
+    ).toExtend<any>()
+  })
+})
+
+describe('client.delete', () => {
+  const client = createClient({})
+
+  test('with no options resolves to a mutation result, not a document', async () => {
+    expectTypeOf(await client.delete('some-id')).toEqualTypeOf<MultipleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.delete('some-id')),
+    ).toEqualTypeOf<MultipleMutationResult>()
+
+    expectTypeOf(
+      await client.delete({query: '*[_type == "post"]'}),
+    ).toEqualTypeOf<MultipleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.delete({query: '*[_type == "post"]'})),
+    ).toEqualTypeOf<MultipleMutationResult>()
+  })
+
+  test('with `returnFirst: true, returnDocuments: true` still resolves to a document', async () => {
+    expectTypeOf(
+      await client.delete('some-id', {returnFirst: true, returnDocuments: true}),
+    ).toEqualTypeOf<SanityDocument>()
+    expectTypeOf(
+      await firstValueFrom(
+        client.observable.delete('some-id', {returnFirst: true, returnDocuments: true}),
+      ),
+    ).toEqualTypeOf<SanityDocument>()
+  })
+
+  test('with `returnDocuments: false` resolves to a mutation result', async () => {
+    expectTypeOf(
+      await client.delete('some-id', {returnDocuments: false}),
+    ).toEqualTypeOf<SingleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.delete('some-id', {returnDocuments: false})),
+    ).toEqualTypeOf<SingleMutationResult>()
+  })
+})
+
+describe('client.mutate', () => {
+  const client = createClient({})
+
+  test('with no options resolves to a mutation result, not a document', async () => {
+    expectTypeOf(await client.mutate([])).toEqualTypeOf<MultipleMutationResult>()
+    expectTypeOf(
+      await firstValueFrom(client.observable.mutate([])),
+    ).toEqualTypeOf<MultipleMutationResult>()
+  })
+})
+
+describe('mediaLibrary', () => {
+  const client = createClient({})
+  test('video.getPlaybackInfo with signed/secured response', async () => {
+    const result = await client.mediaLibrary.video.getPlaybackInfo('video-secured123')
+    const tokens = getPlaybackTokens(result)
+
+    // Type assertions - check that tokens are present
+    if (tokens && 'token' in result.stream) {
+      // Result is a signed response, cast it for type checking
+      const signedResult = result as VideoPlaybackInfoSigned
+      expectTypeOf(signedResult.stream.token).toBeString()
+      expectTypeOf(signedResult.thumbnail.token).toBeString()
+      expectTypeOf(signedResult.storyboard.token).toBeString()
+      expectTypeOf(signedResult.animated.token).toBeString()
+    }
   })
 })

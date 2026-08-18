@@ -14,8 +14,8 @@ const post = stegaBrand({
 
 describe('branded strings in JSX', () => {
   test('branded strings are assignable to ReactNode', () => {
-    expectTypeOf(post.title).toMatchTypeOf<ReactNode>()
-    expectTypeOf<StegaString<'left' | 'right'>>().toMatchTypeOf<ReactNode>()
+    expectTypeOf(post.title).toExtend<ReactNode>()
+    expectTypeOf<StegaString<'left' | 'right'>>().toExtend<ReactNode>()
   })
 
   test('rendering branded strings as text nodes is allowed', () => {
@@ -26,8 +26,8 @@ describe('branded strings in JSX', () => {
         <div title={post.title}>{post.imageLocation}</div>
       </>
     )
-    expectTypeOf(heading).toMatchTypeOf<ReactNode>()
-    expectTypeOf(fragment).toMatchTypeOf<ReactNode>()
+    expectTypeOf(heading).toExtend<ReactNode>()
+    expectTypeOf(fragment).toExtend<ReactNode>()
   })
 
   test('passing branded strings to literal union props is a type error', () => {
@@ -40,8 +40,8 @@ describe('branded strings in JSX', () => {
     // @ts-expect-error -- must be cleaned before it can be used as a literal union prop
     const media = <Media align={post.imageLocation}>{post.title}</Media>
     const cleaned = <Media align={stegaClean(post.imageLocation)}>{post.title}</Media>
-    expectTypeOf(button).toMatchTypeOf<ReactNode>()
-    expectTypeOf(media).toMatchTypeOf<ReactNode>()
-    expectTypeOf(cleaned).toMatchTypeOf<ReactNode>()
+    expectTypeOf(button).toExtend<ReactNode>()
+    expectTypeOf(media).toExtend<ReactNode>()
+    expectTypeOf(cleaned).toExtend<ReactNode>()
   })
 })

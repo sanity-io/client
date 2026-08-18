@@ -1,7 +1,7 @@
 import {
   createRequester,
   type FetchFunction,
-  HttpError as GetItHttpError,
+  isHttpError as isGetItHttpError,
   type RequestOptions as FetchRequestOptions,
   type TransformMiddleware,
   type WrappingMiddleware,
@@ -40,8 +40,9 @@ export interface ResponseEvent {
 }
 
 /**
- * Legacy "requester" type — the result of `defineHttpRequest`. Returns a
- * single-event Observable for compatibility with the rest of the codebase.
+ * Legacy "requester" type - the observable half of `defineRequester`'s
+ * result. Returns a single-event Observable for compatibility with the rest
+ * of the codebase.
  *
  * @internal
  */
@@ -163,14 +164,6 @@ export function defineRequester(
   return {promise, observable}
 }
 
-/** @internal */
-export function defineHttpRequest(
-  envOptions: EnvironmentOptions,
-  config: HttpRequestConfig = {},
-): LegacyRequester {
-  return defineRequester(envOptions, config).observable
-}
-
 /**
  * Options describing the environment-specific defaults (Node vs. browser).
  *
@@ -208,7 +201,7 @@ async function executeRequest(
   try {
     response = await requester(fetchOptions)
   } catch (err) {
-    if (err instanceof GetItHttpError) {
+    if (isGetItHttpError(err)) {
       // `err.body` is the response body as a string (get-it v9 stores the
       // already-decoded text), regardless of which response variant
       // `err.response` is.
@@ -220,6 +213,7 @@ async function executeRequest(
           statusText: err.statusText,
           headers: err.headers,
           body: errBody,
+          url: err.response.url ?? err.url,
         },
         url,
         method,
@@ -240,7 +234,7 @@ async function executeRequest(
     statusCode: response.status,
     statusMessage: response.statusText || null,
     headers: headersToRecord(response.headers),
-    url,
+    url: response.url || url,
     method,
   }
 }
@@ -291,7 +285,7 @@ function headersToRecord(headers: Headers): Record<string, string> {
 function shouldRetryRequest(err: unknown, attempt: number, options: FetchRequestOptions): boolean {
   // HTTP errors aren't usually retryable, but Content Lake gives us a few
   // status codes where retrying *is* the right move.
-  if (err instanceof GetItHttpError) {
+  if (isGetItHttpError(err)) {
     const isSafe = (options.method ?? 'GET') === 'GET' || options.method === 'HEAD'
     const isQuery = (options.url ?? '').includes('/data/query')
     const status = err.status
