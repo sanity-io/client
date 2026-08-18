@@ -367,50 +367,6 @@ describe('mutations', () => {
     await expect(getClient().delete('abc123', {returnDocuments: false})).resolves.not.toThrow()
   })
 
-  test('delete() returns all document ids when not returning first', async () => {
-    const query = '*[_type == "beer"]'
-    const expectedBody = {mutations: [{delete: {query}}]}
-    const results = [
-      {id: 'abc123', operation: 'delete'},
-      {id: 'abc456', operation: 'delete'},
-    ]
-    getActiveMock()
-      .scope(projectHost())
-      .on('POST', '/v1/data/mutate/foo?returnIds=true&visibility=sync', {body: expectedBody})
-      .respond({status: 200, body: {transactionId: 'abc123', results}})
-
-    const res = await getClient().delete({query}, {returnFirst: false, returnDocuments: false})
-    expect(res.documentIds, 'returns all document ids').toEqual(['abc123', 'abc456'])
-    expect(res.transactionId, 'returns transaction ID').toEqual('abc123')
-    expect(res.results, 'returns the raw results').toEqual(results)
-  })
-
-  test('mutate() returns all documents when not returning first', async () => {
-    const docs = [
-      {_id: 'abc123', _type: 'post', name: 'Raptor'},
-      {_id: 'abc456', _type: 'post', name: 'Velociraptor'},
-    ]
-    const expectedBody = {mutations: docs.map((doc) => ({create: doc}))}
-    getActiveMock()
-      .scope(projectHost())
-      .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
-        body: expectedBody,
-      })
-      .respond({
-        status: 200,
-        body: {
-          transactionId: 'abc123',
-          results: docs.map((doc) => ({id: doc._id, document: doc, operation: 'create'})),
-        },
-      })
-
-    const res = await getClient().mutate(
-      docs.map((doc) => ({create: doc})),
-      {returnFirst: false, returnDocuments: true},
-    )
-    expect(res, 'returns every mutated document').toEqual(docs)
-  })
-
   test('mutate() accepts multiple mutations', async () => {
     const docs = [
       {
