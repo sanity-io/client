@@ -63,7 +63,9 @@ function resourceQuery(client: Client): Record<string, string> {
   const organizationId = collaboration?.organizationId
 
   if (!organizationId) {
-    throw new Error('`collaboration.organizationId` must be configured to use collaboration comments')
+    throw new Error(
+      '`collaboration.organizationId` must be configured to use collaboration comments',
+    )
   }
 
   const resource = resolveCommentResource(client)

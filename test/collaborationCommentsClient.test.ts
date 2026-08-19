@@ -796,7 +796,8 @@ describe('collaboration.comments', () => {
     const query = '*[_type == "sanity.comment"]'
     const withoutOrg = getMockClient({collaboration: {organizationId: undefined}})
     const withoutResource = getMockClient({resource: undefined})
-    const orgError = '`collaboration.organizationId` must be configured to use collaboration comments'
+    const orgError =
+      '`collaboration.organizationId` must be configured to use collaboration comments'
     const resourceError =
       '`resource` or `projectId` and `dataset` must be configured to use collaboration comments'
 
