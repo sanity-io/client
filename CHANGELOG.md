@@ -1,5 +1,23 @@
 # @sanity/client
 
+## 8.2.0
+
+### Minor Changes
+
+- add collaboration comments client (`@alpha`) ([#1235](https://github.com/sanity-io/client/pull/1235)) ([5906f72](https://github.com/sanity-io/client/commit/5906f7239c7aed3469caef7f34ffb3099b237795))
+- add variant actions ([#1279](https://github.com/sanity-io/client/pull/1279)) ([dd25720](https://github.com/sanity-io/client/commit/dd257202e74111680736d0f2514ba5b44ee155fc))
+
+  Adds `CreateVariantAction`, `EditVariantAction`, `DeleteVariantAction`, `PublishVariantAction` and
+  `UnpublishVariantAction`, along with a `VariantAction` union, covering the
+  `sanity.action.document.variant.*` actions. They are included in the `Action` union, so
+  `client.action()` accepts them.
+
+  Each action addresses a variant document by the `publishedId`, `variantId` and `bundleId` triple
+  rather than by document ID, since the API derives the document ID from those three values.
+
+  Note that `Action` widening is a breaking change for code that exhaustively switches on
+  `Action['actionType']` with a `never` fallthrough, which will need to handle the new cases.
+
 ## 8.1.0
 
 ### Minor Changes
