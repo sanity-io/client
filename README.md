@@ -149,6 +149,13 @@ export async function updateDocumentTitle(_id, title) {
     - [Choosing a stack](#choosing-a-stack)
     - [Scoping to an organization](#scoping-to-an-organization)
     - [Return values and timeouts](#return-values-and-timeouts)
+  - [Collaboration Comments API](#collaboration-comments-api)
+    - [Configuration](#configuration-1)
+    - [Creating comments and replies](#creating-comments-and-replies)
+    - [Updating and deleting comments](#updating-and-deleting-comments)
+    - [Reactions](#reactions)
+    - [Fetching comments](#fetching-comments)
+    - [Listening for comment changes](#listening-for-comment-changes)
 - [License](#license)
 - [Migrate](#migrate)
 
@@ -2539,6 +2546,170 @@ const result = await client.functions.invoke('slow-function', {
   timeout: 0, // or e.g. 600000 for a ten minute deadline
   signal: controller.signal,
 })
+```
+
+### Collaboration Comments API
+
+Read and write comments on documents in an organization resource. Available on `client.collaboration.comments`, with Observable equivalents on `client.observable.collaboration.comments`.
+
+> **Note:** This API is currently in alpha and may change in future releases.
+
+#### Configuration
+
+Comments are organization-scoped. The client needs an `organizationId`, plus either a `resource` or `projectId` and `dataset`:
+
+```js
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  apiVersion: '2026-07-18',
+  token: 'valid-token',
+  useCdn: false,
+  organizationId: 'your-organization-id',
+  resource: {
+    type: 'canvas',
+    id: 'your-canvas-id',
+  },
+})
+```
+
+A project-based client only needs `organizationId` added; the dataset resource is derived from `projectId` and `dataset`:
+
+```js
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'production',
+  apiVersion: '2026-07-18',
+  token: 'valid-token',
+  useCdn: false,
+  organizationId: 'your-organization-id',
+})
+```
+
+#### Creating comments and replies
+
+A top-level comment needs a `target`. A reply needs a `parentCommentId` instead, and inherits `target`, `status`, and `threadId` from the parent. The `message` is Portable Text:
+
+```js
+const message = [{_type: 'block', children: [{_type: 'span', text: 'Looks good to me'}]}]
+
+const comment = await client.collaboration.comments.create({
+  message,
+  target: {documentId: 'doc-1', documentType: 'article'},
+})
+
+const reply = await client.collaboration.comments.create({
+  message,
+  parentCommentId: comment._id,
+})
+```
+
+Field comments pass a `path`. Inline comments also pass a `range` (block `_key` + character offset):
+
+```js
+await client.collaboration.comments.create({
+  message,
+  target: {
+    documentId: 'doc-1',
+    documentType: 'article',
+    path: 'body',
+    range: {
+      start: {_key: 'block-1', offset: 6},
+      end: {_key: 'block-1', offset: 11},
+    },
+  },
+})
+```
+
+When querying, the field is stored as `target.path.field`, so filter with `target.path.field == "body"`, not `target.path == "body"`. The `range` itself is not stored: the API resolves it into a selection (and content snapshot) when the comment is written.
+
+#### Updating and deleting comments
+
+`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field and source document it already targets; pass `null` to clear the selection:
+
+```js
+await client.collaboration.comments.update('comment-1', {status: 'resolved'})
+await client.collaboration.comments.update('comment-1', {
+  range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+})
+await client.collaboration.comments.update('comment-1', {range: null})
+```
+
+`delete()` also deletes replies. The returned `documentIds` covers the comment and every deleted reply:
+
+```js
+const {documentIds} = await client.collaboration.comments.delete('comment-1')
+```
+
+#### Reactions
+
+Reactions are added and removed on behalf of the authenticated user, and are identified by emoji short name:
+
+```js
+await client.collaboration.comments.addReaction('comment-1', ':+1:')
+await client.collaboration.comments.removeReaction('comment-1', ':+1:')
+```
+
+#### Fetching comments
+
+`fetch()` runs GROQ against the organization store holding the comments for the configured resource. Same `query` / `params` shape as `client.fetch()`, but Content Lake options like `perspective` and `useCdn` do not apply. The store is not scoped to comments, so filter on `_type == "sanity.comment"`:
+
+```js
+const comments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && status == "open"] | order(_createdAt desc)[0...50]',
+)
+```
+
+Use `getTargetDocumentRef()` to build the global document ref (`resourceType:resourceId:publishedId`) for filters. Draft and version ids are normalized to the published id:
+
+```js
+client.collaboration.comments.getTargetDocumentRef('doc-1') // 'canvas:your-canvas-id:doc-1'
+client.collaboration.comments.getTargetDocumentRef('drafts.doc-1') // 'canvas:your-canvas-id:doc-1'
+
+const ref = client.collaboration.comments.getTargetDocumentRef('doc-1')
+
+const comments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref]',
+  {ref},
+)
+```
+
+That returns comments across published, draft, and versions of the document. Narrow to one perspective with `target.sourceDocumentId`:
+
+```js
+const draftComments = await client.collaboration.comments.fetch(
+  '*[_type == "sanity.comment" && target.document._ref == $ref && target.sourceDocumentId == $sourceDocumentId]',
+  {
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
+    sourceDocumentId: 'drafts.doc-1',
+  },
+)
+```
+
+Pass a type parameter when you know the result shape:
+
+```ts
+import type {CollaborationCommentDocument} from '@sanity/client'
+
+const comments = await client.collaboration.comments.fetch<CollaborationCommentDocument[]>(
+  '*[_type == "sanity.comment"]',
+)
+```
+
+#### Listening for comment changes
+
+`listen()` mirrors `client.listen()` and returns an Observable of mutation events:
+
+```js
+const subscription = client.collaboration.comments
+  .listen('*[_type == "sanity.comment" && target.document._ref == $ref]', {
+    ref: client.collaboration.comments.getTargetDocumentRef('doc-1'),
+  })
+  .subscribe((event) => {
+    console.log(event.documentId, event.transition)
+  })
+
+subscription.unsubscribe()
 ```
 
 ## License

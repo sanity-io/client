@@ -73,7 +73,13 @@ const indexBy = (docs: Any[], attr: Any) =>
     return indexed
   }, Object.create(null))
 
-const getQuerySizeLimit = 11264
+/**
+ * Encoded query strings longer than this are sent as a `POST` body rather than
+ * in the request URL.
+ *
+ * @internal
+ */
+export const getQuerySizeLimit = 11264
 
 /**
  * Resolve the effective stega config, cleaned params, response mapper and

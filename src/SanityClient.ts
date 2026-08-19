@@ -3,6 +3,10 @@ import {Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
+import {
+  CollaborationCommentsClient,
+  ObservableCollaborationCommentsClient,
+} from './collaboration/CollaborationCommentsClient'
 import {defaultConfig, initConfig} from './config'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
@@ -57,10 +61,12 @@ import {deriveDocumentVersionId, getDocumentVersionId} from './util/createVersio
 export type {
   _listen,
   AssetsClient,
+  CollaborationCommentsClient,
   DatasetsClient,
   LiveClient,
   MediaLibraryVideoClient,
   ObservableAssetsClient,
+  ObservableCollaborationCommentsClient,
   ObservableDatasetsClient,
   ObservableMediaLibraryVideoClient,
   ObservableProjectsClient,
@@ -81,6 +87,10 @@ export class ObservableSanityClient {
   users: ObservableUsersClient
   agent: {
     action: ObservableAgentsActionClient
+  }
+  collaboration: {
+    /** @alpha */
+    comments: ObservableCollaborationCommentsClient
   }
   functions: ObservableFunctionsClient
   releases: ObservableReleasesClient
@@ -111,6 +121,9 @@ export class ObservableSanityClient {
     this.users = new ObservableUsersClient(this, this.#httpRequest)
     this.agent = {
       action: new ObservableAgentsActionClient(this, this.#httpRequest),
+    }
+    this.collaboration = {
+      comments: new ObservableCollaborationCommentsClient(this, this.#httpRequest),
     }
     this.functions = new ObservableFunctionsClient(this, this.#httpRequest)
     this.releases = new ObservableReleasesClient(this, this.#httpRequest)
@@ -1148,6 +1161,10 @@ export class SanityClient {
   agent: {
     action: AgentActionsClient
   }
+  collaboration: {
+    /** @alpha */
+    comments: CollaborationCommentsClient
+  }
   functions: FunctionsClient
   releases: ReleasesClient
 
@@ -1182,6 +1199,9 @@ export class SanityClient {
     this.users = new UsersClient(this, this.#httpRequest)
     this.agent = {
       action: new AgentActionsClient(this, this.#httpRequest),
+    }
+    this.collaboration = {
+      comments: new CollaborationCommentsClient(this, this.#httpRequest),
     }
     this.functions = new FunctionsClient(this, this.#httpRequest)
     this.releases = new ReleasesClient(this, this.#httpRequest)

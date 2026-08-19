@@ -304,6 +304,16 @@ export interface ClientConfig {
    * ID of the organization owning the blueprints stack
    */
   organizationId?: string
+  /**
+   * Organization-scoped configuration for collaboration APIs.
+   *
+   * Currently this is used by `collaboration.comments` methods.
+   *
+   * @alpha
+   */
+  collaboration?: {
+    organizationId?: string
+  }
 }
 
 /** @public */
@@ -2288,6 +2298,21 @@ export type {
   TranslateTargetInclude,
 } from './agent/actions/translate'
 export type {InvokeFunctionEvent, InvokeFunctionRequest} from './functions/invoke'
+export type {
+  CollaborationCommentCreate,
+  CollaborationCommentDocument,
+  CollaborationCommentMessage,
+  CollaborationCommentPortableTextBlock,
+  CollaborationCommentReactionShortName,
+  CollaborationCommentSelection,
+  CollaborationCommentsListenOptions,
+  CollaborationCommentsRequestOptions,
+  CollaborationCommentStatus,
+  CollaborationCommentsWriteOptions,
+  CollaborationCommentTarget,
+  CollaborationCommentUpdate,
+  CollaborationCommentRange,
+} from './collaboration/types'
 export type {
   ContentSourceMapParsedPath,
   ContentSourceMapParsedPathKeyedSegment,
