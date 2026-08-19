@@ -5,20 +5,30 @@ import {
   isDraftId,
   isVersionId,
 } from '@sanity/client/csm'
-import {customAlphabet} from 'nanoid'
 
 import type {IdentifiedSanityDocumentStub, SanityDocumentStub} from '../types'
 import {validateVersionIdMatch} from '../validators'
+
+const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 /**
  * @internal
  *
  * ~24 years (or 7.54e+8 seconds) needed, in order to have a 1% probability of at least one collision if 10 ID's are generated every hour.
  */
-export const generateReleaseId = customAlphabet(
-  'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-  8,
-)
+export function generateReleaseId() {
+  let id = ''
+
+  while (id.length < 8) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8 - id.length))
+    for (const byte of bytes) {
+      const index = byte & 63
+      if (index < alphabet.length) id += alphabet[index]
+    }
+  }
+
+  return id
+}
 
 /** @internal */
 export const getDocumentVersionId = (publishedId: string, releaseId?: string) =>
