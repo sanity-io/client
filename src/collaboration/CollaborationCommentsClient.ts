@@ -32,7 +32,7 @@ import type {
 /**
  * Comments on the configured organization resource.
  *
- * Requires `organizationId`, plus either `resource` or `projectId` and `dataset`.
+ * Requires `collaboration.organizationId`, plus either `resource` or `projectId` and `dataset`.
  *
  * @alpha
  */
@@ -212,7 +212,7 @@ export class ObservableCollaborationCommentsClient {
 /**
  * Comments on the configured organization resource.
  *
- * Requires `organizationId`, plus either `resource` or `projectId` and `dataset`.
+ * Requires `collaboration.organizationId`, plus either `resource` or `projectId` and `dataset`.
  *
  * @alpha
  */

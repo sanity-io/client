@@ -126,10 +126,6 @@ type ClientConfigResource =
 export interface ClientConfig {
   projectId?: string
   dataset?: string
-  /**
-   * Organization ID for organization-scoped APIs.
-   */
-  organizationId?: string
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
@@ -304,6 +300,20 @@ export interface ClientConfig {
    * names against. Function names are unique within a stack
    */
   stackId?: string
+  /**
+   * ID of the organization owning the blueprints stack
+   */
+  organizationId?: string
+  /**
+   * Organization-scoped configuration for collaboration APIs.
+   *
+   * Currently this is used by `collaboration.comments` methods.
+   *
+   * @alpha
+   */
+  collaboration?: {
+    organizationId?: string
+  }
 }
 
 /** @public */

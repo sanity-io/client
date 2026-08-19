@@ -87,7 +87,9 @@ const mutationResponse = (
 const baseConfig = {
   apiHost,
   apiVersion: '2026-07-18',
-  organizationId,
+  collaboration: {
+    organizationId,
+  },
   resource,
   useCdn: false,
   useProjectHostname: false,
@@ -790,11 +792,11 @@ describe('collaboration.comments', () => {
     }
   })
 
-  test('throws when organizationId or resource/project config is missing', () => {
+  test('throws when collaboration.organizationId or resource/project config is missing', () => {
     const query = '*[_type == "sanity.comment"]'
-    const withoutOrg = getMockClient({organizationId: undefined})
+    const withoutOrg = getMockClient({collaboration: {organizationId: undefined}})
     const withoutResource = getMockClient({resource: undefined})
-    const orgError = '`organizationId` must be configured to use collaboration comments'
+    const orgError = '`collaboration.organizationId` must be configured to use collaboration comments'
     const resourceError =
       '`resource` or `projectId` and `dataset` must be configured to use collaboration comments'
 
@@ -955,8 +957,8 @@ describe('collaboration.comments', () => {
     )
   })
 
-  test('builds target document references without an organizationId', () => {
-    const {comments} = getMockClient({organizationId: undefined}).collaboration
+  test('builds target document references without a collaboration.organizationId', () => {
+    const {comments} = getMockClient({collaboration: {organizationId: undefined}}).collaboration
 
     expect(comments.getTargetDocumentRef('doc-1')).toBe('canvas:canvas-123:doc-1')
   })
