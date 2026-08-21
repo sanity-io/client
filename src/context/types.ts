@@ -172,6 +172,8 @@ export type Source = SourcesResponse['data'][number]
 /** @beta */
 export type SourceDetail = JsonResponse<paths[SourcePath]['get']['responses']['200']>
 /** @beta */
+export type DeleteSourceResponse = JsonResponse<paths[SourcePath]['delete']['responses']['202']>
+/** @beta */
 export type SourceContentResponse = JsonResponse<
   paths[SourceContentPath]['get']['responses']['200']
 >
