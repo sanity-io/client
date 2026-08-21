@@ -1,6 +1,4 @@
 import {type FetchFunction} from 'get-it'
-
-type FetchBody = NonNullable<Parameters<FetchFunction>[1]>['body']
 import {type Observable} from 'rxjs'
 
 import {_observe, _request} from '../data/dataMethods'
@@ -84,6 +82,13 @@ function _query(entries: Record<string, string | number | undefined>): Record<st
       value === undefined ? [] : [[key, `${value}`]],
     ),
   )
+}
+
+function _fetchBody(file: CreateFileImportParams['file']) {
+  if (!ArrayBuffer.isView(file)) return file
+  return file.buffer instanceof ArrayBuffer
+    ? new Uint8Array(file.buffer, file.byteOffset, file.byteLength)
+    : Uint8Array.from(file)
 }
 
 /**
@@ -178,12 +183,10 @@ export class KnowledgeBaseHandle {
     // no auth header, and the body is raw bytes rather than JSON. Still uses
     // the client's fetch resolution so proxy config applies in Node.
     const config = this.#client.config()
-    const doFetch = config.resolveFetch?.(config.proxy) ?? (fetch as FetchFunction)
+    const doFetch: FetchFunction = config.resolveFetch?.(config.proxy) ?? globalThis.fetch
     const putResponse = await doFetch(staged.uploadUrl, {
       method: 'PUT',
-      // Buffer's ArrayBufferLike generic misses the body type's ArrayBuffer
-      // bound, even though fetch accepts it at runtime.
-      body: params.file as FetchBody,
+      body: _fetchBody(params.file),
       ...(params.contentType && {
         headers: {'content-type': params.contentType},
       }),
