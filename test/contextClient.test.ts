@@ -216,4 +216,16 @@ describe('ContextClient', () => {
       endLine: '10',
     })
   })
+
+  test('sources.delete returns the accepted job', async () => {
+    httpRequest.mockResolvedValueOnce(TEST_KB).mockResolvedValueOnce({jobId: 'job1'})
+
+    const result = await context.knowledgeBase(TEST_KB_ID).sources.delete({sourceId: 'source1'})
+
+    expect(httpRequest.mock.calls[1][0]).toMatchObject({
+      method: 'DELETE',
+      url: expect.stringContaining('/sources/source1'),
+    })
+    expect(result).toEqual({jobId: 'job1'})
+  })
 })
