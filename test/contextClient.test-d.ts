@@ -17,6 +17,12 @@ describe('client.context format-dependent return types', () => {
     expectTypeOf(await kb.entries.get({path: 'a/b', format: 'markdown'})).toEqualTypeOf<string>()
   })
 
+  test('sources.delete resolves to the accepted job', async () => {
+    expectTypeOf(
+      await kb.sources.delete({sourceId: 'source1'}),
+    ).toEqualTypeOf<Context.DeleteSourceResponse>()
+  })
+
   test('the file import variant is only valid with file fields', async () => {
     // @ts-expect-error -- should fail: file imports require a filename
     void kb.imports.create({type: 'file', file: new Blob(['x'])})
