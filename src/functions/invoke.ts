@@ -6,7 +6,15 @@ import type {HttpRequest, InitializedClientConfig} from '../types'
 
 /** Function resource types in a blueprint are namespaced under this prefix. */
 const FUNCTION_RESOURCE_PREFIX = 'sanity.function.'
-const INVOKABLE_FUNCTION_TYPE = 'sanity.function.pubsub'
+const SYNC_INVOCABLE_FUNCTION_TYPES = ['sanity.function.pubsub']
+const ASYNC_INVOCABLE_FUNCTION_TYPES = [
+  'sanity.function.durable',
+  'sanity.function.pubsub',
+  'sanity.function.queue',
+]
+const INVOCABLE_FUNCTION_TYPES = [
+  ...new Set([...SYNC_INVOCABLE_FUNCTION_TYPES, ...ASYNC_INVOCABLE_FUNCTION_TYPES]),
+]
 
 /** @public */
 export interface InvokeFunctionEvent {
@@ -35,6 +43,18 @@ export interface InvokeFunctionRequest {
   timeout?: number
   /** Abort the invocation. */
   signal?: AbortSignal
+}
+
+/** @public */
+export interface InvokeFunctionOptions {
+  /**
+   * Wait for the function to finish and resolve with its return value.
+   *
+   * Defaults to `false`: the invocation is queued, the request resolves as soon
+   * as it is accepted, and the value is always `undefined`. Only function types
+   * that support running inline can be invoked synchronously.
+   */
+  sync?: boolean
 }
 
 /**
@@ -109,6 +129,7 @@ function _resolveFunctionId(
   stackId: string,
   headers: Record<string, string>,
   request: InvokeFunctionRequest | undefined,
+  sync: boolean,
 ): Observable<string> {
   return _requestObservable<{resources?: StackResource[]}>(client, httpRequest, {
     method: 'GET',
@@ -132,8 +153,14 @@ function _resolveFunctionId(
         )
       }
 
-      if (match.type !== INVOKABLE_FUNCTION_TYPE) {
+      if (!INVOCABLE_FUNCTION_TYPES.includes(match.type)) {
         throw new Error(`Function invocation is not supported for ${match.type}`)
+      }
+      if (sync && !SYNC_INVOCABLE_FUNCTION_TYPES.includes(match.type)) {
+        throw new Error(`Synchronous function invocation is not supported for ${match.type}`)
+      }
+      if (!sync && !ASYNC_INVOCABLE_FUNCTION_TYPES.includes(match.type)) {
+        throw new Error(`Asynchronous function invocation is not supported for ${match.type}`)
       }
 
       return match.externalId
@@ -147,6 +174,7 @@ export function _invoke<R = unknown>(
   httpRequest: HttpRequest,
   functionName: string,
   request?: InvokeFunctionRequest,
+  options?: InvokeFunctionOptions,
 ): Observable<R | undefined> {
   // Deferred so a bad config surfaces as an error on the returned observable
   // (and so a rejected promise) rather than throwing at the call site.
@@ -154,17 +182,30 @@ export function _invoke<R = unknown>(
     const config = client.config()
     const headers = scopeHeaders(config, request)
     const stackId = resolveStackId(config, request)
+    const sync = options?.sync ?? false
 
-    return _resolveFunctionId(client, httpRequest, functionName, stackId, headers, request).pipe(
-      // A function that returns nothing answers 204, which the transport parses
+    return _resolveFunctionId(
+      client,
+      httpRequest,
+      functionName,
+      stackId,
+      headers,
+      request,
+      sync,
+    ).pipe(
+      // An async invocation is only acknowledged (202, no body), and a sync
+      // function that returns nothing answers 204, which the transport parses
       // to an `undefined` body. The status code is not observable from here —
       // the `HttpRequest` boundary resolves to the body alone — so an empty
       // response and a function that returned nothing both surface as
       // `undefined`.
+      //
+      // The route is async by default, so `sync=false` is left off the wire
+      // rather than spelled out.
       mergeMap((functionId) =>
         _requestObservable<R | undefined>(client, httpRequest, {
           method: 'POST',
-          url: `/functions/${functionId}/invoke`,
+          url: `/functions/${functionId}/invoke${sync ? '?sync=true' : ''}`,
           headers,
           body: {event: {data: request?.event?.data ?? {}}},
           timeout: request?.timeout,

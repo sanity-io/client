@@ -2297,7 +2297,11 @@ export type {
   TranslateTarget,
   TranslateTargetInclude,
 } from './agent/actions/translate'
-export type {InvokeFunctionEvent, InvokeFunctionRequest} from './functions/invoke'
+export type {
+  InvokeFunctionEvent,
+  InvokeFunctionOptions,
+  InvokeFunctionRequest,
+} from './functions/invoke'
 export type {
   CollaborationCommentCreate,
   CollaborationCommentDocument,
