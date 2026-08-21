@@ -24,6 +24,7 @@ export {
   isQueryParseError,
   ServerError,
 } from './http/errors'
+export * as Context from './context/types'
 export * from './SanityClient'
 export * from './types'
 
@@ -56,7 +57,10 @@ export default function defineCreateClientExports<
     // Redirects are surfaced rather than followed unless a request opts in
     // (via the public `maxRedirects` option, translated in `requestOptions`).
     const httpRequest: HttpRequest = async (options) => {
-      const event = await clientRequesterPromise({redirect: 'manual', ...options})
+      const event = await clientRequesterPromise({
+        redirect: 'manual',
+        ...options,
+      })
       return event.body
     }
     // Populate `requester` on the initialized config so internal paths

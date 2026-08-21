@@ -4,6 +4,7 @@ import {Observable} from 'rxjs'
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
 import {defaultConfig, initConfig} from './config'
+import {ContextClient, ObservableContextClient} from './context/ContextClient'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
 import {LiveClient} from './data/live'
@@ -82,6 +83,8 @@ export class ObservableSanityClient {
     action: ObservableAgentsActionClient
   }
   releases: ObservableReleasesClient
+  /** @beta */
+  context: ObservableContextClient
 
   /**
    * Private properties
@@ -111,6 +114,7 @@ export class ObservableSanityClient {
       action: new ObservableAgentsActionClient(this, this.#httpRequest),
     }
     this.releases = new ObservableReleasesClient(this, this.#httpRequest)
+    this.context = new ObservableContextClient(this, this.#httpRequest)
   }
 
   /**
@@ -1149,6 +1153,8 @@ export class SanityClient {
     action: AgentActionsClient
   }
   releases: ReleasesClient
+  /** @beta */
+  context: ContextClient
 
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
@@ -1183,6 +1189,7 @@ export class SanityClient {
       action: new AgentActionsClient(this, this.#httpRequest),
     }
     this.releases = new ReleasesClient(this, this.#httpRequest)
+    this.context = new ContextClient(this, this.#httpRequest)
 
     this.observable = new ObservableSanityClient(httpRequest, config)
   }
