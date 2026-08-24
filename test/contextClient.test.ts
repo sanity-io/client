@@ -88,6 +88,22 @@ describe('ContextClient', () => {
     )
   })
 
+  test('get() seeds the address cache for follow-up scoped calls', async () => {
+    httpRequest
+      .mockResolvedValueOnce(TEST_KB) // get() by-id fetch
+      .mockResolvedValueOnce({data: [], nextCursor: null}) // issues.list
+
+    const kb = context.knowledgeBase(TEST_KB_ID)
+    await kb.get()
+    await kb.issues.list()
+
+    // No second by-id resolve: get() already carried the org and slug.
+    expect(httpRequest).toHaveBeenCalledTimes(2)
+    expect(httpRequest.mock.calls[1][0].url).toContain(
+      `/context/organizations/${TEST_ORG_ID}/knowledge-bases/${TEST_KB.slug}/issues`,
+    )
+  })
+
   test('address resolution never carries a caller abort signal', async () => {
     httpRequest.mockResolvedValueOnce(TEST_KB).mockResolvedValueOnce({jobId: 'job1'})
 
