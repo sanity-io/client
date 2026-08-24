@@ -217,8 +217,8 @@ describe('ContextClient', () => {
     })
   })
 
-  test('sources.delete returns the accepted job', async () => {
-    httpRequest.mockResolvedValueOnce(TEST_KB).mockResolvedValueOnce({jobId: 'job1'})
+  test('sources.delete issues a DELETE and resolves to nothing', async () => {
+    httpRequest.mockResolvedValueOnce(TEST_KB).mockResolvedValueOnce(undefined)
 
     const result = await context.knowledgeBase(TEST_KB_ID).sources.delete({sourceId: 'source1'})
 
@@ -226,6 +226,6 @@ describe('ContextClient', () => {
       method: 'DELETE',
       url: expect.stringContaining('/sources/source1'),
     })
-    expect(result).toEqual({jobId: 'job1'})
+    expect(result).toBeUndefined()
   })
 })

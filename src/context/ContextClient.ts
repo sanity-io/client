@@ -32,7 +32,6 @@ import type {
   CreateImportParams,
   CreateInstructionParams,
   CreateKnowledgeBaseParams,
-  DeleteSourceResponse,
   DismissIssueResponse,
   EditCrawlOptionsParams,
   EditInstructionParams,
@@ -422,11 +421,12 @@ export class KnowledgeBaseHandle {
         }),
         ...options,
       }),
-    delete: (params: {sourceId: string}, options?: RequestOptions) =>
-      this.#request<DeleteSourceResponse>(`/sources/${params.sourceId}`, {
+    delete: async (params: {sourceId: string}, options?: RequestOptions) => {
+      await this.#request<void>(`/sources/${params.sourceId}`, {
         method: 'DELETE',
         ...options,
-      }),
+      })
+    },
   }
 
   /** The audit feed: who did what, when. */

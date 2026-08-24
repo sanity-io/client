@@ -17,10 +17,8 @@ describe('client.context format-dependent return types', () => {
     expectTypeOf(await kb.entries.get({path: 'a/b', format: 'markdown'})).toEqualTypeOf<string>()
   })
 
-  test('sources.delete resolves to the accepted job', async () => {
-    expectTypeOf(
-      await kb.sources.delete({sourceId: 'source1'}),
-    ).toEqualTypeOf<Context.DeleteSourceResponse>()
+  test('sources.delete resolves to void', async () => {
+    expectTypeOf(await kb.sources.delete({sourceId: 'source1'})).toEqualTypeOf<void>()
   })
 
   test('the file import variant is only valid with file fields', async () => {
