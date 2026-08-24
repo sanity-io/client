@@ -136,6 +136,24 @@ describe('base client', () => {
     expect(() => createClient({projectId: 'abc123', stega: undefined})).not.toThrow()
   })
 
+  test('uses default apiHost when it is undefined', () => {
+    const config = createClient({projectId: 'abc123', apiHost: undefined}).config()
+    expect(config.apiHost).toBe('https://api.sanity.io')
+    expect(config.url).toBe('https://abc123.api.sanity.io/v1')
+    expect(config.cdnUrl).toBe('https://abc123.apicdn.sanity.io/v1')
+  })
+
+  test('uses default apiHost when it is null', () => {
+    const config = createClient({
+      projectId: 'abc123',
+      // @ts-expect-error -- apiHost is string | undefined; null still arrives from unset env vars
+      apiHost: null,
+    }).config()
+    expect(config.apiHost).toBe('https://api.sanity.io')
+    expect(config.url).toBe('https://abc123.api.sanity.io/v1')
+    expect(config.cdnUrl).toBe('https://abc123.apicdn.sanity.io/v1')
+  })
+
   test('throws on invalid perspective', () => {
     expect(() => createClient({projectId: 'abc123', perspective: 'published'})).not.toThrow(
       /Invalid API perspective/,
