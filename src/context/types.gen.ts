@@ -280,6 +280,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/uploads/{importId}/complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Complete a file-upload import
+     * @description Call after the file bytes are uploaded to the signed URL. Starts processing and returns a job id to poll.
+     */
+    post: operations['completeUpload']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}': {
     parameters: {
       query?: never
@@ -2032,6 +2052,31 @@ export interface operations {
             importId: string
             /** Format: uri */
             uploadUrl: string
+          }
+        }
+      }
+    }
+  }
+  completeUpload: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        importId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description JobAccepted */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            jobId: string
           }
         }
       }
