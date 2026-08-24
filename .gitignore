@@ -4,6 +4,9 @@
 # Compiled files
 dist
 
+# Intermediate build artifacts (e.g. the pruned Context spec)
+.tmp
+
 # Coverage directories used by tools like c8
 coverage
 
