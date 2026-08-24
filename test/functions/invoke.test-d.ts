@@ -55,5 +55,14 @@ describe('client.functions.invoke', () => {
     expectTypeOf(
       client.observable.functions.invoke<Payload>('my-func', undefined, {sync: true}),
     ).toEqualTypeOf<Observable<Payload>>()
+
+    const options: InvokeFunctionOptions = {sync: Math.random() > 0.5}
+
+    expectTypeOf(
+      client.observable.functions.invoke<Payload>('my-func', undefined, options),
+    ).toEqualTypeOf<Observable<Payload | undefined>>()
+    expectTypeOf(client.observable.functions.invoke<Payload>('my-func')).toEqualTypeOf<
+      Observable<Payload | undefined>
+    >()
   })
 })

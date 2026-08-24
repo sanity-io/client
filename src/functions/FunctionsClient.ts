@@ -17,7 +17,7 @@ export class ObservableFunctionsClient {
    * Invoke a deployed function by its blueprint name.
    *
    * The name is resolved within the stack given by `stackId` on the request or
-   * the client config. Queues the invocation and emits `undefined` as soon as
+   * the client config. Starts the invocation and emits `undefined` as soon as
    * it is accepted; pass `{sync: true}` to wait for the function's return value
    * instead.
    *
@@ -40,6 +40,7 @@ export class ObservableFunctionsClient {
     request?: InvokeFunctionRequest,
     options?: InvokeFunctionOptions,
   ): Observable<R | undefined>
+  // Implementation signature — not part of the public API.
   invoke<R = unknown>(
     functionName: string,
     request?: InvokeFunctionRequest,
@@ -69,7 +70,7 @@ export class FunctionsClient {
    * The lookup is scoped to `projectId`, or to `organizationId` when one is set
    * for a stack deployed at organization scope.
    *
-   * The invocation is queued by default: the promise resolves with `undefined`
+   * The invocation is started by default: the promise resolves with `undefined`
    * as soon as the call is accepted, without waiting for the function to run.
    * Pass `{sync: true}` to keep the request open until the function finishes
    * and resolve with its return value — long-running functions may then need an
@@ -95,6 +96,7 @@ export class FunctionsClient {
     request?: InvokeFunctionRequest,
     options?: InvokeFunctionOptions,
   ): Promise<R | undefined>
+  // Implementation signature — not part of the public API.
   invoke<R = unknown>(
     functionName: string,
     request?: InvokeFunctionRequest,

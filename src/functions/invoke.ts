@@ -50,7 +50,7 @@ export interface InvokeFunctionOptions {
   /**
    * Wait for the function to finish and resolve with its return value.
    *
-   * Defaults to `false`: the invocation is queued, the request resolves as soon
+   * Defaults to `false`: the invocation is started, the request resolves as soon
    * as it is accepted, and the value is always `undefined`. Only function types
    * that support running inline can be invoked synchronously.
    */
