@@ -203,8 +203,17 @@ export class KnowledgeBaseHandle {
   }
 
   /** Fetch the knowledge base. */
-  get(options?: RequestOptions): Promise<KnowledgeBase> {
-    return _getKnowledgeBaseById(this.#client, this.#httpRequest, this.#knowledgeBaseId, options)
+  async get(options?: RequestOptions): Promise<KnowledgeBase> {
+    const kb = await _getKnowledgeBaseById(
+      this.#client,
+      this.#httpRequest,
+      this.#knowledgeBaseId,
+      options,
+    )
+    // Seed the address cache: a follow-up scoped call should not pay for a
+    // second by-id resolve when this fetch already carries org and slug.
+    this.#address ??= Promise.resolve({organizationId: kb.organizationId, slug: kb.slug})
+    return kb
   }
 
   /** Edit the knowledge base's configuration. */
@@ -232,7 +241,7 @@ export class KnowledgeBaseHandle {
   }
 
   /** Run an incremental refresh: re-check sources and apply what changed. */
-  refresh(options?: RequestOptions): Promise<{jobId: string | null; started: boolean}> {
+  refresh(options?: RequestOptions): Promise<{jobId: string; started: boolean}> {
     return this.#request('/refresh', {method: 'POST', ...options})
   }
 
