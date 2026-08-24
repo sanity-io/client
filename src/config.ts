@@ -62,6 +62,7 @@ export const initConfig = (
   const newConfig = {
     ...defaultConfig,
     ...specifiedConfig,
+    apiHost: specifiedConfig.apiHost ?? defaultConfig.apiHost,
   } as InitializedClientConfig
 
   // Normalize resource configuration - prefer `resource` over deprecated `~experimental_resource`
