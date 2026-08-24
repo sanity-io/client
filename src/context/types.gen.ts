@@ -33,7 +33,7 @@ export interface paths {
     }
     /**
      * List knowledge bases
-     * @description Returns knowledge bases visible to the caller, cursor-paginated. Pass `contextGroupId` to scope to one context group.
+     * @description Returns knowledge bases visible to the caller, cursor-paginated.
      */
     get: operations['listKnowledgeBases']
     put?: never
@@ -114,6 +114,26 @@ export interface paths {
      * @description Replaces the crawl options. The body is the full desired state; omitted fields are cleared.
      */
     patch: operations['updateCrawlOptions']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/dataset-source': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update the dataset source query
+     * @description Replaces the GROQ query of the dataset source and starts a check for changes so the corpus reconciles against the new selection right away. The source project and dataset are fixed; remove the import and add a new one to point elsewhere.
+     */
+    patch: operations['updateDatasetSource']
     trace?: never
   }
   '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/build': {
@@ -225,9 +245,49 @@ export interface paths {
     }
     /**
      * Get the outline as it was at a build revision
-     * @description The outline as captured when this build committed. Read-only. Each entry carries its Sanity `docId`; pair it with the revision's `capturedAt` to read historical content from Sanity document history, including entries later builds deleted. 404 when the revision does not exist, 409 `revisionNotBrowsable` when the build predates outline capture.
+     * @description The outline as captured when this build committed. Read-only. Each entry carries its Sanity `docId` — the join key into the revision's `/entries` response, which serves the historical content, including entries later builds deleted. 404 when the revision does not exist, 409 `revisionNotBrowsable` when the build predates outline capture.
      */
     get: operations['getKnowledgeBaseRevisionOutline']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions/{revisionId}/entries': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read every entry's content as it was at a build revision
+     * @description Bulk historical read for the revision browser: each outline entry's content reconstructed from document history at the revision's `capturedAt`, in outline order. Entries whose history the plan's retention no longer covers are absent from the result. 404 when the revision does not exist, 409 `revisionNotBrowsable` when the build predates outline capture.
+     */
+    get: operations['getKnowledgeBaseRevisionEntries']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions/{revisionId}/decisions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get one build's full decision record
+     * @description Everything one build decided and why: per-source journeys with every placement, move, and removal reason; topic-group routing; section merges; and repair concessions. Written for completed and failed builds alike. Large — a big crawl runs to megabytes; fetch per revision, not in lists. 404 `buildDecisionsNotFound` when the build predates decision capture.
+     */
+    get: operations['getKnowledgeBaseRevisionDecisions']
     put?: never
     post?: never
     delete?: never
@@ -254,58 +314,6 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/groups': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List context groups
-     * @description Returns the organization’s context groups, cursor-paginated.
-     */
-    get: operations['listContextGroups']
-    put?: never
-    /**
-     * Create a context group
-     * @description Creates a context group bound to a Sanity project and dataset. One group per project and dataset per organization; duplicates are rejected.
-     */
-    post: operations['createContextGroup']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/groups/{groupId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a context group by id
-     * @description Returns one context group: its name and the project and dataset it is bound to.
-     */
-    get: operations['getContextGroup']
-    put?: never
-    post?: never
-    /**
-     * Delete a context group
-     * @description Deletes the group when it is empty: no knowledge bases, no MCP configs in its dataset. 409 when it still has contents, 503 when its dataset is unreachable and emptiness cannot be confirmed.
-     */
-    delete: operations['deleteContextGroup']
-    options?: never
-    head?: never
-    /**
-     * Update a context group
-     * @description Renames the group. Project and dataset are immutable.
-     */
-    patch: operations['updateContextGroup']
     trace?: never
   }
   '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/sources': {
@@ -344,7 +352,7 @@ export interface paths {
     post?: never
     /**
      * Delete a source
-     * @description Removes the source, then runs a refresh that detaches its citations and proposes pruning entries left without sources. Human-edited entries are never modified.
+     * @description Removes the source immediately. Entries are not modified here — citations to it are cleaned up by the next build or check for changes, where entries left without sources become removal proposals. Human-edited entries are never modified.
      */
     delete: operations['deleteSource']
     options?: never
@@ -381,7 +389,7 @@ export interface paths {
     }
     /**
      * Get the knowledge base outline
-     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` (or the matching `Accept` header) returns rendered text, with `?format` winning. Every entry carries content, so any path can be read directly. JSON uses dotted paths (`apis.client`), rendered text uses slashes (`apis/client`); the entry endpoints accept either.
+     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` (or the matching `Accept` header) returns rendered text, with `?format` winning. Every entry carries content, so any path can be read directly. Paths are slash-delimited (`apis/client`) everywhere.
      */
     get: operations['getKnowledgeBaseOutline']
     put?: never
@@ -421,11 +429,31 @@ export interface paths {
     }
     /**
      * Get a single entry
-     * @description Reads one entry by path, dotted (`pricing.plans.free`) or slash notation (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` or `Accept: text/markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
+     * @description Reads one entry by its slash-delimited path (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` or `Accept: text/markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
      */
     get: operations['getEntry']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries/{entryId}/rebuild': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Rebuild an entry from its sources
+     * @description Queues a re-write of this entry from its cited sources and the active instructions, and returns a job id right away. The response also names the other entries citing any of the same sources: a source-tied rule affects every page citing that source, so those may change too.
+     */
+    post: operations['rebuildEntry']
     delete?: never
     options?: never
     head?: never
@@ -514,6 +542,26 @@ export interface paths {
     get: operations['downloadImport']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}/pages/remove': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Remove crawled pages by path
+     * @description Prunes a page or a whole path subtree from a web crawl import: deletes the matching sources immediately and appends matching exclude patterns to the root's crawl options, so future crawls skip the subtree. The patterns stay visible and editable in the root's crawl settings. Entries are not modified here — citations to the removed pages are cleaned up by the next build or check for changes.
+     */
+    post: operations['removeCrawlPages']
     delete?: never
     options?: never
     head?: never
@@ -691,7 +739,7 @@ export interface paths {
     put?: never
     /**
      * Resolve a conflict issue
-     * @description Settles a conflict with one of three choices: `keep_existing`, `accept_new` (rewrites the entry; the returned `jobId` tracks it), or `edit_entry` (returns the entry to open). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
+     * @description Settles a conflict with one of two choices: `keep_existing` or `accept_new` (rewrites the entry; the returned `jobId` tracks it). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
      */
     post: operations['resolveIssue']
     delete?: never
@@ -735,9 +783,49 @@ export interface paths {
     put?: never
     /**
      * Author a human instruction
-     * @description Creates a standing instruction that every future build honors. Scope it to an outline path with `scopePath`, or leave it null to apply knowledge-base-wide.
+     * @description Creates a standing rule that every future build honors. Tie it to one or more sources with `scopeSourceIds`, or leave it null to apply knowledge-base-wide. Pass `rebuildPaths` to immediately rebuild those entries under the new rule; the response carries the rebuild job id, or null when the rebuild could not start (the rule is saved either way). Pass `verified` after a completed synchronous contradiction check to skip the background one; if the requested rebuild fails to start, the background check runs anyway so the contradicting pages get filed as issues.
      */
     post: operations['createInstruction']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check a rule against the pages citing its sources
+     * @description Synchronously judges every entry citing any of the given sources against the statement and reports the pages that contradict it. Nothing is created or written — run it before the create-instruction endpoint to see which pages a new rule would invalidate and pass them as `rebuildPaths`. Pass `candidatesOnly` to list the citing pages without running any verdicts, and `paths` to judge only those pages — together they let a client fan out per-page checks and show live progress.
+     */
+    post: operations['checkInstruction']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/draft': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Draft an instruction from feedback
+     * @description Turns free-form feedback ("this is wrong", "never say X") into a proposed standing rule: a statement plus the sources it should be tied to, scoped to the given entry's sources or knowledge-base-wide. Drafts only — review and edit the result, then create it with the create-instruction endpoint.
+     */
+    post: operations['draftInstruction']
     delete?: never
     options?: never
     head?: never
@@ -756,16 +844,156 @@ export interface paths {
     post?: never
     /**
      * Delete an instruction
-     * @description Deletes the instruction. Builds stop honoring it from the next run.
+     * @description Deletes the rule. Builds stop honoring it from the next run.
      */
     delete: operations['deleteInstruction']
     options?: never
     head?: never
     /**
      * Edit an instruction
-     * @description Edits the statement or scope. The change applies from the next build.
+     * @description Edits the statement or scope. The change applies from the next build. Any edit re-affirms the rule: an archived rule returns to active, re-anchored to the sources' current content.
      */
     patch: operations['updateInstruction']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List MCP endpoints
+     * @description The organization's MCP endpoint configurations, oldest first.
+     */
+    get: operations['listMcpEndpoints']
+    put?: never
+    /**
+     * Create an MCP endpoint
+     * @description Creates an MCP endpoint configuration: a title, an org-unique immutable name, and at least one source (a knowledge base by public id, or a dataset as `<projectId>.<datasetName>`). Duplicate sources collapse on `(type, id)`.
+     */
+    post: operations['createMcpEndpoint']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/by-name/{mcpEndpointName}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Resolve an MCP endpoint by name
+     * @description The serving-time read: turns the name from an agent connection URL into a servable endpoint configuration in one call. `knowledge-base` sources carry the knowledge base’s slug, name, and description — all null when the knowledge base has since been deleted (dangling sources are included, not hidden). `dataset` sources are unchanged.
+     */
+    get: operations['resolveMcpEndpointByName']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get an MCP endpoint
+     * @description Returns one MCP endpoint configuration by its public id (`mcp…`).
+     */
+    get: operations['getMcpEndpoint']
+    put?: never
+    post?: never
+    /**
+     * Delete an MCP endpoint
+     * @description Removes the endpoint configuration. Agents connected through it lose access.
+     */
+    delete: operations['deleteMcpEndpoint']
+    options?: never
+    head?: never
+    /**
+     * Update an MCP endpoint
+     * @description Edits the title, sources, instructions, or GROQ filter. `null` clears an optional field. The name is immutable — the serving URL never moves.
+     */
+    patch: operations['updateMcpEndpoint']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations/{threadId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a conversation
+     * @description Returns one recorded conversation by its thread id, transcript included.
+     */
+    get: operations['getConversation']
+    /**
+     * Record a conversation
+     * @description Upserts the conversation telemetry for one thread of the MCP endpoint. Messages replace the stored transcript wholesale; model fields only overwrite when present. Last write per thread wins — retries are safe.
+     */
+    put: operations['saveConversation']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Record a classification verdict
+     * @description Records the classification your own model produced for one thread: exactly one of `coreMetrics` (a verdict — the server stamps `classifiedAt` and clears any recorded failure) or `classificationError` (why classification failed; an earlier verdict stays untouched). No revision guard — like the ingest upsert the writer is an automated classifier, so last write wins and a re-classification simply overwrites.
+     */
+    patch: operations['classifyConversation']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List conversations
+     * @description The MCP endpoint's recorded conversations, most recently updated first. `?classification=` narrows to one classification state; `pending` flips to oldest-first work-queue order.
+     */
+    get: operations['listConversations']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations/insights': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Conversation insights
+     * @description Aggregate stats over every conversation recorded against the MCP endpoint: volume, score and sentiment distributions, classification progress, and the most frequent content gaps.
+     */
+    get: operations['getConversationInsights']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/activity': {
@@ -815,8 +1043,6 @@ export interface components {
         centrality: 'core' | 'standard' | 'peripheral'
       }
       body?: string
-      /** @enum {string} */
-      bodyFormat: 'markdown'
       topicHeadings?: string[]
       citations?: {
         sourceId: string
@@ -839,25 +1065,10 @@ export interface components {
         filename: string
         mime?: string
         excerpt?: string
-        detail?: string
       }[]
       /** @enum {string} */
       status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-      authoring?: {
-        /** @enum {string} */
-        _type: 'sanity.context.authoring'
-        /** @enum {string} */
-        generatedBy: 'pipeline' | 'human'
-        model?: string
-        generatedAt: string
-        buildRevisionId?: string
-        tokenCount?: number
-      }
-      contentHash?: string
-      writeInputsHash?: string
-      narrativeHash?: string
-      humanEditedAt?: string
-      humanEditedBy?: string
+      generatedAt: string
     }
     /** @description A `sanity.context.instruction` document, a standing decision steering every build, stored in the bound dataset. Not returned by any endpoint; published so GROQ reads against the dataset can be typed. Write through the instructions endpoints, never with a raw client. */
     InstructionDoc:
@@ -874,7 +1085,17 @@ export interface components {
           /** @enum {number} */
           schemaVersion: 1
           statement: string
-          scopePath: string | null
+          scopeSources:
+            | {
+                _key: string
+                sourceId: string
+                contentHash: string
+              }[]
+            | null
+          /** @enum {string} */
+          status: 'active' | 'archived'
+          archivedAt: string | null
+          archivedReason: string | null
           /** @enum {string} */
           origin: 'conflict'
           sourceIssueId: string
@@ -892,7 +1113,17 @@ export interface components {
           /** @enum {number} */
           schemaVersion: 1
           statement: string
-          scopePath: string | null
+          scopeSources:
+            | {
+                _key: string
+                sourceId: string
+                contentHash: string
+              }[]
+            | null
+          /** @enum {string} */
+          status: 'active' | 'archived'
+          archivedAt: string | null
+          archivedReason: string | null
           /** @enum {string} */
           origin: 'human'
           /** @enum {string|null} */
@@ -938,7 +1169,7 @@ export interface components {
             /** @enum {string} */
             alternativeAuthority?: 'primary' | 'secondary' | 'community'
             /** @enum {string} */
-            suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+            suggestedResolution?: 'keep_existing' | 'accept_new'
           }
           fingerprint: string
           revisionId: string | null
@@ -989,7 +1220,7 @@ export interface components {
             /** @enum {string} */
             alternativeAuthority?: 'primary' | 'secondary' | 'community'
             /** @enum {string} */
-            suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+            suggestedResolution?: 'keep_existing' | 'accept_new'
           }
           fingerprint: string
           revisionId: string | null
@@ -1003,7 +1234,7 @@ export interface components {
             kind: 'user' | 'robot'
           } | null
           /** @enum {string|null} */
-          resolution: 'keep_existing' | 'accept_new' | 'edit_entry' | null
+          resolution: 'keep_existing' | 'accept_new' | null
         }
       | {
           _id: string
@@ -1043,7 +1274,7 @@ export interface components {
             /** @enum {string} */
             alternativeAuthority?: 'primary' | 'secondary' | 'community'
             /** @enum {string} */
-            suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+            suggestedResolution?: 'keep_existing' | 'accept_new'
           }
           fingerprint: string
           revisionId: string | null
@@ -1059,6 +1290,37 @@ export interface components {
           /** @enum {string|null} */
           resolution: null
         }
+    /** @description A `sanity.context.mcp` document, an org-owned MCP endpoint configuration stored in the organization store. Not returned by any endpoint raw; published so GROQ reads and trigger filters can be typed. Write through the mcp endpoints, never with a raw client. The mcp endpoints serve the validated wire view. */
+    McpDoc: {
+      _id: string
+      _rev: string
+      /** Format: date-time */
+      _createdAt: string
+      /** Format: date-time */
+      _updatedAt: string
+      /** @enum {string} */
+      _type: 'sanity.context.mcp'
+      /** @enum {number} */
+      schemaVersion: 1
+      organizationId: string
+      publicId: string
+      title: string
+      name: string
+      sources: (
+        | {
+            /** @enum {string} */
+            type: 'knowledge-base'
+            id: string
+          }
+        | {
+            /** @enum {string} */
+            type: 'dataset'
+            id: string
+          }
+      )[]
+      instructions: string | null
+      groqFilter: string | null
+    }
   }
   responses: never
   parameters: never
@@ -1128,7 +1390,17 @@ export interface operations {
             /** Format: date-time */
             lastChangedAt: string | null
             hasPendingChanges: boolean
+            pendingChanges: {
+              added: number
+              changed: number
+              removed: number
+            } | null
             pipelineOutdated: boolean
+            rebuildRecommended: {
+              reason: string
+              /** Format: date-time */
+              at: string
+            } | null
             hasWebSource: boolean
             hasDatasetSource: boolean
             sourceUsage: {
@@ -1143,7 +1415,6 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
-            contextGroupId: string
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -1158,7 +1429,6 @@ export interface operations {
       query?: {
         cursor?: string
         limit?: number
-        contextGroupId?: string
       }
       header?: never
       path: {
@@ -1219,7 +1489,17 @@ export interface operations {
               /** Format: date-time */
               lastChangedAt: string | null
               hasPendingChanges: boolean
+              pendingChanges: {
+                added: number
+                changed: number
+                removed: number
+              } | null
               pipelineOutdated: boolean
+              rebuildRecommended: {
+                reason: string
+                /** Format: date-time */
+                at: string
+              } | null
               hasWebSource: boolean
               hasDatasetSource: boolean
               sourceUsage: {
@@ -1234,7 +1514,6 @@ export interface operations {
               refreshInFlight: boolean
               openIssueCount: number
               instructionCount: number
-              contextGroupId: string
               /** Format: date-time */
               createdAt: string
               /** Format: date-time */
@@ -1264,7 +1543,6 @@ export interface operations {
           description: string
           sanityProjectId: string
           sanityDatasetId: string
-          contextGroupId?: string
         }
       }
     }
@@ -1318,7 +1596,17 @@ export interface operations {
             /** Format: date-time */
             lastChangedAt: string | null
             hasPendingChanges: boolean
+            pendingChanges: {
+              added: number
+              changed: number
+              removed: number
+            } | null
             pipelineOutdated: boolean
+            rebuildRecommended: {
+              reason: string
+              /** Format: date-time */
+              at: string
+            } | null
             hasWebSource: boolean
             hasDatasetSource: boolean
             sourceUsage: {
@@ -1333,7 +1621,6 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
-            contextGroupId: string
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -1403,7 +1690,17 @@ export interface operations {
             /** Format: date-time */
             lastChangedAt: string | null
             hasPendingChanges: boolean
+            pendingChanges: {
+              added: number
+              changed: number
+              removed: number
+            } | null
             pipelineOutdated: boolean
+            rebuildRecommended: {
+              reason: string
+              /** Format: date-time */
+              at: string
+            } | null
             hasWebSource: boolean
             hasDatasetSource: boolean
             sourceUsage: {
@@ -1418,7 +1715,6 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
-            contextGroupId: string
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -1520,7 +1816,17 @@ export interface operations {
             /** Format: date-time */
             lastChangedAt: string | null
             hasPendingChanges: boolean
+            pendingChanges: {
+              added: number
+              changed: number
+              removed: number
+            } | null
             pipelineOutdated: boolean
+            rebuildRecommended: {
+              reason: string
+              /** Format: date-time */
+              at: string
+            } | null
             hasWebSource: boolean
             hasDatasetSource: boolean
             sourceUsage: {
@@ -1535,7 +1841,6 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
-            contextGroupId: string
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -1568,18 +1873,60 @@ export interface operations {
               sourceId: string
               filename: string
               canonicalUrl: string | null
+              contentHash: string
+              builtContentHash: string | null
+              /** Format: uuid */
+              builtRevisionId: string | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              fetchedAt: string | null
+              /** Format: date-time */
+              distilledAt: string | null
+              hasDistilledOutput: boolean
+              /** Format: date-time */
+              lastSeenAt: string | null
+              missedCrawlCount: number
             }[]
             changed: {
               /** Format: uuid */
               sourceId: string
               filename: string
               canonicalUrl: string | null
+              contentHash: string
+              builtContentHash: string | null
+              /** Format: uuid */
+              builtRevisionId: string | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              fetchedAt: string | null
+              /** Format: date-time */
+              distilledAt: string | null
+              hasDistilledOutput: boolean
+              /** Format: date-time */
+              lastSeenAt: string | null
+              missedCrawlCount: number
             }[]
             removed: {
               /** Format: uuid */
               sourceId: string
               filename: string
               canonicalUrl: string | null
+              contentHash: string
+              builtContentHash: string | null
+              /** Format: uuid */
+              builtRevisionId: string | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              fetchedAt: string | null
+              /** Format: date-time */
+              distilledAt: string | null
+              hasDistilledOutput: boolean
+              /** Format: date-time */
+              lastSeenAt: string | null
+              missedCrawlCount: number
             }[]
           }
         }
@@ -1602,6 +1949,7 @@ export interface operations {
           excludePaths?: string[]
           maxDepth?: number
           sitemapOnly?: boolean
+          ignoreQueryParameters?: boolean
           pageLimit?: number
           /** Format: uri */
           url: string
@@ -1620,7 +1968,41 @@ export interface operations {
             excludePaths?: string[]
             maxDepth?: number
             sitemapOnly?: boolean
+            ignoreQueryParameters?: boolean
             pageLimit?: number
+          }
+        }
+      }
+    }
+  }
+  updateDatasetSource: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    /** @description UpdateDatasetSourceInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          query: string
+        }
+      }
+    }
+    responses: {
+      /** @description DatasetSourceBinding */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            sanityProjectId: string
+            sanityDatasetId: string
+            query: string
           }
         }
       }
@@ -1796,6 +2178,158 @@ export interface operations {
       }
     }
   }
+  getKnowledgeBaseRevisionEntries: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        revisionId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description RevisionEntries */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            entries: {
+              docId: string
+              path: string
+              title: string
+              body: string | null
+              tldr?: {
+                scope: string
+                excludes: string
+                neighbors?: string[]
+                /** @enum {string} */
+                centrality: 'core' | 'standard' | 'peripheral'
+              }
+              citations?: {
+                sourceId: string
+                supports?: string
+                spans?: {
+                  sourceLineStart: number
+                  sourceLineEnd: number
+                  quote: string
+                }[]
+                claim?: {
+                  exact: string
+                  prefix?: string
+                  suffix?: string
+                }
+                /** @enum {string} */
+                groundingState?: 'drifted'
+              }[]
+            }[]
+          }
+        }
+      }
+    }
+  }
+  getKnowledgeBaseRevisionDecisions: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        revisionId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @enum {number} */
+            schemaVersion: 1
+            /** @enum {string} */
+            buildOutcome: 'completed' | 'failed'
+            corpus: {
+              sources: number
+              documents: number
+              placed: number
+              discarded: number
+              unplaced: number
+              moved: number
+              placementsWithoutReason: number
+            }
+            routing: {
+              groups: {
+                key: string
+                title: string
+                size: number
+              }[]
+              unrouted: {
+                sourceId: string
+                filename?: string
+                whyNone?: string
+              }[]
+            }
+            structure?: {
+              merges: {
+                survivor: string
+                absorbed: string[]
+                reason: string
+              }[]
+              rejectedMerges: {
+                survivor: string
+                error: string
+              }[]
+              concessions: {
+                gate: string
+                count: number
+                reason: string
+              }[]
+            }
+            sources: {
+              [key: string]: {
+                /** @enum {string} */
+                outcome: 'placed' | 'discarded' | 'unplaced'
+                filename?: string
+                url?: string
+                /** @enum {string} */
+                origin: 'crawled' | 'uploaded'
+                parentSourceId?: string
+                finalPaths: {
+                  path: string
+                  reason: string | null
+                }[]
+                discardReason?: string
+                duplicateOf?: string
+                events: {
+                  /** @enum {string} */
+                  kind: 'attached' | 'detached' | 'discarded' | 'renamed'
+                  path?: string
+                  from?: string
+                  reason?: string
+                  /** @enum {string} */
+                  stage:
+                    | 'triage'
+                    | 'place'
+                    | 'consolidate'
+                    | 'arrange'
+                    | 'write'
+                    | 'review'
+                    | 'repair'
+                    | 'unknown'
+                }[]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   getKnowledgeBaseRevisionReport: {
     parameters: {
       query?: never
@@ -1849,184 +2383,13 @@ export interface operations {
       }
     }
   }
-  listContextGroups: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        apiVersion: string
-        organizationId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              publicId: string
-              organizationId: string
-              sanityProjectId: string
-              sanityDatasetId: string
-              name: string
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              updatedAt: string
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  createContextGroup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        apiVersion: string
-        organizationId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          name: string
-          sanityProjectId: string
-          sanityDatasetId: string
-        }
-      }
-    }
-    responses: {
-      /** @description ContextGroup */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            publicId: string
-            organizationId: string
-            sanityProjectId: string
-            sanityDatasetId: string
-            name: string
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  getContextGroup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        groupId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description ContextGroup */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            publicId: string
-            organizationId: string
-            sanityProjectId: string
-            sanityDatasetId: string
-            name: string
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  deleteContextGroup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        groupId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': null
-        }
-      }
-    }
-  }
-  updateContextGroup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        groupId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          name: string
-        }
-      }
-    }
-    responses: {
-      /** @description ContextGroup */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            publicId: string
-            organizationId: string
-            sanityProjectId: string
-            sanityDatasetId: string
-            name: string
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
   listSources: {
     parameters: {
       query?: {
         cursor?: string
         limit?: number
         status?: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
+        importId?: string
         ids?: string
       }
       header?: never
@@ -2126,15 +2489,13 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description DeleteSourceResponse */
-      202: {
+      /** @description Default Response */
+      204: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            jobId: string | null
-          }
+          'application/json': null
         }
       }
     }
@@ -2237,7 +2598,7 @@ export interface operations {
         mode?: 'keyword' | 'hybrid'
         /** @description `metadata` omits the body (light list view); `body` includes the full markdown. */
         include?: 'metadata' | 'body'
-        /** @description Comma-separated entry paths (max 20), e.g. "pricing.plans,studio.config". Dotted and slash notations are both accepted ("pricing/plans" reads the same entry). Switches to batch-read mode: only these entries are returned, unordered, with nextCursor null. */
+        /** @description Comma-separated entry paths (max 20), e.g. "pricing/plans,studio/config". Switches to batch-read mode: only these entries are returned, unordered, with nextCursor null. */
         paths?: string
       }
       header?: never
@@ -2257,7 +2618,6 @@ export interface operations {
           'application/json': {
             data: {
               id: string
-              /** Format: uuid */
               knowledgeBaseId: string
               /** Format: uuid */
               revisionId: string
@@ -2290,8 +2650,6 @@ export interface operations {
                 /** @enum {string} */
                 groundingState?: 'drifted'
               }[]
-              /** Format: date-time */
-              humanEditedAt?: string | null
               /** @description GROQ relevance `_score` (higher is more relevant, always > 0). Present only on `?q=` search responses; absent when listing. */
               score?: number
             }[]
@@ -2324,7 +2682,6 @@ export interface operations {
         content: {
           'application/json': {
             id: string
-            /** Format: uuid */
             knowledgeBaseId: string
             /** Format: uuid */
             revisionId: string
@@ -2357,11 +2714,39 @@ export interface operations {
               /** @enum {string} */
               groundingState?: 'drifted'
             }[]
-            /** Format: date-time */
-            humanEditedAt?: string | null
           }
           'text/markdown': string
           'text/plain': string
+        }
+      }
+    }
+  }
+  rebuildEntry: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        entryId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description RebuildEntryResponse */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            jobId: string
+            affectedEntries: {
+              id: string
+              path: string
+              title: string
+            }[]
+          }
         }
       }
     }
@@ -2412,7 +2797,14 @@ export interface operations {
                 excludePaths?: string[]
                 maxDepth?: number
                 sitemapOnly?: boolean
+                ignoreQueryParameters?: boolean
                 pageLimit?: number
+              } | null
+              /** @description DatasetSourceBinding */
+              datasetSource: {
+                sanityProjectId: string
+                sanityDatasetId: string
+                query: string
               } | null
               /** @description Actor */
               createdBy: {
@@ -2463,6 +2855,7 @@ export interface operations {
                 excludePaths?: string[]
                 maxDepth?: number
                 sitemapOnly?: boolean
+                ignoreQueryParameters?: boolean
                 pageLimit?: number
               }
               /** @enum {string} */
@@ -2572,7 +2965,14 @@ export interface operations {
               excludePaths?: string[]
               maxDepth?: number
               sitemapOnly?: boolean
+              ignoreQueryParameters?: boolean
               pageLimit?: number
+            } | null
+            /** @description DatasetSourceBinding */
+            datasetSource: {
+              sanityProjectId: string
+              sanityDatasetId: string
+              query: string
             } | null
             /** @description Actor */
             createdBy: {
@@ -2634,6 +3034,39 @@ export interface operations {
             url: string
             /** Format: date-time */
             expiresAt: string
+          }
+        }
+      }
+    }
+  }
+  removeCrawlPages: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        importId: string
+      }
+      cookie?: never
+    }
+    /** @description RemoveCrawlPagesInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          path: string
+        }
+      }
+    }
+    responses: {
+      /** @description RemoveCrawlPagesResponse */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            removedCount: number
+            excludedPaths: string[]
           }
         }
       }
@@ -2797,7 +3230,6 @@ export interface operations {
           'application/json': {
             data: {
               id: string
-              /** Format: uuid */
               knowledgeBaseId: string
               /** @description IssueContent */
               content: {
@@ -2825,12 +3257,12 @@ export interface operations {
                 /** @enum {string} */
                 alternativeAuthority?: 'primary' | 'secondary' | 'community'
                 /** @enum {string} */
-                suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+                suggestedResolution?: 'keep_existing' | 'accept_new'
               }
               /** @enum {string} */
               status: 'open' | 'accepted' | 'rejected'
               /** @enum {string|null} */
-              resolution: 'keep_existing' | 'accept_new' | 'edit_entry' | null
+              resolution: 'keep_existing' | 'accept_new' | null
               /** @description IssueResolvedBy */
               resolvedBy: {
                 id: string
@@ -2868,7 +3300,6 @@ export interface operations {
         content: {
           'application/json': {
             id: string
-            /** Format: uuid */
             knowledgeBaseId: string
             /** @description IssueContent */
             content: {
@@ -2896,12 +3327,12 @@ export interface operations {
               /** @enum {string} */
               alternativeAuthority?: 'primary' | 'secondary' | 'community'
               /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+              suggestedResolution?: 'keep_existing' | 'accept_new'
             }
             /** @enum {string} */
             status: 'open' | 'accepted' | 'rejected'
             /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | 'edit_entry' | null
+            resolution: 'keep_existing' | 'accept_new' | null
             /** @description IssueResolvedBy */
             resolvedBy: {
               id: string
@@ -2967,7 +3398,6 @@ export interface operations {
         content: {
           'application/json': {
             id: string
-            /** Format: uuid */
             knowledgeBaseId: string
             /** @description IssueContent */
             content: {
@@ -2995,12 +3425,12 @@ export interface operations {
               /** @enum {string} */
               alternativeAuthority?: 'primary' | 'secondary' | 'community'
               /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+              suggestedResolution?: 'keep_existing' | 'accept_new'
             }
             /** @enum {string} */
             status: 'open' | 'accepted' | 'rejected'
             /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | 'edit_entry' | null
+            resolution: 'keep_existing' | 'accept_new' | null
             /** @description IssueResolvedBy */
             resolvedBy: {
               id: string
@@ -3030,8 +3460,7 @@ export interface operations {
       content: {
         'application/json': {
           /** @enum {string} */
-          resolution: 'keep_existing' | 'accept_new' | 'edit_entry'
-          statement?: string
+          resolution: 'keep_existing' | 'accept_new'
         }
       }
     }
@@ -3046,7 +3475,6 @@ export interface operations {
             /** @description Issue */
             issue: {
               id: string
-              /** Format: uuid */
               knowledgeBaseId: string
               /** @description IssueContent */
               content: {
@@ -3074,12 +3502,12 @@ export interface operations {
                 /** @enum {string} */
                 alternativeAuthority?: 'primary' | 'secondary' | 'community'
                 /** @enum {string} */
-                suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+                suggestedResolution?: 'keep_existing' | 'accept_new'
               }
               /** @enum {string} */
               status: 'open' | 'accepted' | 'rejected'
               /** @enum {string|null} */
-              resolution: 'keep_existing' | 'accept_new' | 'edit_entry' | null
+              resolution: 'keep_existing' | 'accept_new' | null
               /** @description IssueResolvedBy */
               resolvedBy: {
                 id: string
@@ -3091,11 +3519,6 @@ export interface operations {
               /** Format: date-time */
               resolvedAt: string | null
             }
-            /** @description EntryRef */
-            entry: {
-              id: string
-              path: string
-            } | null
             jobId: string | null
           }
         }
@@ -3122,7 +3545,6 @@ export interface operations {
         content: {
           'application/json': {
             id: string
-            /** Format: uuid */
             knowledgeBaseId: string
             /** @description IssueContent */
             content: {
@@ -3150,12 +3572,12 @@ export interface operations {
               /** @enum {string} */
               alternativeAuthority?: 'primary' | 'secondary' | 'community'
               /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new' | 'edit_entry'
+              suggestedResolution?: 'keep_existing' | 'accept_new'
             }
             /** @enum {string} */
             status: 'open' | 'accepted' | 'rejected'
             /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | 'edit_entry' | null
+            resolution: 'keep_existing' | 'accept_new' | null
             /** @description IssueResolvedBy */
             resolvedBy: {
               id: string
@@ -3194,12 +3616,16 @@ export interface operations {
           'application/json': {
             data: {
               id: string
-              /** Format: uuid */
               knowledgeBaseId: string
               /** @enum {string} */
               origin: 'conflict' | 'human'
+              /** @enum {string} */
+              status: 'active' | 'archived'
               statement: string
-              scopePath: string | null
+              scopeSourceIds: string[] | null
+              /** Format: date-time */
+              archivedAt: string | null
+              archivedReason: string | null
               sourceIssueId: string | null
               /** @description Actor */
               createdBy: {
@@ -3236,40 +3662,131 @@ export interface operations {
       content: {
         'application/json': {
           statement: string
-          scopePath?: string | null
+          scopeSourceIds?: string[] | null
+          rebuildPaths?: string[]
+          verified?: boolean
         }
       }
     }
     responses: {
-      /** @description Instruction */
+      /** @description CreateInstructionResponse */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            id: string
-            /** Format: uuid */
-            knowledgeBaseId: string
-            /** @enum {string} */
-            origin: 'conflict' | 'human'
+            /** @description Instruction */
+            instruction: {
+              id: string
+              knowledgeBaseId: string
+              /** @enum {string} */
+              origin: 'conflict' | 'human'
+              /** @enum {string} */
+              status: 'active' | 'archived'
+              statement: string
+              scopeSourceIds: string[] | null
+              /** Format: date-time */
+              archivedAt: string | null
+              archivedReason: string | null
+              sourceIssueId: string | null
+              /** @description Actor */
+              createdBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** @description Actor */
+              updatedBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              updatedAt: string | null
+            }
+            rebuildJobId: string | null
+          }
+        }
+      }
+    }
+  }
+  checkInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    /** @description CheckInstructionInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          statement: string
+          scopeSourceIds: string[]
+          excludeEntryId?: string
+          candidatesOnly?: boolean
+          paths?: string[]
+        }
+      }
+    }
+    responses: {
+      /** @description CheckInstructionResponse */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            checked: number
+            contradictions: {
+              id: string
+              path: string
+              title: string
+              issue: string
+            }[]
+            candidates?: {
+              id: string
+              path: string
+              title: string
+            }[]
+          }
+        }
+      }
+    }
+  }
+  draftInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    /** @description DraftInstructionInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          feedback: string
+          entryId?: string
+          excerpt?: string
+          scopeSourceIds?: string[]
+        }
+      }
+    }
+    responses: {
+      /** @description DraftInstructionResponse */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
             statement: string
-            scopePath: string | null
-            sourceIssueId: string | null
-            /** @description Actor */
-            createdBy: {
-              id: string | null
-              displayName: string | null
-            } | null
-            /** @description Actor */
-            updatedBy: {
-              id: string | null
-              displayName: string | null
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string | null
+            scopeSourceIds: string[] | null
           }
         }
       }
@@ -3313,7 +3830,7 @@ export interface operations {
       content: {
         'application/json': {
           statement?: string
-          scopePath?: string | null
+          scopeSourceIds?: string[] | null
         }
       }
     }
@@ -3326,12 +3843,16 @@ export interface operations {
         content: {
           'application/json': {
             id: string
-            /** Format: uuid */
             knowledgeBaseId: string
             /** @enum {string} */
             origin: 'conflict' | 'human'
+            /** @enum {string} */
+            status: 'active' | 'archived'
             statement: string
-            scopePath: string | null
+            scopeSourceIds: string[] | null
+            /** Format: date-time */
+            archivedAt: string | null
+            archivedReason: string | null
             sourceIssueId: string | null
             /** @description Actor */
             createdBy: {
@@ -3347,6 +3868,628 @@ export interface operations {
             createdAt: string
             /** Format: date-time */
             updatedAt: string | null
+          }
+        }
+      }
+    }
+  }
+  listMcpEndpoints: {
+    parameters: {
+      query?: {
+        cursor?: string
+        limit?: number
+      }
+      header?: never
+      path: {
+        apiVersion: string
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            data: {
+              id: string
+              organizationId: string
+              title: string
+              name: string
+              sources: (
+                | {
+                    /** @enum {string} */
+                    type: 'knowledge-base'
+                    id: string
+                  }
+                | {
+                    /** @enum {string} */
+                    type: 'dataset'
+                    id: string
+                  }
+              )[]
+              instructions: string | null
+              groqFilter: string | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              updatedAt: string
+            }[]
+            nextCursor: string | null
+          }
+        }
+      }
+    }
+  }
+  createMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        apiVersion: string
+        organizationId: string
+      }
+      cookie?: never
+    }
+    /** @description CreateMcpEndpointInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          title: string
+          name: string
+          sources: (
+            | {
+                /** @enum {string} */
+                type: 'knowledge-base'
+                id: string
+              }
+            | {
+                /** @enum {string} */
+                type: 'dataset'
+                id: string
+              }
+          )[]
+          instructions?: string
+          groqFilter?: string
+        }
+      }
+    }
+    responses: {
+      /** @description McpEndpoint */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            organizationId: string
+            title: string
+            name: string
+            sources: (
+              | {
+                  /** @enum {string} */
+                  type: 'knowledge-base'
+                  id: string
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'dataset'
+                  id: string
+                }
+            )[]
+            instructions: string | null
+            groqFilter: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  resolveMcpEndpointByName: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointName: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description ResolvedMcpEndpoint */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            organizationId: string
+            title: string
+            name: string
+            sources: (
+              | {
+                  /** @enum {string} */
+                  type: 'knowledge-base'
+                  id: string
+                  slug: string | null
+                  name: string | null
+                  description: string | null
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'dataset'
+                  id: string
+                }
+            )[]
+            instructions: string | null
+            groqFilter: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  getMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description McpEndpoint */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            organizationId: string
+            title: string
+            name: string
+            sources: (
+              | {
+                  /** @enum {string} */
+                  type: 'knowledge-base'
+                  id: string
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'dataset'
+                  id: string
+                }
+            )[]
+            instructions: string | null
+            groqFilter: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  deleteMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+    }
+  }
+  updateMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointId: string
+      }
+      cookie?: never
+    }
+    /** @description UpdateMcpEndpointInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          title?: string
+          sources?: (
+            | {
+                /** @enum {string} */
+                type: 'knowledge-base'
+                id: string
+              }
+            | {
+                /** @enum {string} */
+                type: 'dataset'
+                id: string
+              }
+          )[]
+          instructions?: string | null
+          groqFilter?: string | null
+        }
+      }
+    }
+    responses: {
+      /** @description McpEndpoint */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            organizationId: string
+            title: string
+            name: string
+            sources: (
+              | {
+                  /** @enum {string} */
+                  type: 'knowledge-base'
+                  id: string
+                }
+              | {
+                  /** @enum {string} */
+                  type: 'dataset'
+                  id: string
+                }
+            )[]
+            instructions: string | null
+            groqFilter: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  getConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointName: string
+        threadId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Conversation */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            threadId: string
+            mcpEndpointId: string
+            /** Format: date-time */
+            startedAt: string
+            /** Format: date-time */
+            messagesUpdatedAt: string
+            messages: {
+              /** @enum {string} */
+              role: 'user' | 'assistant' | 'system' | 'tool'
+              /** @default null */
+              content: string | null
+              /** @default null */
+              toolName: string | null
+              /**
+               * @default null
+               * @enum {string|null}
+               */
+              toolType: 'call' | 'result' | null
+            }[]
+            modelProvider: string | null
+            modelId: string | null
+            /** @description ConversationTokenUsage */
+            tokenUsage: {
+              inputTokens?: number
+              outputTokens?: number
+              totalTokens?: number
+            } | null
+            /** @description ConversationCoreMetrics */
+            coreMetrics: {
+              successScore?: number
+              /** @enum {string} */
+              sentiment?: 'positive' | 'neutral' | 'negative'
+              contentGaps?: string[]
+            } | null
+            /** Format: date-time */
+            classifiedAt: string | null
+            classificationError: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  saveConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointName: string
+        threadId: string
+      }
+      cookie?: never
+    }
+    /** @description SaveConversationInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          messages: {
+            /** @enum {string} */
+            role: 'user' | 'assistant' | 'system' | 'tool'
+            /** @default null */
+            content?: string | null
+            /** @default null */
+            toolName?: string | null
+            /**
+             * @default null
+             * @enum {string|null}
+             */
+            toolType?: 'call' | 'result' | null
+          }[]
+          modelProvider?: string
+          modelId?: string
+          /** @description ConversationTokenUsage */
+          tokenUsage?: {
+            inputTokens?: number
+            outputTokens?: number
+            totalTokens?: number
+          }
+        }
+      }
+    }
+    responses: {
+      /** @description Conversation */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            threadId: string
+            mcpEndpointId: string
+            /** Format: date-time */
+            startedAt: string
+            /** Format: date-time */
+            messagesUpdatedAt: string
+            messages: {
+              /** @enum {string} */
+              role: 'user' | 'assistant' | 'system' | 'tool'
+              /** @default null */
+              content: string | null
+              /** @default null */
+              toolName: string | null
+              /**
+               * @default null
+               * @enum {string|null}
+               */
+              toolType: 'call' | 'result' | null
+            }[]
+            modelProvider: string | null
+            modelId: string | null
+            /** @description ConversationTokenUsage */
+            tokenUsage: {
+              inputTokens?: number
+              outputTokens?: number
+              totalTokens?: number
+            } | null
+            /** @description ConversationCoreMetrics */
+            coreMetrics: {
+              successScore?: number
+              /** @enum {string} */
+              sentiment?: 'positive' | 'neutral' | 'negative'
+              contentGaps?: string[]
+            } | null
+            /** Format: date-time */
+            classifiedAt: string | null
+            classificationError: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  classifyConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointName: string
+        threadId: string
+      }
+      cookie?: never
+    }
+    /** @description ClassifyConversationInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          coreMetrics?: {
+            successScore: number
+            /** @enum {string} */
+            sentiment: 'positive' | 'neutral' | 'negative'
+            contentGaps: string[]
+          }
+          classificationError?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Conversation */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            threadId: string
+            mcpEndpointId: string
+            /** Format: date-time */
+            startedAt: string
+            /** Format: date-time */
+            messagesUpdatedAt: string
+            messages: {
+              /** @enum {string} */
+              role: 'user' | 'assistant' | 'system' | 'tool'
+              /** @default null */
+              content: string | null
+              /** @default null */
+              toolName: string | null
+              /**
+               * @default null
+               * @enum {string|null}
+               */
+              toolType: 'call' | 'result' | null
+            }[]
+            modelProvider: string | null
+            modelId: string | null
+            /** @description ConversationTokenUsage */
+            tokenUsage: {
+              inputTokens?: number
+              outputTokens?: number
+              totalTokens?: number
+            } | null
+            /** @description ConversationCoreMetrics */
+            coreMetrics: {
+              successScore?: number
+              /** @enum {string} */
+              sentiment?: 'positive' | 'neutral' | 'negative'
+              contentGaps?: string[]
+            } | null
+            /** Format: date-time */
+            classifiedAt: string | null
+            classificationError: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  listConversations: {
+    parameters: {
+      query?: {
+        cursor?: string
+        limit?: number
+        /** @description Filter by classification state. `pending` is the classifier work queue: threads with messages, no verdict, no recorded failure, and settled — the transcript unchanged for a server-owned 10-minute cooldown so a thread still being written is never scored mid-write — returned oldest first. `classified` and `failed` return newest first. Omit for all conversations. */
+        classification?: 'pending' | 'classified' | 'failed'
+      }
+      header?: never
+      path: {
+        mcpEndpointName: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            data: {
+              threadId: string
+              /** Format: date-time */
+              messagesUpdatedAt: string
+              messageCount: number
+              firstMessage: string | null
+              /** @description ConversationCoreMetrics */
+              coreMetrics: {
+                successScore?: number
+                /** @enum {string} */
+                sentiment?: 'positive' | 'neutral' | 'negative'
+                contentGaps?: string[]
+              } | null
+            }[]
+            nextCursor: string | null
+          }
+        }
+      }
+    }
+  }
+  getConversationInsights: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        mcpEndpointName: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description ConversationInsights */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            conversations: number
+            averageScore: number | null
+            averageMessages: number | null
+            analyzed: number
+            classificationErrors: number
+            scores: {
+              good: number
+              okay: number
+              poor: number
+              critical: number
+            }
+            sentiment: {
+              positive: number
+              neutral: number
+              negative: number
+            }
+            contentGaps: {
+              gap: string
+              count: number
+            }[]
           }
         }
       }
