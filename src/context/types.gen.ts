@@ -76,7 +76,7 @@ export interface paths {
     patch: operations['updateKnowledgeBase']
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/changes': {
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/activity': {
     parameters: {
       query?: never
       header?: never
@@ -84,56 +84,16 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List pending corpus changes
-     * @description Returns the sources added, changed, or removed since the last build, derived from the corpus diff.
+     * List activity for a Context
+     * @description The audit trail, newest first: who did what, as dotted `<resource>.<verb>` actions. New action kinds appear over time, so render unknown ones with `description`. Actor identity is snapshotted at event time; resolve `actor.id` against the members API for live names, falling back to `actor.displayName`.
      */
-    get: operations['getKnowledgeBaseChanges']
+    get: operations['listActivity']
     put?: never
     post?: never
     delete?: never
     options?: never
     head?: never
     patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/crawl-options': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /**
-     * Update crawl options
-     * @description Replaces the crawl options. The body is the full desired state; omitted fields are cleared.
-     */
-    patch: operations['updateCrawlOptions']
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/dataset-source': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /**
-     * Update the dataset source query
-     * @description Replaces the GROQ query of the dataset source and starts a check for changes so the corpus reconciles against the new selection right away. The source project and dataset are fixed; remove the import and add a new one to point elsewhere.
-     */
-    patch: operations['updateDatasetSource']
     trace?: never
   }
   '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/build': {
@@ -176,6 +136,402 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/changes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List pending corpus changes
+     * @description Returns the sources added, changed, or removed since the last build, derived from the corpus diff.
+     */
+    get: operations['getKnowledgeBaseChanges']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/crawl-options': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update crawl options
+     * @description Replaces the crawl options. The body is the full desired state; omitted fields are cleared.
+     */
+    patch: operations['updateCrawlOptions']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List, search, or batch-read entries
+     * @description The content documents of the knowledge base, ordered by path and cursor-paginated. `q` runs a full-text search ranked by relevance. `paths` batch-reads specific entries. `include=body` adds the full markdown; the default returns metadata only.
+     */
+    get: operations['listEntries']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries/{entryPath}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a single entry
+     * @description Reads one entry by its slash-delimited path (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` or `Accept: text/markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
+     */
+    get: operations['getEntry']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List imports
+     * @description Everything added to this knowledge base, one row per import: a file upload, web crawl, dataset bind, or inline text. Cursor-paginated. The sources each import produced live under `/sources`.
+     */
+    get: operations['listImports']
+    put?: never
+    /**
+     * Create an import (text, crawl, or dataset)
+     * @description Adds content, discriminated on `type`: `text` for inline content, `crawl` for a website, `dataset` for a GROQ-filtered Sanity dataset. Each variant queues processing and returns a job id to poll. For files, use `POST .../imports/uploads` instead. Re-adding an existing crawl url returns 409 `webSourceRootConflict`; exceeding the crawl root limit returns 409 `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
+     */
+    post: operations['createImport']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/crawl-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview a web crawl
+     * @description Maps the site without fetching pages and estimates how many pages a crawl would ingest, clustered by path. Nothing is persisted; create the actual crawl with `POST .../imports`. A mapping failure returns 502 `crawlPreviewUnavailable`. The preview is advisory, so it is safe to skip it and crawl directly.
+     */
+    post: operations['previewCrawl']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/uploads': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Start a file-upload import
+     * @description Creates a file-upload import and returns a single-use signed upload URL. PUT the file bytes to it, then call `POST .../imports/uploads/{importId}/complete` to start ingestion. The bytes never pass through this API. Supports the `Idempotency-Key` header.
+     */
+    post: operations['startUpload']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a single import
+     * @description Returns one import with its kind and processing status.
+     */
+    get: operations['getImport']
+    put?: never
+    post?: never
+    /**
+     * Delete an import
+     * @description Removes the import and every source it produced, and cancels its ingest if one is still running. Use it to discard something added by mistake.
+     */
+    delete: operations['deleteImport']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a download URL for an import
+     * @description Mints a short-lived signed URL serving the import's original bytes as an attachment. Use it before `expiresAt`; the bytes never pass through this API. Only file and text imports carry original bytes; crawls and dataset binds return 409 `uploadBatchInvalidState`.
+     */
+    get: operations['downloadImport']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List instructions for a Context
+     * @description The standing decisions steering every build: resolved-conflict overrides and human-authored instructions.
+     */
+    get: operations['listInstructions']
+    put?: never
+    /**
+     * Author a human instruction
+     * @description Creates a standing rule that every future build honors. Tie it to one or more sources with `scopeSourceIds`, or leave it null to apply knowledge-base-wide. Pass `rebuildPaths` to immediately rebuild those entries under the new rule; the response carries the rebuild job id, or null when the rebuild could not start (the rule is saved either way). Pass `verified` after a completed synchronous contradiction check to skip the background one; if the requested rebuild fails to start, the background check runs anyway so the contradicting pages get filed as issues.
+     */
+    post: operations['createInstruction']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/{instructionId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Delete an instruction
+     * @description Deletes the rule. Builds stop honoring it from the next run.
+     */
+    delete: operations['deleteInstruction']
+    options?: never
+    head?: never
+    /**
+     * Edit an instruction
+     * @description Edits the statement or scope. The change applies from the next build. Any edit re-affirms the rule: an archived rule returns to active, re-anchored to the sources' current content.
+     */
+    patch: operations['updateInstruction']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List issues for a Context
+     * @description Issues are `sanity.context.issue` documents in the bound dataset; this is the validated, paginated view over them. Documents that fail validation are dropped from the page rather than failing the response.
+     */
+    get: operations['listIssues']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/apply': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Apply accepted issues to a Context
+     * @description Queues a job that applies accepted issues, rewrites the affected entries, and commits a new revision. Returns a job id. Issue ids that no longer exist are skipped.
+     */
+    post: operations['applyIssues']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a single issue
+     * @description Returns one issue with its finding, status, and any resolution.
+     */
+    get: operations['getIssue']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/dismiss': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Dismiss an issue
+     * @description Marks the issue rejected. Idempotent: dismissing an issue that already left the queue returns it as-is. 422 `issueDocumentInvalid` when the document was hand-edited into an unverifiable shape; 409 `issueTransitionConflict` on a concurrent edit, safe to retry.
+     */
+    post: operations['dismissIssue']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/reopen': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reopen an accepted conflict
+     * @description Returns an accepted conflict to triage, clearing its resolution and deleting the instruction it minted. Idempotent for issues that are not accepted conflicts.
+     */
+    post: operations['reopenIssue']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/resolve': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Resolve a conflict issue
+     * @description Settles a conflict with one of two choices: `keep_existing` or `accept_new` (rewrites the entry; the returned `jobId` tracks it). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
+     */
+    post: operations['resolveIssue']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/jobs/{jobId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a job by id
+     * @description Returns the status of a job, such as a build or an import. Job ids come from the endpoint that queued the work.
+     */
+    get: operations['getJob']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/outline': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get the knowledge base outline
+     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` (or the matching `Accept` header) returns rendered text, with `?format` winning. Every entry carries content, so any path can be read directly. Paths are slash-delimited (`apis/client`) everywhere.
+     */
+    get: operations['getKnowledgeBaseOutline']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/refresh': {
     parameters: {
       query?: never
@@ -190,26 +546,6 @@ export interface paths {
      * @description Queues a refresh: recrawls each web source, diffs the corpus against the last build, and files change issues. Returns a job id, with `started: false` when a refresh was already in flight. Supports the `Idempotency-Key` header.
      */
     post: operations['refreshKnowledgeBase']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/events': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Subscribe to knowledge base events (SSE)
-     * @description Server-sent event stream of knowledge base state changes. Authenticate with `Authorization: Bearer` or the `sanitySession` cookie.
-     */
-    get: operations['streamKnowledgeBaseEvents']
-    put?: never
-    post?: never
     delete?: never
     options?: never
     head?: never
@@ -248,46 +584,6 @@ export interface paths {
      * @description The outline as captured when this build committed. Read-only. Each entry carries its Sanity `docId` — the join key into the revision's `/entries` response, which serves the historical content, including entries later builds deleted. 404 when the revision does not exist, 409 `revisionNotBrowsable` when the build predates outline capture.
      */
     get: operations['getKnowledgeBaseRevisionOutline']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions/{revisionId}/entries': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Read every entry's content as it was at a build revision
-     * @description Bulk historical read for the revision browser: each outline entry's content reconstructed from document history at the revision's `capturedAt`, in outline order. Entries whose history the plan's retention no longer covers are absent from the result. 404 when the revision does not exist, 409 `revisionNotBrowsable` when the build predates outline capture.
-     */
-    get: operations['getKnowledgeBaseRevisionEntries']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions/{revisionId}/decisions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get one build's full decision record
-     * @description Everything one build decided and why: per-source journeys with every placement, move, and removal reason; topic-group routing; section merges; and repair concessions. Written for completed and failed builds alike. Large — a big crawl runs to megabytes; fetch per revision, not in lists. 404 `buildDecisionsNotFound` when the build predates decision capture.
-     */
-    get: operations['getKnowledgeBaseRevisionDecisions']
     put?: never
     post?: never
     delete?: never
@@ -372,642 +668,6 @@ export interface paths {
      * @description The distilled markdown builds cite, the same text the pipeline itself reads. Use it to verify an issue's claims against the sources its `citedSourceIds` name. Optional `startLine` and `endLine` (1-indexed, inclusive) fetch just a span. JSON by default; `?format=markdown` or `Accept: text/markdown` returns the raw text, with `?format` winning. 409 `sourceNotDistilled` until distillation has produced content.
      */
     get: operations['getSourceContent']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/outline': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get the knowledge base outline
-     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` (or the matching `Accept` header) returns rendered text, with `?format` winning. Every entry carries content, so any path can be read directly. Paths are slash-delimited (`apis/client`) everywhere.
-     */
-    get: operations['getKnowledgeBaseOutline']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List, search, or batch-read entries
-     * @description The content documents of the knowledge base, ordered by path and cursor-paginated. `q` runs a full-text search ranked by relevance. `paths` batch-reads specific entries. `include=body` adds the full markdown; the default returns metadata only.
-     */
-    get: operations['listEntries']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries/{entryPath}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a single entry
-     * @description Reads one entry by its slash-delimited path (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` or `Accept: text/markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
-     */
-    get: operations['getEntry']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries/{entryId}/rebuild': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Rebuild an entry from its sources
-     * @description Queues a re-write of this entry from its cited sources and the active instructions, and returns a job id right away. The response also names the other entries citing any of the same sources: a source-tied rule affects every page citing that source, so those may change too.
-     */
-    post: operations['rebuildEntry']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List imports
-     * @description Everything added to this knowledge base, one row per import: a file upload, web crawl, dataset bind, or inline text. Cursor-paginated. The sources each import produced live under `/sources`.
-     */
-    get: operations['listImports']
-    put?: never
-    /**
-     * Create an import (text, crawl, or dataset)
-     * @description Adds content, discriminated on `type`: `text` for inline content, `crawl` for a website, `dataset` for a GROQ-filtered Sanity dataset. Each variant queues processing and returns a job id to poll. For files, use `POST .../imports/uploads` instead. Re-adding an existing crawl url returns 409 `webSourceRootConflict`; exceeding the crawl root limit returns 409 `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
-     */
-    post: operations['createImport']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/crawl-preview': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Preview a web crawl
-     * @description Maps the site without fetching pages and estimates how many pages a crawl would ingest, clustered by path. Nothing is persisted; create the actual crawl with `POST .../imports`. A mapping failure returns 502 `crawlPreviewUnavailable`. The preview is advisory, so it is safe to skip it and crawl directly.
-     */
-    post: operations['previewCrawl']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a single import
-     * @description Returns one import with its kind and processing status.
-     */
-    get: operations['getImport']
-    put?: never
-    post?: never
-    /**
-     * Delete an import
-     * @description Removes the import and every source it produced, and cancels its ingest if one is still running. Use it to discard something added by mistake.
-     */
-    delete: operations['deleteImport']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}/download': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a download URL for an import
-     * @description Mints a short-lived signed URL serving the import's original bytes as an attachment. Use it before `expiresAt`; the bytes never pass through this API. Only file and text imports carry original bytes; crawls and dataset binds return 409 `uploadBatchInvalidState`.
-     */
-    get: operations['downloadImport']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}/pages/remove': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Remove crawled pages by path
-     * @description Prunes a page or a whole path subtree from a web crawl import: deletes the matching sources immediately and appends matching exclude patterns to the root's crawl options, so future crawls skip the subtree. The patterns stay visible and editable in the root's crawl settings. Entries are not modified here — citations to the removed pages are cleaned up by the next build or check for changes.
-     */
-    post: operations['removeCrawlPages']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/uploads': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Start a file-upload import
-     * @description Creates a file-upload import and returns a single-use signed upload URL. PUT the file bytes to it, then call `POST .../imports/uploads/{importId}/complete` to start ingestion. The bytes never pass through this API. Supports the `Idempotency-Key` header.
-     */
-    post: operations['startUpload']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/uploads/{importId}/complete': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Complete a file-upload import
-     * @description Call after the file bytes are uploaded to the signed URL. Starts processing and returns a job id to poll.
-     */
-    post: operations['completeUpload']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/dataset-permissions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Resolve the caller's access to datasets
-     * @description Resolves the caller's effective access to each requested dataset in one round trip, keyed by `"{sanityProjectId}/{sanityDatasetId}"`. `read` and `write` come from the Sanity ACL, with positive reads verified with a live read check. `fullRead` gates binding a dataset source; `admin` plus `write` gates creating a Context. Transient failures fail open on `read` and closed on `write`, `fullRead`, and `admin`.
-     */
-    post: operations['getDatasetPermissions']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/jobs/{jobId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a job by id
-     * @description Returns the status of a job, such as a build or an import. Job ids come from the endpoint that queued the work.
-     */
-    get: operations['getJob']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List issues for a Context
-     * @description Issues are `sanity.context.issue` documents in the bound dataset; this is the validated, paginated view over them. Documents that fail validation are dropped from the page rather than failing the response.
-     */
-    get: operations['listIssues']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a single issue
-     * @description Returns one issue with its finding, status, and any resolution.
-     */
-    get: operations['getIssue']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/apply': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Apply accepted issues to a Context
-     * @description Queues a job that applies accepted issues, rewrites the affected entries, and commits a new revision. Returns a job id. Issue ids that no longer exist are skipped.
-     */
-    post: operations['applyIssues']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/dismiss': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Dismiss an issue
-     * @description Marks the issue rejected. Idempotent: dismissing an issue that already left the queue returns it as-is. 422 `issueDocumentInvalid` when the document was hand-edited into an unverifiable shape; 409 `issueTransitionConflict` on a concurrent edit, safe to retry.
-     */
-    post: operations['dismissIssue']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/resolve': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Resolve a conflict issue
-     * @description Settles a conflict with one of two choices: `keep_existing` or `accept_new` (rewrites the entry; the returned `jobId` tracks it). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
-     */
-    post: operations['resolveIssue']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/reopen': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Reopen an accepted conflict
-     * @description Returns an accepted conflict to triage, clearing its resolution and deleting the instruction it minted. Idempotent for issues that are not accepted conflicts.
-     */
-    post: operations['reopenIssue']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List instructions for a Context
-     * @description The standing decisions steering every build: resolved-conflict overrides and human-authored instructions.
-     */
-    get: operations['listInstructions']
-    put?: never
-    /**
-     * Author a human instruction
-     * @description Creates a standing rule that every future build honors. Tie it to one or more sources with `scopeSourceIds`, or leave it null to apply knowledge-base-wide. Pass `rebuildPaths` to immediately rebuild those entries under the new rule; the response carries the rebuild job id, or null when the rebuild could not start (the rule is saved either way). Pass `verified` after a completed synchronous contradiction check to skip the background one; if the requested rebuild fails to start, the background check runs anyway so the contradicting pages get filed as issues.
-     */
-    post: operations['createInstruction']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/check': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Check a rule against the pages citing its sources
-     * @description Synchronously judges every entry citing any of the given sources against the statement and reports the pages that contradict it. Nothing is created or written — run it before the create-instruction endpoint to see which pages a new rule would invalidate and pass them as `rebuildPaths`. Pass `candidatesOnly` to list the citing pages without running any verdicts, and `paths` to judge only those pages — together they let a client fan out per-page checks and show live progress.
-     */
-    post: operations['checkInstruction']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/draft': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Draft an instruction from feedback
-     * @description Turns free-form feedback ("this is wrong", "never say X") into a proposed standing rule: a statement plus the sources it should be tied to, scoped to the given entry's sources or knowledge-base-wide. Drafts only — review and edit the result, then create it with the create-instruction endpoint.
-     */
-    post: operations['draftInstruction']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/{instructionId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    /**
-     * Delete an instruction
-     * @description Deletes the rule. Builds stop honoring it from the next run.
-     */
-    delete: operations['deleteInstruction']
-    options?: never
-    head?: never
-    /**
-     * Edit an instruction
-     * @description Edits the statement or scope. The change applies from the next build. Any edit re-affirms the rule: an archived rule returns to active, re-anchored to the sources' current content.
-     */
-    patch: operations['updateInstruction']
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/mcp': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List MCP endpoints
-     * @description The organization's MCP endpoint configurations, oldest first.
-     */
-    get: operations['listMcpEndpoints']
-    put?: never
-    /**
-     * Create an MCP endpoint
-     * @description Creates an MCP endpoint configuration: a title, an org-unique immutable name, and at least one source (a knowledge base by public id, or a dataset as `<projectId>.<datasetName>`). Duplicate sources collapse on `(type, id)`.
-     */
-    post: operations['createMcpEndpoint']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/mcp/by-name/{mcpEndpointName}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Resolve an MCP endpoint by name
-     * @description The serving-time read: turns the name from an agent connection URL into a servable endpoint configuration in one call. `knowledge-base` sources carry the knowledge base’s slug, name, and description — all null when the knowledge base has since been deleted (dangling sources are included, not hidden). `dataset` sources are unchanged.
-     */
-    get: operations['resolveMcpEndpointByName']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get an MCP endpoint
-     * @description Returns one MCP endpoint configuration by its public id (`mcp…`).
-     */
-    get: operations['getMcpEndpoint']
-    put?: never
-    post?: never
-    /**
-     * Delete an MCP endpoint
-     * @description Removes the endpoint configuration. Agents connected through it lose access.
-     */
-    delete: operations['deleteMcpEndpoint']
-    options?: never
-    head?: never
-    /**
-     * Update an MCP endpoint
-     * @description Edits the title, sources, instructions, or GROQ filter. `null` clears an optional field. The name is immutable — the serving URL never moves.
-     */
-    patch: operations['updateMcpEndpoint']
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations/{threadId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a conversation
-     * @description Returns one recorded conversation by its thread id, transcript included.
-     */
-    get: operations['getConversation']
-    /**
-     * Record a conversation
-     * @description Upserts the conversation telemetry for one thread of the MCP endpoint. Messages replace the stored transcript wholesale; model fields only overwrite when present. Last write per thread wins — retries are safe.
-     */
-    put: operations['saveConversation']
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /**
-     * Record a classification verdict
-     * @description Records the classification your own model produced for one thread: exactly one of `coreMetrics` (a verdict — the server stamps `classifiedAt` and clears any recorded failure) or `classificationError` (why classification failed; an earlier verdict stays untouched). No revision guard — like the ingest upsert the writer is an automated classifier, so last write wins and a re-classification simply overwrites.
-     */
-    patch: operations['classifyConversation']
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List conversations
-     * @description The MCP endpoint's recorded conversations, most recently updated first. `?classification=` narrows to one classification state; `pending` flips to oldest-first work-queue order.
-     */
-    get: operations['listConversations']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations/insights': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Conversation insights
-     * @description Aggregate stats over every conversation recorded against the MCP endpoint: volume, score and sentiment distributions, classification progress, and the most frequent content gaps.
-     */
-    get: operations['getConversationInsights']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/activity': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List activity for a Context
-     * @description The audit trail, newest first: who did what, as dotted `<resource>.<verb>` actions. New action kinds appear over time, so render unknown ones with `description`. Actor identity is snapshotted at event time; resolve `actor.id` against the members API for live names, falling back to `actor.displayName`.
-     */
-    get: operations['listActivity']
     put?: never
     post?: never
     delete?: never
@@ -1290,37 +950,6 @@ export interface components {
           /** @enum {string|null} */
           resolution: null
         }
-    /** @description A `sanity.context.mcp` document, an org-owned MCP endpoint configuration stored in the organization store. Not returned by any endpoint raw; published so GROQ reads and trigger filters can be typed. Write through the mcp endpoints, never with a raw client. The mcp endpoints serve the validated wire view. */
-    McpDoc: {
-      _id: string
-      _rev: string
-      /** Format: date-time */
-      _createdAt: string
-      /** Format: date-time */
-      _updatedAt: string
-      /** @enum {string} */
-      _type: 'sanity.context.mcp'
-      /** @enum {number} */
-      schemaVersion: 1
-      organizationId: string
-      publicId: string
-      title: string
-      name: string
-      sources: (
-        | {
-            /** @enum {string} */
-            type: 'knowledge-base'
-            id: string
-          }
-        | {
-            /** @enum {string} */
-            type: 'dataset'
-            id: string
-          }
-      )[]
-      instructions: string | null
-      groqFilter: string | null
-    }
   }
   responses: never
   parameters: never
@@ -1850,6 +1479,99 @@ export interface operations {
       }
     }
   }
+  listActivity: {
+    parameters: {
+      query?: {
+        cursor?: string
+        limit?: number
+      }
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            data: {
+              /** Format: uuid */
+              id: string
+              action: string
+              resourceType: string
+              resourceId: string
+              description: string
+              /** @description Actor */
+              actor: {
+                id: string | null
+                displayName: string | null
+              } | null
+              metadata: {
+                [key: string]: string
+              } | null
+              /** Format: date-time */
+              createdAt: string
+            }[]
+            nextCursor: string | null
+          }
+        }
+      }
+    }
+  }
+  buildKnowledgeBase: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description JobAccepted */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            jobId: string
+          }
+        }
+      }
+    }
+  }
+  cancelKnowledgeBaseBuild: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            cancelled: boolean
+          }
+        }
+      }
+    }
+  }
   getKnowledgeBaseChanges: {
     parameters: {
       query?: never
@@ -1975,66 +1697,21 @@ export interface operations {
       }
     }
   }
-  updateDatasetSource: {
+  listEntries: {
     parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
+      query?: {
+        cursor?: string
+        limit?: number
+        status?: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
+        /** @description Full-text search query over entry content (title, tldr scope, body). Switches to ranked-search mode: results are ordered by relevance (`score` desc), capped at `limit`, with `nextCursor` always null. `cursor` and `paths` are ignored. Supports `text::query` syntax: bare words, `"exact phrase"`, `-exclude`, `prefix*`. Omit for the default path-ordered list. */
+        q?: string
+        /** @description Search ranking (only meaningful with `q`). `keyword` is BM25 over text fields. `hybrid` additionally weights semantic similarity, falling back to keyword when the dataset has no embeddings index. */
+        mode?: 'keyword' | 'hybrid'
+        /** @description `metadata` omits the body (light list view); `body` includes the full markdown. */
+        include?: 'metadata' | 'body'
+        /** @description Comma-separated entry paths (max 20), e.g. "pricing/plans,studio/config". Switches to batch-read mode: only these entries are returned, unordered, with nextCursor null. */
+        paths?: string
       }
-      cookie?: never
-    }
-    /** @description UpdateDatasetSourceInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          query: string
-        }
-      }
-    }
-    responses: {
-      /** @description DatasetSourceBinding */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            sanityProjectId: string
-            sanityDatasetId: string
-            query: string
-          }
-        }
-      }
-    }
-  }
-  buildKnowledgeBase: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description JobAccepted */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            jobId: string
-          }
-        }
-      }
-    }
-  }
-  cancelKnowledgeBaseBuild: {
-    parameters: {
-      query?: never
       header?: never
       path: {
         knowledgeBaseSlug: string
@@ -2050,8 +1727,1095 @@ export interface operations {
         }
         content: {
           'application/json': {
-            cancelled: boolean
+            data: {
+              id: string
+              knowledgeBaseId: string
+              /** Format: uuid */
+              revisionId: string
+              path: string
+              title: string
+              tldr: {
+                scope: string
+                excludes: string
+                neighbors?: string[]
+                /** @enum {string} */
+                centrality: 'core' | 'standard' | 'peripheral'
+              } | null
+              body: string | null
+              /** @enum {string} */
+              status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
+              sourceIds: string[]
+              citations?: {
+                sourceId: string
+                supports?: string
+                spans?: {
+                  sourceLineStart: number
+                  sourceLineEnd: number
+                  quote: string
+                }[]
+                claim?: {
+                  exact: string
+                  prefix?: string
+                  suffix?: string
+                }
+                /** @enum {string} */
+                groundingState?: 'drifted'
+              }[]
+              /** @description GROQ relevance `_score` (higher is more relevant, always > 0). Present only on `?q=` search responses; absent when listing. */
+              score?: number
+            }[]
+            nextCursor: string | null
           }
+        }
+      }
+    }
+  }
+  getEntry: {
+    parameters: {
+      query?: {
+        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
+        format?: 'json' | 'markdown' | 'plain'
+      }
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        entryPath: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Entry */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            knowledgeBaseId: string
+            /** Format: uuid */
+            revisionId: string
+            path: string
+            title: string
+            tldr: {
+              scope: string
+              excludes: string
+              neighbors?: string[]
+              /** @enum {string} */
+              centrality: 'core' | 'standard' | 'peripheral'
+            } | null
+            body: string | null
+            /** @enum {string} */
+            status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
+            sourceIds: string[]
+            citations?: {
+              sourceId: string
+              supports?: string
+              spans?: {
+                sourceLineStart: number
+                sourceLineEnd: number
+                quote: string
+              }[]
+              claim?: {
+                exact: string
+                prefix?: string
+                suffix?: string
+              }
+              /** @enum {string} */
+              groundingState?: 'drifted'
+            }[]
+          }
+          'text/markdown': string
+          'text/plain': string
+        }
+      }
+    }
+  }
+  listImports: {
+    parameters: {
+      query?: {
+        cursor?: string
+        limit?: number
+      }
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            data: {
+              /** Format: uuid */
+              id: string
+              /** Format: uuid */
+              knowledgeBaseId: string
+              name: string | null
+              sizeBytes: number | null
+              /** @enum {string} */
+              status: 'uploading' | 'processing' | 'complete' | 'failed'
+              /** @enum {string} */
+              sourceKind: 'web' | 'file' | 'dataset'
+              /** Format: date-time */
+              lastCheckedAt: string | null
+              sourceCount: number
+              totalDistillableCount: number
+              distilledCount: number
+              unsupportedCount: number
+              statusDetail: string | null
+              error: string | null
+              /** @description CrawlOptions */
+              crawlOptions: {
+                includePaths?: string[]
+                excludePaths?: string[]
+                maxDepth?: number
+                sitemapOnly?: boolean
+                ignoreQueryParameters?: boolean
+                pageLimit?: number
+              } | null
+              /** @description DatasetSourceBinding */
+              datasetSource: {
+                sanityProjectId: string
+                sanityDatasetId: string
+                query: string
+              } | null
+              /** @description Actor */
+              createdBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              completedAt: string | null
+            }[]
+            nextCursor: string | null
+          }
+        }
+      }
+    }
+  }
+  createImport: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    /** @description CreateImportInput */
+    requestBody: {
+      content: {
+        'application/json':
+          | {
+              /** @enum {string} */
+              type: 'text'
+              title: string
+              content: string
+              /**
+               * @default text/markdown
+               * @enum {string}
+               */
+              contentType?: 'text/markdown' | 'text/plain'
+            }
+          | {
+              /** Format: uri */
+              url: string
+              /** @description CrawlOptions */
+              options?: {
+                includePaths?: string[]
+                excludePaths?: string[]
+                maxDepth?: number
+                sitemapOnly?: boolean
+                ignoreQueryParameters?: boolean
+                pageLimit?: number
+              }
+              /** @enum {string} */
+              type: 'crawl'
+            }
+          | {
+              sanityProjectId: string
+              sanityDatasetId: string
+              query: string
+              /** @enum {string} */
+              type: 'dataset'
+            }
+      }
+    }
+    responses: {
+      /** @description JobAccepted */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            jobId: string
+          }
+        }
+      }
+    }
+  }
+  previewCrawl: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    /** @description PreviewCrawlInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uri */
+          url: string
+        }
+      }
+    }
+    responses: {
+      /** @description CrawlPreview */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            totalPages: number
+            truncated: boolean
+            groups: {
+              prefix: string
+              count: number
+            }[]
+            otherCount: number
+          }
+        }
+      }
+    }
+  }
+  startUpload: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          filename: string
+          contentType?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Default Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            importId: string
+            /** Format: uri */
+            uploadUrl: string
+          }
+        }
+      }
+    }
+  }
+  getImport: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        importId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Import */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string
+            /** Format: uuid */
+            knowledgeBaseId: string
+            name: string | null
+            sizeBytes: number | null
+            /** @enum {string} */
+            status: 'uploading' | 'processing' | 'complete' | 'failed'
+            /** @enum {string} */
+            sourceKind: 'web' | 'file' | 'dataset'
+            /** Format: date-time */
+            lastCheckedAt: string | null
+            sourceCount: number
+            totalDistillableCount: number
+            distilledCount: number
+            unsupportedCount: number
+            statusDetail: string | null
+            error: string | null
+            /** @description CrawlOptions */
+            crawlOptions: {
+              includePaths?: string[]
+              excludePaths?: string[]
+              maxDepth?: number
+              sitemapOnly?: boolean
+              ignoreQueryParameters?: boolean
+              pageLimit?: number
+            } | null
+            /** @description DatasetSourceBinding */
+            datasetSource: {
+              sanityProjectId: string
+              sanityDatasetId: string
+              query: string
+            } | null
+            /** @description Actor */
+            createdBy: {
+              id: string | null
+              displayName: string | null
+            } | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            completedAt: string | null
+          }
+        }
+      }
+    }
+  }
+  deleteImport: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        importId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+    }
+  }
+  downloadImport: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        importId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** Format: uri */
+            url: string
+            /** Format: date-time */
+            expiresAt: string
+          }
+        }
+      }
+    }
+  }
+  listInstructions: {
+    parameters: {
+      query?: {
+        cursor?: string
+        limit?: number
+      }
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            data: {
+              id: string
+              knowledgeBaseId: string
+              /** @enum {string} */
+              origin: 'conflict' | 'human'
+              /** @enum {string} */
+              status: 'active' | 'archived'
+              statement: string
+              scopeSourceIds: string[] | null
+              /** Format: date-time */
+              archivedAt: string | null
+              archivedReason: string | null
+              sourceIssueId: string | null
+              /** @description Actor */
+              createdBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** @description Actor */
+              updatedBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              updatedAt: string | null
+            }[]
+            nextCursor: string | null
+          }
+        }
+      }
+    }
+  }
+  createInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    /** @description CreateInstructionInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          statement: string
+          scopeSourceIds?: string[] | null
+          rebuildPaths?: string[]
+          verified?: boolean
+        }
+      }
+    }
+    responses: {
+      /** @description CreateInstructionResponse */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Instruction */
+            instruction: {
+              id: string
+              knowledgeBaseId: string
+              /** @enum {string} */
+              origin: 'conflict' | 'human'
+              /** @enum {string} */
+              status: 'active' | 'archived'
+              statement: string
+              scopeSourceIds: string[] | null
+              /** Format: date-time */
+              archivedAt: string | null
+              archivedReason: string | null
+              sourceIssueId: string | null
+              /** @description Actor */
+              createdBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** @description Actor */
+              updatedBy: {
+                id: string | null
+                displayName: string | null
+              } | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              updatedAt: string | null
+            }
+            rebuildJobId: string | null
+          }
+        }
+      }
+    }
+  }
+  deleteInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        instructionId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+    }
+  }
+  updateInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        instructionId: string
+      }
+      cookie?: never
+    }
+    /** @description UpdateInstructionInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          statement?: string
+          scopeSourceIds?: string[] | null
+        }
+      }
+    }
+    responses: {
+      /** @description Instruction */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            knowledgeBaseId: string
+            /** @enum {string} */
+            origin: 'conflict' | 'human'
+            /** @enum {string} */
+            status: 'active' | 'archived'
+            statement: string
+            scopeSourceIds: string[] | null
+            /** Format: date-time */
+            archivedAt: string | null
+            archivedReason: string | null
+            sourceIssueId: string | null
+            /** @description Actor */
+            createdBy: {
+              id: string | null
+              displayName: string | null
+            } | null
+            /** @description Actor */
+            updatedBy: {
+              id: string | null
+              displayName: string | null
+            } | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string | null
+          }
+        }
+      }
+    }
+  }
+  listIssues: {
+    parameters: {
+      query?: {
+        cursor?: string
+        limit?: number
+        status?: 'open' | 'accepted' | 'rejected'
+      }
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            data: {
+              id: string
+              knowledgeBaseId: string
+              /** @description IssueContent */
+              content: {
+                /** @enum {string} */
+                kind:
+                  | 'conflict'
+                  | 'gap'
+                  | 'update_required'
+                  | 'add_entry'
+                  | 'remove_entry'
+                  | 'split_entry'
+                  | 'merge_entry'
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                citedSourceIds?: string[]
+                claimKey?: string
+                involvedScopes?: string[]
+                currentClaim?: string
+                alternativeClaim?: string
+                /** @enum {string} */
+                currentAuthority?: 'primary' | 'secondary' | 'community'
+                /** @enum {string} */
+                alternativeAuthority?: 'primary' | 'secondary' | 'community'
+                /** @enum {string} */
+                suggestedResolution?: 'keep_existing' | 'accept_new'
+              }
+              /** @enum {string} */
+              status: 'open' | 'accepted' | 'rejected'
+              /** @enum {string|null} */
+              resolution: 'keep_existing' | 'accept_new' | null
+              /** @description IssueResolvedBy */
+              resolvedBy: {
+                id: string
+                /** @enum {string} */
+                kind: 'user' | 'robot'
+              } | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              resolvedAt: string | null
+            }[]
+            nextCursor: string | null
+          }
+        }
+      }
+    }
+  }
+  applyIssues: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          issueIds: string[]
+        }
+      }
+    }
+    responses: {
+      /** @description JobAccepted */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            jobId: string
+          }
+        }
+      }
+    }
+  }
+  getIssue: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        issueId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Issue */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            knowledgeBaseId: string
+            /** @description IssueContent */
+            content: {
+              /** @enum {string} */
+              kind:
+                | 'conflict'
+                | 'gap'
+                | 'update_required'
+                | 'add_entry'
+                | 'remove_entry'
+                | 'split_entry'
+                | 'merge_entry'
+              /** @enum {string} */
+              severity: 'critical' | 'suggestion'
+              scopePath: string
+              issue: string
+              suggestedFix: string
+              citedSourceIds?: string[]
+              claimKey?: string
+              involvedScopes?: string[]
+              currentClaim?: string
+              alternativeClaim?: string
+              /** @enum {string} */
+              currentAuthority?: 'primary' | 'secondary' | 'community'
+              /** @enum {string} */
+              alternativeAuthority?: 'primary' | 'secondary' | 'community'
+              /** @enum {string} */
+              suggestedResolution?: 'keep_existing' | 'accept_new'
+            }
+            /** @enum {string} */
+            status: 'open' | 'accepted' | 'rejected'
+            /** @enum {string|null} */
+            resolution: 'keep_existing' | 'accept_new' | null
+            /** @description IssueResolvedBy */
+            resolvedBy: {
+              id: string
+              /** @enum {string} */
+              kind: 'user' | 'robot'
+            } | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            resolvedAt: string | null
+          }
+        }
+      }
+    }
+  }
+  dismissIssue: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        issueId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Issue */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            knowledgeBaseId: string
+            /** @description IssueContent */
+            content: {
+              /** @enum {string} */
+              kind:
+                | 'conflict'
+                | 'gap'
+                | 'update_required'
+                | 'add_entry'
+                | 'remove_entry'
+                | 'split_entry'
+                | 'merge_entry'
+              /** @enum {string} */
+              severity: 'critical' | 'suggestion'
+              scopePath: string
+              issue: string
+              suggestedFix: string
+              citedSourceIds?: string[]
+              claimKey?: string
+              involvedScopes?: string[]
+              currentClaim?: string
+              alternativeClaim?: string
+              /** @enum {string} */
+              currentAuthority?: 'primary' | 'secondary' | 'community'
+              /** @enum {string} */
+              alternativeAuthority?: 'primary' | 'secondary' | 'community'
+              /** @enum {string} */
+              suggestedResolution?: 'keep_existing' | 'accept_new'
+            }
+            /** @enum {string} */
+            status: 'open' | 'accepted' | 'rejected'
+            /** @enum {string|null} */
+            resolution: 'keep_existing' | 'accept_new' | null
+            /** @description IssueResolvedBy */
+            resolvedBy: {
+              id: string
+              /** @enum {string} */
+              kind: 'user' | 'robot'
+            } | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            resolvedAt: string | null
+          }
+        }
+      }
+    }
+  }
+  reopenIssue: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        issueId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Issue */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            knowledgeBaseId: string
+            /** @description IssueContent */
+            content: {
+              /** @enum {string} */
+              kind:
+                | 'conflict'
+                | 'gap'
+                | 'update_required'
+                | 'add_entry'
+                | 'remove_entry'
+                | 'split_entry'
+                | 'merge_entry'
+              /** @enum {string} */
+              severity: 'critical' | 'suggestion'
+              scopePath: string
+              issue: string
+              suggestedFix: string
+              citedSourceIds?: string[]
+              claimKey?: string
+              involvedScopes?: string[]
+              currentClaim?: string
+              alternativeClaim?: string
+              /** @enum {string} */
+              currentAuthority?: 'primary' | 'secondary' | 'community'
+              /** @enum {string} */
+              alternativeAuthority?: 'primary' | 'secondary' | 'community'
+              /** @enum {string} */
+              suggestedResolution?: 'keep_existing' | 'accept_new'
+            }
+            /** @enum {string} */
+            status: 'open' | 'accepted' | 'rejected'
+            /** @enum {string|null} */
+            resolution: 'keep_existing' | 'accept_new' | null
+            /** @description IssueResolvedBy */
+            resolvedBy: {
+              id: string
+              /** @enum {string} */
+              kind: 'user' | 'robot'
+            } | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            resolvedAt: string | null
+          }
+        }
+      }
+    }
+  }
+  resolveIssue: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        issueId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string} */
+          resolution: 'keep_existing' | 'accept_new'
+        }
+      }
+    }
+    responses: {
+      /** @description ResolveIssueResponse */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Issue */
+            issue: {
+              id: string
+              knowledgeBaseId: string
+              /** @description IssueContent */
+              content: {
+                /** @enum {string} */
+                kind:
+                  | 'conflict'
+                  | 'gap'
+                  | 'update_required'
+                  | 'add_entry'
+                  | 'remove_entry'
+                  | 'split_entry'
+                  | 'merge_entry'
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                citedSourceIds?: string[]
+                claimKey?: string
+                involvedScopes?: string[]
+                currentClaim?: string
+                alternativeClaim?: string
+                /** @enum {string} */
+                currentAuthority?: 'primary' | 'secondary' | 'community'
+                /** @enum {string} */
+                alternativeAuthority?: 'primary' | 'secondary' | 'community'
+                /** @enum {string} */
+                suggestedResolution?: 'keep_existing' | 'accept_new'
+              }
+              /** @enum {string} */
+              status: 'open' | 'accepted' | 'rejected'
+              /** @enum {string|null} */
+              resolution: 'keep_existing' | 'accept_new' | null
+              /** @description IssueResolvedBy */
+              resolvedBy: {
+                id: string
+                /** @enum {string} */
+                kind: 'user' | 'robot'
+              } | null
+              /** Format: date-time */
+              createdAt: string
+              /** Format: date-time */
+              resolvedAt: string | null
+            }
+            jobId: string | null
+          }
+        }
+      }
+    }
+  }
+  getJob: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+        jobId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Job */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            /** @enum {string} */
+            status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+            /** Format: date-time */
+            startedAt: string | null
+            /** Format: date-time */
+            completedAt: string | null
+            result?: unknown
+            error?: string | null
+          }
+        }
+      }
+    }
+  }
+  getKnowledgeBaseOutline: {
+    parameters: {
+      query?: {
+        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
+        format?: 'json' | 'markdown' | 'plain'
+      }
+      header?: never
+      path: {
+        knowledgeBaseSlug: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Outline */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            knowledgeBase: {
+              slug: string
+              name: string
+              description: string
+            }
+            /** @description OutlineStats */
+            stats: {
+              total: number
+            }
+            entries: {
+              path: string
+              title: string
+              /** @enum {string} */
+              centrality: 'core' | 'standard' | 'peripheral'
+              scope: string | null
+              excludes: string | null
+              neighbors: string[]
+              topicHeadings: string[]
+            }[]
+          }
+          'text/markdown': string
+          'text/plain': string
         }
       }
     }
@@ -2078,26 +2842,6 @@ export interface operations {
             started: boolean
           }
         }
-      }
-    }
-  }
-  streamKnowledgeBaseEvents: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
       }
     }
   }
@@ -2173,158 +2917,6 @@ export interface operations {
               title: string
               docId: string
             }[]
-          }
-        }
-      }
-    }
-  }
-  getKnowledgeBaseRevisionEntries: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        revisionId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description RevisionEntries */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            entries: {
-              docId: string
-              path: string
-              title: string
-              body: string | null
-              tldr?: {
-                scope: string
-                excludes: string
-                neighbors?: string[]
-                /** @enum {string} */
-                centrality: 'core' | 'standard' | 'peripheral'
-              }
-              citations?: {
-                sourceId: string
-                supports?: string
-                spans?: {
-                  sourceLineStart: number
-                  sourceLineEnd: number
-                  quote: string
-                }[]
-                claim?: {
-                  exact: string
-                  prefix?: string
-                  suffix?: string
-                }
-                /** @enum {string} */
-                groundingState?: 'drifted'
-              }[]
-            }[]
-          }
-        }
-      }
-    }
-  }
-  getKnowledgeBaseRevisionDecisions: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        revisionId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @enum {number} */
-            schemaVersion: 1
-            /** @enum {string} */
-            buildOutcome: 'completed' | 'failed'
-            corpus: {
-              sources: number
-              documents: number
-              placed: number
-              discarded: number
-              unplaced: number
-              moved: number
-              placementsWithoutReason: number
-            }
-            routing: {
-              groups: {
-                key: string
-                title: string
-                size: number
-              }[]
-              unrouted: {
-                sourceId: string
-                filename?: string
-                whyNone?: string
-              }[]
-            }
-            structure?: {
-              merges: {
-                survivor: string
-                absorbed: string[]
-                reason: string
-              }[]
-              rejectedMerges: {
-                survivor: string
-                error: string
-              }[]
-              concessions: {
-                gate: string
-                count: number
-                reason: string
-              }[]
-            }
-            sources: {
-              [key: string]: {
-                /** @enum {string} */
-                outcome: 'placed' | 'discarded' | 'unplaced'
-                filename?: string
-                url?: string
-                /** @enum {string} */
-                origin: 'crawled' | 'uploaded'
-                parentSourceId?: string
-                finalPaths: {
-                  path: string
-                  reason: string | null
-                }[]
-                discardReason?: string
-                duplicateOf?: string
-                events: {
-                  /** @enum {string} */
-                  kind: 'attached' | 'detached' | 'discarded' | 'renamed'
-                  path?: string
-                  from?: string
-                  reason?: string
-                  /** @enum {string} */
-                  stage:
-                    | 'triage'
-                    | 'place'
-                    | 'consolidate'
-                    | 'arrange'
-                    | 'write'
-                    | 'review'
-                    | 'repair'
-                    | 'unknown'
-                }[]
-              }
-            }
           }
         }
       }
@@ -2535,2007 +3127,6 @@ export interface operations {
           }
           'text/markdown': string
           'text/plain': string
-        }
-      }
-    }
-  }
-  getKnowledgeBaseOutline: {
-    parameters: {
-      query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
-        format?: 'json' | 'markdown' | 'plain'
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Outline */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            knowledgeBase: {
-              slug: string
-              name: string
-              description: string
-            }
-            /** @description OutlineStats */
-            stats: {
-              total: number
-            }
-            entries: {
-              path: string
-              title: string
-              /** @enum {string} */
-              centrality: 'core' | 'standard' | 'peripheral'
-              scope: string | null
-              excludes: string | null
-              neighbors: string[]
-              topicHeadings: string[]
-            }[]
-          }
-          'text/markdown': string
-          'text/plain': string
-        }
-      }
-    }
-  }
-  listEntries: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-        status?: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-        /** @description Full-text search query over entry content (title, tldr scope, body). Switches to ranked-search mode: results are ordered by relevance (`score` desc), capped at `limit`, with `nextCursor` always null. `cursor` and `paths` are ignored. Supports `text::query` syntax: bare words, `"exact phrase"`, `-exclude`, `prefix*`. Omit for the default path-ordered list. */
-        q?: string
-        /** @description Search ranking (only meaningful with `q`). `keyword` is BM25 over text fields. `hybrid` additionally weights semantic similarity, falling back to keyword when the dataset has no embeddings index. */
-        mode?: 'keyword' | 'hybrid'
-        /** @description `metadata` omits the body (light list view); `body` includes the full markdown. */
-        include?: 'metadata' | 'body'
-        /** @description Comma-separated entry paths (max 20), e.g. "pricing/plans,studio/config". Switches to batch-read mode: only these entries are returned, unordered, with nextCursor null. */
-        paths?: string
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              knowledgeBaseId: string
-              /** Format: uuid */
-              revisionId: string
-              path: string
-              title: string
-              tldr: {
-                scope: string
-                excludes: string
-                neighbors?: string[]
-                /** @enum {string} */
-                centrality: 'core' | 'standard' | 'peripheral'
-              } | null
-              body: string | null
-              /** @enum {string} */
-              status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-              sourceIds: string[]
-              citations?: {
-                sourceId: string
-                supports?: string
-                spans?: {
-                  sourceLineStart: number
-                  sourceLineEnd: number
-                  quote: string
-                }[]
-                claim?: {
-                  exact: string
-                  prefix?: string
-                  suffix?: string
-                }
-                /** @enum {string} */
-                groundingState?: 'drifted'
-              }[]
-              /** @description GROQ relevance `_score` (higher is more relevant, always > 0). Present only on `?q=` search responses; absent when listing. */
-              score?: number
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  getEntry: {
-    parameters: {
-      query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
-        format?: 'json' | 'markdown' | 'plain'
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        entryPath: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Entry */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** Format: uuid */
-            revisionId: string
-            path: string
-            title: string
-            tldr: {
-              scope: string
-              excludes: string
-              neighbors?: string[]
-              /** @enum {string} */
-              centrality: 'core' | 'standard' | 'peripheral'
-            } | null
-            body: string | null
-            /** @enum {string} */
-            status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-            sourceIds: string[]
-            citations?: {
-              sourceId: string
-              supports?: string
-              spans?: {
-                sourceLineStart: number
-                sourceLineEnd: number
-                quote: string
-              }[]
-              claim?: {
-                exact: string
-                prefix?: string
-                suffix?: string
-              }
-              /** @enum {string} */
-              groundingState?: 'drifted'
-            }[]
-          }
-          'text/markdown': string
-          'text/plain': string
-        }
-      }
-    }
-  }
-  rebuildEntry: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        entryId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description RebuildEntryResponse */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            jobId: string
-            affectedEntries: {
-              id: string
-              path: string
-              title: string
-            }[]
-          }
-        }
-      }
-    }
-  }
-  listImports: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              /** Format: uuid */
-              id: string
-              /** Format: uuid */
-              knowledgeBaseId: string
-              name: string | null
-              sizeBytes: number | null
-              /** @enum {string} */
-              status: 'uploading' | 'processing' | 'complete' | 'failed'
-              /** @enum {string} */
-              sourceKind: 'web' | 'file' | 'dataset'
-              /** Format: date-time */
-              lastCheckedAt: string | null
-              sourceCount: number
-              totalDistillableCount: number
-              distilledCount: number
-              unsupportedCount: number
-              statusDetail: string | null
-              error: string | null
-              /** @description CrawlOptions */
-              crawlOptions: {
-                includePaths?: string[]
-                excludePaths?: string[]
-                maxDepth?: number
-                sitemapOnly?: boolean
-                ignoreQueryParameters?: boolean
-                pageLimit?: number
-              } | null
-              /** @description DatasetSourceBinding */
-              datasetSource: {
-                sanityProjectId: string
-                sanityDatasetId: string
-                query: string
-              } | null
-              /** @description Actor */
-              createdBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              completedAt: string | null
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  createImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    /** @description CreateImportInput */
-    requestBody: {
-      content: {
-        'application/json':
-          | {
-              /** @enum {string} */
-              type: 'text'
-              title: string
-              content: string
-              /**
-               * @default text/markdown
-               * @enum {string}
-               */
-              contentType?: 'text/markdown' | 'text/plain'
-            }
-          | {
-              /** Format: uri */
-              url: string
-              /** @description CrawlOptions */
-              options?: {
-                includePaths?: string[]
-                excludePaths?: string[]
-                maxDepth?: number
-                sitemapOnly?: boolean
-                ignoreQueryParameters?: boolean
-                pageLimit?: number
-              }
-              /** @enum {string} */
-              type: 'crawl'
-            }
-          | {
-              sanityProjectId: string
-              sanityDatasetId: string
-              query: string
-              /** @enum {string} */
-              type: 'dataset'
-            }
-      }
-    }
-    responses: {
-      /** @description JobAccepted */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            jobId: string
-          }
-        }
-      }
-    }
-  }
-  previewCrawl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    /** @description PreviewCrawlInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: uri */
-          url: string
-        }
-      }
-    }
-    responses: {
-      /** @description CrawlPreview */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            totalPages: number
-            truncated: boolean
-            groups: {
-              prefix: string
-              count: number
-            }[]
-            otherCount: number
-          }
-        }
-      }
-    }
-  }
-  getImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        importId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Import */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string
-            /** Format: uuid */
-            knowledgeBaseId: string
-            name: string | null
-            sizeBytes: number | null
-            /** @enum {string} */
-            status: 'uploading' | 'processing' | 'complete' | 'failed'
-            /** @enum {string} */
-            sourceKind: 'web' | 'file' | 'dataset'
-            /** Format: date-time */
-            lastCheckedAt: string | null
-            sourceCount: number
-            totalDistillableCount: number
-            distilledCount: number
-            unsupportedCount: number
-            statusDetail: string | null
-            error: string | null
-            /** @description CrawlOptions */
-            crawlOptions: {
-              includePaths?: string[]
-              excludePaths?: string[]
-              maxDepth?: number
-              sitemapOnly?: boolean
-              ignoreQueryParameters?: boolean
-              pageLimit?: number
-            } | null
-            /** @description DatasetSourceBinding */
-            datasetSource: {
-              sanityProjectId: string
-              sanityDatasetId: string
-              query: string
-            } | null
-            /** @description Actor */
-            createdBy: {
-              id: string | null
-              displayName: string | null
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            completedAt: string | null
-          }
-        }
-      }
-    }
-  }
-  deleteImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        importId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': null
-        }
-      }
-    }
-  }
-  downloadImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        importId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** Format: uri */
-            url: string
-            /** Format: date-time */
-            expiresAt: string
-          }
-        }
-      }
-    }
-  }
-  removeCrawlPages: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        importId: string
-      }
-      cookie?: never
-    }
-    /** @description RemoveCrawlPagesInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          path: string
-        }
-      }
-    }
-    responses: {
-      /** @description RemoveCrawlPagesResponse */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            removedCount: number
-            excludedPaths: string[]
-          }
-        }
-      }
-    }
-  }
-  startUpload: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          filename: string
-          contentType?: string
-        }
-      }
-    }
-    responses: {
-      /** @description Default Response */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            importId: string
-            /** Format: uri */
-            uploadUrl: string
-          }
-        }
-      }
-    }
-  }
-  completeUpload: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        importId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description JobAccepted */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            jobId: string
-          }
-        }
-      }
-    }
-  }
-  getDatasetPermissions: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        apiVersion: string
-        organizationId: string
-      }
-      cookie?: never
-    }
-    /** @description DatasetPermissionsInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          datasets: {
-            sanityProjectId: string
-            sanityDatasetId: string
-          }[]
-        }
-      }
-    }
-    responses: {
-      /** @description DatasetPermissionsResponse */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            permissions: {
-              [key: string]: {
-                read: boolean
-                write: boolean
-                fullRead: boolean
-                admin: boolean
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  getJob: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        jobId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Job */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            /** @enum {string} */
-            status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-            /** Format: date-time */
-            startedAt: string | null
-            /** Format: date-time */
-            completedAt: string | null
-            result?: unknown
-            error?: string | null
-          }
-        }
-      }
-    }
-  }
-  listIssues: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-        status?: 'open' | 'accepted' | 'rejected'
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              knowledgeBaseId: string
-              /** @description IssueContent */
-              content: {
-                /** @enum {string} */
-                kind:
-                  | 'conflict'
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @enum {string} */
-                severity: 'critical' | 'suggestion'
-                scopePath: string
-                issue: string
-                suggestedFix: string
-                citedSourceIds?: string[]
-                claimKey?: string
-                involvedScopes?: string[]
-                currentClaim?: string
-                alternativeClaim?: string
-                /** @enum {string} */
-                currentAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                alternativeAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                suggestedResolution?: 'keep_existing' | 'accept_new'
-              }
-              /** @enum {string} */
-              status: 'open' | 'accepted' | 'rejected'
-              /** @enum {string|null} */
-              resolution: 'keep_existing' | 'accept_new' | null
-              /** @description IssueResolvedBy */
-              resolvedBy: {
-                id: string
-                /** @enum {string} */
-                kind: 'user' | 'robot'
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              resolvedAt: string | null
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  getIssue: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        issueId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Issue */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** @description IssueContent */
-            content: {
-              /** @enum {string} */
-              kind:
-                | 'conflict'
-                | 'gap'
-                | 'update_required'
-                | 'add_entry'
-                | 'remove_entry'
-                | 'split_entry'
-                | 'merge_entry'
-              /** @enum {string} */
-              severity: 'critical' | 'suggestion'
-              scopePath: string
-              issue: string
-              suggestedFix: string
-              citedSourceIds?: string[]
-              claimKey?: string
-              involvedScopes?: string[]
-              currentClaim?: string
-              alternativeClaim?: string
-              /** @enum {string} */
-              currentAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              alternativeAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new'
-            }
-            /** @enum {string} */
-            status: 'open' | 'accepted' | 'rejected'
-            /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | null
-            /** @description IssueResolvedBy */
-            resolvedBy: {
-              id: string
-              /** @enum {string} */
-              kind: 'user' | 'robot'
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            resolvedAt: string | null
-          }
-        }
-      }
-    }
-  }
-  applyIssues: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          issueIds: string[]
-        }
-      }
-    }
-    responses: {
-      /** @description JobAccepted */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            jobId: string
-          }
-        }
-      }
-    }
-  }
-  dismissIssue: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        issueId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Issue */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** @description IssueContent */
-            content: {
-              /** @enum {string} */
-              kind:
-                | 'conflict'
-                | 'gap'
-                | 'update_required'
-                | 'add_entry'
-                | 'remove_entry'
-                | 'split_entry'
-                | 'merge_entry'
-              /** @enum {string} */
-              severity: 'critical' | 'suggestion'
-              scopePath: string
-              issue: string
-              suggestedFix: string
-              citedSourceIds?: string[]
-              claimKey?: string
-              involvedScopes?: string[]
-              currentClaim?: string
-              alternativeClaim?: string
-              /** @enum {string} */
-              currentAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              alternativeAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new'
-            }
-            /** @enum {string} */
-            status: 'open' | 'accepted' | 'rejected'
-            /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | null
-            /** @description IssueResolvedBy */
-            resolvedBy: {
-              id: string
-              /** @enum {string} */
-              kind: 'user' | 'robot'
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            resolvedAt: string | null
-          }
-        }
-      }
-    }
-  }
-  resolveIssue: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        issueId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {string} */
-          resolution: 'keep_existing' | 'accept_new'
-        }
-      }
-    }
-    responses: {
-      /** @description ResolveIssueResponse */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description Issue */
-            issue: {
-              id: string
-              knowledgeBaseId: string
-              /** @description IssueContent */
-              content: {
-                /** @enum {string} */
-                kind:
-                  | 'conflict'
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @enum {string} */
-                severity: 'critical' | 'suggestion'
-                scopePath: string
-                issue: string
-                suggestedFix: string
-                citedSourceIds?: string[]
-                claimKey?: string
-                involvedScopes?: string[]
-                currentClaim?: string
-                alternativeClaim?: string
-                /** @enum {string} */
-                currentAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                alternativeAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                suggestedResolution?: 'keep_existing' | 'accept_new'
-              }
-              /** @enum {string} */
-              status: 'open' | 'accepted' | 'rejected'
-              /** @enum {string|null} */
-              resolution: 'keep_existing' | 'accept_new' | null
-              /** @description IssueResolvedBy */
-              resolvedBy: {
-                id: string
-                /** @enum {string} */
-                kind: 'user' | 'robot'
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              resolvedAt: string | null
-            }
-            jobId: string | null
-          }
-        }
-      }
-    }
-  }
-  reopenIssue: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        issueId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Issue */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** @description IssueContent */
-            content: {
-              /** @enum {string} */
-              kind:
-                | 'conflict'
-                | 'gap'
-                | 'update_required'
-                | 'add_entry'
-                | 'remove_entry'
-                | 'split_entry'
-                | 'merge_entry'
-              /** @enum {string} */
-              severity: 'critical' | 'suggestion'
-              scopePath: string
-              issue: string
-              suggestedFix: string
-              citedSourceIds?: string[]
-              claimKey?: string
-              involvedScopes?: string[]
-              currentClaim?: string
-              alternativeClaim?: string
-              /** @enum {string} */
-              currentAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              alternativeAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new'
-            }
-            /** @enum {string} */
-            status: 'open' | 'accepted' | 'rejected'
-            /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | null
-            /** @description IssueResolvedBy */
-            resolvedBy: {
-              id: string
-              /** @enum {string} */
-              kind: 'user' | 'robot'
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            resolvedAt: string | null
-          }
-        }
-      }
-    }
-  }
-  listInstructions: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              knowledgeBaseId: string
-              /** @enum {string} */
-              origin: 'conflict' | 'human'
-              /** @enum {string} */
-              status: 'active' | 'archived'
-              statement: string
-              scopeSourceIds: string[] | null
-              /** Format: date-time */
-              archivedAt: string | null
-              archivedReason: string | null
-              sourceIssueId: string | null
-              /** @description Actor */
-              createdBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** @description Actor */
-              updatedBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              updatedAt: string | null
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  createInstruction: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    /** @description CreateInstructionInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          statement: string
-          scopeSourceIds?: string[] | null
-          rebuildPaths?: string[]
-          verified?: boolean
-        }
-      }
-    }
-    responses: {
-      /** @description CreateInstructionResponse */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description Instruction */
-            instruction: {
-              id: string
-              knowledgeBaseId: string
-              /** @enum {string} */
-              origin: 'conflict' | 'human'
-              /** @enum {string} */
-              status: 'active' | 'archived'
-              statement: string
-              scopeSourceIds: string[] | null
-              /** Format: date-time */
-              archivedAt: string | null
-              archivedReason: string | null
-              sourceIssueId: string | null
-              /** @description Actor */
-              createdBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** @description Actor */
-              updatedBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              updatedAt: string | null
-            }
-            rebuildJobId: string | null
-          }
-        }
-      }
-    }
-  }
-  checkInstruction: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    /** @description CheckInstructionInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          statement: string
-          scopeSourceIds: string[]
-          excludeEntryId?: string
-          candidatesOnly?: boolean
-          paths?: string[]
-        }
-      }
-    }
-    responses: {
-      /** @description CheckInstructionResponse */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            checked: number
-            contradictions: {
-              id: string
-              path: string
-              title: string
-              issue: string
-            }[]
-            candidates?: {
-              id: string
-              path: string
-              title: string
-            }[]
-          }
-        }
-      }
-    }
-  }
-  draftInstruction: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    /** @description DraftInstructionInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          feedback: string
-          entryId?: string
-          excerpt?: string
-          scopeSourceIds?: string[]
-        }
-      }
-    }
-    responses: {
-      /** @description DraftInstructionResponse */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            statement: string
-            scopeSourceIds: string[] | null
-          }
-        }
-      }
-    }
-  }
-  deleteInstruction: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        instructionId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': null
-        }
-      }
-    }
-  }
-  updateInstruction: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-        instructionId: string
-      }
-      cookie?: never
-    }
-    /** @description UpdateInstructionInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          statement?: string
-          scopeSourceIds?: string[] | null
-        }
-      }
-    }
-    responses: {
-      /** @description Instruction */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** @enum {string} */
-            origin: 'conflict' | 'human'
-            /** @enum {string} */
-            status: 'active' | 'archived'
-            statement: string
-            scopeSourceIds: string[] | null
-            /** Format: date-time */
-            archivedAt: string | null
-            archivedReason: string | null
-            sourceIssueId: string | null
-            /** @description Actor */
-            createdBy: {
-              id: string | null
-              displayName: string | null
-            } | null
-            /** @description Actor */
-            updatedBy: {
-              id: string | null
-              displayName: string | null
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string | null
-          }
-        }
-      }
-    }
-  }
-  listMcpEndpoints: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        apiVersion: string
-        organizationId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              organizationId: string
-              title: string
-              name: string
-              sources: (
-                | {
-                    /** @enum {string} */
-                    type: 'knowledge-base'
-                    id: string
-                  }
-                | {
-                    /** @enum {string} */
-                    type: 'dataset'
-                    id: string
-                  }
-              )[]
-              instructions: string | null
-              groqFilter: string | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              updatedAt: string
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  createMcpEndpoint: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        apiVersion: string
-        organizationId: string
-      }
-      cookie?: never
-    }
-    /** @description CreateMcpEndpointInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          title: string
-          name: string
-          sources: (
-            | {
-                /** @enum {string} */
-                type: 'knowledge-base'
-                id: string
-              }
-            | {
-                /** @enum {string} */
-                type: 'dataset'
-                id: string
-              }
-          )[]
-          instructions?: string
-          groqFilter?: string
-        }
-      }
-    }
-    responses: {
-      /** @description McpEndpoint */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            organizationId: string
-            title: string
-            name: string
-            sources: (
-              | {
-                  /** @enum {string} */
-                  type: 'knowledge-base'
-                  id: string
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'dataset'
-                  id: string
-                }
-            )[]
-            instructions: string | null
-            groqFilter: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  resolveMcpEndpointByName: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointName: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description ResolvedMcpEndpoint */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            organizationId: string
-            title: string
-            name: string
-            sources: (
-              | {
-                  /** @enum {string} */
-                  type: 'knowledge-base'
-                  id: string
-                  slug: string | null
-                  name: string | null
-                  description: string | null
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'dataset'
-                  id: string
-                }
-            )[]
-            instructions: string | null
-            groqFilter: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  getMcpEndpoint: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description McpEndpoint */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            organizationId: string
-            title: string
-            name: string
-            sources: (
-              | {
-                  /** @enum {string} */
-                  type: 'knowledge-base'
-                  id: string
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'dataset'
-                  id: string
-                }
-            )[]
-            instructions: string | null
-            groqFilter: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  deleteMcpEndpoint: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': null
-        }
-      }
-    }
-  }
-  updateMcpEndpoint: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointId: string
-      }
-      cookie?: never
-    }
-    /** @description UpdateMcpEndpointInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          title?: string
-          sources?: (
-            | {
-                /** @enum {string} */
-                type: 'knowledge-base'
-                id: string
-              }
-            | {
-                /** @enum {string} */
-                type: 'dataset'
-                id: string
-              }
-          )[]
-          instructions?: string | null
-          groqFilter?: string | null
-        }
-      }
-    }
-    responses: {
-      /** @description McpEndpoint */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            organizationId: string
-            title: string
-            name: string
-            sources: (
-              | {
-                  /** @enum {string} */
-                  type: 'knowledge-base'
-                  id: string
-                }
-              | {
-                  /** @enum {string} */
-                  type: 'dataset'
-                  id: string
-                }
-            )[]
-            instructions: string | null
-            groqFilter: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  getConversation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointName: string
-        threadId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Conversation */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            threadId: string
-            mcpEndpointId: string
-            /** Format: date-time */
-            startedAt: string
-            /** Format: date-time */
-            messagesUpdatedAt: string
-            messages: {
-              /** @enum {string} */
-              role: 'user' | 'assistant' | 'system' | 'tool'
-              /** @default null */
-              content: string | null
-              /** @default null */
-              toolName: string | null
-              /**
-               * @default null
-               * @enum {string|null}
-               */
-              toolType: 'call' | 'result' | null
-            }[]
-            modelProvider: string | null
-            modelId: string | null
-            /** @description ConversationTokenUsage */
-            tokenUsage: {
-              inputTokens?: number
-              outputTokens?: number
-              totalTokens?: number
-            } | null
-            /** @description ConversationCoreMetrics */
-            coreMetrics: {
-              successScore?: number
-              /** @enum {string} */
-              sentiment?: 'positive' | 'neutral' | 'negative'
-              contentGaps?: string[]
-            } | null
-            /** Format: date-time */
-            classifiedAt: string | null
-            classificationError: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  saveConversation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointName: string
-        threadId: string
-      }
-      cookie?: never
-    }
-    /** @description SaveConversationInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          messages: {
-            /** @enum {string} */
-            role: 'user' | 'assistant' | 'system' | 'tool'
-            /** @default null */
-            content?: string | null
-            /** @default null */
-            toolName?: string | null
-            /**
-             * @default null
-             * @enum {string|null}
-             */
-            toolType?: 'call' | 'result' | null
-          }[]
-          modelProvider?: string
-          modelId?: string
-          /** @description ConversationTokenUsage */
-          tokenUsage?: {
-            inputTokens?: number
-            outputTokens?: number
-            totalTokens?: number
-          }
-        }
-      }
-    }
-    responses: {
-      /** @description Conversation */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            threadId: string
-            mcpEndpointId: string
-            /** Format: date-time */
-            startedAt: string
-            /** Format: date-time */
-            messagesUpdatedAt: string
-            messages: {
-              /** @enum {string} */
-              role: 'user' | 'assistant' | 'system' | 'tool'
-              /** @default null */
-              content: string | null
-              /** @default null */
-              toolName: string | null
-              /**
-               * @default null
-               * @enum {string|null}
-               */
-              toolType: 'call' | 'result' | null
-            }[]
-            modelProvider: string | null
-            modelId: string | null
-            /** @description ConversationTokenUsage */
-            tokenUsage: {
-              inputTokens?: number
-              outputTokens?: number
-              totalTokens?: number
-            } | null
-            /** @description ConversationCoreMetrics */
-            coreMetrics: {
-              successScore?: number
-              /** @enum {string} */
-              sentiment?: 'positive' | 'neutral' | 'negative'
-              contentGaps?: string[]
-            } | null
-            /** Format: date-time */
-            classifiedAt: string | null
-            classificationError: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  classifyConversation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointName: string
-        threadId: string
-      }
-      cookie?: never
-    }
-    /** @description ClassifyConversationInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          coreMetrics?: {
-            successScore: number
-            /** @enum {string} */
-            sentiment: 'positive' | 'neutral' | 'negative'
-            contentGaps: string[]
-          }
-          classificationError?: string
-        }
-      }
-    }
-    responses: {
-      /** @description Conversation */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            threadId: string
-            mcpEndpointId: string
-            /** Format: date-time */
-            startedAt: string
-            /** Format: date-time */
-            messagesUpdatedAt: string
-            messages: {
-              /** @enum {string} */
-              role: 'user' | 'assistant' | 'system' | 'tool'
-              /** @default null */
-              content: string | null
-              /** @default null */
-              toolName: string | null
-              /**
-               * @default null
-               * @enum {string|null}
-               */
-              toolType: 'call' | 'result' | null
-            }[]
-            modelProvider: string | null
-            modelId: string | null
-            /** @description ConversationTokenUsage */
-            tokenUsage: {
-              inputTokens?: number
-              outputTokens?: number
-              totalTokens?: number
-            } | null
-            /** @description ConversationCoreMetrics */
-            coreMetrics: {
-              successScore?: number
-              /** @enum {string} */
-              sentiment?: 'positive' | 'neutral' | 'negative'
-              contentGaps?: string[]
-            } | null
-            /** Format: date-time */
-            classifiedAt: string | null
-            classificationError: string | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
-  listConversations: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-        /** @description Filter by classification state. `pending` is the classifier work queue: threads with messages, no verdict, no recorded failure, and settled — the transcript unchanged for a server-owned 10-minute cooldown so a thread still being written is never scored mid-write — returned oldest first. `classified` and `failed` return newest first. Omit for all conversations. */
-        classification?: 'pending' | 'classified' | 'failed'
-      }
-      header?: never
-      path: {
-        mcpEndpointName: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              threadId: string
-              /** Format: date-time */
-              messagesUpdatedAt: string
-              messageCount: number
-              firstMessage: string | null
-              /** @description ConversationCoreMetrics */
-              coreMetrics: {
-                successScore?: number
-                /** @enum {string} */
-                sentiment?: 'positive' | 'neutral' | 'negative'
-                contentGaps?: string[]
-              } | null
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  getConversationInsights: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        mcpEndpointName: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description ConversationInsights */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            conversations: number
-            averageScore: number | null
-            averageMessages: number | null
-            analyzed: number
-            classificationErrors: number
-            scores: {
-              good: number
-              okay: number
-              poor: number
-              critical: number
-            }
-            sentiment: {
-              positive: number
-              neutral: number
-              negative: number
-            }
-            contentGaps: {
-              gap: string
-              count: number
-            }[]
-          }
-        }
-      }
-    }
-  }
-  listActivity: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        knowledgeBaseSlug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              /** Format: uuid */
-              id: string
-              action: string
-              resourceType: string
-              resourceId: string
-              description: string
-              /** @description Actor */
-              actor: {
-                id: string | null
-                displayName: string | null
-              } | null
-              metadata: {
-                [key: string]: string
-              } | null
-              /** Format: date-time */
-              createdAt: string
-            }[]
-            nextCursor: string | null
-          }
         }
       }
     }
