@@ -31,6 +31,7 @@ const PATH_ALLOWLIST = [
   `${KB}/imports`,
   `${KB}/imports/crawl-preview`,
   `${KB}/imports/uploads`,
+  `${KB}/imports/uploads/{importId}/complete`,
   `${KB}/imports/{importId}`,
   `${KB}/imports/{importId}/download`,
   `${KB}/instructions`,
