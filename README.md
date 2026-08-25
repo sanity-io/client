@@ -2604,7 +2604,7 @@ const reply = await client.collaboration.comments.create({
 })
 ```
 
-Field comments pass a `path`. Inline comments also pass a `range` (block `_key` + character offset). An optional `fieldValue` is Portable Text covering that `range` (a slice or the full field); when set, the `range` is resolved from those blocks instead of from the live document:
+Field comments pass a `path`. Inline comments also pass a `range` (block `_key` + character offset). An optional `fieldValue` is Portable Text covering that `range` (a slice or the full field); when set with `range`, the `range` is resolved from those blocks instead of from the live document:
 
 ```js
 await client.collaboration.comments.create({
@@ -2625,7 +2625,7 @@ When querying, the field is stored as `target.path.field`, so filter with `targe
 
 #### Updating and deleting comments
 
-`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to turn a text-level comment into a field-level one. An optional `fieldValue` may be passed with `range` for the same purpose as on create:
+`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to turn a text-level comment into a field-level one. An optional `fieldValue` may be passed with a non-null `range` for the same purpose as on create (not alone or with `range: null`):
 
 ```js
 await client.collaboration.comments.update('comment-1', {status: 'resolved'})
