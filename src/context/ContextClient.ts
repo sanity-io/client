@@ -473,8 +473,6 @@ export class KnowledgeBaseHandle {
  *   organizationId: 'org123',
  *   name: 'Support docs',
  *   description: 'Product docs and troubleshooting guides',
- *   sanityProjectId: 'abc123',
- *   sanityDatasetId: 'production',
  * })
  * const kb = client.context.knowledgeBase(created.publicId)
  * await kb.imports.create({type: 'text', title: 'Refund policy', content: refundMd})
@@ -494,7 +492,7 @@ export class ContextClient {
 
   /** The knowledge base collection. */
   knowledgeBases = {
-    /** Create a knowledge base. Requires provisioning access to the target project. */
+    /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
     create: (
       params: CreateKnowledgeBaseParams & {organizationId: string},
       options?: RequestOptions,
@@ -545,7 +543,7 @@ export class ObservableContextClient {
 
   /** The knowledge base collection. */
   knowledgeBases = {
-    /** Create a knowledge base. Requires provisioning access to the target project. */
+    /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
     create: (
       params: CreateKnowledgeBaseParams & {organizationId: string},
       options?: RequestOptions,
