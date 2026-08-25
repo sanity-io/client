@@ -109,9 +109,9 @@
     "generate:context": "node scripts/prune-context-spec.mjs src/context/openapi.json .tmp/context-openapi.pruned.json && pnpm --package=typescript@5.9.3 --package=openapi-typescript@7.13.0 dlx openapi-typescript .tmp/context-openapi.pruned.json -o src/context/types.gen.ts && oxfmt src/context/openapi.json src/context/types.gen.ts"
   },
   "dependencies": {
+    "@sanity/debug": "^1.0.0",
     "eventsource": "^5.1.0",
     "get-it": "^9.5.0",
-    "obug": "^2.1.4",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {

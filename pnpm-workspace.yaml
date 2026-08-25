@@ -10,3 +10,4 @@ allowBuilds:
 # reviewed and are allowed through.
 minimumReleaseAgeExclude:
   - get-it@9.5.0
+  - '@sanity/debug@1.0.0'

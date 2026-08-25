@@ -1,9 +1,9 @@
 import {Readable} from 'node:stream'
 
+import {createDebug} from '@sanity/debug'
 import type {FetchFunction} from 'get-it'
 import {debug} from 'get-it/middleware'
 import {createNodeFetch} from 'get-it/node'
-import {createDebug} from 'obug'
 
 import {name, version} from '../../package.json'
 import type {EnvironmentOptions, LegacyMiddleware} from './request'

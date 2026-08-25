@@ -1,4 +1,4 @@
-import {createDebug} from 'obug'
+import {createDebug} from '@sanity/debug'
 import {Observable} from 'rxjs'
 
 import type {UploadEvent} from '../types'

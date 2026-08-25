@@ -8,15 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@sanity/debug':
+        specifier: ^1.0.0
+        version: 1.0.0
       eventsource:
         specifier: ^5.1.0
         version: 5.1.0
       get-it:
         specifier: ^9.5.0
         version: 9.5.0(vitest@4.1.10)
-      obug:
-        specifier: ^2.1.4
-        version: 2.1.4
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
@@ -1819,6 +1819,10 @@ packages:
 
   '@sanity/browserslist-config@1.0.5':
     resolution: {integrity: sha512-so+/UtCge8t1jq509hH0otbbptRz0zM/Aa0dh5MhMD7HGT6n2igWIL2VWH/9QR9e77Jn3dJsjz23mW1WCxT+sg==}
+
+  '@sanity/debug@1.0.0':
+    resolution: {integrity: sha512-hM4mI4MfzirEMbCNXXOffb11dFehFZr6SXTgqe838jV+qM8joeFow4l5pLsOt3yNpQQb+unkzFDxnlGstBBqlg==}
+    engines: {node: '>=22.12.0'}
 
   '@sanity/parse-package-json@2.3.1':
     resolution: {integrity: sha512-ObHxlg9RxRWRWo8OO+Ddbh+4VN2R7vkncfK97Dvybixxh8UX6I0fpR4N4xa55E1PcGPsjAFSMWlS+tfInTdllA==}
@@ -5787,6 +5791,8 @@ snapshots:
       - '@types/node'
 
   '@sanity/browserslist-config@1.0.5': {}
+
+  '@sanity/debug@1.0.0': {}
 
   '@sanity/parse-package-json@2.3.1':
     dependencies:
