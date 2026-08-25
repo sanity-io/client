@@ -202,16 +202,16 @@ describe('collaboration.comments write results', () => {
       Promise<CollaborationCommentDocument>
     >()
     // @ts-expect-error - fieldValue requires a non-null range
-    comments.update('comment-1', {
+    void comments.update('comment-1', {
       range: null,
       fieldValue: [{_type: 'block', _key: 'block-1'}],
     })
     // @ts-expect-error - fieldValue requires range
-    comments.update('comment-1', {
+    void comments.update('comment-1', {
       status: 'resolved',
       fieldValue: [{_type: 'block', _key: 'block-1'}],
     })
-    comments.update('comment-1', {
+    void comments.update('comment-1', {
       range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
       // @ts-expect-error - fieldValue items require `_key`
       fieldValue: [{_type: 'block', children: [{_type: 'span', text: 'Hello'}]}],
