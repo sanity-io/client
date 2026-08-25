@@ -2264,12 +2264,19 @@ When you configure the client with a Media Library resource, you can use familia
 >
 > Requires API version `2025-03-25` or later.
 
+Getting playback information requires authentication. Use a token when calling this API from
+server-side code. In a browser, use `withCredentials: true` instead of exposing a token in client-side
+code.
+
+Media Library resource clients send requests to the global API host (`api.sanity.io`), which does not
+support CORS. This configuration therefore only works outside the browser:
+
 ```js
 import {createClient} from '@sanity/client'
 
 const client = createClient({
-  token: 'valid-token',
-  apiVersion: '2025-03-25'
+  token: process.env.SANITY_API_READ_TOKEN,
+  apiVersion: '2025-03-25',
   useCdn: false,
   resource: {
     type: 'media-library',
@@ -2354,7 +2361,25 @@ const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
 
 // Using Global Dataset Reference (GDR)
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
-  _ref: 'media-library:mlZxz9rvqf76:30rh9U3GDEK3ToiId1Zje4uvalC',
+  _ref: 'media-library:mlZxz9rvqf76:video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
+})
+```
+
+To call this API from a browser, use a project-configured client so the request is sent to the project
+API host (`<projectId>.api.sanity.io`), which supports CORS. Pass a Global Dataset Reference (GDR) so
+the client can determine the Media Library ID, and make sure the browser's origin is included in
+[your project's CORS settings](https://www.sanity.io/docs/content-lake/browser-security-and-cors):
+
+```js
+const browserClient = createClient({
+  projectId: 'yourProjectId',
+  apiVersion: '2025-03-25',
+  useCdn: false,
+  withCredentials: true,
+})
+
+const playbackInfo = await browserClient.mediaLibrary.video.getPlaybackInfo({
+  _ref: 'media-library:mlZxz9rvqf76:video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
 })
 ```
 
