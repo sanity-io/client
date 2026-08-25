@@ -34,16 +34,12 @@ describe('client.context format-dependent return types', () => {
         organizationId: 'org',
         name: 'n',
         description: 'd',
-        sanityProjectId: 'p',
-        sanityDatasetId: 'ds',
       }),
     ).toEqualTypeOf<Context.KnowledgeBase>()
     // @ts-expect-error -- should fail: organizationId is required
     void client.context.knowledgeBases.create({
       name: 'n',
       description: 'd',
-      sanityProjectId: 'p',
-      sanityDatasetId: 'ds',
     })
   })
 })

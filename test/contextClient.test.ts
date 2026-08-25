@@ -12,8 +12,6 @@ const TEST_KB = {
   slug: 'support-docs',
   organizationId: TEST_ORG_ID,
   name: 'Support docs',
-  sanityProjectId: 'proj123',
-  sanityDatasetId: 'production',
 }
 
 const httpRequest = vi.fn()
@@ -40,8 +38,6 @@ describe('ContextClient', () => {
       organizationId: TEST_ORG_ID,
       name: 'Support docs',
       description: 'Docs and guides',
-      sanityProjectId: 'proj123',
-      sanityDatasetId: 'production',
     })
 
     expect(httpRequest).toHaveBeenCalledTimes(1)

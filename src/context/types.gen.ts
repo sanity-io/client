@@ -1006,8 +1006,6 @@ export interface operations {
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
-            sanityProjectId: string | null
-            sanityDatasetId: string | null
             activeJobId: string | null
             isBuilding: boolean
             buildStageState: {
@@ -1105,8 +1103,6 @@ export interface operations {
               description: string
               /** @enum {string} */
               state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
-              sanityProjectId: string | null
-              sanityDatasetId: string | null
               activeJobId: string | null
               isBuilding: boolean
               buildStageState: {
@@ -1190,8 +1186,6 @@ export interface operations {
           name: string
           slug?: string
           description: string
-          sanityProjectId: string
-          sanityDatasetId: string
         }
       }
     }
@@ -1212,8 +1206,6 @@ export interface operations {
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
-            sanityProjectId: string | null
-            sanityDatasetId: string | null
             activeJobId: string | null
             isBuilding: boolean
             buildStageState: {
@@ -1306,8 +1298,6 @@ export interface operations {
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
-            sanityProjectId: string | null
-            sanityDatasetId: string | null
             activeJobId: string | null
             isBuilding: boolean
             buildStageState: {
@@ -1432,8 +1422,6 @@ export interface operations {
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
-            sanityProjectId: string | null
-            sanityDatasetId: string | null
             activeJobId: string | null
             isBuilding: boolean
             buildStageState: {
@@ -1751,7 +1739,7 @@ export interface operations {
               id: string
               knowledgeBaseId: string
               /** Format: uuid */
-              revisionId: string
+              revisionId: string | null
               path: string
               title: string
               tldr: {
@@ -1764,7 +1752,7 @@ export interface operations {
               body: string | null
               /** @enum {string} */
               status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-              sourceIds: string[]
+              sourceIds: (string | null)[]
               citations?: {
                 sourceId: string
                 supports?: string
@@ -1815,7 +1803,7 @@ export interface operations {
             id: string
             knowledgeBaseId: string
             /** Format: uuid */
-            revisionId: string
+            revisionId: string | null
             path: string
             title: string
             tldr: {
@@ -1828,7 +1816,7 @@ export interface operations {
             body: string | null
             /** @enum {string} */
             status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-            sourceIds: string[]
+            sourceIds: (string | null)[]
             citations?: {
               sourceId: string
               supports?: string

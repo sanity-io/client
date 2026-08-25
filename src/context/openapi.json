@@ -994,14 +994,6 @@
                       "type": "string",
                       "enum": ["created", "building", "ready", "review", "stale", "paused"]
                     },
-                    "sanityProjectId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "sanityDatasetId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "activeJobId": {
                       "nullable": true,
                       "type": "string"
@@ -1195,8 +1187,6 @@
                     "name",
                     "description",
                     "state",
-                    "sanityProjectId",
-                    "sanityDatasetId",
                     "activeJobId",
                     "isBuilding",
                     "buildStageState",
@@ -1306,14 +1296,6 @@
                           "state": {
                             "type": "string",
                             "enum": ["created", "building", "ready", "review", "stale", "paused"]
-                          },
-                          "sanityProjectId": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "sanityDatasetId": {
-                            "nullable": true,
-                            "type": "string"
                           },
                           "activeJobId": {
                             "nullable": true,
@@ -1508,8 +1490,6 @@
                           "name",
                           "description",
                           "state",
-                          "sanityProjectId",
-                          "sanityDatasetId",
                           "activeJobId",
                           "isBuilding",
                           "buildStageState",
@@ -1575,17 +1555,9 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2000
-                  },
-                  "sanityProjectId": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "sanityDatasetId": {
-                    "type": "string",
-                    "minLength": 1
                   }
                 },
-                "required": ["name", "description", "sanityProjectId", "sanityDatasetId"]
+                "required": ["name", "description"]
               }
             }
           }
@@ -1639,14 +1611,6 @@
                     "state": {
                       "type": "string",
                       "enum": ["created", "building", "ready", "review", "stale", "paused"]
-                    },
-                    "sanityProjectId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "sanityDatasetId": {
-                      "nullable": true,
-                      "type": "string"
                     },
                     "activeJobId": {
                       "nullable": true,
@@ -1841,8 +1805,6 @@
                     "name",
                     "description",
                     "state",
-                    "sanityProjectId",
-                    "sanityDatasetId",
                     "activeJobId",
                     "isBuilding",
                     "buildStageState",
@@ -1922,14 +1884,6 @@
                       "type": "string",
                       "enum": ["created", "building", "ready", "review", "stale", "paused"]
                     },
-                    "sanityProjectId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "sanityDatasetId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "activeJobId": {
                       "nullable": true,
                       "type": "string"
@@ -2123,8 +2077,6 @@
                     "name",
                     "description",
                     "state",
-                    "sanityProjectId",
-                    "sanityDatasetId",
                     "activeJobId",
                     "isBuilding",
                     "buildStageState",
@@ -2231,14 +2183,6 @@
                       "type": "string",
                       "enum": ["created", "building", "ready", "review", "stale", "paused"]
                     },
-                    "sanityProjectId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "sanityDatasetId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
                     "activeJobId": {
                       "nullable": true,
                       "type": "string"
@@ -2432,8 +2376,6 @@
                     "name",
                     "description",
                     "state",
-                    "sanityProjectId",
-                    "sanityDatasetId",
                     "activeJobId",
                     "isBuilding",
                     "buildStageState",
@@ -4590,6 +4532,7 @@
                             "type": "string"
                           },
                           "revisionId": {
+                            "nullable": true,
                             "type": "string",
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -4635,6 +4578,7 @@
                           "sourceIds": {
                             "type": "array",
                             "items": {
+                              "nullable": true,
                               "type": "string",
                               "format": "uuid",
                               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -4784,6 +4728,7 @@
                       "type": "string"
                     },
                     "revisionId": {
+                      "nullable": true,
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -4829,6 +4774,7 @@
                     "sourceIds": {
                       "type": "array",
                       "items": {
+                        "nullable": true,
                         "type": "string",
                         "format": "uuid",
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -5957,104 +5903,6 @@
                   "required": ["jobId"],
                   "additionalProperties": false,
                   "description": "JobAccepted"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/{apiVersion}/context/organizations/{organizationId}/dataset-permissions": {
-      "post": {
-        "operationId": "getDatasetPermissions",
-        "summary": "Resolve the caller's access to datasets",
-        "tags": ["dataset-permissions"],
-        "description": "Resolves the caller's effective access to each requested dataset in one round trip, keyed by `\"{sanityProjectId}/{sanityDatasetId}\"`. `read` and `write` come from the Sanity ACL, with positive reads verified with a live read check. `fullRead` gates binding a dataset source; `admin` plus `write` gates creating a Context. Transient failures fail open on `read` and closed on `write`, `fullRead`, and `admin`.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "datasets": {
-                    "maxItems": 200,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "sanityProjectId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "sanityDatasetId": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      },
-                      "required": ["sanityProjectId", "sanityDatasetId"]
-                    }
-                  }
-                },
-                "required": ["datasets"],
-                "description": "DatasetPermissionsInput"
-              }
-            }
-          },
-          "description": "DatasetPermissionsInput"
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "apiVersion",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "organizationId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "DatasetPermissionsResponse",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "permissions": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "object",
-                        "properties": {
-                          "read": {
-                            "type": "boolean"
-                          },
-                          "write": {
-                            "type": "boolean"
-                          },
-                          "fullRead": {
-                            "type": "boolean"
-                          },
-                          "admin": {
-                            "type": "boolean"
-                          }
-                        },
-                        "required": ["read", "write", "fullRead", "admin"],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": ["permissions"],
-                  "additionalProperties": false,
-                  "description": "DatasetPermissionsResponse"
                 }
               }
             }
@@ -8750,6 +8598,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
                     "threadId": {
                       "type": "string"
                     },
@@ -8866,6 +8717,7 @@
                     }
                   },
                   "required": [
+                    "id",
                     "threadId",
                     "mcpEndpointId",
                     "startedAt",
@@ -8963,6 +8815,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
                     "threadId": {
                       "type": "string"
                     },
@@ -9079,178 +8934,7 @@
                     }
                   },
                   "required": [
-                    "threadId",
-                    "mcpEndpointId",
-                    "startedAt",
-                    "messagesUpdatedAt",
-                    "messages",
-                    "modelProvider",
-                    "modelId",
-                    "tokenUsage",
-                    "coreMetrics",
-                    "classifiedAt",
-                    "classificationError",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false,
-                  "description": "Conversation"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "operationId": "getConversation",
-        "summary": "Get a conversation",
-        "tags": ["conversations"],
-        "description": "Returns one recorded conversation by its thread id, transcript included.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "in": "path",
-            "name": "mcpEndpointName",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            "in": "path",
-            "name": "threadId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Conversation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "threadId": {
-                      "type": "string"
-                    },
-                    "mcpEndpointId": {
-                      "type": "string"
-                    },
-                    "startedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    },
-                    "messagesUpdatedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    },
-                    "messages": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "role": {
-                            "type": "string",
-                            "enum": ["user", "assistant", "system", "tool"]
-                          },
-                          "content": {
-                            "default": null,
-                            "nullable": true,
-                            "type": "string",
-                            "maxLength": 20000
-                          },
-                          "toolName": {
-                            "default": null,
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "toolType": {
-                            "default": null,
-                            "nullable": true,
-                            "type": "string",
-                            "enum": ["call", "result"]
-                          }
-                        },
-                        "required": ["role", "content", "toolName", "toolType"],
-                        "additionalProperties": false,
-                        "description": "ConversationMessage"
-                      }
-                    },
-                    "modelProvider": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "modelId": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "tokenUsage": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "inputTokens": {
-                          "type": "number"
-                        },
-                        "outputTokens": {
-                          "type": "number"
-                        },
-                        "totalTokens": {
-                          "type": "number"
-                        }
-                      },
-                      "additionalProperties": false,
-                      "description": "ConversationTokenUsage"
-                    },
-                    "coreMetrics": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "successScore": {
-                          "type": "number"
-                        },
-                        "sentiment": {
-                          "type": "string",
-                          "enum": ["positive", "neutral", "negative"]
-                        },
-                        "contentGaps": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "additionalProperties": false,
-                      "description": "ConversationCoreMetrics"
-                    },
-                    "classifiedAt": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    },
-                    "classificationError": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    }
-                  },
-                  "required": [
+                    "id",
                     "threadId",
                     "mcpEndpointId",
                     "startedAt",
@@ -9274,12 +8958,12 @@
         }
       }
     },
-    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations": {
+    "/{apiVersion}/context/organizations/{organizationId}/conversations": {
       "get": {
-        "operationId": "listConversations",
-        "summary": "List conversations",
+        "operationId": "listOrganizationConversations",
+        "summary": "List conversations across the organization",
         "tags": ["conversations"],
-        "description": "The MCP endpoint's recorded conversations, most recently updated first. `?classification=` narrows to one classification state; `pending` flips to oldest-first work-queue order.",
+        "description": "Every recorded conversation in the organization, across all MCP endpoints, most recently updated first. Rows carry `mcpEndpointId` so callers can attribute each thread. Same filters and sort as the per-endpoint list; `?endpoint=` narrows to one endpoint by name (and 404s when it doesn't resolve).",
         "parameters": [
           {
             "schema": {
@@ -9313,10 +8997,57 @@
           {
             "schema": {
               "type": "string",
+              "enum": ["good", "okay", "poor", "critical"]
+            },
+            "in": "query",
+            "name": "scoreRange",
+            "required": false,
+            "description": "Filter by score bucket over the classifier score, matching the insights aggregate: `good` >= 8, `okay` 6-8, `poor` 4-6, `critical` < 4. Only conversations with a recorded score match. Composes with the other filters."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["positive", "neutral", "negative"]
+            },
+            "in": "query",
+            "name": "sentiment",
+            "required": false,
+            "description": "Filter to conversations the classifier rated with this sentiment. Composes with the other filters."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["date-desc", "date-asc", "score-desc", "score-asc"]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "description": "Sort order, `date-desc` by default. Date sorts key on when the transcript last changed; score sorts key on the classifier score and only return conversations with a recorded score. An explicit sort overrides the oldest-first default of `classification=pending`; score sorts cannot combine with `pending`, whose threads have no score yet."
+          },
+          {
+            "schema": {
+              "type": "string",
               "minLength": 1
             },
+            "in": "query",
+            "name": "endpoint",
+            "required": false,
+            "description": "Narrow to one MCP endpoint by its URL name (the per-endpoint routes' path identifier). Omit for every endpoint in the organization."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
             "in": "path",
-            "name": "mcpEndpointName",
+            "name": "apiVersion",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
             "required": true
           }
         ],
@@ -9333,7 +9064,13 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "string"
+                          },
                           "threadId": {
+                            "type": "string"
+                          },
+                          "mcpEndpointId": {
                             "type": "string"
                           },
                           "messagesUpdatedAt": {
@@ -9371,7 +9108,298 @@
                           }
                         },
                         "required": [
+                          "id",
                           "threadId",
+                          "mcpEndpointId",
+                          "messagesUpdatedAt",
+                          "messageCount",
+                          "firstMessage",
+                          "coreMetrics"
+                        ],
+                        "additionalProperties": false,
+                        "description": "ConversationSummary"
+                      }
+                    },
+                    "nextCursor": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["data", "nextCursor"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/organizations/{organizationId}/insights": {
+      "get": {
+        "operationId": "getOrganizationConversationInsights",
+        "summary": "Organization insights",
+        "tags": ["conversations"],
+        "description": "Aggregate stats over every conversation recorded in the organization, across all MCP endpoints: volume, score and sentiment distributions, classification progress, and the most frequent content gaps. `?endpoint=` narrows to one endpoint by name.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "query",
+            "name": "endpoint",
+            "required": false,
+            "description": "Narrow to one MCP endpoint by its URL name (the per-endpoint routes' path identifier). Omit for every endpoint in the organization."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ConversationInsights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversations": {
+                      "type": "number"
+                    },
+                    "averageScore": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "averageMessages": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "analyzed": {
+                      "type": "number"
+                    },
+                    "classificationErrors": {
+                      "type": "number"
+                    },
+                    "scores": {
+                      "type": "object",
+                      "properties": {
+                        "good": {
+                          "type": "number"
+                        },
+                        "okay": {
+                          "type": "number"
+                        },
+                        "poor": {
+                          "type": "number"
+                        },
+                        "critical": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["good", "okay", "poor", "critical"],
+                      "additionalProperties": false
+                    },
+                    "sentiment": {
+                      "type": "object",
+                      "properties": {
+                        "positive": {
+                          "type": "number"
+                        },
+                        "neutral": {
+                          "type": "number"
+                        },
+                        "negative": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["positive", "neutral", "negative"],
+                      "additionalProperties": false
+                    },
+                    "contentGaps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "gap": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["gap", "count"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "conversations",
+                    "averageScore",
+                    "averageMessages",
+                    "analyzed",
+                    "classificationErrors",
+                    "scores",
+                    "sentiment",
+                    "contentGaps"
+                  ],
+                  "additionalProperties": false,
+                  "description": "ConversationInsights"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations": {
+      "get": {
+        "operationId": "listConversations",
+        "summary": "List conversations",
+        "tags": ["conversations"],
+        "description": "The MCP endpoint's recorded conversations, most recently updated first. `?classification=`, `?scoreRange=`, and `?sentiment=` narrow the list and compose; `?sort=` reorders it. `classification=pending` flips to oldest-first work-queue order unless an explicit sort overrides it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "classified", "failed"]
+            },
+            "in": "query",
+            "name": "classification",
+            "required": false,
+            "description": "Filter by classification state. `pending` is the classifier work queue: threads with messages, no verdict, no recorded failure, and settled — the transcript unchanged for a server-owned 10-minute cooldown so a thread still being written is never scored mid-write — returned oldest first. `classified` and `failed` return newest first. Omit for all conversations."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["good", "okay", "poor", "critical"]
+            },
+            "in": "query",
+            "name": "scoreRange",
+            "required": false,
+            "description": "Filter by score bucket over the classifier score, matching the insights aggregate: `good` >= 8, `okay` 6-8, `poor` 4-6, `critical` < 4. Only conversations with a recorded score match. Composes with the other filters."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["positive", "neutral", "negative"]
+            },
+            "in": "query",
+            "name": "sentiment",
+            "required": false,
+            "description": "Filter to conversations the classifier rated with this sentiment. Composes with the other filters."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["date-desc", "date-asc", "score-desc", "score-asc"]
+            },
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "description": "Sort order, `date-desc` by default. Date sorts key on when the transcript last changed; score sorts key on the classifier score and only return conversations with a recorded score. An explicit sort overrides the oldest-first default of `classification=pending`; score sorts cannot combine with `pending`, whose threads have no score yet."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpointName",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "threadId": {
+                            "type": "string"
+                          },
+                          "mcpEndpointId": {
+                            "type": "string"
+                          },
+                          "messagesUpdatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          "messageCount": {
+                            "type": "number"
+                          },
+                          "firstMessage": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "coreMetrics": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "successScore": {
+                                "type": "number"
+                              },
+                              "sentiment": {
+                                "type": "string",
+                                "enum": ["positive", "neutral", "negative"]
+                              },
+                              "contentGaps": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false,
+                            "description": "ConversationCoreMetrics"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "threadId",
+                          "mcpEndpointId",
                           "messagesUpdatedAt",
                           "messageCount",
                           "firstMessage",
@@ -9501,6 +9529,174 @@
                   ],
                   "additionalProperties": false,
                   "description": "ConversationInsights"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/organizations/{organizationId}/conversations/{conversationId}": {
+      "get": {
+        "operationId": "getConversationById",
+        "summary": "Get a conversation",
+        "tags": ["conversations"],
+        "description": "Returns one recorded conversation by its canonical id (the `id` on list rows), transcript included. The id is unique across the organization, unlike `threadId`, which repeats across MCP endpoints.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "conversationId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "threadId": {
+                      "type": "string"
+                    },
+                    "mcpEndpointId": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
+                    "messagesUpdatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "enum": ["user", "assistant", "system", "tool"]
+                          },
+                          "content": {
+                            "default": null,
+                            "nullable": true,
+                            "type": "string",
+                            "maxLength": 20000
+                          },
+                          "toolName": {
+                            "default": null,
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "toolType": {
+                            "default": null,
+                            "nullable": true,
+                            "type": "string",
+                            "enum": ["call", "result"]
+                          }
+                        },
+                        "required": ["role", "content", "toolName", "toolType"],
+                        "additionalProperties": false,
+                        "description": "ConversationMessage"
+                      }
+                    },
+                    "modelProvider": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "modelId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tokenUsage": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "inputTokens": {
+                          "type": "number"
+                        },
+                        "outputTokens": {
+                          "type": "number"
+                        },
+                        "totalTokens": {
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "ConversationTokenUsage"
+                    },
+                    "coreMetrics": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "successScore": {
+                          "type": "number"
+                        },
+                        "sentiment": {
+                          "type": "string",
+                          "enum": ["positive", "neutral", "negative"]
+                        },
+                        "contentGaps": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "ConversationCoreMetrics"
+                    },
+                    "classifiedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
+                    "classificationError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "threadId",
+                    "mcpEndpointId",
+                    "startedAt",
+                    "messagesUpdatedAt",
+                    "messages",
+                    "modelProvider",
+                    "modelId",
+                    "tokenUsage",
+                    "coreMetrics",
+                    "classifiedAt",
+                    "classificationError",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Conversation"
                 }
               }
             }
