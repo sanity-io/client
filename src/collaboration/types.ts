@@ -162,12 +162,27 @@ export interface CollaborationCommentRange {
 }
 
 /**
+ * Portable Text covering a comment `range`. Callers can send just the blocks
+ * from the `range` start `_key` through end `_key`, or the full field.
+ *
+ * @alpha
+ */
+export type CollaborationCommentFieldValue = Array<{
+  _type: string
+  _key: string
+  [key: string]: Any
+}>
+
+/**
  * Target for a top-level comment. Inline selections require both `path` and
  * `range`; field-level comments may set `path` alone.
  *
  * The created comment stores this in a different shape: `path` becomes
  * `target.path.field`, and `range` is resolved against the document into
  * `target.path.selection` and `contentSnapshot` rather than being stored.
+ *
+ * An optional `fieldValue` is Portable Text covering the `range`. When set,
+ * the `range` is resolved from those blocks instead of from the live document.
  *
  * @alpha
  */
@@ -180,11 +195,17 @@ export type CollaborationCommentTarget = {
       /** Path to the field containing the inline comment selection */
       path: string
       range: CollaborationCommentRange
+      /**
+       * Portable Text covering the `range`. When set, the `range` is resolved
+       * from these blocks instead of from the live document.
+       */
+      fieldValue?: CollaborationCommentFieldValue
     }
   | {
       /** Path to the commented field */
       path?: string
       range?: never
+      fieldValue?: never
     }
 )
 
@@ -202,6 +223,19 @@ export type CollaborationCommentTarget = {
  * await client.collaboration.comments.create({
  *   message,
  *   target: {documentId: 'doc-1', documentType: 'article'},
+ * })
+ * ```
+ *
+ * #### Inline comment
+ * ```ts
+ * await client.collaboration.comments.create({
+ *   message,
+ *   target: {
+ *     documentId: 'doc-1',
+ *     documentType: 'article',
+ *     path: 'body',
+ *     range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 5}},
+ *   },
  * })
  * ```
  *
@@ -236,17 +270,34 @@ export type CollaborationCommentCreate = {
 /**
  * Fields that can be updated on an existing comment.
  *
+ * A `range` re-anchors the comment within the field it already targets.
+ * Pass `null` to remove the selection and leave a field-level comment.
+ * An optional `fieldValue` is Portable Text covering that `range`; when set,
+ * the `range` is resolved from those blocks instead of from the live document.
+ * `fieldValue` cannot be sent alone or together with `range: null`.
+ *
  * @alpha
  */
-export interface CollaborationCommentUpdate {
+export type CollaborationCommentUpdate = {
   /** Replaces the current message */
   message?: CollaborationCommentMessage
   /** Cascades to the comment's replies */
   status?: CollaborationCommentStatus
-  /**
-   * Re-anchors the comment within the field and source document it already
-   * targets. Pass `null` to remove the selection and leave a field-level
-   * comment.
-   */
-  range?: CollaborationCommentRange | null
-}
+} & (
+  | {
+      range: CollaborationCommentRange
+      /**
+       * Portable Text covering the `range`. When set, the `range` is resolved
+       * from these blocks instead of from the live document.
+       */
+      fieldValue?: CollaborationCommentFieldValue
+    }
+  | {
+      range: null
+      fieldValue?: never
+    }
+  | {
+      range?: undefined
+      fieldValue?: never
+    }
+)
