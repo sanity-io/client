@@ -22,14 +22,14 @@ import {
 
 type Client = SanityClient | ObservableSanityClient
 
-function organizationQuery(client: Client): {organizationId: string} {
+function insightsUrl(client: Client, suffix: 'query' | 'listen'): string {
   const organizationId = client.config().context?.organizationId
 
   if (!organizationId) {
     throw new Error('`context.organizationId` must be configured to use context insights')
   }
 
-  return {organizationId}
+  return `/context/organizations/${encodeURIComponent(organizationId)}/insights/${suffix}`
 }
 
 /** @internal */
@@ -40,19 +40,18 @@ export function _fetch<R>(
   params?: QueryParams,
   options?: ContextInsightsRequestOptions,
 ): Observable<R> {
-  const search = organizationQuery(client)
+  const url = insightsUrl(client, 'query')
 
   // Mirrors `client.fetch`: GET while the query fits in the URL, POST beyond that.
   const useGet = encodeQueryString({query, params}).length < getQuerySizeLimit
   const request = useGet
     ? {
         method: 'GET',
-        url: `/context/insights/query${encodeQueryString({query, params, options: search})}`,
+        url: `${url}${encodeQueryString({query, params})}`,
       }
     : {
         method: 'POST',
-        url: '/context/insights/query',
-        query: search,
+        url,
         body: {query, params: params ?? {}},
       }
 
@@ -78,10 +77,10 @@ export function _listen<Opts extends ContextInsightsListenOptions | undefined = 
   const qs = encodeQueryString({
     query,
     params,
-    options: {...listenOpts, ...organizationQuery(client)},
+    options: listenOpts,
   })
 
-  const uri = `${client.getUrl('/context/insights/listen')}${qs}`
+  const uri = `${client.getUrl(insightsUrl(client, 'listen'))}${qs}`
   if (uri.length > MAX_URL_LENGTH) {
     return throwError(() => new Error('Query too large for listener'))
   }

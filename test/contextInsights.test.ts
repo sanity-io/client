@@ -41,9 +41,8 @@ describe('context.insights', () => {
   test('fetches conversation documents with a GROQ query and params', async () => {
     getActiveMock()
       .scope(apiHost)
-      .on('GET', '/v2026-08-25/context/insights/query', {
+      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/insights/query`, {
         query: {
-          organizationId,
           $outcome: JSON.stringify('failed'),
           query,
         },
@@ -55,13 +54,12 @@ describe('context.insights', () => {
     ).resolves.toEqual([conversationDocument])
   })
 
-  test('switches to POST past the GET size limit, keeping the organization in the query string', async () => {
+  test('switches to POST past the GET size limit, keeping the organization in the path', async () => {
     const hugeQuery = `${query} // ${'x'.repeat(12000)}`
 
     getActiveMock()
       .scope(apiHost)
-      .on('POST', '/v2026-08-25/context/insights/query', {
-        query: {organizationId},
+      .on('POST', `/v2026-08-25/context/organizations/${organizationId}/insights/query`, {
         body: {query: hugeQuery, params: {outcome: 'failed'}},
       })
       .respond({status: 200, body: {result: []}})
@@ -95,7 +93,7 @@ describe('context.insights', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('GET', '/v2026-08-25/context/insights/listen')
+      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/insights/listen`)
       .respond({
         status: 200,
         body: streamBody(
@@ -112,8 +110,8 @@ describe('context.insights', () => {
     expect(event).toEqual({type: 'mutation', ...mutation})
 
     const [request] = getActiveMock().getRequests()
+    expect(request.url).toContain(`/context/organizations/${organizationId}/insights/listen`)
     expect(request.query).toMatchObject({
-      organizationId,
       query,
       $outcome: JSON.stringify('failed'),
     })
