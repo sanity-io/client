@@ -1,5 +1,40 @@
 # @sanity/client
 
+## 8.3.0
+
+### Minor Changes
+
+- invoke functions synchronously or asynchronously ([#1295](https://github.com/sanity-io/client/pull/1295)) ([d1667c7](https://github.com/sanity-io/client/commit/d1667c74f50cbb46bd348635e84f2d6edc9772d0))
+
+  `client.functions.invoke()` now takes an `options` argument and accepts `sanity.function.durable`
+  and `sanity.function.queue` functions alongside `sanity.function.pubsub`.
+
+  By default the invocation is queued: the call resolves with `undefined` as soon as the
+  service accepts it, without waiting for the function to run. Pass `{sync: true}` to keep the
+  request open until the function finishes and resolve with its return value — that adds a
+  `?sync=true` query parameter to the invoke request, and remains limited to
+  `sanity.function.pubsub`.
+
+  ```ts
+  // Async — resolves once accepted, with no return value.
+  await client.functions.invoke("my-func", {
+    event: { data: { hello: "world" } },
+  });
+
+  // Sync — resolves with whatever the function returns.
+  const result = await client.functions.invoke<Result>(
+    "my-func",
+    { event: { data: { hello: "world" } } },
+    { sync: true }
+  );
+  ```
+
+  The return type follows the option: a call with `{sync: true}` resolves with `R`, while an async
+  call resolves with `undefined`. Callers who pass an explicit type argument without `{sync: true}`
+  keep the previous `R | undefined` shape.
+
+- **collaboration:** resolve comment `range` from optional `fieldValue` ([#1299](https://github.com/sanity-io/client/pull/1299)) ([88073e6](https://github.com/sanity-io/client/commit/88073e610658160d24f73e5f1c3bfeff5594fe4d))
+
 ## 8.2.0
 
 ### Minor Changes
