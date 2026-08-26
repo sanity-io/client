@@ -196,6 +196,25 @@ describe('collaboration.comments', () => {
         },
       },
     }
+    const inlineWithFieldValue = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        range: {
+          start: {_key: 'block-1', offset: 6},
+          end: {_key: 'block-1', offset: 11},
+        },
+        fieldValue: [
+          {
+            _type: 'block',
+            _key: 'block-1',
+            children: [{_type: 'span', text: 'Hello World again'}],
+          },
+        ],
+      },
+    }
 
     // The stored target is shaped differently from the created one: `path`
     // becomes `target.path.field`, and `range` is resolved into a selection.
@@ -221,10 +240,22 @@ describe('collaboration.comments', () => {
           {id: 'comment-2', operation: 'create', document: inlineCommentDocument},
         ]),
       })
+    scope
+      .on('POST', '/v2026-07-18/collaboration/comments', {
+        query: commonQuery,
+        body: inlineWithFieldValue,
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-3', operation: 'create', document: inlineCommentDocument},
+        ]),
+      })
 
     const {comments} = getMockClient().collaboration
     const field = await comments.create(fieldComment)
     const inline = await comments.create(inlineComment)
+    const inlineFieldValue = await comments.create(inlineWithFieldValue)
 
     expect(field.target.path, 'a field comment stores the path, and no selection').toEqual({
       field: 'title',
@@ -240,6 +271,7 @@ describe('collaboration.comments', () => {
         children: [{_type: 'span', _key: 'block-1', text: 'World'}],
       },
     ])
+    expect(inlineFieldValue.target.path).toEqual(inline.target.path)
   })
 
   test('updates the message of an existing comment', async () => {
@@ -271,12 +303,30 @@ describe('collaboration.comments', () => {
       start: {_key: 'block-1', offset: 0},
       end: {_key: 'block-1', offset: 12},
     }
+    const fieldValue = [
+      {
+        _type: 'block',
+        _key: 'block-1',
+        children: [{_type: 'span', text: 'Hello World again'}],
+      },
+    ]
 
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
         query: commonQuery,
         body: {range},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-1', operation: 'update', document: inlineCommentDocument},
+        ]),
+      })
+    scope
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {range, fieldValue},
       })
       .respond({
         status: 200,
@@ -298,6 +348,9 @@ describe('collaboration.comments', () => {
     await expect(client.collaboration.comments.update('comment-1', {range})).resolves.toEqual(
       inlineCommentDocument,
     )
+    await expect(
+      client.collaboration.comments.update('comment-1', {range, fieldValue}),
+    ).resolves.toEqual(inlineCommentDocument)
     await expect(client.collaboration.comments.update('comment-1', {range: null})).resolves.toEqual(
       commentDocument,
     )

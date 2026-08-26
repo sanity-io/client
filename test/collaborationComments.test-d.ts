@@ -50,6 +50,26 @@ describe('CollaborationCommentCreate', () => {
         },
       },
     }).toMatchTypeOf<CollaborationCommentCreate>()
+
+    expectTypeOf({
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        range: {
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-2', offset: 10},
+        },
+        fieldValue: [
+          {
+            _type: 'block',
+            _key: 'key-1',
+            children: [{_type: 'span', text: 'Hello'}],
+          },
+        ],
+      },
+    }).toMatchTypeOf<CollaborationCommentCreate>()
   })
 
   test('requires path when range is provided', () => {
@@ -63,6 +83,40 @@ describe('CollaborationCommentCreate', () => {
           start: {_key: 'key-1', offset: 0},
           end: {_key: 'key-2', offset: 10},
         },
+      },
+    }
+
+    expectTypeOf(comment).toEqualTypeOf<CollaborationCommentCreate>()
+  })
+
+  test('requires range when fieldValue is provided', () => {
+    const comment: CollaborationCommentCreate = {
+      message,
+      // @ts-expect-error - fieldValue requires range
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        fieldValue: [{_type: 'block', _key: 'key-1', children: [{_type: 'span', text: 'Hello'}]}],
+      },
+    }
+
+    expectTypeOf(comment).toEqualTypeOf<CollaborationCommentCreate>()
+  })
+
+  test('requires `_key` on fieldValue items', () => {
+    const comment: CollaborationCommentCreate = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        range: {
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-1', offset: 5},
+        },
+        // @ts-expect-error - fieldValue items require `_key`
+        fieldValue: [{_type: 'block', children: [{_type: 'span', text: 'Hello'}]}],
       },
     }
 
@@ -131,9 +185,37 @@ describe('collaboration.comments write results', () => {
         range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
       }),
     ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
+    expectTypeOf(
+      comments.update('comment-1', {
+        range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+        fieldValue: [{_type: 'block', _key: 'block-1', children: [{_type: 'span', text: 'Hello'}]}],
+      }),
+    ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
+    expectTypeOf(
+      comments.update('comment-1', {
+        message,
+        range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+        fieldValue: [{_type: 'block', _key: 'block-1', children: [{_type: 'span', text: 'Hello'}]}],
+      }),
+    ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
     expectTypeOf(comments.update('comment-1', {range: null})).toEqualTypeOf<
       Promise<CollaborationCommentDocument>
     >()
+    // @ts-expect-error - fieldValue requires a non-null range
+    void comments.update('comment-1', {
+      range: null,
+      fieldValue: [{_type: 'block', _key: 'block-1'}],
+    })
+    // @ts-expect-error - fieldValue requires range
+    void comments.update('comment-1', {
+      status: 'resolved',
+      fieldValue: [{_type: 'block', _key: 'block-1'}],
+    })
+    void comments.update('comment-1', {
+      range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+      // @ts-expect-error - fieldValue items require `_key`
+      fieldValue: [{_type: 'block', children: [{_type: 'span', text: 'Hello'}]}],
+    })
     expectTypeOf(comments.addReaction('comment-1', ':heart:')).toEqualTypeOf<
       Promise<CollaborationCommentDocument>
     >()
