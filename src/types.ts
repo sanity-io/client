@@ -110,6 +110,10 @@ type ClientConfigResource =
       id: string
     }
   | {
+      type: 'knowledge-base'
+      id: string
+    }
+  | {
       type: 'media-library'
       id: string
     }

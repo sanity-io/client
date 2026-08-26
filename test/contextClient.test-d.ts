@@ -2,8 +2,8 @@ import {type Context, createClient} from '@sanity/client'
 import {describe, expectTypeOf, test} from 'vitest'
 
 describe('client.context format-dependent return types', () => {
-  const client = createClient({})
-  const kb = client.context.knowledgeBase('kb123')
+  const client = createClient({resource: {type: 'knowledge-base', id: 'kb123'}})
+  const kb = client.context
 
   test('outline resolves to the typed shape by default and to a string for text formats', async () => {
     expectTypeOf(await kb.outline()).toEqualTypeOf<Context.Outline>()
@@ -41,5 +41,11 @@ describe('client.context format-dependent return types', () => {
       title: 't',
       description: 'd',
     })
+  })
+
+  test('knowledge-base is a valid resource config type', () => {
+    expectTypeOf(createClient({resource: {type: 'knowledge-base', id: 'kb123'}})).not.toBeNever()
+    // @ts-expect-error -- should fail: unknown resource types are rejected
+    void createClient({resource: {type: 'knowledge-bases', id: 'kb123'}})
   })
 })
