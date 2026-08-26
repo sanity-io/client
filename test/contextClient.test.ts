@@ -15,23 +15,32 @@ const TEST_KB = {
 
 const httpRequest = vi.fn()
 
+/** A client configured the way scoped context methods require: with the knowledge base as its resource. */
+function createKbClient(): SanityClient {
+  return createClient({
+    apiVersion: '2026-05-26',
+    useCdn: false,
+    resource: {type: 'knowledge-base', id: TEST_KB_ID},
+  })
+}
+
 describe('ContextClient', () => {
-  let client: SanityClient
-  let context: ContextClient
+  let kbContext: ContextClient
 
   beforeEach(() => {
-    client = createClient({
+    httpRequest.mockReset()
+    kbContext = new ContextClient(createKbClient(), httpRequest)
+  })
+
+  test('knowledgeBases.create posts to the collection with the organization in the body', async () => {
+    httpRequest.mockResolvedValueOnce(TEST_KB)
+    const client = createClient({
       projectId: 'proj123',
       dataset: 'production',
       apiVersion: '2026-05-26',
       useCdn: false,
     })
-    httpRequest.mockReset()
-    context = new ContextClient(client, httpRequest)
-  })
-
-  test('knowledgeBases.create posts to the collection with the organization in the body', async () => {
-    httpRequest.mockResolvedValueOnce(TEST_KB)
+    const context = new ContextClient(client, httpRequest)
 
     const created = await context.knowledgeBases.create({
       organizationId: TEST_ORG_ID,
@@ -48,47 +57,93 @@ describe('ContextClient', () => {
     expect(created.publicId).toBe(TEST_KB_ID)
   })
 
-  test('knowledgeBases.list scopes by organization and forwards pagination as query params', async () => {
-    httpRequest.mockResolvedValueOnce({data: [], nextCursor: null})
+  test('knowledgeBases management addresses per call: list, get, edit, delete', async () => {
+    httpRequest
+      .mockResolvedValueOnce({data: [], nextCursor: null}) // list
+      .mockResolvedValueOnce(TEST_KB) // get
+      .mockResolvedValueOnce(TEST_KB) // edit
+      .mockResolvedValueOnce(undefined) // delete
+    const client = createClient({
+      projectId: 'proj123',
+      dataset: 'production',
+      apiVersion: '2026-05-26',
+      useCdn: false,
+    })
+    const context = new ContextClient(client, httpRequest)
 
-    await context.knowledgeBases.list({
+    await context.knowledgeBases.list({organizationId: TEST_ORG_ID, limit: 5, cursor: 'abc'})
+    await context.knowledgeBases.get(TEST_KB_ID)
+    await context.knowledgeBases.edit(TEST_KB_ID, {title: 'Support docs (EU)'})
+    const deleted = await context.knowledgeBases.delete(TEST_KB_ID)
+
+    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
       organizationId: TEST_ORG_ID,
-      limit: 5,
+      limit: '5',
       cursor: 'abc',
     })
-
-    const req = httpRequest.mock.calls[0][0]
-    expect(req.url).toContain('/context/knowledge-bases')
-    expect(req.query).toMatchObject({organizationId: TEST_ORG_ID, limit: '5', cursor: 'abc'})
+    expect(httpRequest.mock.calls[1][0].url).toContain(`/context/knowledge-bases/${TEST_KB_ID}`)
+    expect(httpRequest.mock.calls[2][0]).toMatchObject({
+      method: 'PATCH',
+      body: {title: 'Support docs (EU)'},
+    })
+    expect(httpRequest.mock.calls[3][0].method).toBe('DELETE')
+    expect(deleted).toBeUndefined()
   })
 
-  test('handle methods address the knowledge base by id directly', async () => {
+  test('scoped methods address the configured knowledge-base resource', async () => {
     httpRequest
-      .mockResolvedValueOnce(TEST_KB) // get
       .mockResolvedValueOnce({data: [], nextCursor: null}) // issues.list
       .mockResolvedValueOnce({data: [], nextCursor: null}) // entries.list
 
-    const kb = context.knowledgeBase(TEST_KB_ID)
-    await kb.get()
-    await kb.issues.list()
-    await kb.entries.list()
+    await kbContext.issues.list()
+    await kbContext.entries.list()
 
-    expect(httpRequest).toHaveBeenCalledTimes(3)
-    expect(httpRequest.mock.calls[0][0].url).toContain(`/context/knowledge-bases/${TEST_KB_ID}`)
-    expect(httpRequest.mock.calls[1][0].url).toContain(
+    expect(httpRequest.mock.calls[0][0].url).toContain(
       `/context/knowledge-bases/${TEST_KB_ID}/issues`,
     )
-    expect(httpRequest.mock.calls[2][0].url).toContain(
+    expect(httpRequest.mock.calls[1][0].url).toContain(
       `/context/knowledge-bases/${TEST_KB_ID}/entries`,
     )
+  })
+
+  test('scoped methods require a knowledge-base resource in the client configuration', () => {
+    const resourceError =
+      '`resource` of type `knowledge-base` must be configured to use knowledge-base methods'
+
+    const noResource = new ContextClient(
+      createClient({
+        projectId: 'proj123',
+        dataset: 'production',
+        apiVersion: '2026-05-26',
+        useCdn: false,
+      }),
+      httpRequest,
+    )
+    expect(() => noResource.build()).toThrow(resourceError)
+
+    const wrongResource = new ContextClient(
+      createClient({
+        apiVersion: '2026-05-26',
+        useCdn: false,
+        resource: {type: 'media-library', id: 'ml123'},
+      }),
+      httpRequest,
+    )
+    expect(() => wrongResource.issues.list()).toThrow(resourceError)
+    expect(httpRequest).not.toHaveBeenCalled()
+  })
+
+  test('data URLs on a knowledge-base resource follow the platform resource grammar', () => {
+    // Pins the query surface's address shape ahead of it going live, the
+    // same way media libraries resolve to /media-libraries/{id}/query.
+    expect(createKbClient().getDataUrl('query')).toBe(`/knowledge-bases/${TEST_KB_ID}/query`)
   })
 
   test('a caller abort signal rides the request', async () => {
     httpRequest.mockResolvedValueOnce({jobId: 'job1'})
 
     const controller = new AbortController()
-    const kb = context.knowledgeBase(TEST_KB_ID)
-    await kb.build({signal: controller.signal})
+    await kbContext.build({signal: controller.signal})
 
     expect(httpRequest.mock.calls[0][0].signal).toBe(controller.signal)
   })
@@ -100,8 +155,7 @@ describe('ContextClient', () => {
       jobId: null,
     })
 
-    const kb = context.knowledgeBase(TEST_KB_ID)
-    const result = await kb.issues.resolve({
+    const result = await kbContext.issues.resolve({
       issueId: 'issue.abc',
       resolution: 'keep_existing',
     })
@@ -122,11 +176,10 @@ describe('ContextClient', () => {
     // The PUT rides the client's fetch resolution (so proxy config applies),
     // injected the same way the transport tests inject theirs.
     const uploadFetch = vi.fn().mockResolvedValueOnce(new Response(null, {status: 200}))
-    const uploadClient = client.withConfig({resolveFetch: () => uploadFetch})
+    const uploadClient = createKbClient().withConfig({resolveFetch: () => uploadFetch})
     const uploadContext = new ContextClient(uploadClient, httpRequest)
 
-    const kb = uploadContext.knowledgeBase(TEST_KB_ID)
-    const result = await kb.imports.create({
+    const result = await uploadContext.imports.create({
       type: 'file',
       file: new Blob(['hello']),
       filename: 'hello.txt',
@@ -154,12 +207,11 @@ describe('ContextClient', () => {
     const uploadFetch = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, {status: 403, statusText: 'Forbidden'}))
-    const uploadClient = client.withConfig({resolveFetch: () => uploadFetch})
+    const uploadClient = createKbClient().withConfig({resolveFetch: () => uploadFetch})
     const uploadContext = new ContextClient(uploadClient, httpRequest)
 
-    const kb = uploadContext.knowledgeBase(TEST_KB_ID)
     await expect(
-      kb.imports.create({
+      uploadContext.imports.create({
         type: 'file',
         file: new Blob(['x']),
         filename: 'x.txt',
@@ -180,10 +232,9 @@ describe('ContextClient', () => {
         totalLines: 1,
       }) // sources.content
 
-    const kb = context.knowledgeBase(TEST_KB_ID)
-    await kb.entries.get({path: 'billing/refunds', format: 'markdown'})
-    await kb.outline()
-    await kb.sources.content({sourceId: 's1', startLine: 4, endLine: 10})
+    await kbContext.entries.get({path: 'billing/refunds', format: 'markdown'})
+    await kbContext.outline()
+    await kbContext.sources.content({sourceId: 's1', startLine: 4, endLine: 10})
 
     expect(httpRequest.mock.calls[0][0].url).toContain('/entries/billing%2Frefunds')
     expect(httpRequest.mock.calls[0][0].query).toMatchObject({
@@ -199,7 +250,7 @@ describe('ContextClient', () => {
   test('sources.delete issues a DELETE and resolves to nothing', async () => {
     httpRequest.mockResolvedValueOnce(undefined)
 
-    const result = await context.knowledgeBase(TEST_KB_ID).sources.delete({sourceId: 'source1'})
+    const result = await kbContext.sources.delete({sourceId: 'source1'})
 
     expect(httpRequest.mock.calls[0][0]).toMatchObject({
       method: 'DELETE',

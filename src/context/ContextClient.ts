@@ -49,7 +49,30 @@ import type {CreateFileImportParams, RenderFormat, RequestOptions} from './types
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
 
+type Client = SanityClient | ObservableSanityClient
+
 const COLLECTION_URL = '/context/knowledge-bases'
+
+/**
+ * The knowledge base every scoped method operates on comes from the client's
+ * `resource` configuration, matching how media libraries and canvases are
+ * addressed. Resolved per call so `withConfig` clones behave.
+ */
+function _resolveKnowledgeBaseId(client: Client): string {
+  const resource = client.config().resource
+
+  if (resource?.type !== 'knowledge-base') {
+    throw new Error(
+      '`resource` of type `knowledge-base` must be configured to use knowledge-base methods',
+    )
+  }
+
+  return resource.id
+}
+
+function _knowledgeBaseUrl(knowledgeBaseId: string, suffix = ''): string {
+  return `${COLLECTION_URL}/${encodeURIComponent(knowledgeBaseId)}${suffix}`
+}
 
 /** Serialize defined values into query params, dropping the undefined ones. */
 function _query(entries: Record<string, string | number | undefined>): Record<string, string> {
@@ -68,27 +91,43 @@ function _fetchBody(file: CreateFileImportParams['file']) {
 }
 
 /**
- * Everything scoped to one knowledge base, addressed by its id alone.
- * Construct via {@link ContextClient.knowledgeBase}.
+ * `client.context` — knowledge bases and everything scoped to them.
+ *
+ * Collection-level management (create, list, get, edit, delete) addresses
+ * knowledge bases per call, like `client.projects`. Everything scoped to one
+ * knowledge base (imports, builds, issues, entries, ...) operates on the
+ * client's configured `resource`, like media libraries:
+ *
+ * @example Full lifecycle
+ * ```ts
+ * const created = await client.context.knowledgeBases.create({
+ *   organizationId: 'org123',
+ *   title: 'Support docs',
+ *   description: 'Product docs and troubleshooting guides',
+ * })
+ *
+ * const kb = createClient({
+ *   apiVersion: '2026-08-25',
+ *   token,
+ *   resource: {type: 'knowledge-base', id: created.publicId},
+ * })
+ *
+ * await kb.context.imports.create({type: 'text', title: 'Refund policy', content: refundMd})
+ * const {jobId} = await kb.context.build()
+ * ```
  *
  * @beta
  */
-export class KnowledgeBaseHandle {
+export class ContextClient {
   #client: SanityClient
   #httpRequest: HttpRequest
-  #knowledgeBaseId: string
 
-  constructor(client: SanityClient, httpRequest: HttpRequest, knowledgeBaseId: string) {
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
     this.#httpRequest = httpRequest
-    this.#knowledgeBaseId = knowledgeBaseId
   }
 
-  /** The knowledge base id this handle was constructed with. */
-  get knowledgeBaseId(): string {
-    return this.#knowledgeBaseId
-  }
-
+  /** Request against the configured knowledge base. */
   #request<R>(
     suffix: string,
     reqOptions: {
@@ -98,12 +137,12 @@ export class KnowledgeBaseHandle {
     } & RequestOptions = {},
   ): Promise<R> {
     return _request<R>(this.#client, this.#httpRequest, {
-      url: `${COLLECTION_URL}/${this.#knowledgeBaseId}${suffix}`,
+      url: _knowledgeBaseUrl(_resolveKnowledgeBaseId(this.#client), suffix),
       ...reqOptions,
     })
   }
 
-  /** Shared shape of every paginated list endpoint under the handle. */
+  /** Shared shape of every paginated list endpoint scoped to the knowledge base. */
   #list<R>(
     suffix: string,
     params?: ListOptions,
@@ -155,25 +194,60 @@ export class KnowledgeBaseHandle {
     })
   }
 
-  /** Fetch the knowledge base. */
-  get(options?: RequestOptions): Promise<KnowledgeBase> {
-    return this.#request('', options)
-  }
-
-  /** Edit the knowledge base's configuration. */
-  edit(params: EditKnowledgeBaseParams, options?: RequestOptions): Promise<KnowledgeBase> {
-    return this.#request('', {method: 'PATCH', body: params, ...options})
-  }
-
-  /** Delete the knowledge base and its generated content. */
-  async delete(options?: RequestOptions): Promise<void> {
-    await this.#request('', {method: 'DELETE', ...options})
+  /** The knowledge base collection: management addressed per call. */
+  knowledgeBases = {
+    /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
+    create: (params: CreateKnowledgeBaseParams, options?: RequestOptions): Promise<KnowledgeBase> =>
+      _request<KnowledgeBase>(this.#client, this.#httpRequest, {
+        url: COLLECTION_URL,
+        method: 'POST',
+        body: params,
+        ...options,
+      }),
+    /** List the organization's knowledge bases. */
+    list: (params: {organizationId: string} & ListOptions): Promise<KnowledgeBasesResponse> =>
+      _request<KnowledgeBasesResponse>(this.#client, this.#httpRequest, {
+        url: COLLECTION_URL,
+        query: _query({
+          organizationId: params.organizationId,
+          cursor: params.cursor,
+          limit: params.limit,
+        }),
+        signal: params.signal,
+        tag: params.tag,
+      }),
+    /** Fetch a knowledge base by its id. */
+    get: (knowledgeBaseId: string, options?: RequestOptions): Promise<KnowledgeBase> =>
+      _request<KnowledgeBase>(this.#client, this.#httpRequest, {
+        url: _knowledgeBaseUrl(knowledgeBaseId),
+        ...options,
+      }),
+    /** Edit a knowledge base's configuration. */
+    edit: (
+      knowledgeBaseId: string,
+      params: EditKnowledgeBaseParams,
+      options?: RequestOptions,
+    ): Promise<KnowledgeBase> =>
+      _request<KnowledgeBase>(this.#client, this.#httpRequest, {
+        url: _knowledgeBaseUrl(knowledgeBaseId),
+        method: 'PATCH',
+        body: params,
+        ...options,
+      }),
+    /** Delete a knowledge base and its generated content. */
+    delete: async (knowledgeBaseId: string, options?: RequestOptions): Promise<void> => {
+      await _request<void>(this.#client, this.#httpRequest, {
+        url: _knowledgeBaseUrl(knowledgeBaseId),
+        method: 'DELETE',
+        ...options,
+      })
+    },
   }
 
   /**
-   * Build the knowledge base. The server waits for pending import processing
-   * before assembling, so importing and building back to back is safe. Track
-   * the returned job with {@link jobs}.
+   * Build the configured knowledge base. The server waits for pending import
+   * processing before assembling, so importing and building back to back is
+   * safe. Track the returned job with {@link jobs}.
    */
   build(options?: RequestOptions): Promise<JobAccepted> {
     return this.#request('/build', {method: 'POST', ...options})
@@ -209,7 +283,7 @@ export class KnowledgeBaseHandle {
     return this.#request('/changes', options)
   }
 
-  /** Imports: feed content into the knowledge base. */
+  /** Imports: feed content into the configured knowledge base. */
   imports = {
     /**
      * Import content. One entry point, discriminated on `type`: inline
@@ -397,7 +471,7 @@ export class KnowledgeBaseHandle {
       this.#request<RevisionOutline>(`/revisions/${params.revisionId}/outline`, options),
   }
 
-  /** Crawl options for the knowledge base's web source. */
+  /** Crawl options for the configured knowledge base's web source. */
   crawlOptions = {
     edit: (params: EditCrawlOptionsParams, options?: RequestOptions) =>
       this.#request<CrawlOptions>('/crawl-options', {
@@ -409,68 +483,9 @@ export class KnowledgeBaseHandle {
 }
 
 /**
- * `client.context` — knowledge bases and everything scoped to them.
- *
- * @example Zero to knowledge base
- * ```ts
- * const created = await client.context.knowledgeBases.create({
- *   organizationId: 'org123',
- *   title: 'Support docs',
- *   description: 'Product docs and troubleshooting guides',
- * })
- * const kb = client.context.knowledgeBase(created.publicId)
- * await kb.imports.create({type: 'text', title: 'Refund policy', content: refundMd})
- * const {jobId} = await kb.build()
- * ```
- *
- * @beta
- */
-export class ContextClient {
-  #client: SanityClient
-  #httpRequest: HttpRequest
-
-  constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
-    this.#httpRequest = httpRequest
-  }
-
-  /** The knowledge base collection. */
-  knowledgeBases = {
-    /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
-    create: (params: CreateKnowledgeBaseParams, options?: RequestOptions): Promise<KnowledgeBase> =>
-      _request<KnowledgeBase>(this.#client, this.#httpRequest, {
-        url: COLLECTION_URL,
-        method: 'POST',
-        body: params,
-        ...options,
-      }),
-    /** List the organization's knowledge bases. */
-    list: (params: {organizationId: string} & ListOptions): Promise<KnowledgeBasesResponse> =>
-      _request<KnowledgeBasesResponse>(this.#client, this.#httpRequest, {
-        url: COLLECTION_URL,
-        query: _query({
-          organizationId: params.organizationId,
-          cursor: params.cursor,
-          limit: params.limit,
-        }),
-        signal: params.signal,
-        tag: params.tag,
-      }),
-  }
-
-  /**
-   * A handle carrying everything scoped to one knowledge base, addressed by
-   * its id.
-   */
-  knowledgeBase(knowledgeBaseId: string): KnowledgeBaseHandle {
-    return new KnowledgeBaseHandle(this.#client, this.#httpRequest, knowledgeBaseId)
-  }
-}
-
-/**
  * Observable counterpart of {@link ContextClient}. Collection-level methods
- * only; the per-knowledge-base handle is promise-based, so use the promise
- * client (`client.context.knowledgeBase(id)`) for handle operations.
+ * only; knowledge-base scoped operations are promise-based, so use the
+ * promise client (`client.context`) for those.
  *
  * @beta
  */
@@ -483,7 +498,7 @@ export class ObservableContextClient {
     this.#httpRequest = httpRequest
   }
 
-  /** The knowledge base collection. */
+  /** The knowledge base collection: management addressed per call. */
   knowledgeBases = {
     /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
     create: (
@@ -510,6 +525,40 @@ export class ObservableContextClient {
             limit: params.limit,
           }),
           tag: params.tag,
+          signal,
+        }),
+      ),
+    /** Fetch a knowledge base by its id. */
+    get: (knowledgeBaseId: string, options?: RequestOptions): Observable<KnowledgeBase> =>
+      _observe(options?.signal, (signal) =>
+        _request<KnowledgeBase>(this.#client, this.#httpRequest, {
+          url: _knowledgeBaseUrl(knowledgeBaseId),
+          tag: options?.tag,
+          signal,
+        }),
+      ),
+    /** Edit a knowledge base's configuration. */
+    edit: (
+      knowledgeBaseId: string,
+      params: EditKnowledgeBaseParams,
+      options?: RequestOptions,
+    ): Observable<KnowledgeBase> =>
+      _observe(options?.signal, (signal) =>
+        _request<KnowledgeBase>(this.#client, this.#httpRequest, {
+          url: _knowledgeBaseUrl(knowledgeBaseId),
+          method: 'PATCH',
+          body: params,
+          tag: options?.tag,
+          signal,
+        }),
+      ),
+    /** Delete a knowledge base and its generated content. */
+    delete: (knowledgeBaseId: string, options?: RequestOptions): Observable<void> =>
+      _observe(options?.signal, (signal) =>
+        _request<void>(this.#client, this.#httpRequest, {
+          url: _knowledgeBaseUrl(knowledgeBaseId),
+          method: 'DELETE',
+          tag: options?.tag,
           signal,
         }),
       ),

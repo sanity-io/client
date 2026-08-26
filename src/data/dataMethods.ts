@@ -1291,6 +1291,9 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
     case 'canvas': {
       return `/canvases/${id}`
     }
+    case 'knowledge-base': {
+      return `/knowledge-bases/${id}`
+    }
     case 'media-library': {
       return `/media-libraries/${id}`
     }
