@@ -187,11 +187,14 @@ export class ContextClient {
     if (!putResponse.ok) {
       throw new Error(`File upload failed: ${putResponse.status} ${putResponse.statusText}`)
     }
-    return this.#request<JobAccepted>(`/imports/uploads/${staged.importId}/complete`, {
-      method: 'POST',
-      body: {},
-      ...options,
-    })
+    return this.#request<JobAccepted>(
+      `/imports/uploads/${encodeURIComponent(staged.importId)}/complete`,
+      {
+        method: 'POST',
+        body: {},
+        ...options,
+      },
+    )
   }
 
   /** The knowledge base collection: management addressed per call. */
@@ -305,12 +308,15 @@ export class ContextClient {
           }),
     list: (params?: ListOptions) => this.#list<ImportsResponse>('/imports', params),
     get: (params: {importId: string}, options?: RequestOptions) =>
-      this.#request<ImportDetail>(`/imports/${params.importId}`, options),
+      this.#request<ImportDetail>(`/imports/${encodeURIComponent(params.importId)}`, options),
     /** A short-lived signed URL for the original uploaded bytes. */
     download: (params: {importId: string}, options?: RequestOptions) =>
-      this.#request<ImportDownloadResponse>(`/imports/${params.importId}/download`, options),
+      this.#request<ImportDownloadResponse>(
+        `/imports/${encodeURIComponent(params.importId)}/download`,
+        options,
+      ),
     delete: async (params: {importId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/imports/${params.importId}`, {
+      await this.#request<void>(`/imports/${encodeURIComponent(params.importId)}`, {
         method: 'DELETE',
         ...options,
       })
@@ -327,7 +333,7 @@ export class ContextClient {
   /** Jobs: poll async work (builds, imports) to a terminal state. */
   jobs = {
     get: (params: {jobId: string}, options?: RequestOptions) =>
-      this.#request<Job>(`/jobs/${params.jobId}`, options),
+      this.#request<Job>(`/jobs/${encodeURIComponent(params.jobId)}`, options),
   }
 
   /** Issues: findings from builds awaiting triage. */
@@ -337,23 +343,23 @@ export class ContextClient {
         status: params?.status,
       }),
     get: (params: {issueId: string}, options?: RequestOptions) =>
-      this.#request<IssueDetail>(`/issues/${params.issueId}`, options),
+      this.#request<IssueDetail>(`/issues/${encodeURIComponent(params.issueId)}`, options),
     /** Resolve a conflict issue. Mints the standing instruction, same as the dashboard. */
     resolve: (params: {issueId: string} & ResolveIssueParams, options?: RequestOptions) => {
       const {issueId, ...body} = params
-      return this.#request<ResolveIssueResponse>(`/issues/${issueId}/resolve`, {
+      return this.#request<ResolveIssueResponse>(`/issues/${encodeURIComponent(issueId)}/resolve`, {
         method: 'POST',
         body,
         ...options,
       })
     },
     dismiss: (params: {issueId: string}, options?: RequestOptions) =>
-      this.#request<DismissIssueResponse>(`/issues/${params.issueId}/dismiss`, {
+      this.#request<DismissIssueResponse>(`/issues/${encodeURIComponent(params.issueId)}/dismiss`, {
         method: 'POST',
         ...options,
       }),
     reopen: (params: {issueId: string}, options?: RequestOptions) =>
-      this.#request<ReopenIssueResponse>(`/issues/${params.issueId}/reopen`, {
+      this.#request<ReopenIssueResponse>(`/issues/${encodeURIComponent(params.issueId)}/reopen`, {
         method: 'POST',
         ...options,
       }),
@@ -377,14 +383,14 @@ export class ContextClient {
     list: (params?: ListOptions) => this.#list<InstructionsResponse>('/instructions', params),
     edit: (params: {instructionId: string} & EditInstructionParams, options?: RequestOptions) => {
       const {instructionId, ...body} = params
-      return this.#request<Instruction>(`/instructions/${instructionId}`, {
+      return this.#request<Instruction>(`/instructions/${encodeURIComponent(instructionId)}`, {
         method: 'PATCH',
         body,
         ...options,
       })
     },
     delete: async (params: {instructionId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/instructions/${params.instructionId}`, {
+      await this.#request<void>(`/instructions/${encodeURIComponent(params.instructionId)}`, {
         method: 'DELETE',
         ...options,
       })
@@ -432,7 +438,7 @@ export class ContextClient {
   sources = {
     list: (params?: ListOptions) => this.#list<SourcesResponse>('/sources', params),
     get: (params: {sourceId: string}, options?: RequestOptions) =>
-      this.#request<SourceDetail>(`/sources/${params.sourceId}`, options),
+      this.#request<SourceDetail>(`/sources/${encodeURIComponent(params.sourceId)}`, options),
     /**
      * Distilled source content, optionally a line range: the evidence behind
      * a citation or an issue.
@@ -441,15 +447,18 @@ export class ContextClient {
       params: {sourceId: string; startLine?: number; endLine?: number},
       options?: RequestOptions,
     ) =>
-      this.#request<SourceContentResponse>(`/sources/${params.sourceId}/content`, {
-        query: _query({
-          startLine: params.startLine,
-          endLine: params.endLine,
-        }),
-        ...options,
-      }),
+      this.#request<SourceContentResponse>(
+        `/sources/${encodeURIComponent(params.sourceId)}/content`,
+        {
+          query: _query({
+            startLine: params.startLine,
+            endLine: params.endLine,
+          }),
+          ...options,
+        },
+      ),
     delete: async (params: {sourceId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/sources/${params.sourceId}`, {
+      await this.#request<void>(`/sources/${encodeURIComponent(params.sourceId)}`, {
         method: 'DELETE',
         ...options,
       })
@@ -465,10 +474,16 @@ export class ContextClient {
   revisions = {
     list: (params?: ListOptions) => this.#list<RevisionsResponse>('/revisions', params),
     report: (params: {revisionId: string}, options?: RequestOptions) =>
-      this.#request<RevisionReport>(`/revisions/${params.revisionId}/report`, options),
+      this.#request<RevisionReport>(
+        `/revisions/${encodeURIComponent(params.revisionId)}/report`,
+        options,
+      ),
     /** The outline as it was at a past build revision. */
     outline: (params: {revisionId: string}, options?: RequestOptions) =>
-      this.#request<RevisionOutline>(`/revisions/${params.revisionId}/outline`, options),
+      this.#request<RevisionOutline>(
+        `/revisions/${encodeURIComponent(params.revisionId)}/outline`,
+        options,
+      ),
   }
 
   /** Crawl options for the configured knowledge base's web source. */

@@ -150,8 +150,6 @@ export type ImportDownloadResponse = JsonResponse<
  * @beta
  */
 export type StagedUpload = JsonResponse<paths[UploadsPath]['post']['responses']['201']>
-/** @beta */
-export type StageUploadParams = JsonBody<paths[UploadsPath]['post']>
 
 /** @beta */
 export type CrawlPreviewParams = JsonBody<paths[CrawlPreviewPath]['post']>
