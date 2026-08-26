@@ -35,13 +35,13 @@ const baseConfig = {
 const getMockClient = (config: Partial<ClientConfig> = {}) =>
   createClient({...baseConfig, resolveFetch: testResolveFetch, ...config})
 
-describe('context.insights', () => {
+describe('context GROQ reads', () => {
   const query = '*[_type == "sanity.context.conversation" && classification.outcome == $outcome]'
 
   test('fetches conversation documents with a GROQ query and params', async () => {
     getActiveMock()
       .scope(apiHost)
-      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/insights/query`, {
+      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/query`, {
         query: {
           $outcome: JSON.stringify('failed'),
           query,
@@ -49,9 +49,9 @@ describe('context.insights', () => {
       })
       .respond({status: 200, body: {result: [conversationDocument]}})
 
-    await expect(
-      getMockClient().context.insights.fetch(query, {outcome: 'failed'}),
-    ).resolves.toEqual([conversationDocument])
+    await expect(getMockClient().context.fetch(query, {outcome: 'failed'})).resolves.toEqual([
+      conversationDocument,
+    ])
   })
 
   test('switches to POST past the GET size limit, keeping the organization in the path', async () => {
@@ -59,22 +59,20 @@ describe('context.insights', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('POST', `/v2026-08-25/context/organizations/${organizationId}/insights/query`, {
+      .on('POST', `/v2026-08-25/context/organizations/${organizationId}/query`, {
         body: {query: hugeQuery, params: {outcome: 'failed'}},
       })
       .respond({status: 200, body: {result: []}})
 
-    await expect(
-      getMockClient().context.insights.fetch(hugeQuery, {outcome: 'failed'}),
-    ).resolves.toEqual([])
+    await expect(getMockClient().context.fetch(hugeQuery, {outcome: 'failed'})).resolves.toEqual([])
   })
 
   test('requires context.organizationId in the client configuration', () => {
     const withoutOrg = getMockClient({context: undefined})
-    const orgError = '`context.organizationId` must be configured to use context insights'
+    const orgError = '`context.organizationId` must be configured to query Context documents'
 
-    expect(() => withoutOrg.context.insights.fetch(query)).toThrow(orgError)
-    expect(() => withoutOrg.context.insights.listen(query)).toThrow(orgError)
+    expect(() => withoutOrg.context.fetch(query)).toThrow(orgError)
+    expect(() => withoutOrg.context.listen(query)).toThrow(orgError)
   })
 
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {
@@ -93,7 +91,7 @@ describe('context.insights', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/insights/listen`)
+      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/listen`)
       .respond({
         status: 200,
         body: streamBody(
@@ -103,14 +101,12 @@ describe('context.insights', () => {
         headers: {'content-type': 'text/event-stream; charset=utf-8'},
       })
 
-    const event = await firstValueFrom(
-      getMockClient().context.insights.listen(query, {outcome: 'failed'}),
-    )
+    const event = await firstValueFrom(getMockClient().context.listen(query, {outcome: 'failed'}))
 
     expect(event).toEqual({type: 'mutation', ...mutation})
 
     const [request] = getActiveMock().getRequests()
-    expect(request.url).toContain(`/context/organizations/${organizationId}/insights/listen`)
+    expect(request.url).toContain(`/context/organizations/${organizationId}/listen`)
     expect(request.query).toMatchObject({
       query,
       $outcome: JSON.stringify('failed'),

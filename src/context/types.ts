@@ -10,34 +10,28 @@ import type {components, paths} from './types.gen'
 export type RequestOptions = {signal?: AbortSignal; tag?: string}
 
 /** @internal */
-export const possibleInsightsRequestOptions = [
-  'headers',
-  'signal',
-  'tag',
-  'timeout',
-  'token',
-] as const
+export const possibleStoreRequestOptions = ['headers', 'signal', 'tag', 'timeout', 'token'] as const
 
 /**
- * Request options honored by `context.insights.fetch`.
+ * Request options honored by `context.fetch`.
  *
  * @beta
  */
-export type ContextInsightsRequestOptions = Pick<
+export type ContextRequestOptions = Pick<
   MainRequestOptions,
-  (typeof possibleInsightsRequestOptions)[number]
+  (typeof possibleStoreRequestOptions)[number]
 >
 
 /**
- * Listener options for `context.insights.listen`.
+ * Listener options for `context.listen`.
  *
- * `includeAllVersions` is left out: conversation documents are written by
- * the Context API with no drafts or versions, so it would never make a
+ * `includeAllVersions` is left out: Context documents are written by the
+ * Context API with no drafts or versions, so it would never make a
  * difference.
  *
  * @beta
  */
-export type ContextInsightsListenOptions =
+export type ContextListenOptions =
   | Omit<ListenOptions, 'includeAllVersions'>
   | Omit<ResumableListenOptions, 'includeAllVersions'>
 

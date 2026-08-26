@@ -29,8 +29,8 @@ describe('client.context format-dependent return types', () => {
     void kb.imports.create({type: 'text', title: 't', file: new Blob(['x'])})
   })
 
-  test('insights.listen emits mutation events by default', () => {
-    expectTypeOf(client.context.insights.listen('*')).toEqualTypeOf<
+  test('context.listen emits mutation events by default', () => {
+    expectTypeOf(client.context.listen('*')).toEqualTypeOf<
       Observable<MutationEvent<SanityDocument>>
     >()
   })
