@@ -318,6 +318,17 @@ export interface ClientConfig {
   collaboration?: {
     organizationId?: string
   }
+
+  /**
+   * Organization-scoped configuration for Context APIs.
+   *
+   * Currently this is used by `context.insights` methods.
+   *
+   * @beta
+   */
+  context?: {
+    organizationId?: string
+  }
 }
 
 /** @public */

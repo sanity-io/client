@@ -1,4 +1,5 @@
-import {type Context, createClient} from '@sanity/client'
+import {type Context, createClient, type MutationEvent, type SanityDocument} from '@sanity/client'
+import {type Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
 describe('client.context format-dependent return types', () => {
@@ -26,6 +27,12 @@ describe('client.context format-dependent return types', () => {
     void kb.imports.create({type: 'file', file: new Blob(['x'])})
     // @ts-expect-error -- should fail: text imports carry content, not a file
     void kb.imports.create({type: 'text', title: 't', file: new Blob(['x'])})
+  })
+
+  test('context.listen emits mutation events by default', () => {
+    expectTypeOf(client.context.listen('*')).toEqualTypeOf<
+      Observable<MutationEvent<SanityDocument>>
+    >()
   })
 
   test('knowledgeBases.create requires the organizationId alongside the wire fields', async () => {

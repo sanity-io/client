@@ -1,9 +1,11 @@
 import {type FetchFunction} from 'get-it'
-import {type Observable} from 'rxjs'
+import {lastValueFrom, type Observable} from 'rxjs'
 
 import {_observe, _request} from '../data/dataMethods'
+import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequest} from '../types'
+import type {HttpRequest, QueryParams, SanityDocument} from '../types'
+import {_fetch as _fetchStore, _listen as _listenStore} from './store'
 import type {
   ApplyIssuesParams,
   ApplyIssuesResponse,
@@ -45,7 +47,13 @@ import type {
   SourceContentResponse,
   StagedUpload,
 } from './types'
-import type {CreateFileImportParams, RenderFormat, RequestOptions} from './types'
+import type {
+  ContextListenOptions,
+  ContextRequestOptions,
+  CreateFileImportParams,
+  RenderFormat,
+  RequestOptions,
+} from './types'
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
 
@@ -245,6 +253,34 @@ export class ContextClient {
         ...options,
       })
     },
+  }
+
+  /**
+   * GROQ over the organization's Context documents (conversation telemetry
+   * today; the store holds every Context family and the caller's access
+   * decides what a query returns, so filter on `_type`).
+   *
+   * Requires `context.organizationId` in the client configuration.
+   */
+  fetch<R = unknown>(
+    query: string,
+    params?: QueryParams,
+    options?: ContextRequestOptions,
+  ): Promise<R> {
+    return lastValueFrom(_fetchStore<R>(this.#client, this.#httpRequest, query, params, options))
+  }
+
+  /**
+   * Listen for changes to the organization's Context documents. Mirrors
+   * `client.listen(query, params, options)` and emits mutation events by
+   * default.
+   */
+  listen<Opts extends ContextListenOptions | undefined = undefined>(
+    query: string,
+    params?: QueryParams,
+    options?: Opts,
+  ): Observable<ListenEventFromOptions<SanityDocument, Opts>> {
+    return _listenStore(this.#client, query, params, options)
   }
 
   /**
@@ -577,5 +613,33 @@ export class ObservableContextClient {
           signal,
         }),
       ),
+  }
+
+  /**
+   * GROQ over the organization's Context documents (conversation telemetry
+   * today; the store holds every Context family and the caller's access
+   * decides what a query returns, so filter on `_type`).
+   *
+   * Requires `context.organizationId` in the client configuration.
+   */
+  fetch<R = unknown>(
+    query: string,
+    params?: QueryParams,
+    options?: ContextRequestOptions,
+  ): Observable<R> {
+    return _fetchStore<R>(this.#client, this.#httpRequest, query, params, options)
+  }
+
+  /**
+   * Listen for changes to the organization's Context documents. Mirrors
+   * `client.listen(query, params, options)` and emits mutation events by
+   * default.
+   */
+  listen<Opts extends ContextListenOptions | undefined = undefined>(
+    query: string,
+    params?: QueryParams,
+    options?: Opts,
+  ): Observable<ListenEventFromOptions<SanityDocument, Opts>> {
+    return _listenStore(this.#client, query, params, options)
   }
 }
