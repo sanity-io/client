@@ -1,8 +1,45 @@
-import type {UploadBody} from '../types'
+import type {
+  ListenOptions,
+  RequestOptions as MainRequestOptions,
+  ResumableListenOptions,
+  UploadBody,
+} from '../types'
 import type {components, paths} from './types.gen'
 
 /** Options accepted by every Context method. @beta */
 export type RequestOptions = {signal?: AbortSignal; tag?: string}
+
+/** @internal */
+export const possibleInsightsRequestOptions = [
+  'headers',
+  'signal',
+  'tag',
+  'timeout',
+  'token',
+] as const
+
+/**
+ * Request options honored by `context.insights.fetch`.
+ *
+ * @beta
+ */
+export type ContextInsightsRequestOptions = Pick<
+  MainRequestOptions,
+  (typeof possibleInsightsRequestOptions)[number]
+>
+
+/**
+ * Listener options for `context.insights.listen`.
+ *
+ * `includeAllVersions` is left out: conversation documents are written by
+ * the Context API with no drafts or versions, so it would never make a
+ * difference.
+ *
+ * @beta
+ */
+export type ContextInsightsListenOptions =
+  | Omit<ListenOptions, 'includeAllVersions'>
+  | Omit<ResumableListenOptions, 'includeAllVersions'>
 
 /**
  * Render format for outline and entry reads. `json` returns the typed

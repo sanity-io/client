@@ -1,9 +1,11 @@
 import {type FetchFunction} from 'get-it'
-import {type Observable} from 'rxjs'
+import {lastValueFrom, type Observable} from 'rxjs'
 
 import {_observe, _request} from '../data/dataMethods'
+import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
-import type {HttpRequest} from '../types'
+import type {HttpRequest, QueryParams, SanityDocument} from '../types'
+import {_fetch as _fetchInsights, _listen as _listenInsights} from './insights'
 import type {
   ApplyIssuesParams,
   ApplyIssuesResponse,
@@ -45,7 +47,13 @@ import type {
   SourceContentResponse,
   StagedUpload,
 } from './types'
-import type {CreateFileImportParams, RenderFormat, RequestOptions} from './types'
+import type {
+  ContextInsightsListenOptions,
+  ContextInsightsRequestOptions,
+  CreateFileImportParams,
+  RenderFormat,
+  RequestOptions,
+} from './types'
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
 
@@ -245,6 +253,34 @@ export class ContextClient {
         ...options,
       })
     },
+  }
+
+  /**
+   * Insights: GROQ over the organization's conversation documents.
+   *
+   * Requires `context.organizationId` in the client configuration. Queries
+   * run against the organization's document store, scoped to what the
+   * caller can read; filter on `_type == "sanity.context.conversation"`.
+   */
+  insights = {
+    /** Run a GROQ query over the organization's conversation documents. */
+    fetch: <R = unknown>(
+      query: string,
+      params?: QueryParams,
+      options?: ContextInsightsRequestOptions,
+    ): Promise<R> =>
+      lastValueFrom(_fetchInsights<R>(this.#client, this.#httpRequest, query, params, options)),
+    /**
+     * Listen for changes to conversation documents. Mirrors
+     * `client.listen(query, params, options)` and emits mutation events by
+     * default.
+     */
+    listen: <Opts extends ContextInsightsListenOptions | undefined = undefined>(
+      query: string,
+      params?: QueryParams,
+      options?: Opts,
+    ): Observable<ListenEventFromOptions<SanityDocument, Opts>> =>
+      _listenInsights(this.#client, query, params, options),
   }
 
   /**
@@ -577,5 +613,32 @@ export class ObservableContextClient {
           signal,
         }),
       ),
+  }
+
+  /**
+   * Insights: GROQ over the organization's conversation documents.
+   *
+   * Requires `context.organizationId` in the client configuration. Queries
+   * run against the organization's document store, scoped to what the
+   * caller can read; filter on `_type == "sanity.context.conversation"`.
+   */
+  insights = {
+    /** Run a GROQ query over the organization's conversation documents. */
+    fetch: <R = unknown>(
+      query: string,
+      params?: QueryParams,
+      options?: ContextInsightsRequestOptions,
+    ): Observable<R> => _fetchInsights<R>(this.#client, this.#httpRequest, query, params, options),
+    /**
+     * Listen for changes to conversation documents. Mirrors
+     * `client.listen(query, params, options)` and emits mutation events by
+     * default.
+     */
+    listen: <Opts extends ContextInsightsListenOptions | undefined = undefined>(
+      query: string,
+      params?: QueryParams,
+      options?: Opts,
+    ): Observable<ListenEventFromOptions<SanityDocument, Opts>> =>
+      _listenInsights(this.#client, query, params, options),
   }
 }
