@@ -8315,12 +8315,12 @@
         }
       }
     },
-    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations/{threadId}": {
+    "/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}": {
       "put": {
         "operationId": "saveConversation",
         "summary": "Record a conversation",
         "tags": ["conversations"],
-        "description": "Upserts the conversation telemetry for one thread of the MCP endpoint. Messages replace the stored transcript wholesale; model fields only overwrite when present. Last write per thread wins — retries are safe.",
+        "description": "Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `origin`, `metadata`, and model fields only overwrite when present. Last write per thread wins — retries are safe.",
         "requestBody": {
           "required": true,
           "content": {
@@ -8380,6 +8380,26 @@
                       }
                     },
                     "description": "ConversationTokenUsage"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        {
+                          "maxItems": 20,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 256
+                          }
+                        }
+                      ]
+                    },
+                    "description": "ConversationMetadata"
                   }
                 },
                 "required": ["messages"],
@@ -8390,15 +8410,6 @@
           "description": "SaveConversationInput"
         },
         "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "in": "path",
-            "name": "mcpEndpointName",
-            "required": true
-          },
           {
             "schema": {
               "type": "string",
@@ -8424,8 +8435,26 @@
                     "threadId": {
                       "type": "string"
                     },
-                    "mcpEndpointId": {
-                      "type": "string"
+                    "metadata": {
+                      "nullable": true,
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 256
+                          },
+                          {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "maxLength": 256
+                            }
+                          }
+                        ]
+                      },
+                      "description": "ConversationMetadata"
                     },
                     "startedAt": {
                       "type": "string",
@@ -8539,7 +8568,7 @@
                   "required": [
                     "id",
                     "threadId",
-                    "mcpEndpointId",
+                    "metadata",
                     "startedAt",
                     "messagesUpdatedAt",
                     "messages",
@@ -8610,15 +8639,6 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
-            },
-            "in": "path",
-            "name": "mcpEndpointName",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string",
               "minLength": 1,
               "maxLength": 200
             },
@@ -8641,8 +8661,26 @@
                     "threadId": {
                       "type": "string"
                     },
-                    "mcpEndpointId": {
-                      "type": "string"
+                    "metadata": {
+                      "nullable": true,
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 256
+                          },
+                          {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "maxLength": 256
+                            }
+                          }
+                        ]
+                      },
+                      "description": "ConversationMetadata"
                     },
                     "startedAt": {
                       "type": "string",
@@ -8756,7 +8794,7 @@
                   "required": [
                     "id",
                     "threadId",
-                    "mcpEndpointId",
+                    "metadata",
                     "startedAt",
                     "messagesUpdatedAt",
                     "messages",
@@ -8783,7 +8821,7 @@
         "operationId": "listOrganizationConversations",
         "summary": "List conversations across the organization",
         "tags": ["conversations"],
-        "description": "Every recorded conversation in the organization, across all MCP endpoints, most recently updated first. Rows carry `mcpEndpointId` so callers can attribute each thread. Same filters and sort as the per-endpoint list; `?endpoint=` narrows to one endpoint by name (and 404s when it doesn't resolve).",
+        "description": "Every recorded conversation in the organization, most recently updated first. Rows carry `origin` so callers can attribute each thread. `?classification=`, `?scoreRange=`, and `?sentiment=` narrow the list and compose; `?sort=` reorders it; `?endpoint=` narrows to conversations attributed to one MCP endpoint by name (and 404s when it doesn't resolve).",
         "parameters": [
           {
             "schema": {
@@ -8890,8 +8928,26 @@
                           "threadId": {
                             "type": "string"
                           },
-                          "mcpEndpointId": {
-                            "type": "string"
+                          "metadata": {
+                            "nullable": true,
+                            "type": "object",
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "maxLength": 256
+                                },
+                                {
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "maxLength": 256
+                                  }
+                                }
+                              ]
+                            },
+                            "description": "ConversationMetadata"
                           },
                           "messagesUpdatedAt": {
                             "type": "string",
@@ -8930,7 +8986,7 @@
                         "required": [
                           "id",
                           "threadId",
-                          "mcpEndpointId",
+                          "metadata",
                           "messagesUpdatedAt",
                           "messageCount",
                           "firstMessage",
@@ -9084,284 +9140,12 @@
         }
       }
     },
-    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations": {
-      "get": {
-        "operationId": "listConversations",
-        "summary": "List conversations",
-        "tags": ["conversations"],
-        "description": "The MCP endpoint's recorded conversations, most recently updated first. `?classification=`, `?scoreRange=`, and `?sentiment=` narrow the list and compose; `?sort=` reorders it. `classification=pending` flips to oldest-first work-queue order unless an explicit sort overrides it.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "name": "cursor",
-            "required": false
-          },
-          {
-            "schema": {
-              "default": 50,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": ["pending", "classified", "failed"]
-            },
-            "in": "query",
-            "name": "classification",
-            "required": false,
-            "description": "Filter by classification state. `pending` is the classifier work queue: threads with messages, no verdict, no recorded failure, and settled — the transcript unchanged for a server-owned 10-minute cooldown so a thread still being written is never scored mid-write — returned oldest first. `classified` and `failed` return newest first. Omit for all conversations."
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": ["good", "okay", "poor", "critical"]
-            },
-            "in": "query",
-            "name": "scoreRange",
-            "required": false,
-            "description": "Filter by score bucket over the classifier score, matching the insights aggregate: `good` >= 8, `okay` 6-8, `poor` 4-6, `critical` < 4. Only conversations with a recorded score match. Composes with the other filters."
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": ["positive", "neutral", "negative"]
-            },
-            "in": "query",
-            "name": "sentiment",
-            "required": false,
-            "description": "Filter to conversations the classifier rated with this sentiment. Composes with the other filters."
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": ["date-desc", "date-asc", "score-desc", "score-asc"]
-            },
-            "in": "query",
-            "name": "sort",
-            "required": false,
-            "description": "Sort order, `date-desc` by default. Date sorts key on when the transcript last changed; score sorts key on the classifier score and only return conversations with a recorded score. An explicit sort overrides the oldest-first default of `classification=pending`; score sorts cannot combine with `pending`, whose threads have no score yet."
-          },
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "in": "path",
-            "name": "mcpEndpointName",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "threadId": {
-                            "type": "string"
-                          },
-                          "mcpEndpointId": {
-                            "type": "string"
-                          },
-                          "messagesUpdatedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                          },
-                          "messageCount": {
-                            "type": "number"
-                          },
-                          "firstMessage": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "coreMetrics": {
-                            "nullable": true,
-                            "type": "object",
-                            "properties": {
-                              "successScore": {
-                                "type": "number"
-                              },
-                              "sentiment": {
-                                "type": "string",
-                                "enum": ["positive", "neutral", "negative"]
-                              },
-                              "contentGaps": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              }
-                            },
-                            "additionalProperties": false,
-                            "description": "ConversationCoreMetrics"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "threadId",
-                          "mcpEndpointId",
-                          "messagesUpdatedAt",
-                          "messageCount",
-                          "firstMessage",
-                          "coreMetrics"
-                        ],
-                        "additionalProperties": false,
-                        "description": "ConversationSummary"
-                      }
-                    },
-                    "nextCursor": {
-                      "nullable": true,
-                      "type": "string"
-                    }
-                  },
-                  "required": ["data", "nextCursor"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/conversations/insights": {
-      "get": {
-        "operationId": "getConversationInsights",
-        "summary": "Conversation insights",
-        "tags": ["conversations"],
-        "description": "Aggregate stats over every conversation recorded against the MCP endpoint: volume, score and sentiment distributions, classification progress, and the most frequent content gaps.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "in": "path",
-            "name": "mcpEndpointName",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "ConversationInsights",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "conversations": {
-                      "type": "number"
-                    },
-                    "averageScore": {
-                      "nullable": true,
-                      "type": "number"
-                    },
-                    "averageMessages": {
-                      "nullable": true,
-                      "type": "number"
-                    },
-                    "analyzed": {
-                      "type": "number"
-                    },
-                    "classificationErrors": {
-                      "type": "number"
-                    },
-                    "scores": {
-                      "type": "object",
-                      "properties": {
-                        "good": {
-                          "type": "number"
-                        },
-                        "okay": {
-                          "type": "number"
-                        },
-                        "poor": {
-                          "type": "number"
-                        },
-                        "critical": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["good", "okay", "poor", "critical"],
-                      "additionalProperties": false
-                    },
-                    "sentiment": {
-                      "type": "object",
-                      "properties": {
-                        "positive": {
-                          "type": "number"
-                        },
-                        "neutral": {
-                          "type": "number"
-                        },
-                        "negative": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["positive", "neutral", "negative"],
-                      "additionalProperties": false
-                    },
-                    "contentGaps": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "gap": {
-                            "type": "string"
-                          },
-                          "count": {
-                            "type": "number"
-                          }
-                        },
-                        "required": ["gap", "count"],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "conversations",
-                    "averageScore",
-                    "averageMessages",
-                    "analyzed",
-                    "classificationErrors",
-                    "scores",
-                    "sentiment",
-                    "contentGaps"
-                  ],
-                  "additionalProperties": false,
-                  "description": "ConversationInsights"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/{apiVersion}/context/organizations/{organizationId}/conversations/{conversationId}": {
       "get": {
         "operationId": "getConversationById",
         "summary": "Get a conversation",
         "tags": ["conversations"],
-        "description": "Returns one recorded conversation by its canonical id (the `id` on list rows), transcript included. The id is unique across the organization, unlike `threadId`, which repeats across MCP endpoints.",
+        "description": "Returns one recorded conversation by its canonical id (the `id` on list rows), transcript included.",
         "parameters": [
           {
             "schema": {
@@ -9387,8 +9171,26 @@
                     "threadId": {
                       "type": "string"
                     },
-                    "mcpEndpointId": {
-                      "type": "string"
+                    "metadata": {
+                      "nullable": true,
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 256
+                          },
+                          {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "maxLength": 256
+                            }
+                          }
+                        ]
+                      },
+                      "description": "ConversationMetadata"
                     },
                     "startedAt": {
                       "type": "string",
@@ -9502,7 +9304,7 @@
                   "required": [
                     "id",
                     "threadId",
-                    "mcpEndpointId",
+                    "metadata",
                     "startedAt",
                     "messagesUpdatedAt",
                     "messages",

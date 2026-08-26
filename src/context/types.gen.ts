@@ -676,6 +676,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /**
+     * Record a conversation
+     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `origin`, `metadata`, and model fields only overwrite when present. Last write per thread wins — retries are safe.
+     */
+    put: operations['saveConversation']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Record a classification verdict
+     * @description Records the classification your own model produced for one thread: exactly one of `coreMetrics` (a verdict — the server stamps `classifiedAt` and clears any recorded failure) or `classificationError` (why classification failed; an earlier verdict stays untouched). No revision guard — like the ingest upsert the writer is an automated classifier, so last write wins and a re-classification simply overwrites.
+     */
+    patch: operations['classifyConversation']
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -3042,6 +3066,186 @@ export interface operations {
           }
           'text/markdown': string
           'text/plain': string
+        }
+      }
+    }
+  }
+  saveConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        threadId: string
+      }
+      cookie?: never
+    }
+    /** @description SaveConversationInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          messages: {
+            /** @enum {string} */
+            role: 'user' | 'assistant' | 'system' | 'tool'
+            /** @default null */
+            content?: string | null
+            /** @default null */
+            toolName?: string | null
+            /**
+             * @default null
+             * @enum {string|null}
+             */
+            toolType?: 'call' | 'result' | null
+          }[]
+          modelProvider?: string
+          modelId?: string
+          /** @description ConversationTokenUsage */
+          tokenUsage?: {
+            inputTokens?: number
+            outputTokens?: number
+            totalTokens?: number
+          }
+          /** @description ConversationMetadata */
+          metadata?: {
+            [key: string]: string | string[]
+          }
+        }
+      }
+    }
+    responses: {
+      /** @description Conversation */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            threadId: string
+            /** @description ConversationMetadata */
+            metadata: {
+              [key: string]: string | string[]
+            } | null
+            /** Format: date-time */
+            startedAt: string
+            /** Format: date-time */
+            messagesUpdatedAt: string
+            messages: {
+              /** @enum {string} */
+              role: 'user' | 'assistant' | 'system' | 'tool'
+              /** @default null */
+              content: string | null
+              /** @default null */
+              toolName: string | null
+              /**
+               * @default null
+               * @enum {string|null}
+               */
+              toolType: 'call' | 'result' | null
+            }[]
+            modelProvider: string | null
+            modelId: string | null
+            /** @description ConversationTokenUsage */
+            tokenUsage: {
+              inputTokens?: number
+              outputTokens?: number
+              totalTokens?: number
+            } | null
+            /** @description ConversationCoreMetrics */
+            coreMetrics: {
+              successScore?: number
+              /** @enum {string} */
+              sentiment?: 'positive' | 'neutral' | 'negative'
+              contentGaps?: string[]
+            } | null
+            /** Format: date-time */
+            classifiedAt: string | null
+            classificationError: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
+        }
+      }
+    }
+  }
+  classifyConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        threadId: string
+      }
+      cookie?: never
+    }
+    /** @description ClassifyConversationInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          coreMetrics?: {
+            successScore: number
+            /** @enum {string} */
+            sentiment: 'positive' | 'neutral' | 'negative'
+            contentGaps: string[]
+          }
+          classificationError?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Conversation */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            id: string
+            threadId: string
+            /** @description ConversationMetadata */
+            metadata: {
+              [key: string]: string | string[]
+            } | null
+            /** Format: date-time */
+            startedAt: string
+            /** Format: date-time */
+            messagesUpdatedAt: string
+            messages: {
+              /** @enum {string} */
+              role: 'user' | 'assistant' | 'system' | 'tool'
+              /** @default null */
+              content: string | null
+              /** @default null */
+              toolName: string | null
+              /**
+               * @default null
+               * @enum {string|null}
+               */
+              toolType: 'call' | 'result' | null
+            }[]
+            modelProvider: string | null
+            modelId: string | null
+            /** @description ConversationTokenUsage */
+            tokenUsage: {
+              inputTokens?: number
+              outputTokens?: number
+              totalTokens?: number
+            } | null
+            /** @description ConversationCoreMetrics */
+            coreMetrics: {
+              successScore?: number
+              /** @enum {string} */
+              sentiment?: 'positive' | 'neutral' | 'negative'
+              contentGaps?: string[]
+            } | null
+            /** Format: date-time */
+            classifiedAt: string | null
+            classificationError: string | null
+            /** Format: date-time */
+            createdAt: string
+            /** Format: date-time */
+            updatedAt: string
+          }
         }
       }
     }
