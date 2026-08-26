@@ -26,10 +26,8 @@ export type CreateFileImportParams = {
   contentType?: string
 }
 
-type KnowledgeBasesPath = '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases'
-type KnowledgeBasePath =
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}'
-type KnowledgeBaseByIdPath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
+type KnowledgeBasesPath = '/{apiVersion}/context/knowledge-bases'
+type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 type ImportsPath = `${KnowledgeBasePath}/imports`
 type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
 type UploadsPath = `${KnowledgeBasePath}/imports/uploads`
@@ -67,7 +65,7 @@ type JsonBody<T> = T extends {
  * A knowledge base: one buildable body of knowledge inside Context.
  * @beta
  */
-export type KnowledgeBase = JsonResponse<paths[KnowledgeBaseByIdPath]['get']['responses']['200']>
+export type KnowledgeBase = JsonResponse<paths[KnowledgeBasePath]['get']['responses']['200']>
 
 /**
  * Parameters for creating a knowledge base.
@@ -200,8 +198,8 @@ export type CrawlOptions = JsonResponse<paths[CrawlOptionsPath]['patch']['respon
 export type EntryStatus = 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
 
 /**
- * The raw `sanity.context.entry` document shape, as stored in the bound
- * dataset. For typing GROQ reads made with a regular dataset client.
+ * The raw `sanity.context.entry` document shape, as stored in the
+ * organization's document store. For typing GROQ reads.
  * @beta
  */
 export type EntryDoc = components['schemas']['EntryDoc']

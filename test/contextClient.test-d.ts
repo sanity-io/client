@@ -32,13 +32,13 @@ describe('client.context format-dependent return types', () => {
     expectTypeOf(
       await client.context.knowledgeBases.create({
         organizationId: 'org',
-        name: 'n',
+        title: 't',
         description: 'd',
       }),
     ).toEqualTypeOf<Context.KnowledgeBase>()
     // @ts-expect-error -- should fail: organizationId is required
     void client.context.knowledgeBases.create({
-      name: 'n',
+      title: 't',
       description: 'd',
     })
   })

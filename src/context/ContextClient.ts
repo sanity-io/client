@@ -49,31 +49,7 @@ import type {CreateFileImportParams, RenderFormat, RequestOptions} from './types
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
 
-type Client = SanityClient | ObservableSanityClient
-
-/**
- * The knowledge base's org-scoped address. Every operation except the by-id
- * read lives under `/organizations/{orgId}/knowledge-bases/{slug}`, but the
- * handle is constructed from the id alone, so the address is resolved once
- * through the by-id endpoint and reused.
- */
-type ResolvedAddress = {organizationId: string; slug: string}
-
-function _getKnowledgeBaseById(
-  client: Client,
-  httpRequest: HttpRequest,
-  knowledgeBaseId: string,
-  options?: RequestOptions,
-): Promise<KnowledgeBase> {
-  return _request<KnowledgeBase>(client, httpRequest, {
-    url: `/context/knowledge-bases/${knowledgeBaseId}`,
-    ...options,
-  })
-}
-
-function _collectionUrl(organizationId: string): string {
-  return `/context/organizations/${organizationId}/knowledge-bases`
-}
+const COLLECTION_URL = '/context/knowledge-bases'
 
 /** Serialize defined values into query params, dropping the undefined ones. */
 function _query(entries: Record<string, string | number | undefined>): Record<string, string> {
@@ -101,7 +77,6 @@ export class KnowledgeBaseHandle {
   #client: SanityClient
   #httpRequest: HttpRequest
   #knowledgeBaseId: string
-  #address: Promise<ResolvedAddress> | undefined
 
   constructor(client: SanityClient, httpRequest: HttpRequest, knowledgeBaseId: string) {
     this.#client = client
@@ -114,28 +89,7 @@ export class KnowledgeBaseHandle {
     return this.#knowledgeBaseId
   }
 
-  // The resolution is shared by every method on the handle, so it must not
-  // carry any one caller's abort signal: aborting one request would reject
-  // the cached promise for every concurrent caller. An aborted caller still
-  // rejects, because its own follow-up request starts with the aborted
-  // signal.
-  #resolveAddress(): Promise<ResolvedAddress> {
-    this.#address ??= _getKnowledgeBaseById(
-      this.#client,
-      this.#httpRequest,
-      this.#knowledgeBaseId,
-    ).then(
-      (kb) => ({organizationId: kb.organizationId, slug: kb.slug}),
-      (err) => {
-        // A failed resolution must not poison the handle for retries.
-        this.#address = undefined
-        throw err
-      },
-    )
-    return this.#address
-  }
-
-  async #request<R>(
+  #request<R>(
     suffix: string,
     reqOptions: {
       method?: string
@@ -143,9 +97,8 @@ export class KnowledgeBaseHandle {
       query?: Record<string, string>
     } & RequestOptions = {},
   ): Promise<R> {
-    const address = await this.#resolveAddress()
     return _request<R>(this.#client, this.#httpRequest, {
-      url: `${_collectionUrl(address.organizationId)}/${address.slug}${suffix}`,
+      url: `${COLLECTION_URL}/${this.#knowledgeBaseId}${suffix}`,
       ...reqOptions,
     })
   }
@@ -203,17 +156,8 @@ export class KnowledgeBaseHandle {
   }
 
   /** Fetch the knowledge base. */
-  async get(options?: RequestOptions): Promise<KnowledgeBase> {
-    const kb = await _getKnowledgeBaseById(
-      this.#client,
-      this.#httpRequest,
-      this.#knowledgeBaseId,
-      options,
-    )
-    // Seed the address cache: a follow-up scoped call should not pay for a
-    // second by-id resolve when this fetch already carries org and slug.
-    this.#address ??= Promise.resolve({organizationId: kb.organizationId, slug: kb.slug})
-    return kb
+  get(options?: RequestOptions): Promise<KnowledgeBase> {
+    return this.#request('', options)
   }
 
   /** Edit the knowledge base's configuration. */
@@ -471,7 +415,7 @@ export class KnowledgeBaseHandle {
  * ```ts
  * const created = await client.context.knowledgeBases.create({
  *   organizationId: 'org123',
- *   name: 'Support docs',
+ *   title: 'Support docs',
  *   description: 'Product docs and troubleshooting guides',
  * })
  * const kb = client.context.knowledgeBase(created.publicId)
@@ -493,23 +437,22 @@ export class ContextClient {
   /** The knowledge base collection. */
   knowledgeBases = {
     /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
-    create: (
-      params: CreateKnowledgeBaseParams & {organizationId: string},
-      options?: RequestOptions,
-    ): Promise<KnowledgeBase> => {
-      const {organizationId, ...body} = params
-      return _request<KnowledgeBase>(this.#client, this.#httpRequest, {
-        url: _collectionUrl(organizationId),
+    create: (params: CreateKnowledgeBaseParams, options?: RequestOptions): Promise<KnowledgeBase> =>
+      _request<KnowledgeBase>(this.#client, this.#httpRequest, {
+        url: COLLECTION_URL,
         method: 'POST',
-        body,
+        body: params,
         ...options,
-      })
-    },
+      }),
     /** List the organization's knowledge bases. */
     list: (params: {organizationId: string} & ListOptions): Promise<KnowledgeBasesResponse> =>
       _request<KnowledgeBasesResponse>(this.#client, this.#httpRequest, {
-        url: _collectionUrl(params.organizationId),
-        query: _query({cursor: params.cursor, limit: params.limit}),
+        url: COLLECTION_URL,
+        query: _query({
+          organizationId: params.organizationId,
+          cursor: params.cursor,
+          limit: params.limit,
+        }),
         signal: params.signal,
         tag: params.tag,
       }),
@@ -517,8 +460,7 @@ export class ContextClient {
 
   /**
    * A handle carrying everything scoped to one knowledge base, addressed by
-   * id alone. Synchronous: the id-to-address resolution happens lazily on
-   * the first request and is reused after that.
+   * its id.
    */
   knowledgeBase(knowledgeBaseId: string): KnowledgeBaseHandle {
     return new KnowledgeBaseHandle(this.#client, this.#httpRequest, knowledgeBaseId)
@@ -545,26 +487,28 @@ export class ObservableContextClient {
   knowledgeBases = {
     /** Create a knowledge base. Requires the org-level knowledge-base create grant. */
     create: (
-      params: CreateKnowledgeBaseParams & {organizationId: string},
+      params: CreateKnowledgeBaseParams,
       options?: RequestOptions,
-    ): Observable<KnowledgeBase> => {
-      const {organizationId, ...body} = params
-      return _observe(options?.signal, (signal) =>
+    ): Observable<KnowledgeBase> =>
+      _observe(options?.signal, (signal) =>
         _request<KnowledgeBase>(this.#client, this.#httpRequest, {
-          url: _collectionUrl(organizationId),
+          url: COLLECTION_URL,
           method: 'POST',
-          body,
+          body: params,
           tag: options?.tag,
           signal,
         }),
-      )
-    },
+      ),
     /** List the organization's knowledge bases. */
     list: (params: {organizationId: string} & ListOptions): Observable<KnowledgeBasesResponse> =>
       _observe(params.signal, (signal) =>
         _request<KnowledgeBasesResponse>(this.#client, this.#httpRequest, {
-          url: _collectionUrl(params.organizationId),
-          query: _query({cursor: params.cursor, limit: params.limit}),
+          url: COLLECTION_URL,
+          query: _query({
+            organizationId: params.organizationId,
+            cursor: params.cursor,
+            limit: params.limit,
+          }),
           tag: params.tag,
           signal,
         }),
