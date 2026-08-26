@@ -75,6 +75,46 @@ describe('context GROQ reads', () => {
     expect(() => withoutOrg.context.listen(query)).toThrow(orgError)
   })
 
+  test('conversations.save PUTs the transcript and classify PATCHes the verdict', async () => {
+    const conversation = {...conversationDocument, id: 'conversation-1'}
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('PUT', `/v2026-08-25/context/organizations/${organizationId}/conversations/thread-1`, {
+        body: {
+          messages: [{role: 'user', content: 'hi'}],
+          metadata: {mcpEndpoints: ['support-agent'], plan: 'enterprise'},
+        },
+      })
+      .respond({status: 200, body: conversation})
+    scope
+      .on('PATCH', `/v2026-08-25/context/organizations/${organizationId}/conversations/thread-1`, {
+        body: {coreMetrics: {successScore: 9, sentiment: 'positive', contentGaps: []}},
+      })
+      .respond({status: 200, body: conversation})
+
+    await expect(
+      getMockClient().context.conversations.save({
+        threadId: 'thread-1',
+        messages: [{role: 'user', content: 'hi'}],
+        metadata: {mcpEndpoints: ['support-agent'], plan: 'enterprise'},
+      }),
+    ).resolves.toEqual(conversation)
+    await expect(
+      getMockClient().context.conversations.classify({
+        threadId: 'thread-1',
+        coreMetrics: {successScore: 9, sentiment: 'positive', contentGaps: []},
+      }),
+    ).resolves.toEqual(conversation)
+  })
+
+  test('conversations.save requires context.organizationId in the client configuration', () => {
+    const withoutOrg = getMockClient({context: undefined})
+
+    expect(() =>
+      withoutOrg.context.conversations.save({threadId: 'thread-1', messages: []}),
+    ).toThrow('`context.organizationId` must be configured to record conversations')
+  })
+
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {
     const mutation = {
       documentId: 'conversation-1',

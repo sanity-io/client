@@ -48,11 +48,14 @@ import type {
   StagedUpload,
 } from './types'
 import type {
+  ClassifyConversationParams,
   ContextListenOptions,
   ContextRequestOptions,
+  Conversation,
   CreateFileImportParams,
   RenderFormat,
   RequestOptions,
+  SaveConversationParams,
 } from './types'
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
@@ -83,6 +86,20 @@ function _knowledgeBaseUrl(knowledgeBaseId: string, suffix = ''): string {
 }
 
 /** Serialize defined values into query params, dropping the undefined ones. */
+function _conversationUrl(client: Client, threadId: string): string {
+  const organizationId = client.config().context?.organizationId
+
+  if (!organizationId) {
+    throw new Error('`context.organizationId` must be configured to record conversations')
+  }
+
+  if (!threadId) {
+    throw new Error('`threadId` must be provided')
+  }
+
+  return `/context/organizations/${encodeURIComponent(organizationId)}/conversations/${encodeURIComponent(threadId)}`
+}
+
 function _query(entries: Record<string, string | number | undefined>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(entries).flatMap(([key, value]) =>
@@ -281,6 +298,51 @@ export class ContextClient {
     options?: Opts,
   ): Observable<ListenEventFromOptions<SanityDocument, Opts>> {
     return _listenStore(this.#client, query, params, options)
+  }
+
+  /**
+   * Conversation telemetry: the API-owned writes. `threadId` identifies the
+   * conversation within the organization — reuse means the same
+   * conversation. Reads go through {@link fetch} and {@link listen} with
+   * GROQ (`_type == "sanity.context.conversation"`).
+   *
+   * Requires `context.organizationId` in the client configuration.
+   */
+  conversations = {
+    /**
+     * Record a conversation. Messages replace the stored transcript
+     * wholesale; `metadata` and model fields only overwrite when present.
+     * Last write per thread wins — retries are safe.
+     */
+    save: (
+      params: {threadId: string} & SaveConversationParams,
+      options?: RequestOptions,
+    ): Promise<Conversation> => {
+      const {threadId, ...body} = params
+      return _request<Conversation>(this.#client, this.#httpRequest, {
+        url: _conversationUrl(this.#client, threadId),
+        method: 'PUT',
+        body,
+        ...options,
+      })
+    },
+    /**
+     * Record the classification your own model produced for one thread:
+     * exactly one of `coreMetrics` (a verdict) or `classificationError`
+     * (why classification failed).
+     */
+    classify: (
+      params: {threadId: string} & ClassifyConversationParams,
+      options?: RequestOptions,
+    ): Promise<Conversation> => {
+      const {threadId, ...body} = params
+      return _request<Conversation>(this.#client, this.#httpRequest, {
+        url: _conversationUrl(this.#client, threadId),
+        method: 'PATCH',
+        body,
+        ...options,
+      })
+    },
   }
 
   /**
@@ -641,5 +703,56 @@ export class ObservableContextClient {
     options?: Opts,
   ): Observable<ListenEventFromOptions<SanityDocument, Opts>> {
     return _listenStore(this.#client, query, params, options)
+  }
+
+  /**
+   * Conversation telemetry: the API-owned writes. `threadId` identifies the
+   * conversation within the organization — reuse means the same
+   * conversation. Reads go through {@link fetch} and {@link listen} with
+   * GROQ (`_type == "sanity.context.conversation"`).
+   *
+   * Requires `context.organizationId` in the client configuration.
+   */
+  conversations = {
+    /**
+     * Record a conversation. Messages replace the stored transcript
+     * wholesale; `metadata` and model fields only overwrite when present.
+     * Last write per thread wins — retries are safe.
+     */
+    save: (
+      params: {threadId: string} & SaveConversationParams,
+      options?: RequestOptions,
+    ): Observable<Conversation> => {
+      const {threadId, ...body} = params
+      return _observe(options?.signal, (signal) =>
+        _request<Conversation>(this.#client, this.#httpRequest, {
+          url: _conversationUrl(this.#client, threadId),
+          method: 'PUT',
+          body,
+          tag: options?.tag,
+          signal,
+        }),
+      )
+    },
+    /**
+     * Record the classification your own model produced for one thread:
+     * exactly one of `coreMetrics` (a verdict) or `classificationError`
+     * (why classification failed).
+     */
+    classify: (
+      params: {threadId: string} & ClassifyConversationParams,
+      options?: RequestOptions,
+    ): Observable<Conversation> => {
+      const {threadId, ...body} = params
+      return _observe(options?.signal, (signal) =>
+        _request<Conversation>(this.#client, this.#httpRequest, {
+          url: _conversationUrl(this.#client, threadId),
+          method: 'PATCH',
+          body,
+          tag: options?.tag,
+          signal,
+        }),
+      )
+    },
   }
 }

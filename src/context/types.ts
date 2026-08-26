@@ -58,6 +58,8 @@ export type CreateFileImportParams = {
 }
 
 type KnowledgeBasesPath = '/{apiVersion}/context/knowledge-bases'
+type ConversationPath =
+  '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}'
 type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 type ImportsPath = `${KnowledgeBasePath}/imports`
 type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
@@ -225,6 +227,23 @@ export type EditCrawlOptionsParams = JsonBody<paths[CrawlOptionsPath]['patch']>
 export type CrawlOptions = JsonResponse<paths[CrawlOptionsPath]['patch']['responses']['200']>
 /** @beta */
 export type EntryStatus = 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
+
+/**
+ * A recorded conversation: one agent thread's transcript plus the
+ * classification recorded on it. Standalone org-level telemetry — dimensions
+ * (MCP endpoints, app, the customer's own keys) live in the `metadata` bag.
+ * @beta
+ */
+export type Conversation = JsonResponse<paths[ConversationPath]['put']['responses']['200']>
+/**
+ * Body for the conversation ingest upsert. Messages replace the stored
+ * transcript wholesale; `metadata` and model fields only overwrite when
+ * present.
+ * @beta
+ */
+export type SaveConversationParams = JsonBody<paths[ConversationPath]['put']>
+/** Exactly one of a verdict (`coreMetrics`) or a failure (`classificationError`). @beta */
+export type ClassifyConversationParams = JsonBody<paths[ConversationPath]['patch']>
 
 /**
  * The raw `sanity.context.entry` document shape, as stored in the
