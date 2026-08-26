@@ -4,27 +4,7 @@
  */
 
 export interface paths {
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a knowledge base by id
-     * @description Resolves a knowledge base from its id alone, the public id (`kb...`) or the uuid, with no organization in the path. Useful when all you hold is an id and a token. Access is decided by the token against the knowledge base's own organization; an id the caller cannot read returns 404.
-     */
-    get: operations['getKnowledgeBaseById']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases': {
+  '/{apiVersion}/context/knowledge-bases': {
     parameters: {
       query?: never
       header?: never
@@ -33,7 +13,7 @@ export interface paths {
     }
     /**
      * List knowledge bases
-     * @description Returns knowledge bases visible to the caller, cursor-paginated.
+     * @description Returns the organization's knowledge bases visible to the caller, cursor-paginated.
      */
     get: operations['listKnowledgeBases']
     put?: never
@@ -48,7 +28,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}': {
     parameters: {
       query?: never
       header?: never
@@ -56,8 +36,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get a knowledge base by slug
-     * @description Returns the knowledge base object: metadata, state, and dataset binding. For the built content, use the outline or entries endpoints.
+     * Get a knowledge base
+     * @description Returns the knowledge base object: metadata and state. Resolves from the id alone, the public id (`kb...`) or the uuid; access is decided against the knowledge base's own organization, and an id the caller cannot read returns 404. For the built content, use the outline or entries endpoints.
      */
     get: operations['getKnowledgeBase']
     put?: never
@@ -76,7 +56,7 @@ export interface paths {
     patch: operations['updateKnowledgeBase']
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/activity': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/activity': {
     parameters: {
       query?: never
       header?: never
@@ -96,7 +76,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/build': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/build': {
     parameters: {
       query?: never
       header?: never
@@ -116,7 +96,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/build/cancel': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/build/cancel': {
     parameters: {
       query?: never
       header?: never
@@ -136,7 +116,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/changes': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/changes': {
     parameters: {
       query?: never
       header?: never
@@ -156,7 +136,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/crawl-options': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/crawl-options': {
     parameters: {
       query?: never
       header?: never
@@ -176,7 +156,7 @@ export interface paths {
     patch: operations['updateCrawlOptions']
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/entries': {
     parameters: {
       query?: never
       header?: never
@@ -196,7 +176,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/entries/{entryPath}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/entries/{entryPath}': {
     parameters: {
       query?: never
       header?: never
@@ -205,7 +185,7 @@ export interface paths {
     }
     /**
      * Get a single entry
-     * @description Reads one entry by its slash-delimited path (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` or `Accept: text/markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
+     * @description Reads one entry by its slash-delimited path (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
      */
     get: operations['getEntry']
     put?: never
@@ -216,7 +196,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports': {
     parameters: {
       query?: never
       header?: never
@@ -240,7 +220,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/crawl-preview': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/crawl-preview': {
     parameters: {
       query?: never
       header?: never
@@ -260,7 +240,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/uploads': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/uploads': {
     parameters: {
       query?: never
       header?: never
@@ -280,7 +260,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/uploads/{importId}/complete': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/uploads/{importId}/complete': {
     parameters: {
       query?: never
       header?: never
@@ -300,7 +280,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/{importId}': {
     parameters: {
       query?: never
       header?: never
@@ -324,7 +304,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/imports/{importId}/download': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/{importId}/download': {
     parameters: {
       query?: never
       header?: never
@@ -344,7 +324,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions': {
     parameters: {
       query?: never
       header?: never
@@ -368,7 +348,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/instructions/{instructionId}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions/{instructionId}': {
     parameters: {
       query?: never
       header?: never
@@ -392,7 +372,7 @@ export interface paths {
     patch: operations['updateInstruction']
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues': {
     parameters: {
       query?: never
       header?: never
@@ -412,7 +392,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/apply': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/apply': {
     parameters: {
       query?: never
       header?: never
@@ -432,7 +412,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}': {
     parameters: {
       query?: never
       header?: never
@@ -452,7 +432,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/dismiss': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}/dismiss': {
     parameters: {
       query?: never
       header?: never
@@ -472,7 +452,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/reopen': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}/reopen': {
     parameters: {
       query?: never
       header?: never
@@ -492,7 +472,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/issues/{issueId}/resolve': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}/resolve': {
     parameters: {
       query?: never
       header?: never
@@ -512,7 +492,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/jobs/{jobId}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/jobs/{jobId}': {
     parameters: {
       query?: never
       header?: never
@@ -532,7 +512,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/outline': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/outline': {
     parameters: {
       query?: never
       header?: never
@@ -541,7 +521,7 @@ export interface paths {
     }
     /**
      * Get the knowledge base outline
-     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` (or the matching `Accept` header) returns rendered text, with `?format` winning. Every entry carries content, so any path can be read directly. Paths are slash-delimited (`apis/client`) everywhere.
+     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` returns rendered text. Every entry carries content, so any path can be read directly. Paths are slash-delimited (`apis/client`) everywhere.
      */
     get: operations['getKnowledgeBaseOutline']
     put?: never
@@ -552,7 +532,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/refresh': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/refresh': {
     parameters: {
       query?: never
       header?: never
@@ -572,7 +552,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/revisions': {
     parameters: {
       query?: never
       header?: never
@@ -592,7 +572,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions/{revisionId}/outline': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/revisions/{revisionId}/outline': {
     parameters: {
       query?: never
       header?: never
@@ -612,7 +592,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/revisions/{revisionId}/report': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/revisions/{revisionId}/report': {
     parameters: {
       query?: never
       header?: never
@@ -632,7 +612,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/sources': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources': {
     parameters: {
       query?: never
       header?: never
@@ -652,7 +632,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/sources/{sourceId}': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}': {
     parameters: {
       query?: never
       header?: never
@@ -676,7 +656,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}/sources/{sourceId}/content': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/content': {
     parameters: {
       query?: never
       header?: never
@@ -685,7 +665,7 @@ export interface paths {
     }
     /**
      * Read a source's distilled content
-     * @description The distilled markdown builds cite, the same text the pipeline itself reads. Use it to verify an issue's claims against the sources its `citedSourceIds` name. Optional `startLine` and `endLine` (1-indexed, inclusive) fetch just a span. JSON by default; `?format=markdown` or `Accept: text/markdown` returns the raw text, with `?format` winning. 409 `sourceNotDistilled` until distillation has produced content.
+     * @description The distilled markdown builds cite, the same text the pipeline itself reads. Use it to verify an issue's claims against the sources its `citedSourceIds` name. Optional `startLine` and `endLine` (1-indexed, inclusive) fetch just a span. JSON by default; `?format=markdown` returns the raw text. 409 `sourceNotDistilled` until distillation has produced content.
      */
     get: operations['getSourceContent']
     put?: never
@@ -979,108 +959,16 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
-  getKnowledgeBaseById: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description KnowledgeBase */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string
-            publicId: string
-            slug: string
-            organizationId: string
-            name: string
-            description: string
-            /** @enum {string} */
-            state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
-            activeJobId: string | null
-            isBuilding: boolean
-            buildStageState: {
-              jobId: string
-              stages: {
-                /** @enum {string} */
-                id:
-                  | 'tldr'
-                  | 'map'
-                  | 'triage'
-                  | 'plan'
-                  | 'organize'
-                  | 'arrange'
-                  | 'write'
-                  | 'review'
-                  | 'polish'
-                /** @enum {string} */
-                status: 'pending' | 'running' | 'done' | 'failed'
-                units?: {
-                  /** @enum {string} */
-                  unit: 'sources' | 'groups' | 'entries' | 'rounds'
-                  done: number
-                  total?: number
-                }
-              }[]
-            } | null
-            /** Format: date-time */
-            lastCheckedAt: string | null
-            /** Format: date-time */
-            lastChangedAt: string | null
-            hasPendingChanges: boolean
-            pendingChanges: {
-              added: number
-              changed: number
-              removed: number
-            } | null
-            pipelineOutdated: boolean
-            rebuildRecommended: {
-              reason: string
-              /** Format: date-time */
-              at: string
-            } | null
-            hasWebSource: boolean
-            hasDatasetSource: boolean
-            sourceUsage: {
-              used: number
-              limit: number
-            } | null
-            refreshEnabled: boolean
-            /** @enum {string} */
-            refreshFrequency: 'weekly' | 'monthly'
-            /** Format: date-time */
-            refreshNextRunAt: string | null
-            refreshInFlight: boolean
-            openIssueCount: number
-            instructionCount: number
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            updatedAt: string
-          }
-        }
-      }
-    }
-  }
   listKnowledgeBases: {
     parameters: {
-      query?: {
+      query: {
         cursor?: string
         limit?: number
+        organizationId: string
       }
       header?: never
       path: {
         apiVersion: string
-        organizationId: string
       }
       cookie?: never
     }
@@ -1097,9 +985,8 @@ export interface operations {
               /** Format: uuid */
               id: string
               publicId: string
-              slug: string
               organizationId: string
-              name: string
+              title: string
               description: string
               /** @enum {string} */
               state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
@@ -1176,15 +1063,14 @@ export interface operations {
       header?: never
       path: {
         apiVersion: string
-        organizationId: string
       }
       cookie?: never
     }
     requestBody: {
       content: {
         'application/json': {
-          name: string
-          slug?: string
+          organizationId: string
+          title: string
           description: string
         }
       }
@@ -1200,9 +1086,8 @@ export interface operations {
             /** Format: uuid */
             id: string
             publicId: string
-            slug: string
             organizationId: string
-            name: string
+            title: string
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
@@ -1276,7 +1161,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1292,9 +1177,8 @@ export interface operations {
             /** Format: uuid */
             id: string
             publicId: string
-            slug: string
             organizationId: string
-            name: string
+            title: string
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
@@ -1368,7 +1252,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1390,14 +1274,14 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody: {
       content: {
         'application/json': {
-          name?: string
+          title?: string
           description?: string
           refreshEnabled?: boolean
           /** @enum {string} */
@@ -1416,9 +1300,8 @@ export interface operations {
             /** Format: uuid */
             id: string
             publicId: string
-            slug: string
             organizationId: string
-            name: string
+            title: string
             description: string
             /** @enum {string} */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
@@ -1495,7 +1378,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1537,7 +1420,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1561,7 +1444,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1585,7 +1468,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1668,7 +1551,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1722,7 +1605,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1781,12 +1664,12 @@ export interface operations {
   getEntry: {
     parameters: {
       query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
+        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. */
         format?: 'json' | 'markdown' | 'plain'
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         entryPath: string
       }
       cookie?: never
@@ -1848,7 +1731,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1916,7 +1799,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -1978,7 +1861,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2016,7 +1899,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2050,7 +1933,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         importId: string
       }
       cookie?: never
@@ -2075,7 +1958,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         importId: string
       }
       cookie?: never
@@ -2141,7 +2024,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         importId: string
       }
       cookie?: never
@@ -2164,7 +2047,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         importId: string
       }
       cookie?: never
@@ -2195,7 +2078,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2247,7 +2130,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2310,7 +2193,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         instructionId: string
       }
       cookie?: never
@@ -2333,7 +2216,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         instructionId: string
       }
       cookie?: never
@@ -2395,7 +2278,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2465,7 +2348,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2495,7 +2378,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         issueId: string
       }
       cookie?: never
@@ -2563,7 +2446,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         issueId: string
       }
       cookie?: never
@@ -2631,7 +2514,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         issueId: string
       }
       cookie?: never
@@ -2699,7 +2582,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         issueId: string
       }
       cookie?: never
@@ -2778,7 +2661,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         jobId: string
       }
       cookie?: never
@@ -2809,12 +2692,12 @@ export interface operations {
   getKnowledgeBaseOutline: {
     parameters: {
       query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
+        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. */
         format?: 'json' | 'markdown' | 'plain'
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2828,8 +2711,7 @@ export interface operations {
         content: {
           'application/json': {
             knowledgeBase: {
-              slug: string
-              name: string
+              title: string
               description: string
             }
             /** @description OutlineStats */
@@ -2858,7 +2740,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2886,7 +2768,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -2920,7 +2802,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         revisionId: string
       }
       cookie?: never
@@ -2960,7 +2842,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         revisionId: string
       }
       cookie?: never
@@ -3019,7 +2901,7 @@ export interface operations {
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
       }
       cookie?: never
     }
@@ -3064,7 +2946,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         sourceId: string
       }
       cookie?: never
@@ -3107,7 +2989,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         sourceId: string
       }
       cookie?: never
@@ -3128,14 +3010,14 @@ export interface operations {
   getSourceContent: {
     parameters: {
       query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. Overrides the `Accept` header when set — exposed as a query param because `Accept`-based negotiation is invisible in the API explorer. */
+        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. */
         format?: 'json' | 'markdown' | 'plain'
         startLine?: number
         endLine?: number
       }
       header?: never
       path: {
-        knowledgeBaseSlug: string
+        knowledgeBaseId: string
         sourceId: string
       }
       cookie?: never

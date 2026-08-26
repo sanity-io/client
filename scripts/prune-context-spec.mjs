@@ -10,16 +10,13 @@
 import {mkdirSync, readFileSync, writeFileSync} from 'node:fs'
 import {dirname} from 'node:path'
 
-const KB =
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases/{knowledgeBaseSlug}'
+const KB = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 
-// The paths the client.context namespace uses: the KnowledgeBaseHandle's
-// routes plus the global by-id read it resolves addresses through. Future
-// namespaces (MCP endpoints, conversations, insights, ...) opt in by adding
-// their paths here.
+// The paths the client.context namespace uses: the knowledge-base collection
+// plus the KnowledgeBaseHandle's routes. Future namespaces (MCP endpoints,
+// conversations, insights, ...) opt in by adding their paths here.
 const PATH_ALLOWLIST = [
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}',
-  '/{apiVersion}/context/organizations/{organizationId}/knowledge-bases',
+  '/{apiVersion}/context/knowledge-bases',
   KB,
   `${KB}/activity`,
   `${KB}/build`,
@@ -53,8 +50,9 @@ const PATH_ALLOWLIST = [
   `${KB}/sources/{sourceId}/content`,
 ]
 
-// Component schemas the namespace re-exports directly (the raw dataset doc
-// shapes) even though no allowlisted path references them.
+// Component schemas the namespace re-exports directly (the document shapes
+// stored in the organization's document store, for typing GROQ reads) even
+// though no allowlisted path references them.
 const COMPONENT_ALLOWLIST = ['EntryDoc', 'InstructionDoc', 'IssueDoc']
 
 const [inputPath, outputPath] = process.argv.slice(2)
