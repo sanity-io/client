@@ -1,5 +1,19 @@
 # @sanity/client
 
+## 8.4.0
+
+### Minor Changes
+
+- add description field to dataset ([#1182](https://github.com/sanity-io/client/pull/1182)) ([027be06](https://github.com/sanity-io/client/commit/027be061b9f6f0716c1f19dac704da0ad3d6dac5))
+- add client.context with knowledge bases, builds, triage, telemetry, and GROQ reads ([#1276](https://github.com/sanity-io/client/pull/1276)) ([1e991a7](https://github.com/sanity-io/client/commit/1e991a7a9514f3b8a29d6223326c440a517117a8))
+
+### Patch Changes
+
+- Update type DatasetsResponse ([#1183](https://github.com/sanity-io/client/pull/1183)) ([972efe5](https://github.com/sanity-io/client/commit/972efe566d94011f2a916a52f2a2a96f591a7000))
+- treat nullish apiHost as the default host ([#1296](https://github.com/sanity-io/client/pull/1296)) ([500b713](https://github.com/sanity-io/client/commit/500b713ba82a06a272c0f58c8ff366782b5fbfce))
+- drop debug for browser uploads ([#1305](https://github.com/sanity-io/client/pull/1305)) ([68bd37d](https://github.com/sanity-io/client/commit/68bd37d5678303877f2190e5e9c55c7b96b587fb))
+- support status, importId, and ids filters on `context.sources.list` ([#1306](https://github.com/sanity-io/client/pull/1306)) ([cd7a783](https://github.com/sanity-io/client/commit/cd7a78324ed6145f3305d1643fb09311adeb5b52))
+
 ## 8.3.0
 
 ### Minor Changes
