@@ -1,13 +1,8 @@
-import {createDebug} from 'obug'
 import {Observable} from 'rxjs'
 
 import type {UploadEvent} from '../types'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
 import {parseJsonText} from './request'
-
-const log = createDebug('sanity:client')
-
-let nextRequestId = 1
 
 /**
  * Options for a browser-side asset upload that needs progress events.
@@ -36,10 +31,7 @@ export interface BrowserUploadOptions {
 export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable<UploadEvent<T>> {
   return new Observable<UploadEvent<T>>((subscriber) => {
     const xhr = new XMLHttpRequest()
-    const requestId = nextRequestId++
     const {url, method, headers, body, withCredentials, timeout, signal} = options
-
-    log('[%d] %s %s (XHR upload with progress)', requestId, method, url)
 
     xhr.open(method, url)
     xhr.withCredentials = withCredentials
@@ -63,8 +55,6 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
     }
 
     xhr.onload = () => {
-      log('[%d] %s %s — %d', requestId, method, url, xhr.status)
-
       if (xhr.status >= 400) {
         // Same typed errors as the fetch transport, so consumers can keep
         // detecting `ClientError`/`ServerError` and reading `statusCode`,
@@ -100,12 +90,10 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
     }
 
     xhr.onerror = () => {
-      log('[%d] %s %s — network error', requestId, method, url)
       subscriber.error(new Error('XHR upload network error'))
     }
 
     xhr.ontimeout = () => {
-      log('[%d] %s %s — timed out after %dms', requestId, method, url, timeout)
       // Same error shape as the fetch transport's timeout rejection.
       subscriber.error(
         new DOMException(
