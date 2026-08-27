@@ -13,7 +13,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}-${{ github.actor == 'squiggler-app[bot]' && 'changeset' || 'source' }}
   cancel-in-progress: true
 
 permissions:
