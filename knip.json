@@ -27,7 +27,12 @@
   // `pnpm build`: the dts bundler needs to name them to emit
   // `dist/index.d.ts` and fails with `TS4058: ... cannot be named`.
   // Confirmed by trying it - this is a real dts-only usage knip cannot see.
+  // `webhooks`/`$defs`/`operations` in src/context/types.gen.ts are part of
+  // openapi-typescript's fixed output shape - the generator always emits
+  // them, used or not - so the types rule is ignored for that one generated
+  // file rather than hand-editing its output after every regeneration.
   "ignoreIssues": {
+    "src/context/types.gen.ts": ["types"],
     "src/stega/stegaClean.ts": ["duplicates"],
     "src/agent/actions/patch.ts": ["exports"],
     "src/agent/actions/prompt.ts": ["exports"],
