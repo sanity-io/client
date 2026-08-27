@@ -269,11 +269,8 @@ jobs:
       - uses: antongolub/action-setup-bun@f0b9f339a7ce9ba1174a58484e4dc9bbd6f7b133 # v1
       - run: pnpm run test:bun
 
-  # Repurposed from the former `node-runtimes` placeholder (test-suite-cleanup Task 13):
-  # that job's `runtimes/node` tree is gone (Task 12), and the CJS interop guard it ran
-  # now lives at `test/packaging/cjs-interop.test.ts`, alongside the `dist/` graph guard
-  # (`test/packaging/distGraph.test.ts`). Both need a real build, not `dist/` aliased to
-  # source, so this job builds fresh rather than restoring the `build` job's artifact.
+  # Runs against a real build (`dist`), ensures CJS interop (`require('esm')`), dist graph and
+  # the non-node export conditions being free of node-only modules (prefixed and unprefixed)
   test-packaging:
     name: 'Test: Packaging'
     runs-on: ubuntu-latest

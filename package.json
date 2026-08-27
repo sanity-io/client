@@ -138,6 +138,7 @@
     "oxlint-tsgolint": "^7.0.2001",
     "pkg-pr-new": "^0.0.88",
     "playwright": "^1.62.1",
+    "rolldown": "^1.2.4",
     "typescript": "7.0.2",
     "undici": "^7.29.0",
     "vitest": "^4.1.10"
