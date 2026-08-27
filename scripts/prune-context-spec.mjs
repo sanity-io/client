@@ -22,33 +22,22 @@ const PATH_ALLOWLIST = [
   // through the GROQ surface (context.fetch/listen), so the REST reads are
   // deliberately not exposed here.
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}',
-  `${KB}/activity`,
   `${KB}/build`,
   `${KB}/build/cancel`,
-  `${KB}/changes`,
-  `${KB}/crawl-options`,
-  `${KB}/entries`,
-  `${KB}/entries/{entryPath}`,
+  `${KB}/entries/{entryPath}/rebuild`,
   `${KB}/imports`,
-  `${KB}/imports/crawl-preview`,
   `${KB}/imports/uploads`,
   `${KB}/imports/uploads/{importId}/complete`,
   `${KB}/imports/{importId}`,
   `${KB}/imports/{importId}/download`,
   `${KB}/instructions`,
   `${KB}/instructions/{instructionId}`,
-  `${KB}/issues`,
   `${KB}/issues/apply`,
-  `${KB}/issues/{issueId}`,
   `${KB}/issues/{issueId}/dismiss`,
   `${KB}/issues/{issueId}/reopen`,
   `${KB}/issues/{issueId}/resolve`,
   `${KB}/jobs/{jobId}`,
-  `${KB}/outline`,
   `${KB}/refresh`,
-  `${KB}/revisions`,
-  `${KB}/revisions/{revisionId}/outline`,
-  `${KB}/revisions/{revisionId}/report`,
   `${KB}/sources`,
   `${KB}/sources/{sourceId}`,
   `${KB}/sources/{sourceId}/content`,
@@ -57,7 +46,7 @@ const PATH_ALLOWLIST = [
 // Component schemas the namespace re-exports directly (the document shapes
 // stored in the organization's document store, for typing GROQ reads) even
 // though no allowlisted path references them.
-const COMPONENT_ALLOWLIST = ['EntryDoc', 'InstructionDoc', 'IssueDoc']
+const COMPONENT_ALLOWLIST = ['ConversationDoc', 'EntryDoc', 'InstructionDoc', 'IssueDoc', 'McpDoc']
 
 const [inputPath, outputPath] = process.argv.slice(2)
 if (!inputPath || !outputPath) {

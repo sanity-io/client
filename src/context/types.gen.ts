@@ -56,26 +56,6 @@ export interface paths {
     patch: operations['updateKnowledgeBase']
     trace?: never
   }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/activity': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List activity for a Context
-     * @description The audit trail, newest first: who did what, as dotted `<resource>.<verb>` actions. New action kinds appear over time, so render unknown ones with `description`. Actor identity is snapshotted at event time; resolve `actor.id` against the members API for live names, falling back to `actor.displayName`.
-     */
-    get: operations['listActivity']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/build': {
     parameters: {
       query?: never
@@ -116,27 +96,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/changes': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List pending corpus changes
-     * @description Returns the sources added, changed, or removed since the last build, derived from the corpus diff.
-     */
-    get: operations['getKnowledgeBaseChanges']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/crawl-options': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/entries/{entryPath}/rebuild': {
     parameters: {
       query?: never
       header?: never
@@ -145,51 +105,11 @@ export interface paths {
     }
     get?: never
     put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
     /**
-     * Update crawl options
-     * @description Replaces the crawl options. The body is the full desired state; omitted fields are cleared.
+     * Rebuild an entry from its sources
+     * @description Queues a re-write of the entry at this path from its cited sources and the active instructions, and returns a job id right away. The response also names the other entries citing any of the same sources: a source-tied rule affects every page citing that source, so those may change too.
      */
-    patch: operations['updateCrawlOptions']
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/entries': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List, search, or batch-read entries
-     * @description The content documents of the knowledge base, ordered by path and cursor-paginated. `q` runs a full-text search ranked by relevance. `paths` batch-reads specific entries. `include=body` adds the full markdown; the default returns metadata only.
-     */
-    get: operations['listEntries']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/entries/{entryPath}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a single entry
-     * @description Reads one entry by its slash-delimited path (`pricing/plans/free`, URL-encoded). JSON by default; `?format=markdown` returns a self-contained document: the body with its `[N]` citation markers and a resolved Sources section.
-     */
-    get: operations['getEntry']
-    put?: never
-    post?: never
+    post: operations['rebuildEntry']
     delete?: never
     options?: never
     head?: never
@@ -214,26 +134,6 @@ export interface paths {
      * @description Adds content, discriminated on `type`: `text` for inline content, `crawl` for a website, `dataset` for a GROQ-filtered Sanity dataset. Each variant queues processing and returns a job id to poll. For files, use `POST .../imports/uploads` instead. Re-adding an existing crawl url returns 409 `webSourceRootConflict`; exceeding the crawl root limit returns 409 `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
      */
     post: operations['createImport']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/crawl-preview': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Preview a web crawl
-     * @description Maps the site without fetching pages and estimates how many pages a crawl would ingest, clustered by path. Nothing is persisted; create the actual crawl with `POST .../imports`. A mapping failure returns 502 `crawlPreviewUnavailable`. The preview is advisory, so it is safe to skip it and crawl directly.
-     */
-    post: operations['previewCrawl']
     delete?: never
     options?: never
     head?: never
@@ -313,7 +213,7 @@ export interface paths {
     }
     /**
      * Get a download URL for an import
-     * @description Mints a short-lived signed URL serving the import's original bytes as an attachment. Use it before `expiresAt`; the bytes never pass through this API. Only file and text imports carry original bytes; crawls and dataset binds return 409 `uploadBatchInvalidState`.
+     * @description Mints a short-lived signed URL serving the import's original bytes as an attachment. Use it before `expiresAt`; the bytes never pass through this API. Only file and text imports carry original bytes; crawls and dataset binds return 409 `importInvalidState`.
      */
     get: operations['downloadImport']
     put?: never
@@ -331,11 +231,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /**
-     * List instructions for a Context
-     * @description The standing decisions steering every build: resolved-conflict overrides and human-authored instructions.
-     */
-    get: operations['listInstructions']
+    get?: never
     put?: never
     /**
      * Author a human instruction
@@ -372,26 +268,6 @@ export interface paths {
     patch: operations['updateInstruction']
     trace?: never
   }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List issues for a Context
-     * @description Issues are `sanity.context.issue` documents in the bound dataset; this is the validated, paginated view over them. Documents that fail validation are dropped from the page rather than failing the response.
-     */
-    get: operations['listIssues']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/apply': {
     parameters: {
       query?: never
@@ -406,26 +282,6 @@ export interface paths {
      * @description Queues a job that applies accepted issues, rewrites the affected entries, and commits a new revision. Returns a job id. Issue ids that no longer exist are skipped.
      */
     post: operations['applyIssues']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/issues/{issueId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a single issue
-     * @description Returns one issue with its finding, status, and any resolution.
-     */
-    get: operations['getIssue']
-    put?: never
-    post?: never
     delete?: never
     options?: never
     head?: never
@@ -512,26 +368,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/outline': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get the knowledge base outline
-     * @description The built outline: a path-ordered, body-free map of the knowledge base. JSON by default; `?format=markdown` or `plain` returns rendered text. Every entry carries content, so any path can be read directly. Paths are slash-delimited (`apis/client`) everywhere.
-     */
-    get: operations['getKnowledgeBaseOutline']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/refresh': {
     parameters: {
       query?: never
@@ -546,66 +382,6 @@ export interface paths {
      * @description Queues a refresh: recrawls each web source, diffs the corpus against the last build, and files change issues. Returns a job id, with `started: false` when a refresh was already in flight. Supports the `Idempotency-Key` header.
      */
     post: operations['refreshKnowledgeBase']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/revisions': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List build revisions
-     * @description Ready builds, newest first, cursor-paginated. A revision is `browsable: true` when it has an outline manifest and still falls inside the plan's history retention window. Older builds are listed for context but cannot be opened.
-     */
-    get: operations['listKnowledgeBaseRevisions']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/revisions/{revisionId}/outline': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get the outline as it was at a build revision
-     * @description The outline as captured when this build committed. Read-only. Each entry carries its Sanity `docId` — the join key into the revision's `/entries` response, which serves the historical content, including entries later builds deleted. 404 when the revision does not exist, 409 `revisionNotBrowsable` when the build predates outline capture.
-     */
-    get: operations['getKnowledgeBaseRevisionOutline']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/revisions/{revisionId}/report': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a build report
-     * @description An account of what one build did with every source: attached where, discarded why, or left unresolved. `fullyAccounted` is false when the ledger does not cover every source. 404 when the revision does not exist.
-     */
-    get: operations['getKnowledgeBaseRevisionReport']
-    put?: never
-    post?: never
     delete?: never
     options?: never
     head?: never
@@ -686,7 +462,7 @@ export interface paths {
     get?: never
     /**
      * Record a conversation
-     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `origin`, `metadata`, and model fields only overwrite when present. Last write per thread wins — retries are safe.
+     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata` and model fields only overwrite when present. Last write per thread wins — retries are safe.
      */
     put: operations['saveConversation']
     post?: never
@@ -704,6 +480,60 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** @description A `sanity.context.conversation` document, one agent conversation transcript with its classification, stored in the organization store. Not returned by any endpoint raw; published so GROQ reads can be typed. Write through the conversation ingest and classify endpoints, never with a raw client. */
+    ConversationDoc: {
+      _id: string
+      _rev: string
+      /** Format: date-time */
+      _createdAt: string
+      /** Format: date-time */
+      _updatedAt: string
+      /** @enum {string} */
+      _type: 'sanity.context.conversation'
+      /** @enum {number} */
+      schemaVersion: 1
+      organizationId: string
+      threadId: string
+      /** @description ConversationMetadata */
+      metadata: {
+        [key: string]: string | string[]
+      } | null
+      /** Format: date-time */
+      startedAt: string
+      /** Format: date-time */
+      messagesUpdatedAt: string
+      messages: {
+        /** @enum {string} */
+        role: 'user' | 'assistant' | 'system' | 'tool'
+        /** @default null */
+        content: string | null
+        /** @default null */
+        toolName: string | null
+        /**
+         * @default null
+         * @enum {string|null}
+         */
+        toolType: 'call' | 'result' | null
+      }[]
+      modelProvider: string | null
+      modelId: string | null
+      /** @description ConversationTokenUsage */
+      tokenUsage: {
+        inputTokens?: number
+        outputTokens?: number
+        totalTokens?: number
+      } | null
+      /** @description ConversationCoreMetrics */
+      coreMetrics: {
+        successScore?: number
+        /** @enum {string} */
+        sentiment?: 'positive' | 'neutral' | 'negative'
+        contentGaps?: string[]
+      } | null
+      /** Format: date-time */
+      classifiedAt: string | null
+      classificationError: string | null
+    }
     /** @description A `sanity.context.entry` document, one outline node stored in the bound dataset. Not returned by any endpoint; published so GROQ reads against the dataset can be typed. The entries endpoints serve the validated wire view. */
     EntryDoc: {
       _id: string
@@ -974,6 +804,37 @@ export interface components {
           /** @enum {string|null} */
           resolution: null
         }
+    /** @description A `sanity.context.mcp` document, an org-owned MCP endpoint configuration stored in the organization store. Not returned by any endpoint raw; published so GROQ reads and trigger filters can be typed. Write through the mcp endpoints, never with a raw client. The mcp endpoints serve the validated wire view. */
+    McpDoc: {
+      _id: string
+      _rev: string
+      /** Format: date-time */
+      _createdAt: string
+      /** Format: date-time */
+      _updatedAt: string
+      /** @enum {string} */
+      _type: 'sanity.context.mcp'
+      /** @enum {number} */
+      schemaVersion: 1
+      organizationId: string
+      publicId: string
+      title: string
+      name: string
+      sources: (
+        | {
+            /** @enum {string} */
+            type: 'knowledge-base'
+            id: string
+          }
+        | {
+            /** @enum {string} */
+            type: 'dataset'
+            id: string
+          }
+      )[]
+      instructions: string | null
+      groqFilter: string | null
+    }
   }
   responses: never
   parameters: never
@@ -1394,51 +1255,6 @@ export interface operations {
       }
     }
   }
-  listActivity: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              /** Format: uuid */
-              id: string
-              action: string
-              resourceType: string
-              resourceId: string
-              description: string
-              /** @description Actor */
-              actor: {
-                id: string | null
-                displayName: string | null
-              } | null
-              metadata: {
-                [key: string]: string
-              } | null
-              /** Format: date-time */
-              createdAt: string
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
   buildKnowledgeBase: {
     parameters: {
       query?: never
@@ -1487,210 +1303,9 @@ export interface operations {
       }
     }
   }
-  getKnowledgeBaseChanges: {
+  rebuildEntry: {
     parameters: {
       query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description KnowledgeBaseChanges */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            added: {
-              /** Format: uuid */
-              sourceId: string
-              filename: string
-              canonicalUrl: string | null
-              contentHash: string
-              builtContentHash: string | null
-              /** Format: uuid */
-              builtRevisionId: string | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              fetchedAt: string | null
-              /** Format: date-time */
-              distilledAt: string | null
-              hasDistilledOutput: boolean
-              /** Format: date-time */
-              lastSeenAt: string | null
-              missedCrawlCount: number
-            }[]
-            changed: {
-              /** Format: uuid */
-              sourceId: string
-              filename: string
-              canonicalUrl: string | null
-              contentHash: string
-              builtContentHash: string | null
-              /** Format: uuid */
-              builtRevisionId: string | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              fetchedAt: string | null
-              /** Format: date-time */
-              distilledAt: string | null
-              hasDistilledOutput: boolean
-              /** Format: date-time */
-              lastSeenAt: string | null
-              missedCrawlCount: number
-            }[]
-            removed: {
-              /** Format: uuid */
-              sourceId: string
-              filename: string
-              canonicalUrl: string | null
-              contentHash: string
-              builtContentHash: string | null
-              /** Format: uuid */
-              builtRevisionId: string | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              fetchedAt: string | null
-              /** Format: date-time */
-              distilledAt: string | null
-              hasDistilledOutput: boolean
-              /** Format: date-time */
-              lastSeenAt: string | null
-              missedCrawlCount: number
-            }[]
-          }
-        }
-      }
-    }
-  }
-  updateCrawlOptions: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          includePaths?: string[]
-          excludePaths?: string[]
-          maxDepth?: number
-          sitemapOnly?: boolean
-          ignoreQueryParameters?: boolean
-          pageLimit?: number
-          /** Format: uri */
-          url: string
-        }
-      }
-    }
-    responses: {
-      /** @description CrawlOptions */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            includePaths?: string[]
-            excludePaths?: string[]
-            maxDepth?: number
-            sitemapOnly?: boolean
-            ignoreQueryParameters?: boolean
-            pageLimit?: number
-          }
-        }
-      }
-    }
-  }
-  listEntries: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-        status?: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-        /** @description Full-text search query over entry content (title, tldr scope, body). Switches to ranked-search mode: results are ordered by relevance (`score` desc), capped at `limit`, with `nextCursor` always null. `cursor` and `paths` are ignored. Supports `text::query` syntax: bare words, `"exact phrase"`, `-exclude`, `prefix*`. Omit for the default path-ordered list. */
-        q?: string
-        /** @description Search ranking (only meaningful with `q`). `keyword` is BM25 over text fields. `hybrid` additionally weights semantic similarity, falling back to keyword when the dataset has no embeddings index. */
-        mode?: 'keyword' | 'hybrid'
-        /** @description `metadata` omits the body (light list view); `body` includes the full markdown. */
-        include?: 'metadata' | 'body'
-        /** @description Comma-separated entry paths (max 20), e.g. "pricing/plans,studio/config". Switches to batch-read mode: only these entries are returned, unordered, with nextCursor null. */
-        paths?: string
-      }
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              knowledgeBaseId: string
-              /** Format: uuid */
-              revisionId: string | null
-              path: string
-              title: string
-              tldr: {
-                scope: string
-                excludes: string
-                neighbors?: string[]
-                /** @enum {string} */
-                centrality: 'core' | 'standard' | 'peripheral'
-              } | null
-              body: string | null
-              /** @enum {string} */
-              status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-              sourceIds: (string | null)[]
-              citations?: {
-                sourceId: string
-                supports?: string
-                spans?: {
-                  sourceLineStart: number
-                  sourceLineEnd: number
-                  quote: string
-                }[]
-                claim?: {
-                  exact: string
-                  prefix?: string
-                  suffix?: string
-                }
-                /** @enum {string} */
-                groundingState?: 'drifted'
-              }[]
-              /** @description GROQ relevance `_score` (higher is more relevant, always > 0). Present only on `?q=` search responses; absent when listing. */
-              score?: number
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  getEntry: {
-    parameters: {
-      query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. */
-        format?: 'json' | 'markdown' | 'plain'
-      }
       header?: never
       path: {
         knowledgeBaseId: string
@@ -1700,49 +1315,20 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Entry */
-      200: {
+      /** @description RebuildEntryResponse */
+      202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** Format: uuid */
-            revisionId: string | null
-            path: string
-            title: string
-            tldr: {
-              scope: string
-              excludes: string
-              neighbors?: string[]
-              /** @enum {string} */
-              centrality: 'core' | 'standard' | 'peripheral'
-            } | null
-            body: string | null
-            /** @enum {string} */
-            status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
-            sourceIds: (string | null)[]
-            citations?: {
-              sourceId: string
-              supports?: string
-              spans?: {
-                sourceLineStart: number
-                sourceLineEnd: number
-                quote: string
-              }[]
-              claim?: {
-                exact: string
-                prefix?: string
-                suffix?: string
-              }
-              /** @enum {string} */
-              groundingState?: 'drifted'
+            jobId: string
+            affectedEntries: {
+              id: string
+              path: string
+              title: string
             }[]
           }
-          'text/markdown': string
-          'text/plain': string
         }
       }
     }
@@ -1875,44 +1461,6 @@ export interface operations {
         content: {
           'application/json': {
             jobId: string
-          }
-        }
-      }
-    }
-  }
-  previewCrawl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    /** @description PreviewCrawlInput */
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: uri */
-          url: string
-        }
-      }
-    }
-    responses: {
-      /** @description CrawlPreview */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            totalPages: number
-            truncated: boolean
-            groups: {
-              prefix: string
-              count: number
-            }[]
-            otherCount: number
           }
         }
       }
@@ -2094,61 +1642,6 @@ export interface operations {
       }
     }
   }
-  listInstructions: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              knowledgeBaseId: string
-              /** @enum {string} */
-              origin: 'conflict' | 'human'
-              /** @enum {string} */
-              status: 'active' | 'archived'
-              statement: string
-              scopeSourceIds: string[] | null
-              /** Format: date-time */
-              archivedAt: string | null
-              archivedReason: string | null
-              sourceIssueId: string | null
-              /** @description Actor */
-              createdBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** @description Actor */
-              updatedBy: {
-                id: string | null
-                displayName: string | null
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              updatedAt: string | null
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
   createInstruction: {
     parameters: {
       query?: never
@@ -2293,80 +1786,6 @@ export interface operations {
       }
     }
   }
-  listIssues: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-        status?: 'open' | 'accepted' | 'rejected'
-      }
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              id: string
-              knowledgeBaseId: string
-              /** @description IssueContent */
-              content: {
-                /** @enum {string} */
-                kind:
-                  | 'conflict'
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @enum {string} */
-                severity: 'critical' | 'suggestion'
-                scopePath: string
-                issue: string
-                suggestedFix: string
-                citedSourceIds?: string[]
-                claimKey?: string
-                involvedScopes?: string[]
-                currentClaim?: string
-                alternativeClaim?: string
-                /** @enum {string} */
-                currentAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                alternativeAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                suggestedResolution?: 'keep_existing' | 'accept_new'
-              }
-              /** @enum {string} */
-              status: 'open' | 'accepted' | 'rejected'
-              /** @enum {string|null} */
-              resolution: 'keep_existing' | 'accept_new' | null
-              /** @description IssueResolvedBy */
-              resolvedBy: {
-                id: string
-                /** @enum {string} */
-                kind: 'user' | 'robot'
-              } | null
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              resolvedAt: string | null
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
   applyIssues: {
     parameters: {
       query?: never
@@ -2392,74 +1811,6 @@ export interface operations {
         content: {
           'application/json': {
             jobId: string
-          }
-        }
-      }
-    }
-  }
-  getIssue: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-        issueId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Issue */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            id: string
-            knowledgeBaseId: string
-            /** @description IssueContent */
-            content: {
-              /** @enum {string} */
-              kind:
-                | 'conflict'
-                | 'gap'
-                | 'update_required'
-                | 'add_entry'
-                | 'remove_entry'
-                | 'split_entry'
-                | 'merge_entry'
-              /** @enum {string} */
-              severity: 'critical' | 'suggestion'
-              scopePath: string
-              issue: string
-              suggestedFix: string
-              citedSourceIds?: string[]
-              claimKey?: string
-              involvedScopes?: string[]
-              currentClaim?: string
-              alternativeClaim?: string
-              /** @enum {string} */
-              currentAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              alternativeAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new'
-            }
-            /** @enum {string} */
-            status: 'open' | 'accepted' | 'rejected'
-            /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | null
-            /** @description IssueResolvedBy */
-            resolvedBy: {
-              id: string
-              /** @enum {string} */
-              kind: 'user' | 'robot'
-            } | null
-            /** Format: date-time */
-            createdAt: string
-            /** Format: date-time */
-            resolvedAt: string | null
           }
         }
       }
@@ -2713,52 +2064,6 @@ export interface operations {
       }
     }
   }
-  getKnowledgeBaseOutline: {
-    parameters: {
-      query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. */
-        format?: 'json' | 'markdown' | 'plain'
-      }
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Outline */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            knowledgeBase: {
-              title: string
-              description: string
-            }
-            /** @description OutlineStats */
-            stats: {
-              total: number
-            }
-            entries: {
-              path: string
-              title: string
-              /** @enum {string} */
-              centrality: 'core' | 'standard' | 'peripheral'
-              scope: string | null
-              excludes: string | null
-              neighbors: string[]
-              topicHeadings: string[]
-            }[]
-          }
-          'text/markdown': string
-          'text/plain': string
-        }
-      }
-    }
-  }
   refreshKnowledgeBase: {
     parameters: {
       query?: never
@@ -2779,136 +2084,6 @@ export interface operations {
           'application/json': {
             jobId: string
             started: boolean
-          }
-        }
-      }
-    }
-  }
-  listKnowledgeBaseRevisions: {
-    parameters: {
-      query?: {
-        cursor?: string
-        limit?: number
-      }
-      header?: never
-      path: {
-        knowledgeBaseId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            data: {
-              /** Format: uuid */
-              id: string
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              capturedAt: string | null
-              entryCount: number | null
-              browsable: boolean
-            }[]
-            nextCursor: string | null
-          }
-        }
-      }
-    }
-  }
-  getKnowledgeBaseRevisionOutline: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-        revisionId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description RevisionOutline */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description KnowledgeBaseRevision */
-            revision: {
-              /** Format: uuid */
-              id: string
-              /** Format: date-time */
-              createdAt: string
-              /** Format: date-time */
-              capturedAt: string | null
-              entryCount: number | null
-              browsable: boolean
-            }
-            entries: {
-              path: string
-              title: string
-              docId: string
-            }[]
-          }
-        }
-      }
-    }
-  }
-  getKnowledgeBaseRevisionReport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        knowledgeBaseId: string
-        revisionId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Default Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            revisionId: string
-            status: string
-            startedAt: string | null
-            corpusSize: number
-            attached: {
-              count: number
-              entryCount: number
-            }
-            discarded: {
-              count: number
-              byAuthor: {
-                /** @enum {string} */
-                author: 'policy' | 'model' | 'human'
-                count: number
-                reasons: {
-                  reason: string
-                  count: number
-                }[]
-              }[]
-            }
-            unresolved: {
-              count: number
-              reasons: {
-                reason: string
-                count: number
-              }[]
-            }
-            fullyAccounted: boolean
           }
         }
       }
