@@ -658,7 +658,10 @@ export type DatasetsResponse = {
   addonFor: string | null
   datasetProfile: string
   features: string[]
-  tags: string[]
+  tags: {
+    name: string
+    title: string
+  }[]
 }[]
 
 /** @public */
