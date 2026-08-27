@@ -19,7 +19,12 @@ import {_fetch as _fetchStore, _listen as _listenStore} from './store'
 import type {
   ApplyIssuesParams,
   ApplyIssuesResponse,
+  ClassifyConversationParams,
+  ContextListenOptions,
+  ContextRequestOptions,
+  Conversation,
   ConversationDoc,
+  CreateFileImportParams,
   CreateImportParams,
   CreateInstructionParams,
   CreateInstructionResponse,
@@ -42,21 +47,15 @@ import type {
   McpDoc,
   RebuildEntryResponse,
   ReopenIssueResponse,
+  RequestOptions,
   ResolveIssueParams,
   ResolveIssueResponse,
+  SaveConversationParams,
+  Source,
   SourceContentResponse,
   SourceDetail,
   SourcesResponse,
   StagedUpload,
-} from './types'
-import type {
-  ClassifyConversationParams,
-  ContextListenOptions,
-  ContextRequestOptions,
-  Conversation,
-  CreateFileImportParams,
-  RequestOptions,
-  SaveConversationParams,
 } from './types'
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
@@ -609,7 +608,23 @@ export class ContextClient {
 
   /** Sources: the distilled units builds cite. */
   sources = {
-    list: (params?: ListOptions) => this.#list<SourcesResponse>('/sources', params),
+    /**
+     * List sources, optionally filtered by `status` or the `importId` they
+     * came from. `ids` is a lookup mode: it resolves those exact sources
+     * (e.g. from an entry's citations) and overrides `status` and `cursor`.
+     */
+    list: (
+      params?: {
+        status?: Source['status']
+        importId?: string
+        ids?: string[]
+      } & ListOptions,
+    ) =>
+      this.#list<SourcesResponse>('/sources', params, {
+        status: params?.status,
+        importId: params?.importId,
+        ids: params?.ids?.join(','),
+      }),
     get: (params: {sourceId: string}, options?: RequestOptions) =>
       this.#request<SourceDetail>(`/sources/${encodeURIComponent(params.sourceId)}`, options),
     /**

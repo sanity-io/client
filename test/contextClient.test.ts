@@ -260,6 +260,22 @@ describe('ContextClient', () => {
     })
   })
 
+  test('sources.list forwards the status, importId, and ids filters', async () => {
+    httpRequest.mockResolvedValueOnce({data: [], nextCursor: null})
+
+    await kbContext.sources.list({
+      status: 'ready',
+      importId: 'imp1',
+      ids: ['s1', 's2'],
+    })
+
+    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
+      status: 'ready',
+      importId: 'imp1',
+      ids: 's1,s2',
+    })
+  })
+
   test('sources.delete issues a DELETE and resolves to nothing', async () => {
     httpRequest.mockResolvedValueOnce(undefined)
 
