@@ -2,10 +2,9 @@ import {createRequire} from 'node:module'
 
 import {expect, test} from 'vitest'
 
-// Ported from the old `runtimes/node/test.cjs`, which smoke-tested that
-// CommonJS `require('@sanity/client')` continues to work on Node 22.12+ via
-// the runtime's native `require(esm)` support. The package itself is
-// ESM-only, but `require(esm)` makes that a soft constraint.
+// Smoke-tests that CommonJS `require('@sanity/client')` continues to work on
+// Node 22.12+ via the runtime's native `require(esm)` support. The package
+// itself is ESM-only, but `require(esm)` makes that a soft constraint.
 //
 // `createRequire` returns Node's real `require`, so it resolves through the
 // package's actual `exports` map (built `dist/`, not source) exactly like a

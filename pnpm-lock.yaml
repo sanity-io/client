@@ -90,6 +90,9 @@ importers:
       playwright:
         specifier: ^1.62.1
         version: 1.62.1
+      rolldown:
+        specifier: ^1.2.4
+        version: 1.2.4
       typescript:
         specifier: 7.0.2
         version: 7.0.2
