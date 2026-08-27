@@ -303,6 +303,11 @@ function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image'
       case 'canvas': {
         return `/canvases/${id}/assets/${assetTypeEndpoint}`
       }
+      case 'knowledge-base': {
+        throw new Error(
+          'Assets are not supported for knowledge-base resources. Use `client.context.imports` to add content instead.',
+        )
+      }
       case 'media-library': {
         return `/media-libraries/${id}/upload`
       }

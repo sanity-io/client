@@ -1128,7 +1128,7 @@ export function _prepareRequest(client: Client, options: RequestObservableOption
  *
  * @internal
  */
-function _observe<R>(
+export function _observe<R>(
   userSignal: AbortSignal | undefined,
   run: (signal: AbortSignal) => Promise<R>,
 ): Observable<R> {
@@ -1290,6 +1290,9 @@ const resourceDataBase = (config: InitializedClientConfig): string => {
     }
     case 'canvas': {
       return `/canvases/${id}`
+    }
+    case 'knowledge-base': {
+      return `/knowledge-bases/${id}`
     }
     case 'media-library': {
       return `/media-libraries/${id}`

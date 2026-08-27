@@ -128,6 +128,7 @@ export const resourceConfig = (config: InitializedClientConfig): void => {
       return
     }
     case 'dashboard':
+    case 'knowledge-base':
     case 'media-library':
     case 'canvas': {
       return

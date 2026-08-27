@@ -8,6 +8,7 @@ import {
   ObservableCollaborationCommentsClient,
 } from './collaboration/CollaborationCommentsClient'
 import {defaultConfig, initConfig} from './config'
+import {ContextClient, ObservableContextClient} from './context/ContextClient'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
 import {LiveClient} from './data/live'
@@ -94,6 +95,8 @@ export class ObservableSanityClient {
   }
   functions: ObservableFunctionsClient
   releases: ObservableReleasesClient
+  /** @beta */
+  context: ObservableContextClient
 
   /**
    * Private properties
@@ -127,6 +130,7 @@ export class ObservableSanityClient {
     }
     this.functions = new ObservableFunctionsClient(this, this.#httpRequest)
     this.releases = new ObservableReleasesClient(this, this.#httpRequest)
+    this.context = new ObservableContextClient(this, this.#httpRequest)
   }
 
   /**
@@ -1167,6 +1171,8 @@ export class SanityClient {
   }
   functions: FunctionsClient
   releases: ReleasesClient
+  /** @beta */
+  context: ContextClient
 
   /**
    * Observable version of the Sanity client, with the same configuration as the promise-based one
@@ -1205,6 +1211,7 @@ export class SanityClient {
     }
     this.functions = new FunctionsClient(this, this.#httpRequest)
     this.releases = new ReleasesClient(this, this.#httpRequest)
+    this.context = new ContextClient(this, this.#httpRequest)
 
     this.observable = new ObservableSanityClient(httpRequest, config)
   }

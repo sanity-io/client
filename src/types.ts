@@ -110,6 +110,10 @@ type ClientConfigResource =
       id: string
     }
   | {
+      type: 'knowledge-base'
+      id: string
+    }
+  | {
       type: 'media-library'
       id: string
     }
@@ -312,6 +316,17 @@ export interface ClientConfig {
    * @alpha
    */
   collaboration?: {
+    organizationId?: string
+  }
+
+  /**
+   * Organization-scoped configuration for Context APIs.
+   *
+   * Currently this is used by `context.insights` methods.
+   *
+   * @beta
+   */
+  context?: {
     organizationId?: string
   }
 }

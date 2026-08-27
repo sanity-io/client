@@ -26,6 +26,7 @@ export {
   isQueryParseError,
   ServerError,
 } from './http/errors'
+export * as Context from './context/types'
 export * from './SanityClient'
 export * from './types'
 
