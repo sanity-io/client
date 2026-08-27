@@ -2,24 +2,31 @@ import {type Context, createClient, type MutationEvent, type SanityDocument} fro
 import {type Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
-describe('client.context format-dependent return types', () => {
-  const client = createClient({resource: {type: 'knowledge-base', id: 'kb123'}})
+describe('client.context return types', () => {
+  const client = createClient({
+    resource: {type: 'knowledge-base', id: 'kb123'},
+  })
   const kb = client.context
 
-  test('outline resolves to the typed shape by default and to a string for text formats', async () => {
-    expectTypeOf(await kb.outline()).toEqualTypeOf<Context.Outline>()
-    expectTypeOf(await kb.outline({format: 'json'})).toEqualTypeOf<Context.Outline>()
-    expectTypeOf(await kb.outline({format: 'markdown'})).toEqualTypeOf<string>()
-    expectTypeOf(await kb.outline({format: 'plain'})).toEqualTypeOf<string>()
-  })
-
-  test('entries.get resolves to the typed shape by default and to a string for text formats', async () => {
-    expectTypeOf(await kb.entries.get({path: 'a/b'})).toEqualTypeOf<Context.EntryDetail>()
-    expectTypeOf(await kb.entries.get({path: 'a/b', format: 'markdown'})).toEqualTypeOf<string>()
+  test('the GROQ read helpers resolve to the published document shapes', async () => {
+    expectTypeOf(await kb.entries.get({path: 'a/b'})).toEqualTypeOf<Context.EntryDoc | null>()
+    expectTypeOf(await kb.entries.list()).toEqualTypeOf<Context.Entry[]>()
+    expectTypeOf(await kb.issues.list()).toEqualTypeOf<Context.IssueDoc[]>()
+    expectTypeOf(await kb.issues.get({issueId: 'i'})).toEqualTypeOf<Context.IssueDoc | null>()
+    expectTypeOf(await kb.instructions.list()).toEqualTypeOf<Context.InstructionDoc[]>()
+    expectTypeOf(await kb.mcpEndpoints.list()).toEqualTypeOf<Context.McpDoc[]>()
+    expectTypeOf(await kb.mcpEndpoints.get({name: 'n'})).toEqualTypeOf<Context.McpDoc | null>()
+    expectTypeOf(
+      await kb.conversations.get({threadId: 't'}),
+    ).toEqualTypeOf<Context.ConversationDoc | null>()
   })
 
   test('sources.delete resolves to void', async () => {
     expectTypeOf(await kb.sources.delete({sourceId: 'source1'})).toEqualTypeOf<void>()
+  })
+
+  test('imports.delete resolves to void', async () => {
+    expectTypeOf(await kb.imports.delete({importId: 'imp1'})).toEqualTypeOf<void>()
   })
 
   test('the file import variant is only valid with file fields', async () => {

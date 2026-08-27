@@ -22,14 +22,19 @@ import {
 
 type Client = SanityClient | ObservableSanityClient
 
-function storeUrl(client: Client, suffix: 'query' | 'listen'): string {
+/** @internal */
+export function _organizationId(client: Client): string {
   const organizationId = client.config().context?.organizationId
 
   if (!organizationId) {
     throw new Error('`context.organizationId` must be configured to query Context documents')
   }
 
-  return `/context/organizations/${encodeURIComponent(organizationId)}/${suffix}`
+  return organizationId
+}
+
+function storeUrl(client: Client, suffix: 'query' | 'listen'): string {
+  return `/context/organizations/${encodeURIComponent(_organizationId(client))}/${suffix}`
 }
 
 /** @internal */

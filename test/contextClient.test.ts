@@ -71,9 +71,15 @@ describe('ContextClient', () => {
     })
     const context = new ContextClient(client, httpRequest)
 
-    await context.knowledgeBases.list({organizationId: TEST_ORG_ID, limit: 5, cursor: 'abc'})
+    await context.knowledgeBases.list({
+      organizationId: TEST_ORG_ID,
+      limit: 5,
+      cursor: 'abc',
+    })
     await context.knowledgeBases.get(TEST_KB_ID)
-    await context.knowledgeBases.edit(TEST_KB_ID, {title: 'Support docs (EU)'})
+    await context.knowledgeBases.edit(TEST_KB_ID, {
+      title: 'Support docs (EU)',
+    })
     const deleted = await context.knowledgeBases.delete(TEST_KB_ID)
 
     expect(httpRequest.mock.calls[0][0].query).toMatchObject({
@@ -92,17 +98,17 @@ describe('ContextClient', () => {
 
   test('scoped methods address the configured knowledge-base resource', async () => {
     httpRequest
-      .mockResolvedValueOnce({data: [], nextCursor: null}) // issues.list
-      .mockResolvedValueOnce({data: [], nextCursor: null}) // entries.list
+      .mockResolvedValueOnce({data: [], nextCursor: null}) // imports.list
+      .mockResolvedValueOnce({jobId: 'job1', status: 'running'}) // jobs.get
 
-    await kbContext.issues.list()
-    await kbContext.entries.list()
+    await kbContext.imports.list()
+    await kbContext.jobs.get({jobId: 'job1'})
 
     expect(httpRequest.mock.calls[0][0].url).toContain(
-      `/context/knowledge-bases/${TEST_KB_ID}/issues`,
+      `/context/knowledge-bases/${TEST_KB_ID}/imports`,
     )
     expect(httpRequest.mock.calls[1][0].url).toContain(
-      `/context/knowledge-bases/${TEST_KB_ID}/entries`,
+      `/context/knowledge-bases/${TEST_KB_ID}/jobs/job1`,
     )
   })
 
@@ -129,7 +135,7 @@ describe('ContextClient', () => {
       }),
       httpRequest,
     )
-    expect(() => wrongResource.issues.list()).toThrow(resourceError)
+    expect(() => wrongResource.imports.list()).toThrow(resourceError)
     expect(httpRequest).not.toHaveBeenCalled()
   })
 
@@ -176,7 +182,9 @@ describe('ContextClient', () => {
     // The PUT rides the client's fetch resolution (so proxy config applies),
     // injected the same way the transport tests inject theirs.
     const uploadFetch = vi.fn().mockResolvedValueOnce(new Response(null, {status: 200}))
-    const uploadClient = createKbClient().withConfig({resolveFetch: () => uploadFetch})
+    const uploadClient = createKbClient().withConfig({
+      resolveFetch: () => uploadFetch,
+    })
     const uploadContext = new ContextClient(uploadClient, httpRequest)
 
     const result = await uploadContext.imports.create({
@@ -207,7 +215,9 @@ describe('ContextClient', () => {
     const uploadFetch = vi
       .fn()
       .mockResolvedValueOnce(new Response(null, {status: 403, statusText: 'Forbidden'}))
-    const uploadClient = createKbClient().withConfig({resolveFetch: () => uploadFetch})
+    const uploadClient = createKbClient().withConfig({
+      resolveFetch: () => uploadFetch,
+    })
     const uploadContext = new ContextClient(uploadClient, httpRequest)
 
     await expect(
@@ -221,27 +231,30 @@ describe('ContextClient', () => {
     expect(httpRequest).toHaveBeenCalledTimes(1)
   })
 
-  test('entry paths are encoded and read endpoints hit their routes', async () => {
-    httpRequest
-      .mockResolvedValueOnce({id: 'e1'}) // entries.get
-      .mockResolvedValueOnce({entries: [], stats: {}}) // outline
-      .mockResolvedValueOnce({
-        content: '',
-        slice: null,
-        sourceId: 's1',
-        totalLines: 1,
-      }) // sources.content
+  test('path parameters are encoded on their way into the URL', async () => {
+    httpRequest.mockResolvedValueOnce({id: 'imp1'})
 
-    await kbContext.entries.get({path: 'billing/refunds', format: 'markdown'})
-    await kbContext.outline()
-    await kbContext.sources.content({sourceId: 's1', startLine: 4, endLine: 10})
+    await kbContext.imports.get({importId: 'imports/../sneaky'})
 
-    expect(httpRequest.mock.calls[0][0].url).toContain('/entries/billing%2Frefunds')
-    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
-      format: 'markdown',
+    expect(httpRequest.mock.calls[0][0].url).toContain('/imports/imports%2F..%2Fsneaky')
+  })
+
+  test('sources.content encodes the sourceId and passes the line range as query params', async () => {
+    httpRequest.mockResolvedValueOnce({
+      content: '',
+      slice: null,
+      sourceId: 's1',
+      totalLines: 1,
     })
-    expect(httpRequest.mock.calls[1][0].url).toContain('/outline')
-    expect(httpRequest.mock.calls[2][0].query).toMatchObject({
+
+    await kbContext.sources.content({
+      sourceId: 's/1',
+      startLine: 4,
+      endLine: 10,
+    })
+
+    expect(httpRequest.mock.calls[0][0].url).toContain('/sources/s%2F1/content')
+    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
       startLine: '4',
       endLine: '10',
     })
@@ -255,6 +268,18 @@ describe('ContextClient', () => {
     expect(httpRequest.mock.calls[0][0]).toMatchObject({
       method: 'DELETE',
       url: expect.stringContaining('/sources/source1'),
+    })
+    expect(result).toBeUndefined()
+  })
+
+  test('imports.delete issues a DELETE and resolves to nothing', async () => {
+    httpRequest.mockResolvedValueOnce(undefined)
+
+    const result = await kbContext.imports.delete({importId: 'imp1'})
+
+    expect(httpRequest.mock.calls[0][0]).toMatchObject({
+      method: 'DELETE',
+      url: expect.stringContaining('/imports/imp1'),
     })
     expect(result).toBeUndefined()
   })

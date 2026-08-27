@@ -5,46 +5,48 @@ import {_observe, _request} from '../data/dataMethods'
 import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, QueryParams, SanityDocument} from '../types'
+import {
+  _listEntries,
+  _listInstructions,
+  _listIssues,
+  _listMcpEndpoints,
+  _readConversation,
+  _readEntry,
+  _readIssue,
+  _readMcpEndpoint,
+} from './reads'
 import {_fetch as _fetchStore, _listen as _listenStore} from './store'
 import type {
   ApplyIssuesParams,
   ApplyIssuesResponse,
-  ActivityResponse,
-  Changes,
-  EntriesResponse,
-  EntryDetail,
-  EntryStatus,
-  ImportDetail,
-  ImportsResponse,
-  Instruction,
-  InstructionsResponse,
-  IssueDetail,
-  IssuesResponse,
-  Job,
-  JobAccepted,
-  Outline,
-  RevisionOutline,
-  RevisionReport,
-  RevisionsResponse,
-  SourceDetail,
-  SourcesResponse,
-  CrawlOptions,
-  CrawlPreviewParams,
-  CrawlPreviewResponse,
+  ConversationDoc,
   CreateImportParams,
   CreateInstructionParams,
+  CreateInstructionResponse,
   CreateKnowledgeBaseParams,
   DismissIssueResponse,
-  EditCrawlOptionsParams,
   EditInstructionParams,
   EditKnowledgeBaseParams,
+  Entry,
+  EntryDoc,
+  ImportDetail,
   ImportDownloadResponse,
+  ImportsResponse,
+  Instruction,
+  InstructionDoc,
+  IssueDoc,
+  Job,
+  JobAccepted,
   KnowledgeBase,
   KnowledgeBasesResponse,
+  McpDoc,
+  RebuildEntryResponse,
   ReopenIssueResponse,
   ResolveIssueParams,
   ResolveIssueResponse,
   SourceContentResponse,
+  SourceDetail,
+  SourcesResponse,
   StagedUpload,
 } from './types'
 import type {
@@ -53,7 +55,6 @@ import type {
   ContextRequestOptions,
   Conversation,
   CreateFileImportParams,
-  RenderFormat,
   RequestOptions,
   SaveConversationParams,
 } from './types'
@@ -301,10 +302,10 @@ export class ContextClient {
   }
 
   /**
-   * Conversation telemetry: the API-owned writes. `threadId` identifies the
-   * conversation within the organization — reuse means the same
-   * conversation. Reads go through {@link fetch} and {@link listen} with
-   * GROQ (`_type == "sanity.context.conversation"`).
+   * Conversation telemetry. `threadId` identifies the conversation within
+   * the organization — reuse means the same conversation. Beyond the canned
+   * `get`, reads go through {@link fetch} and {@link listen} with GROQ
+   * (`_type == "sanity.context.conversation"`).
    *
    * Requires `context.organizationId` in the client configuration.
    */
@@ -343,6 +344,19 @@ export class ContextClient {
         ...options,
       })
     },
+    /**
+     * One recorded conversation by its thread id, or `null` when the thread
+     * was never recorded. Runs:
+     *
+     * `*[_type == "sanity.context.conversation" && organizationId == $org && threadId == $threadId][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (
+      params: {threadId: string},
+      options?: ContextRequestOptions,
+    ): Promise<ConversationDoc | null> =>
+      _readConversation(this.#client, this.#httpRequest, params.threadId, options),
   }
 
   /**
@@ -362,26 +376,6 @@ export class ContextClient {
   /** Run an incremental refresh: re-check sources and apply what changed. */
   refresh(options?: RequestOptions): Promise<{jobId: string; started: boolean}> {
     return this.#request('/refresh', {method: 'POST', ...options})
-  }
-
-  /**
-   * The built outline: every entry, ordered, with stats. The default
-   * `json` format resolves to {@link Outline}; `markdown` and
-   * `plain` resolve to a string.
-   */
-  outline<const F extends RenderFormat = 'json'>(
-    params?: {format?: F},
-    options?: RequestOptions,
-  ): Promise<F extends 'json' ? Outline : string> {
-    return this.#request('/outline', {
-      query: params?.format ? {format: params.format} : {},
-      ...options,
-    })
-  }
-
-  /** What changed in the corpus since the last build. */
-  changes(options?: RequestOptions): Promise<Changes> {
-    return this.#request('/changes', options)
   }
 
   /** Imports: feed content into the configured knowledge base. */
@@ -419,13 +413,6 @@ export class ContextClient {
         ...options,
       })
     },
-    /** Preview which pages a crawl would ingest, before committing to it. */
-    crawlPreview: (params: CrawlPreviewParams, options?: RequestOptions) =>
-      this.#request<CrawlPreviewResponse>('/imports/crawl-preview', {
-        method: 'POST',
-        body: params,
-        ...options,
-      }),
   }
 
   /** Jobs: poll async work (builds, imports) to a terminal state. */
@@ -434,14 +421,48 @@ export class ContextClient {
       this.#request<Job>(`/jobs/${encodeURIComponent(params.jobId)}`, options),
   }
 
-  /** Issues: findings from builds awaiting triage. */
+  /**
+   * Issues: findings from builds awaiting triage. Reads are canned GROQ
+   * queries against the organization's document store; for anything more,
+   * use {@link fetch}. Reads require `context.organizationId` alongside the
+   * knowledge-base `resource` in the client configuration.
+   */
   issues = {
-    list: (params?: {status?: 'open' | 'accepted' | 'rejected'} & ListOptions) =>
-      this.#list<IssuesResponse>('/issues', params, {
-        status: params?.status,
-      }),
-    get: (params: {issueId: string}, options?: RequestOptions) =>
-      this.#request<IssueDetail>(`/issues/${encodeURIComponent(params.issueId)}`, options),
+    /**
+     * Every issue on the knowledge base, oldest first, optionally narrowed
+     * to one status. Drains keyset pages internally and resolves with the
+     * complete set. Runs:
+     *
+     * `*[_type == "sanity.context.issue" && knowledgeBaseId == $kb && status == $status] | order(_createdAt asc, _id asc)`
+     *
+     * (the status clause only when given). For anything more, use {@link fetch}.
+     */
+    list: (
+      params?: {status?: 'open' | 'accepted' | 'rejected'},
+      options?: ContextRequestOptions,
+    ): Promise<IssueDoc[]> =>
+      _listIssues(
+        this.#client,
+        this.#httpRequest,
+        _resolveKnowledgeBaseId(this.#client),
+        params?.status,
+        options,
+      ),
+    /**
+     * One issue by its document id, or `null` when it does not exist. Runs:
+     *
+     * `*[_type == "sanity.context.issue" && knowledgeBaseId == $kb && _id == $id][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (params: {issueId: string}, options?: ContextRequestOptions): Promise<IssueDoc | null> =>
+      _readIssue(
+        this.#client,
+        this.#httpRequest,
+        _resolveKnowledgeBaseId(this.#client),
+        params.issueId,
+        options,
+      ),
     /** Resolve a conflict issue. Mints the standing instruction, same as the dashboard. */
     resolve: (params: {issueId: string} & ResolveIssueParams, options?: RequestOptions) => {
       const {issueId, ...body} = params
@@ -472,13 +493,32 @@ export class ContextClient {
 
   /** Instructions: standing decisions that steer every build. */
   instructions = {
-    create: (params: CreateInstructionParams, options?: RequestOptions) =>
-      this.#request<Instruction>('/instructions', {
+    create: (
+      params: CreateInstructionParams,
+      options?: RequestOptions,
+    ): Promise<CreateInstructionResponse> =>
+      this.#request<CreateInstructionResponse>('/instructions', {
         method: 'POST',
         body: params,
         ...options,
       }),
-    list: (params?: ListOptions) => this.#list<InstructionsResponse>('/instructions', params),
+    /**
+     * Every current-schema instruction on the knowledge base, oldest first.
+     * Drains keyset pages internally and resolves with the complete set.
+     * Runs:
+     *
+     * `*[_type == "sanity.context.instruction" && knowledgeBaseId == $kb && schemaVersion == 1] | order(_createdAt asc, _id asc)`
+     *
+     * For anything more, use {@link fetch}. Requires `context.organizationId`
+     * alongside the knowledge-base `resource` in the client configuration.
+     */
+    list: (options?: ContextRequestOptions): Promise<InstructionDoc[]> =>
+      _listInstructions(
+        this.#client,
+        this.#httpRequest,
+        _resolveKnowledgeBaseId(this.#client),
+        options,
+      ),
     edit: (params: {instructionId: string} & EditInstructionParams, options?: RequestOptions) => {
       const {instructionId, ...body} = params
       return this.#request<Instruction>(`/instructions/${encodeURIComponent(instructionId)}`, {
@@ -495,41 +535,76 @@ export class ContextClient {
     },
   }
 
-  /** Entries: the built outline, one entry per node. */
+  /**
+   * Entries: the built outline, one entry per node. Reads are canned GROQ
+   * queries against the organization's document store; for anything more,
+   * use {@link fetch}. Requires `context.organizationId` alongside the
+   * knowledge-base `resource` in the client configuration.
+   */
   entries = {
-    /** List entries, optionally filtered by status or searched (`q`). */
-    list: (
-      params?: {
-        status?: EntryStatus
-        q?: string
-        mode?: 'keyword' | 'hybrid'
-        include?: 'metadata' | 'body'
-        paths?: string
-      } & ListOptions,
-    ) =>
-      this.#list<EntriesResponse>('/entries', params, {
-        status: params?.status,
-        q: params?.q,
-        mode: params?.mode,
-        include: params?.include,
-        paths: params?.paths,
-      }),
     /**
-     * One entry with its full body, by outline path (e.g. `billing/refunds`).
-     * The default `json` format resolves to {@link EntryDetail};
-     * `markdown` and `plain` resolve to a string.
+     * Every entry, path-ordered, as a metadata view (`_id`, `path`,
+     * `title`, `tldr`, `status`) with bodies excluded. Drains keyset pages
+     * internally and resolves with the complete set. Runs:
+     *
+     * `*[_type == "sanity.context.entry" && knowledgeBaseId == $kb && path > $after] | order(path asc) [0...200] {_id, path, title, tldr, status}`
+     *
+     * For bodies, use `entries.get` or {@link fetch}.
      */
-    get: <const F extends RenderFormat = 'json'>(
-      params: {path: string; format?: F},
-      options?: RequestOptions,
-    ) =>
-      this.#request<F extends 'json' ? EntryDetail : string>(
-        `/entries/${encodeURIComponent(params.path)}`,
-        {
-          query: params.format ? {format: params.format} : {},
-          ...options,
-        },
+    list: (options?: ContextRequestOptions): Promise<Entry[]> =>
+      _listEntries(this.#client, this.#httpRequest, _resolveKnowledgeBaseId(this.#client), options),
+    /**
+     * One entry with its full body and citations, by outline path (e.g.
+     * `billing/refunds`), or `null` when no entry sits at that path. Runs:
+     *
+     * `*[_type == "sanity.context.entry" && knowledgeBaseId == $kb && path == $path][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (params: {path: string}, options?: ContextRequestOptions): Promise<EntryDoc | null> =>
+      _readEntry(
+        this.#client,
+        this.#httpRequest,
+        _resolveKnowledgeBaseId(this.#client),
+        params.path,
+        options,
       ),
+    /**
+     * Rebuild one entry from its already-placed sources, by outline path.
+     * Poll the returned job with {@link jobs}; `affectedEntries` lists every
+     * entry the rebuild touches.
+     */
+    rebuild: (params: {path: string}, options?: RequestOptions): Promise<RebuildEntryResponse> =>
+      this.#request<RebuildEntryResponse>(`/entries/${encodeURIComponent(params.path)}/rebuild`, {
+        method: 'POST',
+        ...options,
+      }),
+  }
+
+  /**
+   * MCP endpoint configurations, org-owned documents read with canned GROQ
+   * queries. Requires `context.organizationId` in the client configuration.
+   */
+  mcpEndpoints = {
+    /**
+     * The organization's MCP endpoint configurations, oldest first. Runs:
+     *
+     * `*[_type == "sanity.context.mcp" && organizationId == $org] | order(_createdAt asc, _id asc) [0...500]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    list: (options?: ContextRequestOptions): Promise<McpDoc[]> =>
+      _listMcpEndpoints(this.#client, this.#httpRequest, options),
+    /**
+     * One MCP endpoint configuration by its URL name, or `null` when none
+     * carries that name. Runs:
+     *
+     * `*[_type == "sanity.context.mcp" && organizationId == $org && name == $name][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (params: {name: string}, options?: ContextRequestOptions): Promise<McpDoc | null> =>
+      _readMcpEndpoint(this.#client, this.#httpRequest, params.name, options),
   }
 
   /** Sources: the distilled units builds cite. */
@@ -562,43 +637,13 @@ export class ContextClient {
       })
     },
   }
-
-  /** The audit feed: who did what, when. */
-  activity = {
-    list: (params?: ListOptions) => this.#list<ActivityResponse>('/activity', params),
-  }
-
-  /** Revisions: one per build, with an accounting report per revision. */
-  revisions = {
-    list: (params?: ListOptions) => this.#list<RevisionsResponse>('/revisions', params),
-    report: (params: {revisionId: string}, options?: RequestOptions) =>
-      this.#request<RevisionReport>(
-        `/revisions/${encodeURIComponent(params.revisionId)}/report`,
-        options,
-      ),
-    /** The outline as it was at a past build revision. */
-    outline: (params: {revisionId: string}, options?: RequestOptions) =>
-      this.#request<RevisionOutline>(
-        `/revisions/${encodeURIComponent(params.revisionId)}/outline`,
-        options,
-      ),
-  }
-
-  /** Crawl options for the configured knowledge base's web source. */
-  crawlOptions = {
-    edit: (params: EditCrawlOptionsParams, options?: RequestOptions) =>
-      this.#request<CrawlOptions>('/crawl-options', {
-        method: 'PATCH',
-        body: params,
-        ...options,
-      }),
-  }
 }
 
 /**
- * Observable counterpart of {@link ContextClient}. Collection-level methods
- * only; knowledge-base scoped operations are promise-based, so use the
- * promise client (`client.context`) for those.
+ * Observable counterpart of {@link ContextClient}. Collection-level
+ * methods and the GROQ-backed reads; knowledge-base scoped write
+ * operations are promise-based, so use the promise client
+ * (`client.context`) for those.
  *
  * @beta
  */
@@ -706,10 +751,10 @@ export class ObservableContextClient {
   }
 
   /**
-   * Conversation telemetry: the API-owned writes. `threadId` identifies the
-   * conversation within the organization — reuse means the same
-   * conversation. Reads go through {@link fetch} and {@link listen} with
-   * GROQ (`_type == "sanity.context.conversation"`).
+   * Conversation telemetry. `threadId` identifies the conversation within
+   * the organization — reuse means the same conversation. Beyond the canned
+   * `get`, reads go through {@link fetch} and {@link listen} with GROQ
+   * (`_type == "sanity.context.conversation"`).
    *
    * Requires `context.organizationId` in the client configuration.
    */
@@ -754,5 +799,193 @@ export class ObservableContextClient {
         }),
       )
     },
+    /**
+     * One recorded conversation by its thread id, or `null` when the thread
+     * was never recorded. Runs:
+     *
+     * `*[_type == "sanity.context.conversation" && organizationId == $org && threadId == $threadId][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (
+      params: {threadId: string},
+      options?: ContextRequestOptions,
+    ): Observable<ConversationDoc | null> =>
+      _observe(options?.signal, (signal) =>
+        _readConversation(this.#client, this.#httpRequest, params.threadId, {
+          ...options,
+          signal,
+        }),
+      ),
+  }
+
+  /**
+   * Entries: the built outline, one entry per node. Reads are canned GROQ
+   * queries against the organization's document store; for anything more,
+   * use {@link fetch}. Requires `context.organizationId` alongside the
+   * knowledge-base `resource` in the client configuration.
+   */
+  entries = {
+    /**
+     * Every entry, path-ordered, as a metadata view (`_id`, `path`,
+     * `title`, `tldr`, `status`) with bodies excluded. Drains keyset pages
+     * internally and emits the complete set. Runs:
+     *
+     * `*[_type == "sanity.context.entry" && knowledgeBaseId == $kb && path > $after] | order(path asc) [0...200] {_id, path, title, tldr, status}`
+     *
+     * For bodies, use `entries.get` or {@link fetch}.
+     */
+    list: (options?: ContextRequestOptions): Observable<Entry[]> =>
+      _observe(options?.signal, (signal) =>
+        _listEntries(this.#client, this.#httpRequest, _resolveKnowledgeBaseId(this.#client), {
+          ...options,
+          signal,
+        }),
+      ),
+    /**
+     * One entry with its full body and citations, by outline path (e.g.
+     * `billing/refunds`), or `null` when no entry sits at that path. Runs:
+     *
+     * `*[_type == "sanity.context.entry" && knowledgeBaseId == $kb && path == $path][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (params: {path: string}, options?: ContextRequestOptions): Observable<EntryDoc | null> =>
+      _observe(options?.signal, (signal) =>
+        _readEntry(
+          this.#client,
+          this.#httpRequest,
+          _resolveKnowledgeBaseId(this.#client),
+          params.path,
+          {...options, signal},
+        ),
+      ),
+    /**
+     * Rebuild one entry from its already-placed sources, by outline path.
+     * Poll the returned job with the promise client's `jobs`;
+     * `affectedEntries` lists every entry the rebuild touches.
+     */
+    rebuild: (params: {path: string}, options?: RequestOptions): Observable<RebuildEntryResponse> =>
+      _observe(options?.signal, (signal) =>
+        _request<RebuildEntryResponse>(this.#client, this.#httpRequest, {
+          url: _knowledgeBaseUrl(
+            _resolveKnowledgeBaseId(this.#client),
+            `/entries/${encodeURIComponent(params.path)}/rebuild`,
+          ),
+          method: 'POST',
+          tag: options?.tag,
+          signal,
+        }),
+      ),
+  }
+
+  /**
+   * Issues: findings from builds awaiting triage. Reads are canned GROQ
+   * queries against the organization's document store; for anything more,
+   * use {@link fetch}. Requires `context.organizationId` alongside the
+   * knowledge-base `resource` in the client configuration.
+   */
+  issues = {
+    /**
+     * Every issue on the knowledge base, oldest first, optionally narrowed
+     * to one status. Drains keyset pages internally and emits the complete
+     * set. Runs:
+     *
+     * `*[_type == "sanity.context.issue" && knowledgeBaseId == $kb && status == $status] | order(_createdAt asc, _id asc)`
+     *
+     * (the status clause only when given). For anything more, use {@link fetch}.
+     */
+    list: (
+      params?: {status?: 'open' | 'accepted' | 'rejected'},
+      options?: ContextRequestOptions,
+    ): Observable<IssueDoc[]> =>
+      _observe(options?.signal, (signal) =>
+        _listIssues(
+          this.#client,
+          this.#httpRequest,
+          _resolveKnowledgeBaseId(this.#client),
+          params?.status,
+          {...options, signal},
+        ),
+      ),
+    /**
+     * One issue by its document id, or `null` when it does not exist. Runs:
+     *
+     * `*[_type == "sanity.context.issue" && knowledgeBaseId == $kb && _id == $id][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (
+      params: {issueId: string},
+      options?: ContextRequestOptions,
+    ): Observable<IssueDoc | null> =>
+      _observe(options?.signal, (signal) =>
+        _readIssue(
+          this.#client,
+          this.#httpRequest,
+          _resolveKnowledgeBaseId(this.#client),
+          params.issueId,
+          {...options, signal},
+        ),
+      ),
+  }
+
+  /**
+   * Instructions: standing decisions that steer every build. The canned
+   * GROQ read; writes are promise-based on `client.context`.
+   */
+  instructions = {
+    /**
+     * Every current-schema instruction on the knowledge base, oldest first.
+     * Drains keyset pages internally and emits the complete set. Runs:
+     *
+     * `*[_type == "sanity.context.instruction" && knowledgeBaseId == $kb && schemaVersion == 1] | order(_createdAt asc, _id asc)`
+     *
+     * For anything more, use {@link fetch}. Requires `context.organizationId`
+     * alongside the knowledge-base `resource` in the client configuration.
+     */
+    list: (options?: ContextRequestOptions): Observable<InstructionDoc[]> =>
+      _observe(options?.signal, (signal) =>
+        _listInstructions(this.#client, this.#httpRequest, _resolveKnowledgeBaseId(this.#client), {
+          ...options,
+          signal,
+        }),
+      ),
+  }
+
+  /**
+   * MCP endpoint configurations, org-owned documents read with canned GROQ
+   * queries. Requires `context.organizationId` in the client configuration.
+   */
+  mcpEndpoints = {
+    /**
+     * The organization's MCP endpoint configurations, oldest first. Runs:
+     *
+     * `*[_type == "sanity.context.mcp" && organizationId == $org] | order(_createdAt asc, _id asc) [0...500]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    list: (options?: ContextRequestOptions): Observable<McpDoc[]> =>
+      _observe(options?.signal, (signal) =>
+        _listMcpEndpoints(this.#client, this.#httpRequest, {
+          ...options,
+          signal,
+        }),
+      ),
+    /**
+     * One MCP endpoint configuration by its URL name, or `null` when none
+     * carries that name. Runs:
+     *
+     * `*[_type == "sanity.context.mcp" && organizationId == $org && name == $name][0]`
+     *
+     * For anything more, use {@link fetch}.
+     */
+    get: (params: {name: string}, options?: ContextRequestOptions): Observable<McpDoc | null> =>
+      _observe(options?.signal, (signal) =>
+        _readMcpEndpoint(this.#client, this.#httpRequest, params.name, {
+          ...options,
+          signal,
+        }),
+      ),
   }
 }
