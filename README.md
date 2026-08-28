@@ -2285,6 +2285,19 @@ const client = createClient({
 })
 ```
 
+For browser usage, configure the client with a project ID so requests use the CORS-enabled project
+API host. Enable credentials and include the browser's origin in
+[your project's CORS settings](https://www.sanity.io/docs/content-lake/browser-security-and-cors):
+
+```js
+const browserClient = createClient({
+  projectId: 'yourProjectId',
+  apiVersion: '2025-03-25',
+  useCdn: false,
+  withCredentials: true,
+})
+```
+
 #### Querying assets
 
 Use `client.fetch()` to query assets in your Media Library using GROQ:
@@ -2341,6 +2354,10 @@ await client
 
 For video assets, use the specialized `getPlaybackInfo()` method to retrieve streaming URLs:
 
+> [!NOTE]
+>
+> See [Configuration](#configuration) for authentication and browser CORS requirements.
+
 ```js
 // Basic usage with video asset ID
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
@@ -2361,24 +2378,6 @@ const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
 
 // Using a Media Library asset reference
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
-  _ref: 'media-library:mlZxz9rvqf76:video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
-})
-```
-
-To call this API from a browser, use a project-configured client so the request is sent to the project
-API host (`<projectId>.api.sanity.io`), which supports CORS. Pass the existing Media Library asset
-reference to `getPlaybackInfo`, and make sure the browser's origin is included in
-[your project's CORS settings](https://www.sanity.io/docs/content-lake/browser-security-and-cors):
-
-```js
-const browserClient = createClient({
-  projectId: 'yourProjectId',
-  apiVersion: '2025-03-25',
-  useCdn: false,
-  withCredentials: true,
-})
-
-const playbackInfo = await browserClient.mediaLibrary.video.getPlaybackInfo({
   _ref: 'media-library:mlZxz9rvqf76:video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
 })
 ```
