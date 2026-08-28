@@ -125,9 +125,9 @@
     "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@vercel/stega": "1.1.0",
-    "@vitest/browser": "^4.1.10",
-    "@vitest/browser-playwright": "^4.1.10",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/browser": "^4.1.11",
+    "@vitest/browser-playwright": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.11",
     "eventsource-encoder": "^1.0.2",
     "happy-dom": "^20.11.12",
     "json-diff": "^1.0.6",
@@ -142,7 +142,7 @@
     "rolldown": "^1.2.6",
     "typescript": "7.0.2",
     "undici": "^7.29.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "browserslist": "extends @sanity/browserslist-config",
   "engines": {
