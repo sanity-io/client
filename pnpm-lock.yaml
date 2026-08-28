@@ -49,13 +49,13 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
       '@vitest/browser':
-        specifier: ^4.1.10
+        specifier: ^4.1.11
         version: 4.1.11(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))(vitest@4.1.11)
       '@vitest/browser-playwright':
-        specifier: ^4.1.10
+        specifier: ^4.1.11
         version: 4.1.11(playwright@1.62.1)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))(vitest@4.1.11)
       '@vitest/coverage-v8':
-        specifier: ^4.1.10
+        specifier: ^4.1.11
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
       eventsource-encoder:
         specifier: ^1.0.2
@@ -100,7 +100,7 @@ importers:
         specifier: ^7.29.0
         version: 7.29.0
       vitest:
-        specifier: ^4.1.10
+        specifier: ^4.1.11
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@22.20.1)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.12)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   tools/typedoc:
