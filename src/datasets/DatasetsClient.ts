@@ -13,7 +13,10 @@ import type {
 } from '../types'
 import * as validate from '../validators'
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class ObservableDatasetsClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
@@ -107,7 +110,10 @@ export class ObservableDatasetsClient {
   }
 }
 
-/** @internal */
+/**
+ * @internal
+ * @inline
+ */
 export class DatasetsClient {
   #client: SanityClient
   #httpRequest: HttpRequest
