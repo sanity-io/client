@@ -9,4 +9,4 @@ allowBuilds:
 # pnpm holds back releases younger than its minimum release age. Entries here have been
 # reviewed and are allowed through.
 minimumReleaseAgeExclude:
-  - get-it@9.5.0
+  - get-it@9.5.2
