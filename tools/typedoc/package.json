@@ -4,7 +4,7 @@
   "private": true,
   "description": "Isolated TypeDoc install so it can run against a TypeScript that still ships the compiler API",
   "devDependencies": {
-    "typedoc": "^0.28.16",
+    "typedoc": "^0.28.20",
     "typescript": "6.0.3"
   }
 }
