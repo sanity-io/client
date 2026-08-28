@@ -2359,15 +2359,15 @@ const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
   },
 )
 
-// Using Global Dataset Reference (GDR)
+// Using a Media Library asset reference
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
   _ref: 'media-library:mlZxz9rvqf76:video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
 })
 ```
 
 To call this API from a browser, use a project-configured client so the request is sent to the project
-API host (`<projectId>.api.sanity.io`), which supports CORS. Pass a Global Dataset Reference (GDR) so
-the client can determine the Media Library ID, and make sure the browser's origin is included in
+API host (`<projectId>.api.sanity.io`), which supports CORS. Pass the existing Media Library asset
+reference to `getPlaybackInfo`, and make sure the browser's origin is included in
 [your project's CORS settings](https://www.sanity.io/docs/content-lake/browser-security-and-cors):
 
 ```js
