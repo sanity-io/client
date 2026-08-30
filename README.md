@@ -2260,16 +2260,41 @@ When you configure the client with a Media Library resource, you can use familia
 
 #### Configuration
 
+> [!NOTE]
+>
+> Requires API version `2025-03-25` or later.
+
+Getting playback information requires authentication. Use a token when calling this API from
+server-side code. In a browser, use `withCredentials: true` instead of exposing a token in client-side
+code.
+
+Media Library resource clients send requests to the global API host (`api.sanity.io`), which does not
+support CORS. This configuration therefore only works outside the browser:
+
 ```js
 import {createClient} from '@sanity/client'
 
 const client = createClient({
-  token: 'valid-token',
+  token: process.env.SANITY_API_READ_TOKEN,
+  apiVersion: '2025-03-25',
   useCdn: false,
   resource: {
     type: 'media-library',
     id: 'your-media-library-id',
   },
+})
+```
+
+For browser usage, configure the client with a project ID so requests use the CORS-enabled project
+API host. Enable credentials and include the browser's origin in
+[your project's CORS settings](https://www.sanity.io/docs/content-lake/browser-security-and-cors):
+
+```js
+const browserClient = createClient({
+  projectId: 'yourProjectId',
+  apiVersion: '2025-03-25',
+  useCdn: false,
+  withCredentials: true,
 })
 ```
 
@@ -2329,6 +2354,10 @@ await client
 
 For video assets, use the specialized `getPlaybackInfo()` method to retrieve streaming URLs:
 
+> [!NOTE]
+>
+> See [Configuration](#configuration) for authentication and browser CORS requirements.
+
 ```js
 // Basic usage with video asset ID
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
@@ -2347,9 +2376,9 @@ const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo(
   },
 )
 
-// Using Global Dataset Reference (GDR)
+// Using a Media Library asset reference
 const playbackInfo = await client.mediaLibrary.video.getPlaybackInfo({
-  _ref: 'media-library:mlZxz9rvqf76:30rh9U3GDEK3ToiId1Zje4uvalC',
+  _ref: 'media-library:mlZxz9rvqf76:video-30rh9U3GDEK3ToiId1Zje4uvalC-mp4',
 })
 ```
 
