@@ -986,6 +986,24 @@
           "classificationError": {
             "nullable": true,
             "type": "string"
+          },
+          "sharing": {
+            "default": null,
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "metrics": {
+                "type": "boolean"
+              },
+              "conversations": {
+                "type": "boolean"
+              },
+              "contact": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "description": "ConversationSharing"
           }
         },
         "required": [
@@ -1006,7 +1024,8 @@
           "tokenUsage",
           "coreMetrics",
           "classifiedAt",
-          "classificationError"
+          "classificationError",
+          "sharing"
         ],
         "description": "A `sanity.context.conversation` document, one agent conversation transcript with its classification, stored in the organization store. Not returned by any endpoint raw; published so GROQ reads can be typed. Write through the conversation ingest and classify endpoints, never with a raw client."
       },
@@ -1373,6 +1392,23 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "createdBy": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "displayName": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": ["id", "displayName"],
+                            "additionalProperties": false,
+                            "description": "Actor"
+                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time",
@@ -1409,6 +1445,7 @@
                           "refreshInFlight",
                           "openIssueCount",
                           "instructionCount",
+                          "createdBy",
                           "createdAt",
                           "updatedAt"
                         ],
@@ -1674,6 +1711,23 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "createdBy": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "displayName"],
+                      "additionalProperties": false,
+                      "description": "Actor"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1710,6 +1764,7 @@
                     "refreshInFlight",
                     "openIssueCount",
                     "instructionCount",
+                    "createdBy",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -1942,6 +1997,23 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "createdBy": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "displayName"],
+                      "additionalProperties": false,
+                      "description": "Actor"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -1978,6 +2050,7 @@
                     "refreshInFlight",
                     "openIssueCount",
                     "instructionCount",
+                    "createdBy",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -2237,6 +2310,23 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "createdBy": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "displayName"],
+                      "additionalProperties": false,
+                      "description": "Actor"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -2273,6 +2363,7 @@
                     "refreshInFlight",
                     "openIssueCount",
                     "instructionCount",
+                    "createdBy",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -4800,12 +4891,524 @@
         }
       }
     },
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}": {
+      "post": {
+        "operationId": "serveMcpEndpoint",
+        "summary": "Connect to an MCP endpoint",
+        "tags": ["mcp"],
+        "description": "The MCP serving surface (streamable HTTP, JSON-RPC 2.0). Agents POST MCP protocol messages here; the endpoint name in the path is the immutable URL identifier. Query params are transient runtime overrides of the endpoint configuration. Errors are JSON-RPC error objects, not the REST error envelope.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "tools",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "instructions",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "perspective",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "embeddings",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "groqFilter",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["knowledge_base", "groq"]
+            },
+            "in": "query",
+            "name": "mode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "knowledgeBases",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "linkResolver",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "workspace",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpointName",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/initial-context": {
+      "get": {
+        "operationId": "getMcpEndpointInitialContext",
+        "summary": "Get an MCP endpoint's initial context as text",
+        "tags": ["mcp"],
+        "description": "The same text the `initial_context` MCP tool returns, for direct injection into system prompts. `heading_offset` shifts markdown headings down N levels (default 1, so `#` becomes `##`).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "tools",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "instructions",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "perspective",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "embeddings",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "groqFilter",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["knowledge_base", "groq"]
+            },
+            "in": "query",
+            "name": "mode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "knowledgeBases",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "linkResolver",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "workspace",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "heading_offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpointName",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/status": {
+      "get": {
+        "operationId": "getMcpEndpointStatus",
+        "summary": "Pre-flight checks for an MCP endpoint",
+        "tags": ["mcp"],
+        "description": "Verifies the endpoint can serve a connection with this credential: Studio deployment and schema (GROQ mode), semantic search readiness, and knowledge-base resolution — reporting denied and missing knowledge bases distinctly. Always 200 with per-check verdicts; `requiredOk` is mode-aware.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "tools",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "instructions",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "perspective",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "embeddings",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "groqFilter",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["knowledge_base", "groq"]
+            },
+            "in": "query",
+            "name": "mode",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "knowledgeBases",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "linkResolver",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "workspace",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpointName",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requiredOk": {
+                      "type": "boolean"
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "studio": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true]
+                                },
+                                "workspace": {
+                                  "type": "string"
+                                },
+                                "workspaceTitle": {
+                                  "type": "string"
+                                },
+                                "workspaceAutoSelected": {
+                                  "type": "boolean"
+                                },
+                                "availableWorkspaces": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["name", "title"],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "ok",
+                                "workspace",
+                                "workspaceTitle",
+                                "workspaceAutoSelected",
+                                "availableWorkspaces"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false]
+                                },
+                                "error": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["ok", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "semanticSearch": {
+                          "nullable": true,
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "status": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "withinUsageLimit": {
+                                  "nullable": true,
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["ok", "enabled", "status", "withinUsageLimit"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false]
+                                },
+                                "error": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["ok", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "schema": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true]
+                                },
+                                "documentTypes": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["ok", "documentTypes"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false]
+                                },
+                                "error": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["ok", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "knowledgeBases": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true]
+                                },
+                                "resolved": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": ["ok", "resolved", "missing"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false]
+                                },
+                                "resolved": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "denied": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "error": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["ok", "resolved", "missing", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["studio", "semanticSearch", "schema", "knowledgeBases"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["requiredOk", "checks"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}": {
       "put": {
         "operationId": "saveConversation",
         "summary": "Record a conversation",
         "tags": ["conversations"],
-        "description": "Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata` and model fields only overwrite when present. Last write per thread wins — retries are safe.",
+        "description": "Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata`, `sharing`, and model fields only overwrite when present. Last write per thread wins — retries are safe. `sharing` records your opt-in to share telemetry with Sanity: metadata-only metrics, or full transcripts.",
         "requestBody": {
           "required": true,
           "content": {
@@ -4885,6 +5488,22 @@
                       ]
                     },
                     "description": "ConversationMetadata"
+                  },
+                  "sharing": {
+                    "type": "object",
+                    "properties": {
+                      "metrics": {
+                        "type": "boolean"
+                      },
+                      "conversations": {
+                        "type": "boolean"
+                      },
+                      "contact": {
+                        "type": "string",
+                        "maxLength": 200
+                      }
+                    },
+                    "description": "ConversationSharing"
                   }
                 },
                 "required": ["messages"],
@@ -5039,6 +5658,24 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "sharing": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "metrics": {
+                          "type": "boolean"
+                        },
+                        "conversations": {
+                          "type": "boolean"
+                        },
+                        "contact": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "ConversationSharing"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -5063,6 +5700,7 @@
                     "coreMetrics",
                     "classifiedAt",
                     "classificationError",
+                    "sharing",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -5265,6 +5903,24 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "sharing": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "metrics": {
+                          "type": "boolean"
+                        },
+                        "conversations": {
+                          "type": "boolean"
+                        },
+                        "contact": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "ConversationSharing"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time",
@@ -5289,6 +5945,7 @@
                     "coreMetrics",
                     "classifiedAt",
                     "classificationError",
+                    "sharing",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -5324,6 +5981,10 @@
     {
       "name": "instructions",
       "description": "Standing rules steering every build"
+    },
+    {
+      "name": "mcp",
+      "description": "MCP endpoint configurations agents connect through"
     },
     {
       "name": "conversations",
