@@ -635,7 +635,7 @@ export type DatasetAclMode = 'public' | 'private' | 'custom'
 /** @public */
 export type DatasetCreateOptions = {
   aclMode?: DatasetAclMode
-  description?: string
+  description?: string | null
   embeddings?: {
     enabled: boolean
     projection?: string
@@ -645,7 +645,7 @@ export type DatasetCreateOptions = {
 /** @public */
 export type DatasetEditOptions = {
   aclMode?: DatasetAclMode
-  description?: string
+  description?: string | null
 }
 
 /** @public */
@@ -662,12 +662,16 @@ export type EmbeddingsSettingsBody = {
 }
 
 /** @public */
-export type DatasetResponse = {datasetName: string; aclMode: DatasetAclMode; description: string}
+export type DatasetResponse = {
+  datasetName: string
+  aclMode: DatasetAclMode
+  description: string | null
+}
 /** @public */
 export type DatasetsResponse = {
   name: string
   aclMode: DatasetAclMode
-  description: string
+  description?: string
   createdAt: string
   createdByUserId: string
   addonFor: string | null
