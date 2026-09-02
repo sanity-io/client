@@ -67,7 +67,13 @@ export default defineConfig({
     ...sharedConfig,
     exclude: [...baseExclude, ...browserOnlyExclude],
     alias: sourceAlias('node'),
-    typecheck: {enabled: true},
+    typecheck: {
+      enabled: true,
+      // `typecheck.exclude` does not inherit `test.exclude`, and the packaging
+      // suite's type tests resolve `@sanity/client` to `dist/`, so they only
+      // run via `test:packaging`.
+      exclude: [...configDefaults.typecheck.exclude, 'test/packaging/**'],
+    },
     coverage: coverageConfig,
   },
 })
