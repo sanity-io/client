@@ -1,5 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {readFile} from 'node:fs/promises'
+import {createRequire} from 'node:module'
+import {dirname, join} from 'node:path'
 
 import createLegacyClient from '@sanity/client'
 import {
@@ -53,6 +56,22 @@ test('top-level imports', async (t) => {
     )
   })
   // */
+})
+
+test('the built declaration files declare the global SanityQueries registry', async (t) => {
+  // API Extractor drops `declare global` blocks from the rollups, and
+  // `scripts/append-global-types.mjs` puts the block back after `pkg build`.
+  // Every rollup that inlines the exported interface has to carry it, or the
+  // `extends globalThis.SanityQueries` clause refers to a global nothing declares.
+  const require = createRequire(import.meta.url)
+  const distDir = dirname(require.resolve('@sanity/client'))
+  for (const entry of ['index.d.ts', 'stega.d.ts']) {
+    await t.test(entry, async () => {
+      const dts = await readFile(join(distDir, entry), 'utf8')
+      assert.match(dts, /interface SanityQueries(?:_\d+)? extends globalThis\.SanityQueries \{\}/)
+      assert.match(dts, /declare global \{\s*(?:\/\*\*[\s\S]*?\*\/\s*)?interface SanityQueries \{\}\s*\}/)
+    })
+  }
 })
 
 test('createClient and the deprecated sanityClient default export are equivalent', async (t) => {

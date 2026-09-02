@@ -84,7 +84,7 @@ export default [
     },
   },
   {
-    files: ['test/**/*.ts', 'test-next/**/*.ts'],
+    files: ['test/**/*.ts', 'test-next/**/*.ts', 'test-dist/**/*.ts'],
 
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',

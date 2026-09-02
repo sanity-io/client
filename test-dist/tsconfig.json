@@ -1,0 +1,17 @@
+{
+  // Typechecks against the BUILT declaration files, the way a consumer sees
+  // them, instead of the `src/` aliases every other tsconfig uses. Requires
+  // `npm run build` first.
+  "extends": "../tsconfig.settings",
+  "include": ["."],
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "module": "esnext",
+
+    "paths": {
+      "@sanity/client/stega": ["../dist/stega.d.ts"],
+      "@sanity/client": ["../dist/index.d.ts"]
+    }
+  }
+}

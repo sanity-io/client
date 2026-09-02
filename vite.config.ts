@@ -16,6 +16,9 @@ export default defineConfig({
     },
     typecheck: {
       enabled: true,
+      // `typecheck.exclude` does not inherit `test.exclude`, and the test-dist
+      // suite resolves `@sanity/client` to `dist/`, so it only runs via `test:dist`.
+      exclude: [...configDefaults.typecheck.exclude, 'test-dist/**'],
     },
     coverage: {
       provider: 'v8',
