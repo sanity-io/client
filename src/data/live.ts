@@ -4,6 +4,7 @@ import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
+import {getOAuthRefresher, getOAuthTokenSetup} from '../http/oauthRefreshHandler'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
   InitializedClientConfig,
@@ -13,6 +14,7 @@ import type {
   LiveEventReconnect,
   LiveEventRestart,
   LiveEventWelcome,
+  OAuthTokenSetup,
   SyncTag,
 } from '../types'
 import {isRecord} from '../util/isRecord'
@@ -90,12 +92,16 @@ export class LiveClient {
       url.searchParams.set('waitFor', waitFor)
     }
     const eventSourceHeaders: Record<string, string> = {}
-    if (includeDrafts && token) {
+    if (includeDrafts && typeof token === 'string') {
       eventSourceHeaders.Authorization = `Bearer ${token}`
     }
     if (configHeaders) {
       Object.assign(eventSourceHeaders, configHeaders)
     }
+    // An OAuth token setup can't be baked into the headers — it is resolved
+    // per request inside the EventSource fetch, so reconnects pick up
+    // refreshed tokens.
+    const tokenSetup = includeDrafts ? getOAuthTokenSetup(token) : undefined
     const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
     let transportCache = eventsCache.get(config.resolveFetch)
@@ -108,6 +114,10 @@ export class LiveClient {
       typeof config.proxy === 'string' ? config.proxy : null,
       eventSourceHeaders,
       eventSourceWithCredentials,
+      // A string-token connection is distinguished by its Authorization header
+      // above; an OAuth setup contributes its identity instead, so two clients
+      // with different setups never share a stream.
+      tokenSetup ? tokenSetupCacheKey(tokenSetup) : null,
     ])
     const existing = transportCache.get(cacheKey)
 
@@ -119,6 +129,7 @@ export class LiveClient {
       new EventSource(url.href, {
         fetch: resolveEventSourceFetch(config, {
           headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
+          tokenSetup,
           withCredentials: eventSourceWithCredentials,
         }),
       })
@@ -140,7 +151,7 @@ export class LiveClient {
 
     const observable = events
       .pipe(
-        reconnectOnConnectionFailure(),
+        reconnectOnConnectionFailure(tokenSetup && getOAuthRefresher(tokenSetup)),
         mergeMap((event) => {
           if (event.type === 'reconnect') {
             // Check for CORS on reconnect events (which happen on 403s)
@@ -289,3 +300,18 @@ const eventsCache = new Map<
   InitializedClientConfig['resolveFetch'],
   Map<string, Observable<LiveEvent>>
 >()
+
+/**
+ * Stable identity for an OAuth token setup in the string cache key — the setup
+ * object itself can't be stringified (its functions serialise to nothing).
+ */
+let nextTokenSetupId = 0
+const tokenSetupIds = new WeakMap<OAuthTokenSetup, number>()
+function tokenSetupCacheKey(setup: OAuthTokenSetup): number {
+  let id = tokenSetupIds.get(setup)
+  if (id === undefined) {
+    id = nextTokenSetupId++
+    tokenSetupIds.set(setup, id)
+  }
+  return id
+}

@@ -126,7 +126,10 @@ export const initConfig = (
     newConfig.withCredentials = false
   }
 
-  if (isBrowser && isLocalhost && hasToken && newConfig.ignoreBrowserTokenWarning !== true) {
+  // The browser warning targets a secret baked into client-side code. An
+  // OAuthTokenSetup obtains tokens per user at runtime, so it is exempt.
+  const hasStringToken = typeof newConfig.token === 'string' && newConfig.token !== ''
+  if (isBrowser && isLocalhost && hasStringToken && newConfig.ignoreBrowserTokenWarning !== true) {
     warnings.printBrowserTokenWarning()
   } else if (typeof newConfig.useCdn === 'undefined') {
     warnings.printCdnWarning()
