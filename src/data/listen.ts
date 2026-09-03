@@ -2,6 +2,7 @@ import {EventSource} from 'eventsource'
 import {Observable, throwError} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
+import {getOAuthRefresher, getOAuthTokenSetup} from '../http/oauthRefreshHandler'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {
   type Any,
@@ -166,23 +167,25 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
   const {token, withCredentials, headers: configHeaders} = config
 
   const headers: Record<string, string> = {}
-  if (token) {
+  if (typeof token === 'string') {
     headers.Authorization = `Bearer ${token}`
   }
   if (configHeaders) {
     Object.assign(headers, configHeaders)
   }
+  const tokenSetup = getOAuthTokenSetup(token)
 
   const initEventSource = () =>
     new EventSource(uri, {
       fetch: resolveEventSourceFetch(config, {
         headers: Object.keys(headers).length ? headers : undefined,
+        tokenSetup,
         withCredentials,
       }),
     })
 
   return connectEventSource(initEventSource, listenFor).pipe(
-    reconnectOnConnectionFailure(),
+    reconnectOnConnectionFailure(tokenSetup && getOAuthRefresher(tokenSetup)),
     filter((event) => listenFor.includes(event.type)),
     map((event) => ({
       type: event.type,

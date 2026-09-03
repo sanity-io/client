@@ -71,6 +71,26 @@ export type RequestHandler = (
 ) => Promise<unknown>
 
 /**
+ * An OAuth token setup, accepted as `token` in place of a static string so the
+ * client can refresh a short-lived access token transparently.
+ * @public
+ */
+export interface OAuthTokenSetup {
+  /**
+   * Resolve the access token for the next request. A provider may refresh
+   * proactively here on expiry skew, so the common path avoids a 401.
+   */
+  getToken: () => Promise<string>
+  /**
+   * Force a refresh after a 401 and resolve to the new access token. Once
+   * resolved, subsequent `getToken()` calls must return the refreshed token.
+   */
+  refresh: () => Promise<string>
+  /** Called when `refresh()` rejects */
+  onAuthError?: (error: unknown) => void
+}
+
+/**
  * @public
  * @deprecated – The `r`-prefix is not required, use `string` instead
  */
@@ -132,7 +152,7 @@ export interface ClientConfig {
   dataset?: string
   /** @defaultValue true */
   useCdn?: boolean
-  token?: string
+  token?: string | OAuthTokenSetup
 
   /**
    * Configure the client to work with a specific Sanity resource (Media Library, Canvas, etc.)
