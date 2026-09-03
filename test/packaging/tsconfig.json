@@ -1,0 +1,15 @@
+{
+  // Typechecks the packaging suite against the BUILT declaration files, the
+  // way a consumer sees them, instead of the `src/` aliases every other
+  // tsconfig uses. Requires `pnpm build` first.
+  "extends": "../../tsconfig.settings",
+  "include": ["."],
+  "compilerOptions": {
+    "rootDir": "../..",
+    "types": ["node"],
+    "paths": {
+      "@sanity/client/stega": ["../../dist/stega.d.ts"],
+      "@sanity/client": ["../../dist/index.d.ts"]
+    }
+  }
+}

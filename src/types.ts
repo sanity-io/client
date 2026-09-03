@@ -2280,8 +2280,47 @@ export type LiveEvent =
   | LiveEventWelcome
   | LiveEventGoAway
 
-/** @public */
-export interface SanityQueries {}
+declare global {
+  /**
+   * Query result types, keyed by GROQ query string. Empty by default, `sanity typegen` registers
+   * the queries it finds:
+   * ```ts
+   * declare global {
+   *   interface SanityQueries {
+   *     '*[_type == "post"]': PostsQueryResult
+   *   }
+   * }
+   * ```
+   * `client.fetch(query)` and `ClientReturn<typeof query>` then resolve to the registered type.
+   *
+   * The registry is a global rather than a module augmentation of `@sanity/client` so that it
+   * does not depend on module resolution: it resolves the same whether `@sanity/client` is a
+   * direct dependency, how many copies of it are installed, and from every subpath export.
+   */
+  interface SanityQueries {}
+}
+
+/**
+ * The query registry as seen from `@sanity/client`. Inherits every query registered on the global
+ * `SanityQueries` interface, and still accepts the older module augmentation form:
+ * ```ts
+ * declare module '@sanity/client' {
+ *   interface SanityQueries {
+ *     '*[_type == "post"]': PostsQueryResult
+ *   }
+ * }
+ * ```
+ * `@sanity/client` releases that predate the global registry only read this interface, so a
+ * generated file that registers queries globally can bridge them with an augmentation that adds
+ * the global as a base type. It is harmless on releases that already inherit it:
+ * ```ts
+ * declare module '@sanity/client' {
+ *   interface SanityQueries extends globalThis.SanityQueries {}
+ * }
+ * ```
+ * @public
+ */
+export interface SanityQueries extends globalThis.SanityQueries {}
 
 /** @public */
 export type ClientReturn<
