@@ -1,8 +1,14 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
-import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
+import {defer, type MonoTypeOperatorFunction, Observable} from 'rxjs'
+import {catchError, filter, map, mergeMap} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
+import {
+  applyOAuthToken,
+  getOAuthTokenSetup,
+  refreshOnAuthError,
+  resolveRequestHandler,
+} from '../http/oauthRefreshHandler'
 import {type FetchRequest, requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean, type StegaCleaned} from '../stega/stegaClean'
@@ -1160,7 +1166,7 @@ export function _observe<R>(
  */
 export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
   const reqOptions = _prepareRequest(client, options)
-  return httpRequest(reqOptions, client.config().requestHandler).then((body) => body as R)
+  return httpRequest(reqOptions, resolveRequestHandler(client.config())).then((body) => body as R)
 }
 
 /**
@@ -1194,9 +1200,25 @@ export function _uploadObservable<T>(
   options: RequestObservableOptions,
 ): Observable<UploadEvent<T>> {
   const reqOptions = _prepareRequest(client, options)
-  const requester = client.config().requester
-  const request = new Observable<Any>((subscriber) =>
-    requester(reqOptions).subscribe(subscriber),
+  const config = client.config()
+  const requester = config.requester
+  // This path bypasses the request handler, so the OAuth token is resolved
+  // here — per subscription, so a resubscribe picks up a refreshed token. A
+  // 401 refreshes but does not auto-retry (the body may be a consumed stream);
+  // the error surfaces and a caller-level retry gets the fresh token.
+  const oauth = getOAuthTokenSetup(config.token)
+  const upload = (req: FetchRequest) =>
+    new Observable<Any>((subscriber) => requester(req).subscribe(subscriber))
+  const request = (
+    oauth
+      ? defer(() => applyOAuthToken(oauth, reqOptions.headers)).pipe(
+          mergeMap((headers) =>
+            upload({...reqOptions, headers}).pipe(
+              catchError((err) => refreshOnAuthError(oauth, headers, err)),
+            ),
+          ),
+        )
+      : upload(reqOptions)
   ).pipe(
     filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
     map((event: Any): UploadEvent<T> =>
