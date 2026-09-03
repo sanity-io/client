@@ -255,6 +255,26 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
+  test('returns the sync tags of a query when filterResponse is false', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/vX/data/query/foo?query=*`)
+      .respond({
+        status: 200,
+        body: {
+          ms: 123,
+          result,
+          syncTags: ['s1:WHNHEg', 's1:pcDn1g'],
+        },
+      })
+
+    // Sync tags are what a consumer matches `live.events()` messages against,
+    // and they only travel on the unfiltered response.
+    const res = await getClient({apiVersion: 'X'}).fetch('*', {}, {filterResponse: false})
+    expect(res.syncTags, 'sync tags should be passed through').toEqual(['s1:WHNHEg', 's1:pcDn1g'])
+    expect(res.result[0].rating, 'data should match').toBe(5)
+  })
+
   test('allows passing last live event ID from URLSearchParams that might be an empty string', async () => {
     getActiveMock()
       .scope(projectHost())

@@ -3,13 +3,20 @@ import {
   ConnectionFailedError,
   CorsOriginError,
   createClient as createCoreClient,
+  type LiveEvent,
   MessageError,
 } from '@sanity/client'
 import {encode} from 'eventsource-encoder'
-import {catchError, firstValueFrom, lastValueFrom, of, take} from 'rxjs'
+import {catchError, firstValueFrom, lastValueFrom, of, type Subscription, take, toArray} from 'rxjs'
 import {describe, expect, test, vitest} from 'vitest'
 
-import {getActiveFetch, getActiveMock, testResolveFetch} from './helpers/mockFetch'
+import {
+  getActiveFetch,
+  getActiveMock,
+  streamBody,
+  streamStall,
+  testResolveFetch,
+} from './helpers/mockFetch'
 
 // Every client created in this suite talks to the per-test `get-it/mock`
 // transport, injected through the public `resolveFetch` config option. Tests
@@ -151,7 +158,7 @@ describe('.live.events()', () => {
   })
 
   test('can listen for tags with includeDrafts', async () => {
-    expect.assertions(2)
+    expect.assertions(3)
 
     const eventData = {
       tags: ['tag1', 'tag2'],
@@ -185,6 +192,188 @@ describe('.live.events()', () => {
     expect(request.query, 'query should include includeDrafts').toMatchObject({
       includeDrafts: 'true',
     })
+    // Drafts are only visible to authenticated connections, so this is the one
+    // place the token travels on the EventSource request itself.
+    expect(request).toHaveHeader('authorization', 'Bearer abc123')
+  })
+
+  test('does not send the token unless includeDrafts is set', async () => {
+    expect.assertions(2)
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/published-only')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'published-only',
+      useCdn: false,
+      apiVersion: 'X',
+      token: 'abc123',
+    })
+
+    await firstValueFrom(client.live.events())
+
+    // Published content needs no authentication, so a configured token stays
+    // off the request until the caller asks for drafts.
+    const [request] = getActiveMock().getRequests()
+    expect(request).not.toHaveHeader('authorization')
+    expect(request.query).not.toHaveProperty('includeDrafts')
+  })
+
+  test('sends cookies instead of a token when includeDrafts relies on withCredentials', async () => {
+    expect.assertions(3)
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/cookie-auth')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'cookie-auth',
+      useCdn: false,
+      apiVersion: 'X',
+      withCredentials: true,
+    })
+
+    // `withCredentials` satisfies the same requirement a token does, so no
+    // token is needed to ask for drafts.
+    await firstValueFrom(client.live.events({includeDrafts: true}))
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.query).toMatchObject({includeDrafts: 'true'})
+    expect(request).not.toHaveHeader('authorization')
+    expect(request.init?.credentials).toBe('include')
+  })
+
+  test('does not send cookies when withCredentials is set but drafts are not requested', async () => {
+    expect.assertions(1)
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/cookie-auth-published')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'cookie-auth-published',
+      useCdn: false,
+      apiVersion: 'X',
+      withCredentials: true,
+    })
+
+    await firstValueFrom(client.live.events())
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.init?.credentials).not.toBe('include')
+  })
+
+  test('forwards tag and waitFor as query parameters', async () => {
+    expect.assertions(1)
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/params')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'params',
+      useCdn: false,
+      apiVersion: 'X',
+    })
+
+    await firstValueFrom(client.live.events({tag: 'storefront', waitFor: 'function'}))
+
+    // Without a `requestTagPrefix` the tag is sent as given, and `waitFor`
+    // asks the API to hold events until a Sanity Function has processed them.
+    const [request] = getActiveMock().getRequests()
+    expect(request.query).toEqual({tag: 'storefront', waitFor: 'function'})
+  })
+
+  test('connects to the API host even when the client is configured with useCdn: true', async () => {
+    expect.assertions(2)
+
+    // The Live Content API is addressed at the project's API host, so the CDN
+    // setting that applies to queries must not move the connection.
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/cdn-client')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'cdn-client',
+      useCdn: true,
+      apiVersion: 'X',
+    })
+
+    const event = await firstValueFrom(client.live.events())
+    expect(event.type).toBe('welcome')
+    expect(getActiveMock()).toHaveReceivedRequest('GET', '/vX/data/live/events/cdn-client')
+  })
+
+  test('opens one connection per set of options', async () => {
+    expect.assertions(3)
+
+    const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+    const streamHeaders = {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'}
+    // One handler per expected connection - handlers are one-shot.
+    scope.on('GET', '/vX/data/live/events/per-options').respond({
+      status: 200,
+      body: encode({id: '1', event: 'welcome', data: '{}'}),
+      headers: streamHeaders,
+    })
+    scope.on('GET', '/vX/data/live/events/per-options').respond({
+      status: 200,
+      body: encode({id: '2', event: 'welcome', data: '{}'}),
+      headers: streamHeaders,
+    })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'per-options',
+      useCdn: false,
+      apiVersion: 'X',
+      token: 'abc123',
+    })
+
+    // A published-only subscriber and a drafts subscriber must not share a
+    // stream: the drafts stream carries events the published one should never
+    // see, and it authenticates differently.
+    await Promise.all([
+      firstValueFrom(client.live.events()),
+      firstValueFrom(client.live.events({includeDrafts: true})),
+    ])
+
+    expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/vX/data/live/events/per-options', 2)
+    const queries = getActiveMock()
+      .getRequests()
+      .map((request) => request.query)
+    expect(queries).toContainEqual({})
+    expect(queries).toContainEqual({includeDrafts: 'true'})
   })
 
   test('supports restart events', async () => {
@@ -195,7 +384,9 @@ describe('.live.events()', () => {
       .on('GET', '/vX/data/live/events/prod')
       .respond({
         status: 200,
-        body: encode({event: 'welcome', data: '{}'}) + encode({event: 'restart', data: '{}'}),
+        body:
+          encode({id: 'MXxhYVlRejdGZUpPMA', event: 'welcome', data: '{}'}) +
+          encode({id: 'MXxhYVlRejdGZUpPMQ', event: 'restart', data: '{}'}),
         headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
       })
 
@@ -207,7 +398,124 @@ describe('.live.events()', () => {
     })
 
     const msg = await lastValueFrom(client.live.events().pipe(take(2)))
-    expect(msg.type, 'emits restart events to tell the client to reset local state').toBe('restart')
+    // A restart tells the consumer to refetch everything and drop the sync
+    // tags it holds. It carries the new stream position and nothing else.
+    expect(msg, 'emits restart events to tell the client to reset local state').toEqual({
+      type: 'restart',
+      id: 'MXxhYVlRejdGZUpPMQ',
+    })
+  })
+
+  test('resumes from the last received event id when the connection drops', async () => {
+    expect.assertions(1)
+
+    const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+    const streamHeaders = {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'}
+    // `retry: 25` keeps the EventSource's own reconnect timer fast. The stream
+    // ends cleanly after the message, which is a disconnect rather than a
+    // rejection, so it is retried by the EventSource itself and never reaches
+    // `reconnectOnConnectionFailure`.
+    scope.on('GET', '/vX/data/live/events/resume').respond({
+      status: 200,
+      headers: streamHeaders,
+      body:
+        encode({retry: 25}) +
+        encode({id: 'MXxhYVlRejdGZUpPMA', event: 'welcome', data: '{}'}) +
+        encode({
+          id: 'MXxhYVlRejdGZUpPMQ',
+          event: 'message',
+          data: JSON.stringify({tags: ['s1:first']}),
+        }),
+    })
+    // Only matches once the client resumes from the position of the last
+    // event it received. If it reconnects without it, this handler goes
+    // unmatched and `assertAllConsumed()` fails in teardown. The stream then
+    // continues with the events that follow that position.
+    scope
+      .on('GET', '/vX/data/live/events/resume', {headers: {'Last-Event-ID': 'MXxhYVlRejdGZUpPMQ'}})
+      .respond({
+        status: 200,
+        headers: streamHeaders,
+        body: streamBody(
+          encode({
+            id: 'MXxhYVlRejdGZUpPMg',
+            event: 'message',
+            data: JSON.stringify({tags: ['s1:second']}),
+          }),
+          streamStall(),
+        ),
+      })
+    // Every `reconnect` also probes the CORS configuration.
+    scope
+      .on('GET', '/vX/check/cors')
+      .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'resume',
+      useCdn: false,
+      apiVersion: 'X',
+    })
+
+    const events = await lastValueFrom(client.live.events().pipe(take(4), toArray()))
+    expect(events).toEqual([
+      {type: 'welcome', id: 'MXxhYVlRejdGZUpPMA'},
+      {type: 'message', id: 'MXxhYVlRejdGZUpPMQ', tags: ['s1:first']},
+      {type: 'reconnect'},
+      {type: 'message', id: 'MXxhYVlRejdGZUpPMg', tags: ['s1:second']},
+    ])
+  })
+
+  test('emits restart when the last received event id can no longer be resumed from', async () => {
+    expect.assertions(1)
+
+    const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+    const streamHeaders = {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'}
+    scope.on('GET', '/vX/data/live/events/stale-resume').respond({
+      status: 200,
+      headers: streamHeaders,
+      body:
+        encode({retry: 25}) +
+        encode({id: 'MXxhYVlRejdGZUpPMA', event: 'welcome', data: '{}'}) +
+        encode({
+          id: 'MXxhYVlRejdGZUpPMQ',
+          event: 'message',
+          data: JSON.stringify({tags: ['s1:first']}),
+        }),
+    })
+    // When the position the client resumes from is no longer usable, the
+    // first event on the new connection is a `restart` at the current end of
+    // the stream. The client forwards it as-is so consumers can refetch.
+    scope
+      .on('GET', '/vX/data/live/events/stale-resume', {
+        headers: {'Last-Event-ID': 'MXxhYVlRejdGZUpPMQ'},
+      })
+      .respond({
+        status: 200,
+        headers: streamHeaders,
+        body: streamBody(
+          encode({id: 'MXxhYVlRejdGZUpPMg', event: 'restart', data: '{}'}),
+          streamStall(),
+        ),
+      })
+    scope
+      .on('GET', '/vX/check/cors')
+      .respond({status: 200, body: {result: {allowed: true, withCredentials: false}}})
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'stale-resume',
+      useCdn: false,
+      apiVersion: 'X',
+    })
+
+    const events = await lastValueFrom(client.live.events().pipe(take(4), toArray()))
+    expect(events).toEqual([
+      {type: 'welcome', id: 'MXxhYVlRejdGZUpPMA'},
+      {type: 'message', id: 'MXxhYVlRejdGZUpPMQ', tags: ['s1:first']},
+      {type: 'reconnect'},
+      {type: 'restart', id: 'MXxhYVlRejdGZUpPMg'},
+    ])
   })
 
   test('supports goaway events', async () => {
@@ -637,6 +945,83 @@ describe('.live.events()', () => {
     expect(onMessage).not.toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
     expect(getActiveMock().getRequests()[0]?.init?.signal?.aborted).toBe(true)
+  })
+
+  test('closes the connection when the last subscriber unsubscribes', async () => {
+    expect.assertions(3)
+
+    const body = streamBody(
+      encode({id: 'MXxhYVlRejdGZUpPMA', event: 'welcome', data: '{}'}),
+      streamStall(),
+    )
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/teardown')
+      .respond({
+        status: 200,
+        body,
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'teardown',
+      useCdn: false,
+      apiVersion: 'X',
+    })
+
+    // The stream never ends on its own, so the only way the request can be
+    // aborted is the client tearing the connection down on unsubscribe.
+    const event = await firstValueFrom(client.live.events())
+    expect(event.type).toBe('welcome')
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.init?.signal?.aborted).toBe(true)
+    expect(body.abortCount).toBe(1)
+  })
+
+  test('replays welcome to subscribers that join an open connection', async () => {
+    expect.assertions(3)
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/late-subscriber')
+      .respond({
+        status: 200,
+        body: streamBody(
+          encode({id: 'MXxhYVlRejdGZUpPMA', event: 'welcome', data: '{}'}),
+          streamStall(),
+        ),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'late-subscriber',
+      useCdn: false,
+      apiVersion: 'X',
+    })
+
+    // The first subscriber holds the connection open past `welcome`.
+    let subscription: Subscription | undefined
+    try {
+      const first = await new Promise<LiveEvent>((resolve, reject) => {
+        subscription = client.live.events().subscribe({next: resolve, error: reject})
+      })
+      expect(first.type).toBe('welcome')
+
+      // A subscriber joining afterwards is told the connection is up without
+      // waiting for the server to say so again, and without a second request.
+      const late = await firstValueFrom(client.live.events())
+      expect(late).toEqual({type: 'welcome', id: 'MXxhYVlRejdGZUpPMA'})
+      expect(getActiveMock()).toHaveReceivedRequestTimes(
+        'GET',
+        '/vX/data/live/events/late-subscriber',
+        1,
+      )
+    } finally {
+      subscription?.unsubscribe()
+    }
   })
 
   test('passes custom headers from client configuration', async () => {
