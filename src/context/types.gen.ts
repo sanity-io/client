@@ -462,7 +462,7 @@ export interface paths {
     get?: never
     /**
      * Record a conversation
-     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata` and model fields only overwrite when present. Last write per thread wins — retries are safe.
+     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata`, `sharing`, and model fields only overwrite when present. Last write per thread wins — retries are safe. `sharing` records your opt-in to share telemetry with Sanity: metadata-only metrics, or full transcripts.
      */
     put: operations['saveConversation']
     post?: never
@@ -533,6 +533,15 @@ export interface components {
       /** Format: date-time */
       classifiedAt: string | null
       classificationError: string | null
+      /**
+       * @description ConversationSharing
+       * @default null
+       */
+      sharing: {
+        metrics?: boolean
+        conversations?: boolean
+        contact?: string
+      } | null
     }
     /** @description A `sanity.context.entry` document, one outline node stored in the bound dataset. Not returned by any endpoint; published so GROQ reads against the dataset can be typed. The entries endpoints serve the validated wire view. */
     EntryDoc: {
@@ -931,6 +940,11 @@ export interface operations {
               refreshInFlight: boolean
               openIssueCount: number
               instructionCount: number
+              /** @description Actor */
+              createdBy: {
+                id: string | null
+                displayName: string | null
+              } | null
               /** Format: date-time */
               createdAt: string
               /** Format: date-time */
@@ -1032,6 +1046,11 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
+            /** @description Actor */
+            createdBy: {
+              id: string | null
+              displayName: string | null
+            } | null
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -1123,6 +1142,11 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
+            /** @description Actor */
+            createdBy: {
+              id: string | null
+              displayName: string | null
+            } | null
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -1246,6 +1270,11 @@ export interface operations {
             refreshInFlight: boolean
             openIssueCount: number
             instructionCount: number
+            /** @description Actor */
+            createdBy: {
+              id: string | null
+              displayName: string | null
+            } | null
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -2283,6 +2312,12 @@ export interface operations {
           metadata?: {
             [key: string]: string | string[]
           }
+          /** @description ConversationSharing */
+          sharing?: {
+            metrics?: boolean
+            conversations?: boolean
+            contact?: string
+          }
         }
       }
     }
@@ -2335,6 +2370,12 @@ export interface operations {
             /** Format: date-time */
             classifiedAt: string | null
             classificationError: string | null
+            /** @description ConversationSharing */
+            sharing: {
+              metrics?: boolean
+              conversations?: boolean
+              contact?: string
+            } | null
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
@@ -2416,6 +2457,12 @@ export interface operations {
             /** Format: date-time */
             classifiedAt: string | null
             classificationError: string | null
+            /** @description ConversationSharing */
+            sharing: {
+              metrics?: boolean
+              conversations?: boolean
+              contact?: string
+            } | null
             /** Format: date-time */
             createdAt: string
             /** Format: date-time */
