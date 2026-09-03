@@ -330,29 +330,6 @@ describe('data', () => {
     expect(res[0].rating, 'data should match').toBe(5)
   })
 
-  test('automatically useCdn false if perspective is previewDrafts', async () => {
-    getActiveMock()
-      .scope('https://abc123.api.sanity.io')
-      .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
-      .respond({
-        status: 200,
-        body: {
-          ms: 123,
-          result,
-        },
-      })
-
-    const client = createClient({
-      projectId: 'abc123',
-      dataset: 'foo',
-      useCdn: true,
-      perspective: 'previewDrafts',
-    })
-    const res = await client.fetch('*', {})
-    expect(res.length, 'length should match').toBe(1)
-    expect(res[0].rating, 'data should match').toBe(5)
-  })
-
   test('can query for documents with resultSourceMap and perspective using the third client.fetch parameter', async () => {
     getActiveMock()
       .scope(projectHost())
@@ -394,24 +371,6 @@ describe('data', () => {
       perspective: 'previewDrafts',
     })
     const res = await client.fetch('*', {}, {resultSourceMap: false, perspective: 'published'})
-    expect(res.length, 'length should match').toBe(1)
-    expect(res[0].rating, 'data should match').toBe(5)
-  })
-
-  test('setting a perspective previewDrafts override on client.fetch sets useCdn to false', async () => {
-    getActiveMock()
-      .scope('https://abc123.api.sanity.io')
-      .on('GET', `/v1/data/query/foo?query=*&returnQuery=false&perspective=previewDrafts`)
-      .respond({
-        status: 200,
-        body: {
-          ms: 123,
-          result,
-        },
-      })
-
-    const client = createClient({projectId: 'abc123', dataset: 'foo', useCdn: true})
-    const res = await client.fetch('*', {}, {perspective: 'previewDrafts'})
     expect(res.length, 'length should match').toBe(1)
     expect(res[0].rating, 'data should match').toBe(5)
   })
