@@ -1,5 +1,19 @@
 # @sanity/client
 
+## 8.5.0
+
+### Minor Changes
+
+- read query result types from a global `SanityQueries` interface ([#1319](https://github.com/sanity-io/client/pull/1319)) ([18313fe](https://github.com/sanity-io/client/commit/18313feefd4ed22e22a451797525d2d50b8020d4))
+
+  Query result types can now be registered on a global `SanityQueries` interface, which the `SanityQueries` interface exported from `@sanity/client` inherits from. `client.fetch`, `ClientReturn` and `ClientReturnStega` resolve registrations made either way, so the `declare module '@sanity/client'` augmentation that Sanity TypeGen has emitted so far keeps working unchanged. The global registry does not depend on module resolution: it is seen whether or not `@sanity/client` is a direct dependency of the generated file, however many copies of the client are installed, and from every entry point including `@sanity/client/stega`.
+
+### Patch Changes
+
+- **deps:** update dependency get-it to ^9.5.2 ([#1311](https://github.com/sanity-io/client/pull/1311)) ([dc9672e](https://github.com/sanity-io/client/commit/dc9672e7c2830040a42171ac122e05e7503be041))
+- **deps:** update non-major ([#1312](https://github.com/sanity-io/client/pull/1312)) ([117eec4](https://github.com/sanity-io/client/commit/117eec4f648babb8cb09d50972657136fd439310))
+- fix description field not being nullable in some types ([#1316](https://github.com/sanity-io/client/pull/1316)) ([07ed103](https://github.com/sanity-io/client/commit/07ed103ffa4da99751fb9f9d2fc0bbb0dccc2162))
+
 ## 8.4.0
 
 ### Minor Changes
