@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.6.0
+
+### Minor Changes
+
+- conversation sharing opt-in and createdBy reach client.context types ([#1317](https://github.com/sanity-io/client/pull/1317)) ([2459ebe](https://github.com/sanity-io/client/commit/2459ebe368e14d5ea291594878dd3372bdc2eaae))
+
 ## 8.5.0
 
 ### Minor Changes
