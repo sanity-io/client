@@ -2,4 +2,4 @@
 '@sanity/client': patch
 ---
 
-fix: use `any-signal` instead of `AbortSignal.any` so cancellable requests work on Safari 17.0-17.3
+fix: fall back to a plain `AbortController` where `AbortSignal.any` is missing, so cancellable requests work on Safari 17.0-17.3

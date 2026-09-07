@@ -1,5 +1,4 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
-import {anySignal} from 'any-signal'
 import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
@@ -37,6 +36,7 @@ import type {
   UnpublishVersionAction,
   UploadEvent,
 } from '../types'
+import {anySignal} from '../util/anySignal'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
