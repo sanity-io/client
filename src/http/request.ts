@@ -1,4 +1,3 @@
-import {anySignal} from 'any-signal'
 import {
   createRequester,
   type FetchFunction,
@@ -11,6 +10,7 @@ import {isRetryableRequest, retry} from 'get-it/middleware'
 import {from, Observable} from 'rxjs'
 
 import type {Any} from '../types'
+import {anySignal} from '../util/anySignal'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
 
 /**
