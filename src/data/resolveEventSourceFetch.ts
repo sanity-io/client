@@ -1,6 +1,7 @@
 import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
+import {resolveOAuthToken} from '../http/oauthRefreshHandler'
 import type {InitializedClientConfig, OAuthTokenSetup} from '../types'
 
 /** @internal */
@@ -13,11 +14,11 @@ export interface EventSourceFetchOptions {
   headers?: Record<string, string>
   /**
    * OAuth token setup to resolve an `Authorization` header from. Resolved via
-   * `getToken()` on every request — not once per connection — so the
-   * `eventsource` package's reconnects pick up a refreshed token. This fetch
-   * only reads; 401-driven `refresh()` lives upstream in
-   * `reconnectOnConnectionFailure`. Config `headers` take precedence,
-   * mirroring the string-token merge order.
+   * `resolveOAuthToken()` on every request — not once per connection — so the
+   * `eventsource` package's reconnects pick up a refreshed token, and a token
+   * about to expire is refreshed proactively. 401-driven `refresh()` still
+   * lives upstream in `reconnectOnConnectionFailure`. Config `headers` take
+   * precedence, mirroring the string-token merge order.
    */
   tokenSetup?: OAuthTokenSetup
   /**
@@ -72,7 +73,7 @@ export function resolveEventSourceFetch(
     if (extraHeaders || tokenSetup) {
       const headers = new Headers(init?.headers)
       if (tokenSetup) {
-        headers.set('Authorization', `Bearer ${await tokenSetup.getToken()}`)
+        headers.set('Authorization', `Bearer ${await resolveOAuthToken(tokenSetup)}`)
       }
       if (extraHeaders) {
         for (const [key, value] of Object.entries(extraHeaders)) {

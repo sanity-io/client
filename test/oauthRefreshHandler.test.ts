@@ -18,8 +18,11 @@ function authHeaders(): Array<string | null> {
 }
 
 describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
-  test('proactive: applies the token from getToken() to every request', async () => {
-    getActiveMock().scope(projectHost()).on('GET', usersPath).respond({status: 200, body: {id: 'me'}})
+  test('applies the token from getToken() to every request', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', usersPath)
+      .respond({status: 200, body: {id: 'me'}})
 
     const setup: OAuthTokenSetup = {
       getToken: async () => 'proactive-token',
@@ -31,7 +34,89 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(authHeaders()).toEqual(['Bearer proactive-token'])
   })
 
-  test('reactive: a 401 refreshes then retries once with the new token', async () => {
+  test('an expiring token refreshes before sending, without a 401', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', usersPath)
+      .respond({status: 200, body: {id: 'me'}})
+
+    const refresh = vi.fn(() => Promise.resolve('fresh-token'))
+    const setup: OAuthTokenSetup = {
+      getToken: async () => 'expiring-token',
+      refresh,
+      getExpiresAt: () => Date.now() + 10_000,
+    }
+    const client = oauthClient(setup)
+
+    await expect(client.users.getById('me')).resolves.toEqual({id: 'me'})
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(authHeaders()).toEqual(['Bearer fresh-token'])
+  })
+
+  test('concurrent requests with an expiring token refresh once', async () => {
+    const concurrency = 2
+    const route = getActiveMock().scope(projectHost()).on('GET', usersPath)
+    for (let i = 0; i < concurrency; i++) {
+      route.respond({status: 200, body: {id: 'me'}})
+    }
+
+    const refresh = vi.fn(() => Promise.resolve('fresh-token'))
+    const setup: OAuthTokenSetup = {
+      getToken: async () => 'expiring-token',
+      refresh,
+      getExpiresAt: () => Date.now() + 10_000,
+    }
+    const client = oauthClient(setup)
+
+    await expect(
+      Promise.all(Array.from({length: concurrency}, () => client.users.getById('me'))),
+    ).resolves.toEqual([{id: 'me'}, {id: 'me'}])
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(authHeaders()).toEqual(['Bearer fresh-token', 'Bearer fresh-token'])
+  })
+
+  test('a far-future expiry does not refresh', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', usersPath)
+      .respond({status: 200, body: {id: 'me'}})
+
+    const refresh = vi.fn(() => Promise.reject(new Error('should not refresh')))
+    const setup: OAuthTokenSetup = {
+      getToken: async () => 'valid-token',
+      refresh,
+      getExpiresAt: () => Date.now() + 60 * 60 * 1000,
+    }
+    const client = oauthClient(setup)
+
+    await expect(client.users.getById('me')).resolves.toEqual({id: 'me'})
+    expect(refresh).not.toHaveBeenCalled()
+    expect(authHeaders()).toEqual(['Bearer valid-token'])
+  })
+
+  test('a rejected refresh fires onAuthError and sends the getToken() token', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', usersPath)
+      .respond({status: 200, body: {id: 'me'}})
+
+    const refreshError = new Error('refresh token expired')
+    const onAuthError = vi.fn()
+    const setup: OAuthTokenSetup = {
+      getToken: async () => 'expiring-token',
+      refresh: () => Promise.reject(refreshError),
+      getExpiresAt: () => Date.now() + 10_000,
+      onAuthError,
+    }
+    const client = oauthClient(setup)
+
+    await expect(client.users.getById('me')).resolves.toEqual({id: 'me'})
+    expect(onAuthError).toHaveBeenCalledTimes(1)
+    expect(onAuthError).toHaveBeenCalledWith(refreshError)
+    expect(authHeaders()).toEqual(['Bearer expiring-token'])
+  })
+
+  test('a 401 refreshes then retries once with the new token', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', usersPath)
@@ -47,7 +132,7 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(authHeaders()).toEqual(['Bearer expired-token', 'Bearer fresh-token'])
   })
 
-  test('single-flight: concurrent 401s share one refresh, then each retries', async () => {
+  test('concurrent 401s share one refresh, then each retries', async () => {
     const concurrency = 3
     const route = getActiveMock().scope(projectHost()).on('GET', usersPath)
     for (let i = 0; i < concurrency; i++) {
@@ -80,7 +165,7 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(headers.filter((h) => h === 'Bearer fresh-token')).toHaveLength(concurrency)
   })
 
-  test('unrecoverable refresh: calls onAuthError and surfaces the original 401', async () => {
+  test('calls onAuthError and surfaces the original 401 for an unrecoverable refresh', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', usersPath)
@@ -103,7 +188,7 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(onAuthError).toHaveBeenCalledWith(refreshError)
   })
 
-  test('already refreshed: retries with the current token without refreshing', async () => {
+  test('retries with the current token without refreshing', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', usersPath)
@@ -122,7 +207,7 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(authHeaders()).toEqual(['Bearer stale-token', 'Bearer current-token'])
   })
 
-  test('listen: a 401-rejected connection refreshes then reconnects with the new token', async () => {
+  test('a 401-rejected connection refreshes then reconnects with the new token', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/listen/foo')
@@ -146,7 +231,7 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(authHeaders()).toEqual(['Bearer expired-token', 'Bearer fresh-token'])
   })
 
-  test('listen: a second consecutive 401 surfaces without another refresh', async () => {
+  test('a second consecutive 401 surfaces without another refresh', async () => {
     getActiveMock()
       .scope(projectHost())
       .on('GET', '/v1/data/listen/foo')
@@ -164,7 +249,7 @@ describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 
-  test('unrecoverable refresh: fires onAuthError once across concurrent 401s', async () => {
+  test('fires onAuthError once across concurrent 401s for an unrecoverable refresh', async () => {
     const concurrency = 3
     const route = getActiveMock().scope(projectHost()).on('GET', usersPath)
     for (let i = 0; i < concurrency; i++) {
