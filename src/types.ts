@@ -86,6 +86,11 @@ export interface OAuthTokenSetup {
    * resolved, subsequent `getToken()` calls must return the refreshed token.
    */
   refresh: () => Promise<string>
+  /**
+   * Epoch ms the current access token expires. When provided, the client
+   * refreshes shortly before expiry instead of waiting for a 401.
+   */
+  getExpiresAt?: () => number | undefined
   /** Called when `refresh()` rejects */
   onAuthError?: (error: unknown) => void
 }
