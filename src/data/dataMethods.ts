@@ -1135,11 +1135,6 @@ export function _observe<R>(
 ): Observable<R> {
   return new Observable<R>((subscriber) => {
     const controller = new AbortController()
-    // `anySignal` rather than `AbortSignal.any` because Safari 17.0-17.3 lack
-    // the latter, and rather than an `addEventListener` on the caller's signal
-    // because that signal can be long-lived and reused across many requests,
-    // where a listener per subscription would accumulate. `anySignal` detaches
-    // from the caller's signal when the controller aborts on teardown.
     const signal = userSignal ? anySignal([userSignal, controller.signal]) : controller.signal
     run(signal).then(
       (value) => {

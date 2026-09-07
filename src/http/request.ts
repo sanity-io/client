@@ -141,14 +141,6 @@ export function defineRequester(
     return executeRequest(requester, options)
   }
 
-  // Same per-subscription AbortController pattern as `_observe` in
-  // dataMethods: a caller-supplied signal is combined in so the request
-  // aborts both on the caller's signal and on unsubscribe. `anySignal`
-  // rather than `AbortSignal.any` because Safari 17.0-17.3 lack the latter,
-  // and rather than `addEventListener` because the caller's signal can be
-  // long-lived and reused — a manually added listener would accumulate there
-  // once per subscription. `anySignal` detaches from the caller's signal when
-  // the controller aborts on teardown.
   const observable: LegacyRequester = (options: Any) =>
     new Observable<ResponseEvent>((subscriber) => {
       const controller = new AbortController()
