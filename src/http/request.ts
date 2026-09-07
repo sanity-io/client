@@ -10,6 +10,7 @@ import {isRetryableRequest, retry} from 'get-it/middleware'
 import {from, Observable} from 'rxjs'
 
 import type {Any} from '../types'
+import {combineAbortSignals} from '../util/combineAbortSignals'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
 
 /**
@@ -142,17 +143,19 @@ export function defineRequester(
 
   // Same per-subscription AbortController pattern as `_observe` in
   // dataMethods: a caller-supplied signal is combined in via
-  // `AbortSignal.any`, so the request aborts both on the caller's signal and
-  // on unsubscribe. `AbortSignal.any` (rather than `addEventListener`)
+  // `combineAbortSignals`, so the request aborts both on the caller's signal
+  // and on unsubscribe. A combined signal (rather than `addEventListener`)
   // because the caller's signal can be long-lived and reused — a manually
   // added listener would accumulate there once per subscription, since
-  // `{once: true}` only cleans up if the signal actually fires.
+  // `{once: true}` only cleans up if the signal actually fires. Aborting the
+  // controller on teardown is what detaches the combined signal's listener
+  // from the caller's signal.
   const observable: LegacyRequester = (options: Any) =>
     new Observable<ResponseEvent>((subscriber) => {
       const controller = new AbortController()
       const userSignal: AbortSignal | undefined = options.signal
       const signal = userSignal
-        ? AbortSignal.any([userSignal, controller.signal])
+        ? combineAbortSignals([userSignal, controller.signal])
         : controller.signal
       const subscription = from(promise({...options, signal})).subscribe(subscriber)
       return () => {
