@@ -6,11 +6,11 @@ import {
   type TransformMiddleware,
   type WrappingMiddleware,
 } from 'get-it'
+import {anySignal} from 'get-it/any-signal'
 import {isRetryableRequest, retry} from 'get-it/middleware'
 import {from, Observable} from 'rxjs'
 
 import type {Any} from '../types'
-import {anySignal} from '../util/anySignal'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
 
 /**

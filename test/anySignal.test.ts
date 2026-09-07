@@ -4,7 +4,6 @@ import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
 import {_observe} from '../src/data/dataMethods'
 import {defineRequester} from '../src/http/request'
-import {anySignal} from '../src/util/anySignal'
 import {clientConfig, createClient, projectHost} from './client/helpers'
 import {getActiveFetch, getActiveMock} from './helpers/mockFetch'
 
@@ -64,49 +63,6 @@ describe.each([
     expect(typeof AbortSignal.any).toBe(hasNativeAny ? 'function' : 'undefined')
   })
 
-  test('anySignal aborts when the first source aborts, with its reason', () => {
-    const first = new AbortController()
-    const second = new AbortController()
-    const combined = anySignal([first.signal, second.signal])
-    expect(combined.aborted).toBe(false)
-
-    const reason = new Error('caller cancelled')
-    first.abort(reason)
-    expect(combined.aborted).toBe(true)
-    expect(combined.reason).toBe(reason)
-    expect(second.signal.aborted).toBe(false)
-  })
-
-  test('anySignal aborts when the second source aborts, with its reason', () => {
-    const first = new AbortController()
-    const second = new AbortController()
-    const combined = anySignal([first.signal, second.signal])
-
-    const reason = new Error('unsubscribed')
-    second.abort(reason)
-    expect(combined.aborted).toBe(true)
-    expect(combined.reason).toBe(reason)
-    expect(first.signal.aborted).toBe(false)
-  })
-
-  test('anySignal is already aborted when a source already is', () => {
-    const aborted = AbortSignal.abort(new Error('already cancelled'))
-    const combined = anySignal([aborted, new AbortController().signal])
-    expect(combined.aborted).toBe(true)
-    expect(combined.reason).toBe(aborted.reason)
-  })
-
-  test('anySignal aborts only once', () => {
-    const first = new AbortController()
-    const second = new AbortController()
-    const combined = anySignal([first.signal, second.signal])
-
-    const reason = new Error('first')
-    first.abort(reason)
-    second.abort(new Error('second'))
-    expect(combined.reason).toBe(reason)
-  })
-
   test('_observe aborts the request when the caller signal aborts', () => {
     const caller = new AbortController()
     const {run, signals} = pendingRun()
@@ -143,11 +99,8 @@ describe.each([
     const {fetch, reached} = trackedFetch()
     const {observable} = defineRequester({middleware: [], fetch})
     const caller = new AbortController()
-    // `timeout: false` keeps get-it's own timeout signal, and with it get-it's
-    // own signal combination, out of this request: what is under test is the
-    // combination this client does before handing the request to get-it.
     const response = firstValueFrom(
-      observable({url: `${projectHost()}/v1/ping`, timeout: false, signal: caller.signal}),
+      observable({url: `${projectHost()}/v1/ping`, signal: caller.signal}),
     )
 
     const init = await reached
@@ -166,10 +119,7 @@ describe.each([
     const {fetch, reached} = trackedFetch()
     const client = createClient({...clientConfig, resolveFetch: () => fetch})
     const caller = new AbortController()
-    // `timeout: 0` for the same reason as `timeout: false` above.
-    const result = firstValueFrom(
-      client.observable.fetch('*', {}, {signal: caller.signal, timeout: 0}),
-    )
+    const result = firstValueFrom(client.observable.fetch('*', {}, {signal: caller.signal}))
 
     const init = await reached
     expect(init?.signal?.aborted).toBe(false)
