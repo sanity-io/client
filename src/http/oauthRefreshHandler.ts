@@ -32,7 +32,7 @@ export async function applyOAuthToken(
 ): Promise<Record<string, string>> {
   // `new Headers()` gives a case-insensitive lookup over the plain record.
   if (new Headers(headers).has('authorization')) return headers
-  return {...headers, Authorization: `Bearer ${await setup.getToken()}`}
+  return {...headers, Authorization: `Bearer ${await resolveOAuthToken(setup)}`}
 }
 
 /**
@@ -71,6 +71,27 @@ export function getOAuthRefresher(setup: OAuthTokenSetup): () => Promise<string>
     refreshers.set(setup, refresher)
   }
   return refresher
+}
+
+/**
+ * In ms how early before the expiry do we attempt an automatic refresh.
+ * TODO: define this properly based on what the end lifespan of a token is.
+ */
+const REFRESH_SKEW_MS = 30_000
+
+/**
+ * `getToken()`, or a single-flight `refresh()` when the token is about to
+ * expire. A failed proactive refresh falls back to the current token and
+ * lets the 401 path decide (onAuthError already fired inside the refresher).
+ *
+ * @internal
+ */
+export async function resolveOAuthToken(setup: OAuthTokenSetup): Promise<string> {
+  const expiresAt = setup.getExpiresAt?.()
+  if (expiresAt !== undefined && Date.now() >= expiresAt - REFRESH_SKEW_MS) {
+    return getOAuthRefresher(setup)().catch(() => setup.getToken())
+  }
+  return setup.getToken()
 }
 
 /**
@@ -115,9 +136,7 @@ export async function refreshOnAuthError(
  *
  * @internal
  */
-export function resolveRequestHandler(
-  config: InitializedClientConfig,
-): RequestHandler | undefined {
+export function resolveRequestHandler(config: InitializedClientConfig): RequestHandler | undefined {
   const setup = getOAuthTokenSetup(config.token)
   if (!setup) return config.requestHandler
   const oauthHandler = createOAuthRefreshHandler(setup)
@@ -151,7 +170,7 @@ function createOAuthRefreshHandler(setup: OAuthTokenSetup): RequestHandler {
     // a 401 against a token this handler didn't supply isn't its to fix.
     if (new Headers(request.headers).has('authorization')) return next(request)
 
-    const token = await setup.getToken()
+    const token = await resolveOAuthToken(setup)
     try {
       return await next(withToken(request, token))
     } catch (error) {
