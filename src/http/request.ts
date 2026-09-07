@@ -1,3 +1,4 @@
+import {anySignal} from 'any-signal'
 import {
   createRequester,
   type FetchFunction,
@@ -10,7 +11,6 @@ import {isRetryableRequest, retry} from 'get-it/middleware'
 import {from, Observable} from 'rxjs'
 
 import type {Any} from '../types'
-import {combineAbortSignals} from '../util/combineAbortSignals'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
 
 /**
@@ -142,21 +142,18 @@ export function defineRequester(
   }
 
   // Same per-subscription AbortController pattern as `_observe` in
-  // dataMethods: a caller-supplied signal is combined in via
-  // `combineAbortSignals`, so the request aborts both on the caller's signal
-  // and on unsubscribe. A combined signal (rather than `addEventListener`)
-  // because the caller's signal can be long-lived and reused — a manually
-  // added listener would accumulate there once per subscription, since
-  // `{once: true}` only cleans up if the signal actually fires. Aborting the
-  // controller on teardown is what detaches the combined signal's listener
-  // from the caller's signal.
+  // dataMethods: a caller-supplied signal is combined in so the request
+  // aborts both on the caller's signal and on unsubscribe. `anySignal`
+  // rather than `AbortSignal.any` because Safari 17.0-17.3 lack the latter,
+  // and rather than `addEventListener` because the caller's signal can be
+  // long-lived and reused — a manually added listener would accumulate there
+  // once per subscription. `anySignal` detaches from the caller's signal when
+  // the controller aborts on teardown.
   const observable: LegacyRequester = (options: Any) =>
     new Observable<ResponseEvent>((subscriber) => {
       const controller = new AbortController()
       const userSignal: AbortSignal | undefined = options.signal
-      const signal = userSignal
-        ? combineAbortSignals([userSignal, controller.signal])
-        : controller.signal
+      const signal = userSignal ? anySignal([userSignal, controller.signal]) : controller.signal
       const subscription = from(promise({...options, signal})).subscribe(subscriber)
       return () => {
         subscription.unsubscribe()

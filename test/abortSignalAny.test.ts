@@ -4,37 +4,16 @@ import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
 import {_observe} from '../src/data/dataMethods'
 import {defineRequester} from '../src/http/request'
-import {combineAbortSignals} from '../src/util/combineAbortSignals'
-import {createClient, clientConfig, projectHost} from './client/helpers'
+import {clientConfig, createClient, projectHost} from './client/helpers'
 import {getActiveFetch, getActiveMock} from './helpers/mockFetch'
 
-/**
- * Safari 17.0 to 17.3 ship `AbortSignal` without the static `any`, so the
- * client's own signal combination (a caller's signal plus the
- * per-subscription controller that fires on unsubscribe) must not call it.
- * Every runtime this suite runs on does have it, so the Safari 17 case is
- * simulated by undefining the static for the duration of a test, and the
- * Safari 18+ case by leaving it in place. Both must behave identically.
- *
- * The static is shadowed with an own `undefined` property rather than
- * deleted: happy-dom's global `AbortSignal` is a subclass that inherits `any`
- * from its parent, where a delete would not reach it.
- */
+// Safari 17.0-17.3 ship `AbortSignal` without the static `any`. Every runtime
+// this suite runs on has it, so that case is simulated by shadowing the static
+// with an own `undefined` property for the duration of a test. Shadowed rather
+// than deleted because happy-dom's global `AbortSignal` is a subclass that
+// inherits `any` from its parent, where a delete would not reach it.
 const nativeAny = Object.getOwnPropertyDescriptor(AbortSignal, 'any')
 
-function undefineNativeAny(): void {
-  Object.defineProperty(AbortSignal, 'any', {value: undefined, configurable: true, writable: true})
-}
-
-function restoreNativeAny(): void {
-  if (nativeAny) {
-    Object.defineProperty(AbortSignal, 'any', nativeAny)
-  } else {
-    Reflect.deleteProperty(AbortSignal, 'any')
-  }
-}
-
-/** A `run` for `_observe` that never settles, exposing the signal it was given. */
 function pendingRun() {
   const signals: AbortSignal[] = []
   const run = (signal: AbortSignal): Promise<never> => {
@@ -44,11 +23,8 @@ function pendingRun() {
   return {run, signals}
 }
 
-/**
- * Wraps the active mock fetch so a test can wait for the transport to be
- * reached (and read the `init` it was reached with) before aborting, instead
- * of racing the abort against the request pipeline on a timer.
- */
+// Resolves `reached` once the transport is called, so a test can abort after
+// the request is in flight instead of racing it on a timer.
 function trackedFetch(): {fetch: FetchFunction; reached: Promise<FetchInit | undefined>} {
   let onReached: (init: FetchInit | undefined) => void = () => {}
   const reached = new Promise<FetchInit | undefined>((resolve) => {
@@ -66,46 +42,25 @@ describe.each([
   {environment: 'Safari 18 (native AbortSignal.any)', hasNativeAny: true},
 ])('combining abort signals on $environment', ({hasNativeAny}) => {
   beforeEach(() => {
-    if (!hasNativeAny) undefineNativeAny()
+    if (!hasNativeAny) {
+      Object.defineProperty(AbortSignal, 'any', {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      })
+    }
   })
 
   afterEach(() => {
-    restoreNativeAny()
+    if (nativeAny) {
+      Object.defineProperty(AbortSignal, 'any', nativeAny)
+    } else {
+      Reflect.deleteProperty(AbortSignal, 'any')
+    }
   })
 
   test('the simulated environment is in effect', () => {
     expect(typeof AbortSignal.any).toBe(hasNativeAny ? 'function' : 'undefined')
-  })
-
-  test('combineAbortSignals aborts when the first source aborts, with its reason', () => {
-    const first = new AbortController()
-    const second = new AbortController()
-    const combined = combineAbortSignals([first.signal, second.signal])
-    expect(combined.aborted).toBe(false)
-
-    const reason = new Error('caller cancelled')
-    first.abort(reason)
-    expect(combined.aborted).toBe(true)
-    expect(combined.reason).toBe(reason)
-    expect(second.signal.aborted).toBe(false)
-  })
-
-  test('combineAbortSignals aborts when the second source aborts', () => {
-    const first = new AbortController()
-    const second = new AbortController()
-    const combined = combineAbortSignals([first.signal, second.signal])
-
-    second.abort()
-    expect(combined.aborted).toBe(true)
-    expect(combined.reason).toBe(second.signal.reason)
-    expect(first.signal.aborted).toBe(false)
-  })
-
-  test('combineAbortSignals starts out aborted when a source already is', () => {
-    const aborted = AbortSignal.abort(new Error('already cancelled'))
-    const combined = combineAbortSignals([aborted, new AbortController().signal])
-    expect(combined.aborted).toBe(true)
-    expect(combined.reason).toBe(aborted.reason)
   })
 
   test('_observe aborts the request when the caller signal aborts', () => {
@@ -117,8 +72,10 @@ describe.each([
     const [requestSignal] = signals
     expect(requestSignal.aborted).toBe(false)
 
-    caller.abort()
+    const reason = new Error('caller cancelled')
+    caller.abort(reason)
     expect(requestSignal.aborted).toBe(true)
+    expect(requestSignal.reason).toBe(reason)
     subscription.unsubscribe()
   })
 
@@ -143,8 +100,8 @@ describe.each([
     const {observable} = defineRequester({middleware: [], fetch})
     const caller = new AbortController()
     // `timeout: false` keeps get-it's own timeout signal, and with it get-it's
-    // own signal combination, out of this request: what is under test here is
-    // the combination this client does before handing the request to get-it.
+    // own signal combination, out of this request: what is under test is the
+    // combination this client does before handing the request to get-it.
     const response = firstValueFrom(
       observable({url: `${projectHost()}/v1/ping`, timeout: false, signal: caller.signal}),
     )
