@@ -130,7 +130,11 @@ type ClientConfigResource =
 export interface ClientConfig {
   projectId?: string
   dataset?: string
-  /** @defaultValue true */
+  /**
+   * Whether to use the API-CDN. `drafts` and `previewDrafts` cannot be queried
+   * through the CDN; combining them with `useCdn: true` throws.
+   * @defaultValue true
+   */
   useCdn?: boolean
   token?: string
 

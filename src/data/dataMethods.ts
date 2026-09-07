@@ -2,7 +2,11 @@ import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/cli
 import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
-import {validateApiPerspective} from '../config'
+import {
+  CDN_INCOMPATIBLE_PERSPECTIVE_ERROR,
+  perspectiveConflictsWithCdn,
+  validateApiPerspective,
+} from '../config'
 import {type FetchRequest, requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean, type StegaCleaned} from '../stega/stegaClean'
@@ -40,7 +44,7 @@ import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
 import {
-  printCdnPreviewDraftsWarning,
+  printCdnStackedPerspectiveWarning,
   printCreateVersionWithBaseIdWarning,
   printDeprecatedUriOptionWarning,
   printPreviewDraftsDeprecationWarning,
@@ -1063,16 +1067,12 @@ export function _prepareRequest(client: Client, options: RequestObservableOption
           : perspectiveOption,
         ...options.query,
       }
-      // If the perspective is set to `drafts` or multiple perspectives we can't use the CDN, the API will throw
-      if (
-        ((Array.isArray(perspectiveOption) && perspectiveOption.length > 0) ||
-          // previewDrafts was renamed to drafts, but keep for backwards compat
-          perspectiveOption === 'previewDrafts' ||
-          perspectiveOption === 'drafts') &&
-        useCdn
-      ) {
+      if (useCdn && perspectiveConflictsWithCdn(perspectiveOption)) {
+        throw new Error(CDN_INCOMPATIBLE_PERSPECTIVE_ERROR)
+      }
+      if (useCdn && Array.isArray(perspectiveOption) && perspectiveOption.length > 0) {
         useCdn = false
-        printCdnPreviewDraftsWarning()
+        printCdnStackedPerspectiveWarning()
       }
     }
 
