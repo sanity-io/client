@@ -1,5 +1,15 @@
 # @sanity/client
 
+## 8.6.0
+
+### Minor Changes
+
+- conversation sharing opt-in and createdBy reach client.context types ([#1317](https://github.com/sanity-io/client/pull/1317)) ([2459ebe](https://github.com/sanity-io/client/commit/2459ebe368e14d5ea291594878dd3372bdc2eaae))
+
+### Patch Changes
+
+- use `any-signal` instead of `AbortSignal.any` so cancellable requests work on Safari 17.0-17.3 ([#1326](https://github.com/sanity-io/client/pull/1326)) ([f87523e](https://github.com/sanity-io/client/commit/f87523e95350f4ff0837e20ee9a4eb08b57f36aa))
+
 ## 8.5.0
 
 ### Minor Changes
