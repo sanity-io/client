@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      any-signal:
+        specifier: ^4.2.0
+        version: 4.2.0
       eventsource:
         specifier: ^5.1.1
         version: 5.1.1
@@ -2459,6 +2462,10 @@ packages:
   ansis@4.3.1:
     resolution: {integrity: sha512-BJ8/l4R5LRE7hW9WdSuGYrLSHi2ynxeFpDFbH0K/CgNeY/tyhk+vO6TYxXC5r5CpUhNVX310xzPsN/H9lCdfOA==}
     engines: {node: '>=14'}
+
+  any-signal@4.2.0:
+    resolution: {integrity: sha512-LndMvYuAPf4rC195lk7oSFuHOYFpOszIYrNYv0gHAvz+aEhE9qPZLhmrIz5pXP2BSsPOXvsuHDXEGaiQhIh9wA==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
@@ -6509,6 +6516,8 @@ snapshots:
       color-convert: 2.0.1
 
   ansis@4.3.1: {}
+
+  any-signal@4.2.0: {}
 
   argparse@1.0.10:
     dependencies:

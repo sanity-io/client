@@ -1,3 +1,4 @@
+import {anySignal} from 'any-signal'
 import {
   createRequester,
   type FetchFunction,
@@ -140,20 +141,11 @@ export function defineRequester(
     return executeRequest(requester, options)
   }
 
-  // Same per-subscription AbortController pattern as `_observe` in
-  // dataMethods: a caller-supplied signal is combined in via
-  // `AbortSignal.any`, so the request aborts both on the caller's signal and
-  // on unsubscribe. `AbortSignal.any` (rather than `addEventListener`)
-  // because the caller's signal can be long-lived and reused — a manually
-  // added listener would accumulate there once per subscription, since
-  // `{once: true}` only cleans up if the signal actually fires.
   const observable: LegacyRequester = (options: Any) =>
     new Observable<ResponseEvent>((subscriber) => {
       const controller = new AbortController()
       const userSignal: AbortSignal | undefined = options.signal
-      const signal = userSignal
-        ? AbortSignal.any([userSignal, controller.signal])
-        : controller.signal
+      const signal = userSignal ? anySignal([userSignal, controller.signal]) : controller.signal
       const subscription = from(promise({...options, signal})).subscribe(subscriber)
       return () => {
         subscription.unsubscribe()

@@ -1,4 +1,5 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
+import {anySignal} from 'any-signal'
 import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
@@ -1134,11 +1135,7 @@ export function _observe<R>(
 ): Observable<R> {
   return new Observable<R>((subscriber) => {
     const controller = new AbortController()
-    // `AbortSignal.any` rather than an `addEventListener` on the caller's
-    // signal: that signal can be long-lived and reused across many requests,
-    // and a listener per subscription would accumulate there (`{once: true}`
-    // only cleans up if the signal actually fires).
-    const signal = userSignal ? AbortSignal.any([userSignal, controller.signal]) : controller.signal
+    const signal = userSignal ? anySignal([userSignal, controller.signal]) : controller.signal
     run(signal).then(
       (value) => {
         subscriber.next(value)
