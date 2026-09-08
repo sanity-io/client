@@ -94,8 +94,8 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_CONFIG_PROVENANCE: true
 
-      # `createGithubReleases: false` also stops the action from pushing the git tag that
-      # `changeset publish` created locally, so push it here before creating the release.
+      # `changeset publish` names its tag after the package, while GitHub releases use a version
+      # tag. Create and push the latter before creating the release.
       - name: Create GitHub release
         if: steps.changesets.outputs.published == 'true'
         env:
@@ -103,6 +103,7 @@ jobs:
           MAKE_LATEST: ${{ steps.line.outputs.gh-latest }}
         run: |
           version="$(node -p 'require("./package.json").version')"
+          git tag "v$version"
           git push origin "refs/tags/v$version"
 
           node .github/scripts/release-notes.mjs "$version" > "$RUNNER_TEMP/release-notes.md"
