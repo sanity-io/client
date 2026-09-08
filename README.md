@@ -2632,7 +2632,7 @@ Read and write comments on documents in an organization resource. Available on `
 
 #### Configuration
 
-Comments are organization-scoped. The client needs an `organizationId`, plus either a `resource` or `projectId` and `dataset`:
+Comments are organization-scoped. The client needs `collaboration.organizationId`, plus either a `resource` or `projectId` and `dataset`:
 
 ```js
 import {createClient} from '@sanity/client'
@@ -2641,7 +2641,9 @@ const client = createClient({
   apiVersion: '2026-07-18',
   token: 'valid-token',
   useCdn: false,
-  organizationId: 'your-organization-id',
+  collaboration: {
+    organizationId: 'your-organization-id',
+  },
   resource: {
     type: 'canvas',
     id: 'your-canvas-id',
@@ -2649,7 +2651,7 @@ const client = createClient({
 })
 ```
 
-A project-based client only needs `organizationId` added; the dataset resource is derived from `projectId` and `dataset`:
+A project-based client only needs `collaboration.organizationId` added; the dataset resource is derived from `projectId` and `dataset`:
 
 ```js
 const client = createClient({
@@ -2658,7 +2660,9 @@ const client = createClient({
   apiVersion: '2026-07-18',
   token: 'valid-token',
   useCdn: false,
-  organizationId: 'your-organization-id',
+  collaboration: {
+    organizationId: 'your-organization-id',
+  },
 })
 ```
 
