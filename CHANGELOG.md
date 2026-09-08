@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.6.1
+
+### Patch Changes
+
+- drop the `any-signal` dependency and combine abort signals with `get-it/any-signal`, which uses native `AbortSignal.any` where it exists and a plain `AbortController` on Safari 17.0-17.3 ([#1329](https://github.com/sanity-io/client/pull/1329)) ([4b5c198](https://github.com/sanity-io/client/commit/4b5c198a3454aca8eb97bc6c4ed603a5e877b7ad))
+
 ## 8.6.0
 
 ### Minor Changes
