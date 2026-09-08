@@ -20,7 +20,11 @@ import {shareReplayLatest} from '../util/shareReplayLatest'
 import {_getDataUrl} from './dataMethods'
 import {connectEventSource} from './eventsource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
-import {pickBaseFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
+import {
+  type EventSourceFetchOptions,
+  pickBaseFetch,
+  resolveEventSourceFetch,
+} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
 
@@ -115,11 +119,12 @@ export class LiveClient {
       return existing
     }
 
-    const initEventSource = () =>
+    const initEventSource = (onRejectedResponse: EventSourceFetchOptions['onRejectedResponse']) =>
       new EventSource(url.href, {
         fetch: resolveEventSourceFetch(config, {
           headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
           withCredentials: eventSourceWithCredentials,
+          onRejectedResponse,
         }),
       })
 

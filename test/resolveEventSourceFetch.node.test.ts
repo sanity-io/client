@@ -65,6 +65,93 @@ describe('resolveEventSourceFetch', () => {
     expect(globalFetch).toHaveBeenCalledTimes(1)
   })
 
+  describe('onRejectedResponse', () => {
+    const withResponse = (response: Response) => {
+      const envFetch = vi.fn(async () => response)
+      return {...getConfig(), resolveFetch: () => envFetch}
+    }
+
+    test('reports a non-2xx response with its parsed body, headers and raw text', async () => {
+      const onRejectedResponse = vi.fn()
+      const config = withResponse(
+        new Response(JSON.stringify({error: 'Unauthorized', errorCode: 'SIO-401-AEX'}), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: {'content-type': 'application/json', 'x-sanity-trace': 'abc'},
+        }),
+      )
+
+      const response = await resolveEventSourceFetch(config, {onRejectedResponse})(
+        'https://abc123.api.sanity.io/v1/data/listen/prod',
+      )
+
+      // The response is still handed back to the `eventsource` package, which
+      // reports the status through its error event.
+      expect(response.status).toBe(401)
+      expect(onRejectedResponse).toHaveBeenCalledTimes(1)
+      expect(onRejectedResponse).toHaveBeenCalledWith({
+        response: {
+          statusCode: 401,
+          statusMessage: 'Unauthorized',
+          headers: {'content-type': 'application/json', 'x-sanity-trace': 'abc'},
+          body: {error: 'Unauthorized', errorCode: 'SIO-401-AEX'},
+          url: 'https://abc123.api.sanity.io/v1/data/listen/prod',
+          method: 'GET',
+        },
+        responseBody: '{"error":"Unauthorized","errorCode":"SIO-401-AEX"}',
+      })
+    })
+
+    test('exposes a non-JSON body as the raw string', async () => {
+      const onRejectedResponse = vi.fn()
+      const config = withResponse(new Response('<html>Bad Gateway</html>', {status: 502}))
+
+      await resolveEventSourceFetch(config, {onRejectedResponse})('https://example.com/sse')
+
+      expect(onRejectedResponse).toHaveBeenCalledWith(
+        expect.objectContaining({
+          response: expect.objectContaining({statusCode: 502, body: '<html>Bad Gateway</html>'}),
+          responseBody: '<html>Bad Gateway</html>',
+        }),
+      )
+    })
+
+    test('still reports the status when the body cannot be read', async () => {
+      // Eg the body stream errored, or the request was aborted mid-read.
+      // Capturing the body is best-effort and must never break the error path.
+      const onRejectedResponse = vi.fn()
+      const response = new Response('ignored', {status: 401})
+      vi.spyOn(response, 'text').mockRejectedValue(new Error('stream error'))
+      const config = withResponse(response)
+
+      const result = await resolveEventSourceFetch(config, {onRejectedResponse})(
+        'https://example.com/sse',
+      )
+
+      expect(result.status).toBe(401)
+      expect(onRejectedResponse).toHaveBeenCalledWith({
+        response: expect.objectContaining({statusCode: 401, body: undefined}),
+        responseBody: undefined,
+      })
+    })
+
+    test('never reads the body of a 2xx response (that is the event stream)', async () => {
+      const onRejectedResponse = vi.fn()
+      const response = new Response('data: {}\n\n', {
+        status: 200,
+        headers: {'content-type': 'text/event-stream'},
+      })
+      const text = vi.spyOn(response, 'text')
+      const config = withResponse(response)
+
+      await resolveEventSourceFetch(config, {onRejectedResponse})('https://example.com/sse')
+
+      expect(onRejectedResponse).not.toHaveBeenCalled()
+      expect(text).not.toHaveBeenCalled()
+      expect(response.bodyUsed).toBe(false)
+    })
+  })
+
   test('the Node entry supplies an environment fetch resolver on the config', () => {
     // Guards the wiring end to end: nodeMiddleware -> defineCreateClient ->
     // client.config(). Without it, EventSource falls back to global fetch

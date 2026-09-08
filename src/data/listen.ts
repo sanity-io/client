@@ -24,7 +24,7 @@ import {_getDataUrl} from './dataMethods'
 import {encodeQueryString} from './encodeQueryString'
 import {connectEventSource} from './eventsource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
-import {resolveEventSourceFetch} from './resolveEventSourceFetch'
+import {type EventSourceFetchOptions, resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 // Limit is 16K for a _request_, eg including headers. Have to account for an
 // unknown range of headers, but an average EventSource request from Chrome seems
@@ -173,11 +173,12 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
     Object.assign(headers, configHeaders)
   }
 
-  const initEventSource = () =>
+  const initEventSource = (onRejectedResponse: EventSourceFetchOptions['onRejectedResponse']) =>
     new EventSource(uri, {
       fetch: resolveEventSourceFetch(config, {
         headers: Object.keys(headers).length ? headers : undefined,
         withCredentials,
+        onRejectedResponse,
       }),
     })
 

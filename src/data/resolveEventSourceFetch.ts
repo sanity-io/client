@@ -1,7 +1,23 @@
 import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
+import {type CanonicalHttpResponse, httpResponseFromFetch} from '../http/errors'
 import type {InitializedClientConfig} from '../types'
+
+/**
+ * A connection attempt the server answered with a non-2xx response, as seen
+ * by the fetch handed to the `eventsource` package. The package itself never
+ * reads the body of a rejected response (it only reports the status), so
+ * this is the only place the client gets to see the API's error payload.
+ *
+ * @internal
+ */
+export interface RejectedEventSourceResponse {
+  /** The rejected response, in the same shape `ClientError`/`ServerError` expose. */
+  response: CanonicalHttpResponse
+  /** Raw body text. `undefined` if the body could not be read. */
+  responseBody?: string
+}
 
 /** @internal */
 export interface EventSourceFetchOptions {
@@ -17,6 +33,13 @@ export interface EventSourceFetchOptions {
    * attaches cookies to the SSE request.
    */
   withCredentials?: boolean
+  /**
+   * Called with every non-2xx response, after its body has been read, and
+   * before the response is handed back to the `eventsource` package. Lets
+   * the connection layer attach the API's error payload to the
+   * `ConnectionFailedError` it raises for the rejection.
+   */
+  onRejectedResponse?: (rejected: RejectedEventSourceResponse) => void
 }
 
 /**
@@ -51,9 +74,11 @@ export function resolveEventSourceFetch(
 ): EventSourceFetch {
   const extraHeaders = options.headers
   const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
+  const onRejectedResponse = options.onRejectedResponse
 
-  return function eventSourceFetch(url, init) {
+  return async function eventSourceFetch(url, init) {
     const baseFetch = pickBaseFetch(config)
+    const href = typeof url === 'string' ? url : url.href
 
     // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
     // declare (`mode`, `cache`) survive the spread and reach whichever
@@ -71,7 +96,64 @@ export function resolveEventSourceFetch(
     }
     // get-it's `FetchResponse` is a structural superset of the package's
     // `FetchLikeResponse`, so it can be handed over as-is.
-    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
+    const response = await baseFetch(href, mergedInit)
+    if (onRejectedResponse && !response.ok) {
+      onRejectedResponse(await readRejectedResponse(response, href))
+    }
+    return response
+  }
+}
+
+/**
+ * Reads the body of a rejected (non-2xx) connection attempt. A 2xx body is
+ * the event stream itself and must never be touched here; a rejected body is
+ * a one-off error payload the `eventsource` package would otherwise discard.
+ *
+ * Never throws: a body that cannot be read (stream error, aborted request)
+ * leaves both `responseBody` and `response.body` undefined, so the caller
+ * still learns the status, URL and headers of the rejection.
+ */
+async function readRejectedResponse(
+  response: Awaited<ReturnType<FetchFunction>>,
+  requestUrl: string,
+): Promise<RejectedEventSourceResponse> {
+  let responseBody: string | undefined
+  try {
+    responseBody = await response.text()
+  } catch {
+    responseBody = undefined
+  }
+  // Picked field by field: on a real `Response` these are prototype getters,
+  // which an object spread would not copy.
+  const {status, statusText, headers, url} = response
+  return {
+    response: httpResponseFromFetch(
+      {
+        status,
+        statusText,
+        headers,
+        url,
+        body: responseBody === undefined ? undefined : parseBody(responseBody),
+      },
+      requestUrl,
+      'GET',
+    ),
+    responseBody,
+  }
+}
+
+/**
+ * The API answers rejections with a JSON `{error, message, errorCode}` body,
+ * but a proxy or load balancer in front of it may answer with HTML or plain
+ * text. Expose JSON parsed (so consumers can read `body.errorCode`) and
+ * anything else as the raw string, mirroring what get-it does for regular
+ * requests.
+ */
+function parseBody(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
   }
 }
 

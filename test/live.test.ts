@@ -723,7 +723,7 @@ describe('.live.events()', () => {
   })
 
   test('stops reconnecting and surfaces the error when the connection is rejected with a 4xx', async () => {
-    expect.assertions(2)
+    expect.assertions(6)
 
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
@@ -736,7 +736,10 @@ describe('.live.events()', () => {
     getActiveMock()
       .scope('https://abc123.api.sanity.io')
       .on('GET', '/vX/data/live/events/unauthorized-dataset')
-      .respondPersist({status: 401, body: 'Unauthorized'})
+      .respondPersist({
+        status: 401,
+        body: {error: 'Unauthorized', message: 'Session is expired', errorCode: 'SIO-401-AEX'},
+      })
 
     const client = createClient({
       projectId: 'abc123',
@@ -751,6 +754,18 @@ describe('.live.events()', () => {
     )
     expect(event).toBeInstanceOf(ConnectionFailedError)
     expect(event.status).toBe(401)
+    // The API error payload rides along, so an expired session can be told
+    // apart from a permission denial without a separate probe request.
+    expect(event.statusCode).toBe(401)
+    expect(event.message).toBe('Unauthorized - Session is expired')
+    expect(event.response.body).toEqual({
+      error: 'Unauthorized',
+      message: 'Session is expired',
+      errorCode: 'SIO-401-AEX',
+    })
+    expect(event.responseBody).toBe(
+      '{"error":"Unauthorized","message":"Session is expired","errorCode":"SIO-401-AEX"}',
+    )
   })
 
   test('does not report CorsOriginError when /check/cors returns a non-2xx response', async () => {

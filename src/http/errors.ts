@@ -145,7 +145,15 @@ export class ServerError extends Error {
   }
 }
 
-function extractErrorProps(res: Any, tag?: string): ErrorProps {
+/**
+ * Derives the message, `responseBody`, `traceId` and `details` an HTTP error
+ * class exposes from a canonical response. Shared by {@link ClientError},
+ * {@link ServerError} and the EventSource `ConnectionFailedError` so a
+ * rejected SSE connection reads exactly like a rejected regular request.
+ *
+ * @internal
+ */
+export function extractErrorProps(res: Any, tag?: string): ErrorProps {
   const body = res.body
   const props = {
     response: res,

@@ -1,4 +1,9 @@
-import {ChannelError, ConnectionFailedError, createClient as createCoreClient} from '@sanity/client'
+import {
+  ChannelError,
+  ConnectionFailedError,
+  createClient as createCoreClient,
+  isHttpError,
+} from '@sanity/client'
 import {encode} from 'eventsource-encoder'
 import {catchError, firstValueFrom, lastValueFrom, of, take, toArray} from 'rxjs'
 import {describe, expect, test, vitest} from 'vitest'
@@ -191,6 +196,114 @@ describe('.listen()', () => {
     )
     expect(event).toBeInstanceOf(ConnectionFailedError)
     expect(event.status).toBe(401)
+  })
+
+  test('exposes the API error response on a rejected connection', async () => {
+    // The API body is what tells an expired session (`SIO-401-AEX`) apart from
+    // a permission denial on a valid session, so consumers need it on the
+    // error - `ClientError`-shaped so the same classification code applies.
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/listen/prod')
+      .respondPersist({
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'},
+        body: {error: 'Unauthorized', message: 'Session is expired', errorCode: 'SIO-401-AEX'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'prod',
+      useCdn: false,
+      apiVersion: '1',
+      token: 'expired-token',
+    })
+
+    const error: ConnectionFailedError = await firstValueFrom(
+      client.listen('*', {}, {events: ['mutation']}).pipe(catchError((err) => of(err))),
+    )
+    expect(error).toBeInstanceOf(ConnectionFailedError)
+    expect(error.status).toBe(401)
+    expect(error.statusCode).toBe(401)
+    expect(error.message).toBe(
+      'Unauthorized - Session is expired (traceId: 0af7651916cd43dd8448eb211c80319c)',
+    )
+    expect(error.traceId).toBe('0af7651916cd43dd8448eb211c80319c')
+    expect(error.response).toMatchObject({
+      statusCode: 401,
+      statusMessage: 'Unauthorized',
+      method: 'GET',
+      url: expect.stringContaining('/v1/data/listen/prod'),
+      headers: {'content-type': 'application/json'},
+      body: {error: 'Unauthorized', message: 'Session is expired', errorCode: 'SIO-401-AEX'},
+    })
+    expect(error.responseBody).toBe(
+      '{"error":"Unauthorized","message":"Session is expired","errorCode":"SIO-401-AEX"}',
+    )
+    // Satisfies the `HttpError` contract, so `isHttpError()`-based helpers
+    // written for `ClientError` classify it without changes.
+    expect(isHttpError(error)).toBe(true)
+  })
+
+  test('exposes the raw text when the rejected response body is not JSON', async () => {
+    // A proxy or load balancer in front of the API may answer with HTML.
+    const html = '<html><body>Bad Gateway</body></html>'
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/listen/prod')
+      .respondPersist({status: 403, statusText: 'Forbidden', body: html})
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'prod',
+      useCdn: false,
+      apiVersion: '1',
+      token: 'some-token',
+    })
+
+    const error: ConnectionFailedError = await firstValueFrom(
+      client.listen('*', {}, {events: ['mutation']}).pipe(catchError((err) => of(err))),
+    )
+    expect(error).toBeInstanceOf(ConnectionFailedError)
+    expect(error.status).toBe(403)
+    expect(error.response?.body).toBe(html)
+    expect(error.responseBody).toBe(html)
+    expect(error.message).toMatch(
+      /^GET-request to .*\/v1\/data\/listen\/prod.* resulted in HTTP 403/,
+    )
+  })
+
+  test('concurrent listeners each get their own rejected response', async () => {
+    const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+    scope.on('GET', '/v1/data/listen/expired').respondPersist({
+      status: 401,
+      body: {error: 'Unauthorized', message: 'Session is expired', errorCode: 'SIO-401-AEX'},
+    })
+    scope.on('GET', '/v1/data/listen/missing').respondPersist({
+      status: 401,
+      body: {
+        error: 'Unauthorized',
+        message: 'Unauthorized - Session not found',
+        errorCode: 'SIO-401-ANF',
+      },
+    })
+
+    const listenTo = (dataset: string) =>
+      firstValueFrom(
+        createClient({projectId: 'abc123', dataset, useCdn: false, apiVersion: '1', token: 't'})
+          .listen('*', {}, {events: ['mutation']})
+          .pipe(catchError((err) => of(err as ConnectionFailedError))),
+      )
+
+    const [expired, missing] = (await Promise.all([
+      listenTo('expired'),
+      listenTo('missing'),
+    ])) as ConnectionFailedError[]
+    expect(expired.response?.body).toMatchObject({errorCode: 'SIO-401-AEX'})
+    expect(expired.response?.url).toContain('/v1/data/listen/expired')
+    expect(missing.response?.body).toMatchObject({errorCode: 'SIO-401-ANF'})
+    expect(missing.response?.url).toContain('/v1/data/listen/missing')
   })
 
   test('keeps reconnecting when the connection is rejected with a non-4xx error status', async () => {

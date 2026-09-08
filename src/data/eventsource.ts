@@ -1,14 +1,26 @@
 import type {ErrorEvent, EventSourceConstructor} from 'eventsource'
 import {defer, isObservable, mergeMap, Observable, of} from 'rxjs'
 
-import {formatQueryParseError, isQueryParseError} from '../http/errors'
+import {
+  extractErrorProps,
+  formatQueryParseError,
+  type HttpError,
+  isQueryParseError,
+} from '../http/errors'
 import {isRecord} from '../util/isRecord'
+import type {RejectedEventSourceResponse} from './resolveEventSourceFetch'
 
 /**
  * Thrown when the EventSource connection could not be established, or was rejected by the server.
  * Transient failures (network drops, 5xx, 408, 429) are reconnected internally and emitted as
  * `reconnect` events; a permanent rejection (any other 4xx, eg an expired token) errors the
  * stream with this class so consumers can react — check `status` for the rejection code.
+ *
+ * When the server rejected the connection, the error also carries the rejected response, in
+ * the same shape as `ClientError`/`ServerError`: `response.body` holds the parsed API error
+ * payload (eg `{error, message, errorCode}`), `responseBody` the raw text, and `statusCode`
+ * mirrors `status`. A rejection whose body could be read therefore satisfies `isHttpError()`,
+ * so it can be classified with the same code as a rejected regular request.
  *
  * @public
  */
@@ -21,11 +33,60 @@ export class ConnectionFailedError extends Error {
    * native EventSource implementations (browser and Node.js) do not.
    */
   readonly status?: number
-  constructor(message?: string, options: ErrorOptions & {status?: number} = {}) {
-    const {status, ...errorOptions} = options
+  /**
+   * Same as `status`, under the name `ClientError`/`ServerError` use so
+   * `isHttpError()` and consumers written against those errors work here too.
+   */
+  readonly statusCode?: number
+  /**
+   * The response the server rejected the connection with, if the client got to
+   * see it. `body` is the parsed JSON payload when the body was JSON, the raw
+   * text otherwise, and `undefined` if the body could not be read.
+   */
+  readonly response?: HttpError['response']
+  /** Raw body text of the rejected response, if it could be read. */
+  readonly responseBody?: string
+  /** Trace ID of the rejected response, read from its `traceparent` header. */
+  readonly traceId?: string
+  constructor(
+    message?: string,
+    options: ErrorOptions & {
+      status?: number
+      response?: HttpError['response']
+      responseBody?: string
+      traceId?: string
+    } = {},
+  ) {
+    const {status, response, responseBody, traceId, ...errorOptions} = options
     super(message, errorOptions)
-    this.status = status
+    this.status = status ?? response?.statusCode
+    this.statusCode = this.status
+    this.response = response
+    this.responseBody = responseBody
+    this.traceId = traceId
   }
+}
+
+/**
+ * Builds the error for a connection attempt the server rejected with `status`. When the
+ * fetch layer recorded the rejected response, the error carries it and takes its message
+ * from the API error payload (eg "Unauthorized - Session is expired"), so consumers and
+ * error trackers see the cause rather than a generic connection failure.
+ */
+function createConnectionRejectedError(
+  status: number,
+  rejected: RejectedEventSourceResponse | undefined,
+): ConnectionFailedError {
+  if (!rejected) {
+    return new ConnectionFailedError('EventSource connection failed', {status})
+  }
+  const {message, traceId} = extractErrorProps(rejected.response)
+  return new ConnectionFailedError(message, {
+    status,
+    response: rejected.response,
+    responseBody: rejected.responseBody,
+    traceId,
+  })
 }
 
 /**
@@ -117,19 +178,31 @@ export type EventSourceInstance = InstanceType<EventSourceConstructor>
  * - {@link DisconnectError}
  * - {@link ConnectionFailedError}
  *
- * @param initEventSource - A function that returns an EventSource instance or an Observable that resolves to an EventSource instance
+ * @param initEventSource - A function that returns an EventSource instance or an Observable that resolves to an EventSource instance.
+ *   It receives an `onRejectedResponse` recorder: when the instance's fetch reports a rejected connection attempt through it
+ *   (see `resolveEventSourceFetch`), the rejected response is attached to the resulting {@link ConnectionFailedError}.
+ *   The `eventsource` package itself only reports the HTTP status of a rejection.
  * @param events - an array of named events from the API to listen for.
  *
  * @internal
  */
 export function connectEventSource<EventName extends string>(
-  initEventSource: () => EventSourceInstance | Observable<EventSourceInstance>,
+  initEventSource: (
+    onRejectedResponse: (rejected: RejectedEventSourceResponse) => void,
+  ) => EventSourceInstance | Observable<EventSourceInstance>,
   events: EventName[],
 ) {
   return defer(() => {
-    const es = initEventSource()
-    return isObservable(es) ? es : of(es)
-  }).pipe(mergeMap((es) => connectWithESInstance(es, events)))
+    // One slot per connection attempt: each subscription creates its own instance, so two
+    // concurrent connections can never see each other's rejected response.
+    let rejected: RejectedEventSourceResponse | undefined
+    const es = initEventSource((response) => {
+      rejected = response
+    })
+    return (isObservable(es) ? es : of(es)).pipe(
+      mergeMap((instance) => connectWithESInstance(instance, events, () => rejected)),
+    )
+  })
 }
 
 /**
@@ -138,10 +211,12 @@ export function connectEventSource<EventName extends string>(
  *
  * @param es - The EventSource instance
  * @param events - List of event names to listen for
+ * @param getRejectedResponse - Reads the response the server rejected the latest connection attempt with, if recorded
  */
 function connectWithESInstance<EventTypeName extends string>(
   es: EventSourceInstance,
   events: EventTypeName[],
+  getRejectedResponse: () => RejectedEventSourceResponse | undefined = () => undefined,
 ) {
   return new Observable<EventSourceEvent<EventTypeName>>((observer) => {
     // Events actually requested by the caller. Backs `isRequestedEvent`, the type
@@ -183,9 +258,7 @@ function connectWithESInstance<EventTypeName extends string>(
       // closes before or after the error event is dispatched — and let
       // `reconnectOnConnectionFailure` classify it (4xx fatal, otherwise retried).
       if (evt.code !== undefined) {
-        observer.error(
-          new ConnectionFailedError('EventSource connection failed', {status: evt.code}),
-        )
+        observer.error(createConnectionRejectedError(evt.code, getRejectedResponse()))
         return
       }
 
