@@ -99,11 +99,8 @@ describe.each([
     const {fetch, reached} = trackedFetch()
     const {observable} = defineRequester({middleware: [], fetch})
     const caller = new AbortController()
-    // `timeout: false` keeps get-it's own timeout signal, and with it get-it's
-    // own signal combination, out of this request: what is under test is the
-    // combination this client does before handing the request to get-it.
     const response = firstValueFrom(
-      observable({url: `${projectHost()}/v1/ping`, timeout: false, signal: caller.signal}),
+      observable({url: `${projectHost()}/v1/ping`, signal: caller.signal}),
     )
 
     const init = await reached
@@ -122,10 +119,7 @@ describe.each([
     const {fetch, reached} = trackedFetch()
     const client = createClient({...clientConfig, resolveFetch: () => fetch})
     const caller = new AbortController()
-    // `timeout: 0` for the same reason as `timeout: false` above.
-    const result = firstValueFrom(
-      client.observable.fetch('*', {}, {signal: caller.signal, timeout: 0}),
-    )
+    const result = firstValueFrom(client.observable.fetch('*', {}, {signal: caller.signal}))
 
     const init = await reached
     expect(init?.signal?.aborted).toBe(false)

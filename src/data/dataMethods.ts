@@ -1,5 +1,5 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
-import {anySignal} from 'any-signal'
+import {anySignal} from 'get-it/any-signal'
 import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
