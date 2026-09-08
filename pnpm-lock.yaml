@@ -12,8 +12,8 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1
       get-it:
-        specifier: https://pkg.pr.new/get-it@672
-        version: https://pkg.pr.new/get-it@672(vitest@4.1.11)
+        specifier: ^9.5.4
+        version: 9.5.4(vitest@4.1.11)
       obug:
         specifier: ^2.1.4
         version: 2.1.4
@@ -2951,9 +2951,8 @@ packages:
     resolution: {integrity: sha512-IfkbWqOGO2kd2Ccgiz/NIzk3bcwjtVqBm3RNa3j/veHg2q7c1DgS3EXrCrvIWH0jbNTbhkdblnxBP7Dm8CiH+A==}
     engines: {node: '>=14.0.0'}
 
-  get-it@https://pkg.pr.new/get-it@672:
-    resolution: {integrity: sha512-we4/m7Yqe2tkJA4762SWhcS/5Gf41eOqM2GljBlDAPoP7INrdyCpp8Voio4CccoDlHsCYkevNXxRY0ULoTKWQw==, tarball: https://pkg.pr.new/get-it@672}
-    version: 9.5.3
+  get-it@9.5.4:
+    resolution: {integrity: sha512-LXbU86HfKWzssHTTsQtUphDh5RB9ilOvncCPPDjaJTbli8zPIJBv4KA9EMB/Wv8GfPXy0dpulfRJzd76n7c3bg==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       vitest: '>=2.0.0'
@@ -7082,7 +7081,7 @@ snapshots:
       through2: 4.0.2
       tunnel-agent: 0.6.0
 
-  get-it@https://pkg.pr.new/get-it@672(vitest@4.1.11):
+  get-it@9.5.4(vitest@4.1.11):
     dependencies:
       undici: 7.29.0
     optionalDependencies:
