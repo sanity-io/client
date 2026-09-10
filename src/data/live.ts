@@ -1,7 +1,7 @@
 import {EventSource} from 'eventsource'
 import type {FetchFunction} from 'get-it'
 import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
-import {finalize, map} from 'rxjs/operators'
+import {finalize, map, tap} from 'rxjs/operators'
 
 import {CorsOriginError} from '../http/errors'
 import {getOAuthRefresher, getOAuthTokenSetup} from '../http/oauthRefreshHandler'
@@ -125,10 +125,13 @@ export class LiveClient {
       return existing
     }
 
+    let lastEventId: string | undefined
+
     const initEventSource = () =>
       new EventSource(url.href, {
         fetch: resolveEventSourceFetch(config, {
           headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
+          lastEventId,
           tokenSetup,
           withCredentials: eventSourceWithCredentials,
         }),
@@ -151,6 +154,11 @@ export class LiveClient {
 
     const observable = events
       .pipe(
+        tap((event) => {
+          if ('id' in event && typeof event.id === 'string' && event.id) {
+            lastEventId = event.id
+          }
+        }),
         reconnectOnConnectionFailure(tokenSetup && getOAuthRefresher(tokenSetup)),
         mergeMap((event) => {
           if (event.type === 'reconnect') {
