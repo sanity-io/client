@@ -1,7 +1,8 @@
 import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
-import type {InitializedClientConfig} from '../types'
+import {resolveOAuthToken} from '../http/oauthRefreshHandler'
+import type {InitializedClientConfig, OAuthTokenSetup} from '../types'
 
 /** @internal */
 export interface EventSourceFetchOptions {
@@ -11,6 +12,23 @@ export interface EventSourceFetchOptions {
    * etc. — things the native EventSource API has no equivalent for.
    */
   headers?: Record<string, string>
+  /**
+   * Last event id from a prior EventSource instance. Used when the client has
+   * to construct a fresh EventSource itself (eg after an OAuth refresh on a
+   * rejected reconnect) so the new instance can resume from the previous
+   * position. The `eventsource` package's own reconnect header, when present,
+   * still wins.
+   */
+  lastEventId?: string
+  /**
+   * OAuth token setup to resolve an `Authorization` header from. Resolved via
+   * `resolveOAuthToken()` on every request — not once per connection — so the
+   * `eventsource` package's reconnects pick up a refreshed token, and a token
+   * about to expire is refreshed proactively. 401-driven `refresh()` still
+   * lives upstream in `reconnectOnConnectionFailure`. Config `headers` take
+   * precedence, mirroring the string-token merge order.
+   */
+  tokenSetup?: OAuthTokenSetup
   /**
    * If the client was configured with `withCredentials: true`, the
    * resolved fetch forwards `credentials: 'include'` so the browser
@@ -50,19 +68,29 @@ export function resolveEventSourceFetch(
   options: EventSourceFetchOptions = {},
 ): EventSourceFetch {
   const extraHeaders = options.headers
+  const lastEventId = options.lastEventId
+  const tokenSetup = options.tokenSetup
   const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
 
-  return function eventSourceFetch(url, init) {
+  return async function eventSourceFetch(url, init) {
     const baseFetch = pickBaseFetch(config)
 
     // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
     // declare (`mode`, `cache`) survive the spread and reach whichever
     // fetch implementation is effective.
     const mergedInit: FetchInit = {...init}
-    if (extraHeaders) {
+    if (extraHeaders || tokenSetup || lastEventId) {
       const headers = new Headers(init?.headers)
-      for (const [key, value] of Object.entries(extraHeaders)) {
-        headers.set(key, value)
+      if (lastEventId && !headers.has('last-event-id')) {
+        headers.set('Last-Event-ID', lastEventId)
+      }
+      if (tokenSetup) {
+        headers.set('Authorization', `Bearer ${await resolveOAuthToken(tokenSetup)}`)
+      }
+      if (extraHeaders) {
+        for (const [key, value] of Object.entries(extraHeaders)) {
+          headers.set(key, value)
+        }
       }
       mergedInit.headers = headers
     }
@@ -71,7 +99,14 @@ export function resolveEventSourceFetch(
     }
     // get-it's `FetchResponse` is a structural superset of the package's
     // `FetchLikeResponse`, so it can be handed over as-is.
-    return baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
+    const response = baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
+    // Returning a promise from an async function attaches its rejection
+    // handler one microtask later (thenable adoption), and workerd's
+    // unhandled-rejection tracker flags a rejected promise in that gap.
+    // Attach a no-op handler synchronously; the rejection still propagates
+    // through the async return to the `eventsource` package's catch.
+    response.catch(() => {})
+    return response
   }
 }
 
