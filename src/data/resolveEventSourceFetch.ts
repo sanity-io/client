@@ -13,6 +13,14 @@ export interface EventSourceFetchOptions {
    */
   headers?: Record<string, string>
   /**
+   * Last event id from a prior EventSource instance. Used when the client has
+   * to construct a fresh EventSource itself (eg after an OAuth refresh on a
+   * rejected reconnect) so the new instance can resume from the previous
+   * position. The `eventsource` package's own reconnect header, when present,
+   * still wins.
+   */
+  lastEventId?: string
+  /**
    * OAuth token setup to resolve an `Authorization` header from. Resolved via
    * `resolveOAuthToken()` on every request — not once per connection — so the
    * `eventsource` package's reconnects pick up a refreshed token, and a token
@@ -60,6 +68,7 @@ export function resolveEventSourceFetch(
   options: EventSourceFetchOptions = {},
 ): EventSourceFetch {
   const extraHeaders = options.headers
+  const lastEventId = options.lastEventId
   const tokenSetup = options.tokenSetup
   const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
 
@@ -70,8 +79,11 @@ export function resolveEventSourceFetch(
     // declare (`mode`, `cache`) survive the spread and reach whichever
     // fetch implementation is effective.
     const mergedInit: FetchInit = {...init}
-    if (extraHeaders || tokenSetup) {
+    if (extraHeaders || tokenSetup || lastEventId) {
       const headers = new Headers(init?.headers)
+      if (lastEventId && !headers.has('last-event-id')) {
+        headers.set('Last-Event-ID', lastEventId)
+      }
       if (tokenSetup) {
         headers.set('Authorization', `Bearer ${await resolveOAuthToken(tokenSetup)}`)
       }

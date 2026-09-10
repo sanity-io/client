@@ -4,7 +4,7 @@ import {firstValueFrom, take, toArray} from 'rxjs'
 import {expect, test} from 'vitest'
 
 import {getClient, projectHost} from './client/helpers'
-import {getActiveMock} from './helpers/mockFetch'
+import {getActiveMock, streamBody, streamStall} from './helpers/mockFetch'
 
 const sse = (body: string) => ({status: 200, body, headers: {'Content-Type': 'text/event-stream'}})
 const oauthClient = (setup: OAuthTokenSetup) => getClient({token: setup})
@@ -73,13 +73,27 @@ test('given a listener with a string token, when the reconnect is rejected with 
   expect(getActiveMock().getRequests()).toHaveLength(2)
 })
 
-test('given a listener whose token has expired, when the reconnect is rejected with a 401, then the EventSource closes and a refreshed one opens without Last-Event-ID', async () => {
-  getActiveMock()
-    .scope(projectHost())
+test('given a resumable listener whose token has expired, when the reconnect is rejected with a 401, then the refreshed EventSource resumes from the last event id', async () => {
+  const scope = getActiveMock().scope(projectHost())
+  scope
     .on('GET', '/v1/data/listen/foo')
-    .respond(sse(`retry: 1\n\n` + encode({event: 'mutation', id: 'evt-1', data: '{}'})))
+    .respond(
+      sse(
+        `retry: 1\n\n` +
+          encode({event: 'welcome', data: JSON.stringify({listenerName: 'foo-1'})}) +
+          encode({event: 'mutation', id: 'evt-1', data: '{}'}),
+      ),
+    )
     .respond({status: 401, body: 'Unauthorized'})
-    .respond(sse(encode({event: 'mutation', id: 'evt-2', data: '{}'})))
+  scope.on('GET', '/v1/data/listen/foo', {headers: {'Last-Event-ID': 'evt-1'}}).respond({
+    status: 200,
+    headers: {'Content-Type': 'text/event-stream'},
+    body: streamBody(
+      encode({event: 'welcomeback', data: JSON.stringify({listenerName: 'foo-2'})}) +
+        encode({event: 'mutation', id: 'evt-2', data: '{}'}),
+      streamStall(),
+    ),
+  })
 
   let currentToken = 'expired'
   const client = oauthClient({
@@ -87,7 +101,20 @@ test('given a listener whose token has expired, when the reconnect is rejected w
     refresh: async () => (currentToken = 'fresh'),
   })
 
-  expect(await firstValueFrom(client.listen('*').pipe(take(2), toArray()))).toHaveLength(2)
+  expect(
+    await firstValueFrom(
+      client
+        .listen('*', {}, {enableResume: true, events: ['welcome', 'welcomeback', 'reconnect', 'mutation']})
+        .pipe(take(6), toArray()),
+    ),
+  ).toEqual([
+    {type: 'welcome', listenerName: 'foo-1'},
+    {type: 'mutation'},
+    {type: 'reconnect'},
+    {type: 'reconnect'},
+    {type: 'welcomeback', listenerName: 'foo-2'},
+    {type: 'mutation'},
+  ])
 
   const requests = getActiveMock().getRequests()
   expect(requests.map((r) => r.headers.get('authorization'))).toEqual([
@@ -95,6 +122,5 @@ test('given a listener whose token has expired, when the reconnect is rejected w
     'Bearer expired',
     'Bearer fresh',
   ])
-  // Last-Event-ID survives the lib's own reconnect (2nd request) but not ours (3rd)
-  expect(requests.map((r) => r.headers.get('last-event-id'))).toEqual([null, 'evt-1', null])
+  expect(requests.map((r) => r.headers.get('last-event-id'))).toEqual([null, 'evt-1', 'evt-1'])
 })
