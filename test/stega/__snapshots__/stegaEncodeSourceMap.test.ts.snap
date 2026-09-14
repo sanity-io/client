@@ -42,6 +42,162 @@ exports[`GraphQL API > logger.table 1`] = `
 ]
 `;
 
+exports[`Handles Content Releases > decode all 1`] = `
+[
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=18c9ae1a-5c14-4ffe-b32e-8e488f043718;type=author;path=name",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "18c9ae1a-5c14-4ffe-b32e-8e488f043718",
+      "type" => "author",
+      "path" => "name",
+      "perspective" => "published",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=18c9ae1a-5c14-4ffe-b32e-8e488f043718;type=author;path=picture.alt",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "18c9ae1a-5c14-4ffe-b32e-8e488f043718",
+      "type" => "author",
+      "path" => "picture.alt",
+      "perspective" => "published",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=e1674ab7-5f96-49b0-8291-7608e087ef0a;type=author;path=name",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "e1674ab7-5f96-49b0-8291-7608e087ef0a",
+      "type" => "author",
+      "path" => "name",
+      "perspective" => "rrRHoDGSr",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=e1674ab7-5f96-49b0-8291-7608e087ef0a;type=author;path=picture.alt",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "e1674ab7-5f96-49b0-8291-7608e087ef0a",
+      "type" => "author",
+      "path" => "picture.alt",
+      "perspective" => "rrRHoDGSr",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=f99b873f-85c2-41c4-ac65-807b1d72c084;type=author;path=name",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "f99b873f-85c2-41c4-ac65-807b1d72c084",
+      "type" => "author",
+      "path" => "name",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=f99b873f-85c2-41c4-ac65-807b1d72c084;type=author;path=picture.alt",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "f99b873f-85c2-41c4-ac65-807b1d72c084",
+      "type" => "author",
+      "path" => "picture.alt",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=f99b873f-85c2-41c4-ac65-807b1d72c084;type=author;path=name",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "f99b873f-85c2-41c4-ac65-807b1d72c084",
+      "type" => "author",
+      "path" => "name",
+    },
+  ],
+  [
+    "https://test.sanity.studio/intent/edit/mode=presentation;id=f99b873f-85c2-41c4-ac65-807b1d72c084;type=author;path=picture.alt",
+    Map {
+      "baseUrl" => "https://test.sanity.studio",
+      "id" => "f99b873f-85c2-41c4-ac65-807b1d72c084",
+      "type" => "author",
+      "path" => "picture.alt",
+    },
+  ],
+]
+`;
+
+exports[`Handles Content Releases > logger.error 1`] = `[]`;
+
+exports[`Handles Content Releases > logger.log 1`] = `
+[
+  [
+    "[@sanity/client]: Encoding source map into result",
+  ],
+  [
+    "[@sanity/client]: Paths encoded: 8, skipped: 20",
+  ],
+  [
+    "[@sanity/client]: Table of encoded paths",
+  ],
+  [
+    "[@sanity/client]: List of skipped paths",
+    [
+      "_id",
+      "_originalId",
+      "picture._type",
+      "picture.asset._ref",
+      "picture.asset._type",
+    ],
+  ],
+]
+`;
+
+exports[`Handles Content Releases > logger.table 1`] = `
+[
+  [
+    [
+      {
+        "length": 11,
+        "path": "name",
+        "value": "Test Author",
+      },
+      {
+        "length": 65,
+        "path": "picture.alt",
+        "value": "a computer generated...",
+      },
+      {
+        "length": 26,
+        "path": "name",
+        "value": "Another One!! BLACK ...",
+      },
+      {
+        "length": 37,
+        "path": "picture.alt",
+        "value": "the letter a is lit ...",
+      },
+      {
+        "length": 8,
+        "path": "name",
+        "value": "John Doe",
+      },
+      {
+        "length": 37,
+        "path": "picture.alt",
+        "value": "the letter a is lit ...",
+      },
+      {
+        "length": 8,
+        "path": "name",
+        "value": "John Doe",
+      },
+      {
+        "length": 37,
+        "path": "picture.alt",
+        "value": "the letter a is lit ...",
+      },
+    ],
+  ],
+]
+`;
+
 exports[`resolveEditUrl '/' > decode all 1`] = `
 [
   "/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[_key=="d8fa6d59e49b"].children[_key=="6a057cf2fb310"].text",

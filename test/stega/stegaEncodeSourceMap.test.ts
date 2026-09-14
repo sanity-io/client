@@ -3,6 +3,7 @@ import {expect, test, vi} from 'vitest'
 
 import {stegaEncodeSourceMap} from '../../src/stega/stegaEncodeSourceMap'
 import type {ContentSourceMap, Logger} from '../../src/stega/types'
+import stegaSnapshotContentReleases from './stegaSnapshotContentReleases.json' with {type: 'json'}
 
 const mock = {
   query:
@@ -617,6 +618,33 @@ test('GraphQL API', () => {
     vercelStegaDecodeAll(JSON.stringify(encoded)).map(
       ({href}: any) => decodeURIComponent(href).split('?')[0],
     ),
+  ).toMatchSnapshot('decode all')
+  expect(logger.error.mock.calls).toMatchSnapshot('logger.error')
+  expect(logger.log.mock.calls).toMatchSnapshot('logger.log')
+  expect(logger.table.mock.calls).toMatchSnapshot('logger.table')
+})
+
+test('Handles Content Releases', () => {
+  const logger = {
+    error: vi.fn(),
+    log: vi.fn(),
+    table: vi.fn(),
+  } satisfies Logger
+  const studioUrl = 'https://test.sanity.studio'
+  const encoded = stegaEncodeSourceMap(
+    stegaSnapshotContentReleases.result,
+    stegaSnapshotContentReleases.resultSourceMap as ContentSourceMap,
+    {
+      enabled: true,
+      studioUrl,
+      logger,
+    },
+  )
+  expect(
+    vercelStegaDecodeAll(JSON.stringify(encoded)).map(({href}: any) => {
+      const [url, search] = decodeURIComponent(href).split('?')
+      return [url, new Map(new URLSearchParams(search).entries())]
+    }),
   ).toMatchSnapshot('decode all')
   expect(logger.error.mock.calls).toMatchSnapshot('logger.error')
   expect(logger.log.mock.calls).toMatchSnapshot('logger.log')
