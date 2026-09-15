@@ -2298,6 +2298,53 @@ declare global {
    * direct dependency, how many copies of it are installed, and from every subpath export.
    */
   interface SanityQueries {}
+
+  /**
+   * Schema types, keyed first by resource and then read as a union. Empty by default; a
+   * multi-resource `sanity typegen` run registers one entry per configured resource:
+   * ```ts
+   * declare global {
+   *   interface SanitySchemasByResource {
+   *     'ppsg7ml5.test': Author | Movie | Slug
+   *   }
+   * }
+   * ```
+   * A resource key is the same string the SDK uses for its runtime cache: `projectId.dataset`
+   * for a dataset, with no prefix. Consumers select one document type out of the union by its
+   * `_type`, so the union may include object types that are not documents.
+   */
+  interface SanitySchemasByResource {}
+
+  /**
+   * Query result types, keyed by resource and then by GROQ query string. Empty by default; a
+   * multi-resource `sanity typegen` run registers the queries it finds per resource:
+   * ```ts
+   * declare global {
+   *   interface SanityQueriesByResource {
+   *     'ppsg7ml5.test': {'*[_type == "post"]': PostsQueryResult}
+   *   }
+   * }
+   * ```
+   * The flat `SanityQueries` registry stays as it is. It cannot express two datasets whose
+   * schemas give the same query text different result types, which is what this adds.
+   */
+  interface SanityQueriesByResource {}
+
+  /**
+   * Projection result types, keyed by resource, then document type, then projection string.
+   * Empty by default:
+   * ```ts
+   * declare global {
+   *   interface SanityProjectionsByResource {
+   *     'ppsg7ml5.test': {author: {'{name}': {name: string | null}}}
+   *   }
+   * }
+   * ```
+   * A projection applies to a document the caller identifies by handle, so the same projection
+   * text resolves differently per document type as well as per resource. That is why there is a
+   * document-type level here and not in `SanityQueriesByResource`.
+   */
+  interface SanityProjectionsByResource {}
 }
 
 /**
@@ -2321,6 +2368,28 @@ declare global {
  * @public
  */
 export interface SanityQueries extends globalThis.SanityQueries {}
+
+/**
+ * The schema registry as seen from `@sanity/client`. Inherits every resource registered on the
+ * global `SanitySchemasByResource`, and also accepts a module augmentation, the same way
+ * {@link SanityQueries} does.
+ * @public
+ */
+export interface SanitySchemasByResource extends globalThis.SanitySchemasByResource {}
+
+/**
+ * The per-resource query registry as seen from `@sanity/client`. Inherits every resource
+ * registered on the global `SanityQueriesByResource`, and also accepts a module augmentation.
+ * @public
+ */
+export interface SanityQueriesByResource extends globalThis.SanityQueriesByResource {}
+
+/**
+ * The projection registry as seen from `@sanity/client`. Inherits every resource registered on
+ * the global `SanityProjectionsByResource`, and also accepts a module augmentation.
+ * @public
+ */
+export interface SanityProjectionsByResource extends globalThis.SanityProjectionsByResource {}
 
 /** @public */
 export type ClientReturn<
