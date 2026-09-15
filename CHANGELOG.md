@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.6.2
+
+### Patch Changes
+
+- **deps:** update dependency obug to v3 ([#1336](https://github.com/sanity-io/client/pull/1336)) ([87e1b37](https://github.com/sanity-io/client/commit/87e1b377f1355d68a38e169ed605de25c6a37ffe))
+
 ## 8.6.1
 
 ### Patch Changes
