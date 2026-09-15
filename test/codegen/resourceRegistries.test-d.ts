@@ -90,8 +90,11 @@ describe('SanityProjectionsByResource', () => {
 })
 
 describe('resource keys', () => {
-  test('only registered resources are keys, so an unknown resource does not match', () => {
-    expectTypeOf<keyof ClientSchemas>().toEqualTypeOf<'ppsg7ml5.test' | 'vo1ysemo.production'>()
+  test('registered resources are keys and an unknown resource is not', () => {
+    // Asserted as membership rather than as the exhaustive `keyof`. These are global
+    // interfaces, so any other file in the program can add keys, and an exhaustive
+    // assertion here breaks whenever one does.
+    expectTypeOf<'ppsg7ml5.test' | 'vo1ysemo.production'>().toExtend<keyof ClientSchemas>()
     expectTypeOf<'nope.nope'>().not.toExtend<keyof ClientSchemas>()
   })
 })
