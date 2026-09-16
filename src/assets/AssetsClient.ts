@@ -1,7 +1,8 @@
 import {defer, lastValueFrom, type Observable} from 'rxjs'
-import {filter, map, mergeAll} from 'rxjs/operators'
+import {catchError, filter, map, mergeAll} from 'rxjs/operators'
 
 import {_prepareRequest, _uploadObservable} from '../data/dataMethods'
+import {applyOAuthToken, getOAuthTokenSetup, refreshOnAuthError} from '../http/oauthRefreshHandler'
 import type {FetchRequest} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
@@ -262,10 +263,15 @@ function _upload<
       // credentials and timeout are identical across both upload transports.
       // The XHR API needs the query baked into the URL, though.
       const req = _prepareRequest(client, {...baseRequest})
-      return uploadWithProgress<T>({
+      // XHR uploads bypass the request handler, so the OAuth token is resolved
+      // (and a 401 refreshed, without auto-retry) here — same rules as the
+      // fetch-path `_uploadObservable`.
+      const oauth = getOAuthTokenSetup(config.token)
+      const reqHeaders = oauth ? await applyOAuthToken(oauth, req.headers) : req.headers
+      const upload = uploadWithProgress<T>({
         url: appendQuery(req.url, req.query),
         method: req.method ?? 'POST',
-        headers: req.headers,
+        headers: reqHeaders,
         body,
         withCredentials: req.credentials === 'include',
         // XHR only has a single total-deadline timer, so a structured
@@ -273,6 +279,9 @@ function _upload<
         timeout: typeof req.timeout === 'object' ? req.timeout.total : req.timeout,
         signal: req.signal,
       })
+      return oauth
+        ? upload.pipe(catchError((err) => refreshOnAuthError(oauth, reqHeaders, err)))
+        : upload
     }).pipe(mergeAll())
   }
 
