@@ -1,6 +1,6 @@
 {
   "name": "@sanity/client",
-  "version": "8.6.1",
+  "version": "8.6.2",
   "description": "Client for retrieving, creating and patching data from Sanity.io",
   "keywords": [
     "api",
@@ -112,7 +112,7 @@
   "dependencies": {
     "eventsource": "^5.1.1",
     "get-it": "^9.5.4",
-    "obug": "^2.1.4",
+    "obug": "^3.0.0",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
