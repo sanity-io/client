@@ -71,8 +71,8 @@ export type RequestHandler = (
 ) => Promise<unknown>
 
 /**
- * An OAuth token setup, accepted as `token` in place of a static string so the
- * client can refresh a short-lived access token transparently.
+ * An OAuth token setup, configured as `auth.oauth` so the client can refresh a
+ * short-lived access token transparently instead of using a static `token`.
  * @public
  */
 export interface OAuthTokenSetup {
@@ -157,7 +157,14 @@ export interface ClientConfig {
   dataset?: string
   /** @defaultValue true */
   useCdn?: boolean
-  token?: string | OAuthTokenSetup
+  token?: string
+  auth?: {
+    /**
+     * OAuth token setup for transparent access-token refresh. Mutually
+     * exclusive with `token`.
+     */
+    oauth?: OAuthTokenSetup
+  }
 
   /**
    * Configure the client to work with a specific Sanity resource (Media Library, Canvas, etc.)

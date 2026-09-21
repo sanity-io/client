@@ -92,7 +92,7 @@ export class LiveClient {
       url.searchParams.set('waitFor', waitFor)
     }
     const eventSourceHeaders: Record<string, string> = {}
-    if (includeDrafts && typeof token === 'string') {
+    if (includeDrafts && token) {
       eventSourceHeaders.Authorization = `Bearer ${token}`
     }
     if (configHeaders) {
@@ -101,7 +101,7 @@ export class LiveClient {
     // An OAuth token setup can't be baked into the headers — it is resolved
     // per request inside the EventSource fetch, so reconnects pick up
     // refreshed tokens.
-    const tokenSetup = includeDrafts ? getOAuthTokenSetup(token) : undefined
+    const tokenSetup = includeDrafts ? getOAuthTokenSetup(config) : undefined
     const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
     let transportCache = eventsCache.get(config.resolveFetch)

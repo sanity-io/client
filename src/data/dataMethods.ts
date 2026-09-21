@@ -1203,7 +1203,7 @@ export function _uploadObservable<T>(
   // here — per subscription, so a resubscribe picks up a refreshed token. A
   // 401 refreshes but does not auto-retry (the body may be a consumed stream);
   // the error surfaces and a caller-level retry gets the fresh token.
-  const oauth = getOAuthTokenSetup(config.token)
+  const oauth = getOAuthTokenSetup(config)
   const upload = (req: FetchRequest) =>
     new Observable<Any>((subscriber) => requester(req).subscribe(subscriber))
   const request = (
