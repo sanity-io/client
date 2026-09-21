@@ -273,7 +273,12 @@ describe('.live.events()', () => {
       dataset: 'oauth-drafts',
       useCdn: false,
       apiVersion: 'X',
-      auth: {oauth: {getToken: async () => 'oauth-token'}},
+      auth: {
+        oauth: {
+          getToken: async () => 'oauth-token',
+          refresh: () => Promise.reject(new Error('not needed')),
+        },
+      },
     })
 
     // `auth.oauth` is mutually exclusive with `token` and switches
