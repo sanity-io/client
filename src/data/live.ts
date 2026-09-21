@@ -74,9 +74,13 @@ export class LiveClient {
           `Please update your API version to use this feature.`,
       )
     }
-    if (includeDrafts && !token && !withCredentials) {
+    // An OAuth token setup can't be baked into the headers — it is resolved
+    // per request inside the EventSource fetch, so reconnects pick up
+    // refreshed tokens.
+    const tokenSetup = includeDrafts ? getOAuthTokenSetup(config) : undefined
+    if (includeDrafts && !token && !tokenSetup && !withCredentials) {
       throw new Error(
-        `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
+        `The live events API requires a token, auth.oauth or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
       )
     }
     const path = _getDataUrl(this.#client, 'live/events')
@@ -98,10 +102,6 @@ export class LiveClient {
     if (configHeaders) {
       Object.assign(eventSourceHeaders, configHeaders)
     }
-    // An OAuth token setup can't be baked into the headers — it is resolved
-    // per request inside the EventSource fetch, so reconnects pick up
-    // refreshed tokens.
-    const tokenSetup = includeDrafts ? getOAuthTokenSetup(config) : undefined
     const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
     let transportCache = eventsCache.get(config.resolveFetch)
