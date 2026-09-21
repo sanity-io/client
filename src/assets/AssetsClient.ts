@@ -266,7 +266,7 @@ function _upload<
       // XHR uploads bypass the request handler, so the OAuth token is resolved
       // (and a 401 refreshed, without auto-retry) here — same rules as the
       // fetch-path `_uploadObservable`.
-      const oauth = getOAuthTokenSetup(config.token)
+      const oauth = getOAuthTokenSetup(config)
       const reqHeaders = oauth ? await applyOAuthToken(oauth, req.headers) : req.headers
       const upload = uploadWithProgress<T>({
         url: appendQuery(req.url, req.query),

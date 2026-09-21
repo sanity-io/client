@@ -7,7 +7,7 @@ import {getClient, projectHost} from './client/helpers'
 import {getActiveMock, streamBody, streamStall} from './helpers/mockFetch'
 
 const sse = (body: string) => ({status: 200, body, headers: {'Content-Type': 'text/event-stream'}})
-const oauthClient = (setup: OAuthTokenSetup) => getClient({token: setup})
+const oauthClient = (setup: OAuthTokenSetup) => getClient({auth: {oauth: setup}})
 
 test('given a listener with a string token, when the server drops the connection, then the eventsource lib reconnects with Last-Event-ID and the same token', async () => {
   getActiveMock()
@@ -104,7 +104,11 @@ test('given a resumable listener whose token has expired, when the reconnect is 
   expect(
     await firstValueFrom(
       client
-        .listen('*', {}, {enableResume: true, events: ['welcome', 'welcomeback', 'reconnect', 'mutation']})
+        .listen(
+          '*',
+          {},
+          {enableResume: true, events: ['welcome', 'welcomeback', 'reconnect', 'mutation']},
+        )
         .pipe(take(6), toArray()),
     ),
   ).toEqual([
@@ -123,4 +127,36 @@ test('given a resumable listener whose token has expired, when the reconnect is 
     'Bearer fresh',
   ])
   expect(requests.map((r) => r.headers.get('last-event-id'))).toEqual([null, 'evt-1', 'evt-1'])
+})
+
+test('given a listener that reconnected after an OAuth refresh, when the fresh EventSource drops, then its own newer Last-Event-ID wins over the id it was seeded with', async () => {
+  const scope = getActiveMock().scope(projectHost())
+  scope
+    .on('GET', '/v1/data/listen/foo')
+    .respond(sse(`retry: 1\n\n` + encode({event: 'mutation', id: 'evt-1', data: '{}'})))
+    .respond({status: 401, body: 'Unauthorized'})
+  // the fresh EventSource, seeded with evt-1; its body ends after evt-2 so
+  // the eventsource lib reconnects on its own
+  scope
+    .on('GET', '/v1/data/listen/foo', {headers: {'Last-Event-ID': 'evt-1'}})
+    .respond(sse(`retry: 1\n\n` + encode({event: 'mutation', id: 'evt-2', data: '{}'})))
+  scope
+    .on('GET', '/v1/data/listen/foo', {headers: {'Last-Event-ID': 'evt-2'}})
+    .respond(sse(encode({event: 'mutation', id: 'evt-3', data: '{}'})))
+
+  let currentToken = 'expired'
+  const client = oauthClient({
+    getToken: async () => currentToken,
+    refresh: async () => (currentToken = 'fresh'),
+  })
+
+  expect(await firstValueFrom(client.listen('*').pipe(take(3), toArray()))).toHaveLength(3)
+
+  const requests = getActiveMock().getRequests()
+  expect(requests.map((r) => r.headers.get('last-event-id'))).toEqual([
+    null,
+    'evt-1',
+    'evt-1',
+    'evt-2',
+  ])
 })

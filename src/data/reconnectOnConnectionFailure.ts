@@ -1,7 +1,7 @@
 import {
   catchError,
   concat,
-  from,
+  defer,
   mergeMap,
   Observable,
   of,
@@ -64,7 +64,7 @@ export function reconnectOnConnectionFailure<T>(
           lastAuthRetryAt = Date.now()
           return concat(
             of({type: 'reconnect' as const}),
-            from(refreshAuth()).pipe(
+            defer(refreshAuth).pipe(
               // Surface the original connection error, not the refresh failure
               // — `onAuthError` has already fired inside the refresher. Placed
               // before `mergeMap` so it only catches the refresh promise, never

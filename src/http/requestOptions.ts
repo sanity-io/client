@@ -34,11 +34,8 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     Object.assign(headers, config.headers)
   }
 
-  // A string token becomes a Bearer header here; an OAuthTokenSetup object is
-  // resolved by the OAuth refresh handler (see `resolveRequestHandler`), which
-  // sets the header itself — never stringify the object into one.
   const token = overrides.token || config.token
-  if (typeof token === 'string') {
+  if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
 

@@ -10,7 +10,7 @@ import {getActiveMock} from './helpers/mockFetch'
 // assertions can only run where XHR is absent and uploads use the fetch path.
 // The XHR path has its own coverage in `browserUpload.browser.test.ts`.
 
-const oauthClient = (setup: OAuthTokenSetup) => getClient({token: setup})
+const oauthClient = (setup: OAuthTokenSetup) => getClient({auth: {oauth: setup}})
 
 function authHeaders(): Array<string | null> {
   return getActiveMock()

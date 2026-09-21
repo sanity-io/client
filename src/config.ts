@@ -121,15 +121,15 @@ export const initConfig = (
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 
   const hasToken = Boolean(newConfig.token)
-  if (newConfig.withCredentials && hasToken) {
+  if (hasToken && newConfig.auth?.oauth) {
+    throw new Error('`token` and `auth.oauth` are mutually exclusive, configure one or the other')
+  }
+  if (newConfig.withCredentials && (hasToken || newConfig.auth?.oauth)) {
     warnings.printCredentialedTokenWarning()
     newConfig.withCredentials = false
   }
 
-  // The browser warning targets a secret baked into client-side code. An
-  // OAuthTokenSetup obtains tokens per user at runtime, so it is exempt.
-  const hasStringToken = typeof newConfig.token === 'string' && newConfig.token !== ''
-  if (isBrowser && isLocalhost && hasStringToken && newConfig.ignoreBrowserTokenWarning !== true) {
+  if (isBrowser && isLocalhost && hasToken && newConfig.ignoreBrowserTokenWarning !== true) {
     warnings.printBrowserTokenWarning()
   } else if (typeof newConfig.useCdn === 'undefined') {
     warnings.printCdnWarning()

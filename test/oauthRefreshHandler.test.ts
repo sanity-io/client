@@ -8,8 +8,8 @@ import {getActiveMock} from './helpers/mockFetch'
 
 const usersPath = '/v1/users/me'
 
-// The DX under test: an OAuth setup handed straight to `token` on the real client.
-const oauthClient = (setup: OAuthTokenSetup) => getClient({token: setup})
+// The DX under test: an OAuth setup configured as `auth.oauth` on the real client.
+const oauthClient = (setup: OAuthTokenSetup) => getClient({auth: {oauth: setup}})
 
 function authHeaders(): Array<string | null> {
   return getActiveMock()
@@ -17,7 +17,16 @@ function authHeaders(): Array<string | null> {
     .map((request) => request.headers.get('authorization'))
 }
 
-describe('OAuth auto-refresh (token as OAuthTokenSetup)', () => {
+describe('OAuth auto-refresh (auth.oauth)', () => {
+  test('rejects a config with both a static token and an OAuth setup', () => {
+    expect(() =>
+      getClient({
+        token: 'static',
+        auth: {oauth: {getToken: async () => 'x', refresh: async () => 'x'}},
+      }),
+    ).toThrow('`token` and `auth.oauth` are mutually exclusive')
+  })
+
   test('applies the token from getToken() to every request', async () => {
     getActiveMock()
       .scope(projectHost())

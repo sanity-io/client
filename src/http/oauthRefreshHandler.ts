@@ -7,16 +7,16 @@ import type {
 import {ClientError} from './errors'
 
 /**
- * The single spot deciding "is this token an OAuth setup" — shared by request
+ * The single spot reading the OAuth setup off a config — shared by request
  * handler resolution, SSE and asset uploads so the paths can never disagree on
- * what counts as one.
+ * where it lives.
  *
  * @internal
  */
 export function getOAuthTokenSetup(
-  token: InitializedClientConfig['token'],
+  config: Pick<InitializedClientConfig, 'auth'>,
 ): OAuthTokenSetup | undefined {
-  return token && typeof token === 'object' ? token : undefined
+  return config.auth?.oauth
 }
 
 /**
@@ -137,7 +137,7 @@ export async function refreshOnAuthError(
  * @internal
  */
 export function resolveRequestHandler(config: InitializedClientConfig): RequestHandler | undefined {
-  const setup = getOAuthTokenSetup(config.token)
+  const setup = getOAuthTokenSetup(config)
   if (!setup) return config.requestHandler
   const oauthHandler = createOAuthRefreshHandler(setup)
   const userHandler = config.requestHandler

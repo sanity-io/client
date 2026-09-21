@@ -167,13 +167,13 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
   const {token, withCredentials, headers: configHeaders} = config
 
   const headers: Record<string, string> = {}
-  if (typeof token === 'string') {
+  if (token) {
     headers.Authorization = `Bearer ${token}`
   }
   if (configHeaders) {
     Object.assign(headers, configHeaders)
   }
-  const tokenSetup = getOAuthTokenSetup(token)
+  const tokenSetup = getOAuthTokenSetup(config)
   let lastEventId: string | undefined
 
   const initEventSource = () =>

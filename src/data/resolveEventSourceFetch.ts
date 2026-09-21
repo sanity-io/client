@@ -99,14 +99,7 @@ export function resolveEventSourceFetch(
     }
     // get-it's `FetchResponse` is a structural superset of the package's
     // `FetchLikeResponse`, so it can be handed over as-is.
-    const response = baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
-    // Returning a promise from an async function attaches its rejection
-    // handler one microtask later (thenable adoption), and workerd's
-    // unhandled-rejection tracker flags a rejected promise in that gap.
-    // Attach a no-op handler synchronously; the rejection still propagates
-    // through the async return to the `eventsource` package's catch.
-    response.catch(() => {})
-    return response
+    return await baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
   }
 }
 
