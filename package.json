@@ -111,7 +111,7 @@
   },
   "dependencies": {
     "eventsource": "^5.1.2",
-    "get-it": "^9.5.4",
+    "get-it": "^9.5.7",
     "obug": "^3.0.0",
     "rxjs": "^7.8.2"
   },
