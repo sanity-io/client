@@ -1,5 +1,22 @@
 # @sanity/client
 
+## 8.7.0
+
+### Minor Changes
+
+- abort underlying EventSource request when response fails validation ([#1340](https://github.com/sanity-io/client/pull/1340)) ([ba3de6b](https://github.com/sanity-io/client/commit/ba3de6bf900366d03adc616f25af6ee5244798d8))
+- add per-resource schema, query and projection registries ([#1334](https://github.com/sanity-io/client/pull/1334)) ([b43e033](https://github.com/sanity-io/client/commit/b43e0332d9fedb696f82d5ce66122ccaddabd65c))
+
+  `SanitySchemasByResource`, `SanityQueriesByResource` and `SanityProjectionsByResource` join the existing `SanityQueries` registry, following the same pattern: a global interface that the interface exported from `@sanity/client` inherits from, so a generated file can register either way and does not depend on module resolution.
+
+  Each is keyed by a resource, using the same string the App SDK already uses for its runtime cache, `projectId.dataset` for a dataset. This is what lets two datasets whose schemas disagree register different result types for the same query text, which the flat `SanityQueries` registry cannot express. Projections add a document-type level, because a projection resolves against whichever document the caller's handle names.
+
+  All three are empty by default and nothing in the client reads them yet. `client.fetch` and `ClientReturn` are unchanged, and keep resolving through the flat registry. They exist for consumers that do resource-aware lookups themselves, starting with the App SDK's hooks.
+
+### Patch Changes
+
+- retry requests on react native ([#1342](https://github.com/sanity-io/client/pull/1342)) ([61c8398](https://github.com/sanity-io/client/commit/61c83981b71fd473ba3e0f31662c71eb54763b3e))
+
 ## 8.6.2
 
 ### Patch Changes
