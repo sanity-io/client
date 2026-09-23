@@ -1,4 +1,9 @@
-import {type ClientConfig, type CollaborationCommentDocument, createClient} from '@sanity/client'
+import {
+  type ClientConfig,
+  type CollaborationCommentDocument,
+  createClient,
+  getCommentTargetDocumentRef,
+} from '@sanity/client'
 import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, take, toArray} from 'rxjs'
 import {describe, expect, test} from 'vitest'
@@ -1026,6 +1031,30 @@ describe('collaboration.comments', () => {
     expect(() => getMockClient().collaboration.comments.getTargetDocumentRef('')).toThrow(
       'Document ID must be provided',
     )
+  })
+
+  test('builds target document references from a resource without a client', () => {
+    const dataset = {type: 'dataset' as const, id: 'project-123.production'}
+
+    expect(getCommentTargetDocumentRef(dataset, 'doc-1')).toBe(
+      'dataset:project-123.production:doc-1',
+    )
+    expect(getCommentTargetDocumentRef(dataset, 'drafts.doc-1')).toBe(
+      'dataset:project-123.production:doc-1',
+    )
+    expect(getCommentTargetDocumentRef(dataset, 'versions.summer-drop.foo.doc-1')).toBe(
+      'dataset:project-123.production:foo.doc-1',
+    )
+    expect(getCommentTargetDocumentRef(resource, 'doc-1')).toBe('canvas:canvas-123:doc-1')
+    expect(() => getCommentTargetDocumentRef(dataset, '')).toThrow('Document ID must be provided')
+  })
+
+  test('agrees with the client method for the same resource', () => {
+    const {comments} = getMockClient().collaboration
+
+    for (const id of ['doc-1', 'drafts.doc-1', 'versions.summer-drop.doc-1', 'drafts.foo.doc-1']) {
+      expect(getCommentTargetDocumentRef(resource, id)).toBe(comments.getTargetDocumentRef(id))
+    }
   })
 
   test('builds target document references from projectId and dataset', () => {
