@@ -82,6 +82,10 @@ export function _getTargetDocumentRef(
   client: Client,
   documentId: string,
 ): CollaborationCommentDocument['target']['document']['_ref'] {
+  if (!documentId) {
+    throw new Error('Document ID must be provided')
+  }
+
   return getCommentTargetDocumentRef(resolveCommentResource(client), documentId)
 }
 
