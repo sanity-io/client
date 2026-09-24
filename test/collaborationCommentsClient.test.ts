@@ -1030,7 +1030,9 @@ describe('collaboration.comments', () => {
   })
 
   test('builds target document references from a resource without a client', () => {
-    const dataset = {type: 'dataset', id: 'project-123.production'} satisfies NonNullable<ClientConfig['resource']>
+    const dataset = {type: 'dataset', id: 'project-123.production'} satisfies NonNullable<
+      ClientConfig['resource']
+    >
 
     expect(getCommentTargetDocumentRef(dataset, 'doc-1')).toBe(
       'dataset:project-123.production:doc-1',
