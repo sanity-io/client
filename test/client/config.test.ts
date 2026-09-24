@@ -6,6 +6,7 @@ import {
 import {firstValueFrom} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
+import {perspectiveConflictsWithCdn} from '../../src/config'
 import {getActiveMock} from '../helpers/mockFetch'
 import {apiHost, createClient, getClient, projectHost} from './helpers'
 
@@ -183,6 +184,17 @@ describe('base client', () => {
     expect(() =>
       createClient({projectId: 'abc123', perspective: ['published', 'drafts', 'raw']}),
     ).toThrow(/Invalid API perspective/)
+  })
+
+  test('perspectiveConflictsWithCdn matches the perspectives Gradient rejects on the API-CDN', () => {
+    expect(perspectiveConflictsWithCdn('drafts')).toBe(true)
+    expect(perspectiveConflictsWithCdn('previewDrafts')).toBe(true)
+    expect(perspectiveConflictsWithCdn('published')).toBe(false)
+    expect(perspectiveConflictsWithCdn('raw')).toBe(false)
+    expect(perspectiveConflictsWithCdn(['published'])).toBe(false)
+    expect(perspectiveConflictsWithCdn(['drafts', 'published'])).toBe(true)
+    expect(perspectiveConflictsWithCdn(['previewDrafts'])).toBe(true)
+    expect(perspectiveConflictsWithCdn([])).toBe(false)
   })
 
   test('throws on invalid project ids', () => {
