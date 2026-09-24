@@ -3,6 +3,7 @@
   "name": "@sanity/client",
   "entryPoints": [
     "./src/index.ts",
+    "./src/collaboration/index.ts",
     "./src/csm/index.ts",
     "./src/stega/index.ts",
     "./src/media-library.ts"

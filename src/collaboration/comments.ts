@@ -1,4 +1,3 @@
-import {getPublishedId} from '@sanity/client/csm'
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
@@ -21,6 +20,7 @@ import type {
 } from '../types'
 import defaults from '../util/defaults'
 import {pick} from '../util/pick'
+import {type CommentResource, getCommentTargetDocumentRef} from './getCommentTargetDocumentRef'
 import {
   type CollaborationCommentCreate,
   type CollaborationCommentDocument,
@@ -42,7 +42,7 @@ function commentUrl(id: string): string {
   return `/collaboration/comments/${encodeURIComponent(id)}`
 }
 
-function resolveCommentResource(client: Client): {type: string; id: string} {
+function resolveCommentResource(client: Client): CommentResource {
   const {resource, projectId, dataset} = client.config()
 
   if (resource) {
@@ -86,9 +86,7 @@ export function _getTargetDocumentRef(
     throw new Error('Document ID must be provided')
   }
 
-  const resource = resolveCommentResource(client)
-
-  return `${resource.type}:${resource.id}:${getPublishedId(documentId)}`
+  return getCommentTargetDocumentRef(resolveCommentResource(client), documentId)
 }
 
 type WriteArgs = [

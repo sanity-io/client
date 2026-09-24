@@ -6,8 +6,8 @@ import {describe, expect, test} from 'vitest'
 /**
  * Guards a failure mode that `test/exports.test.ts` structurally cannot catch.
  *
- * `pkg build` emits the default entries (`index.js`, `csm.js`, `stega.js`,
- * `media-library.js`) and the `node` condition entry (`index.node.js`) in two
+ * `pkg build` emits the default entries (`index.js`, `collaboration.js`, `csm.js`,
+ * `stega.js`, `media-library.js`) and the `node` condition entry (`index.node.js`) in two
  * separate rollup passes that share one chunk directory. If chunk filenames
  * aren't content-hashed, the second pass overwrites chunks the first pass
  * already wrote - splicing `index.node.js` (and with it `node:stream` and
@@ -56,7 +56,7 @@ describe('dist module graph', () => {
   // Every entry a non-Node runtime can reach. `stega.js` imports `@sanity/client`
   // as a bare specifier, so it re-enters through the `exports` map rather than
   // through this graph walk - which is the correct boundary to stop at.
-  const fetchEntries = ['index.js', 'csm.js', 'stega.js', 'media-library.js']
+  const fetchEntries = ['index.js', 'collaboration.js', 'csm.js', 'stega.js', 'media-library.js']
 
   for (const entry of fetchEntries) {
     test(`${entry} reaches no Node builtin`, () => {

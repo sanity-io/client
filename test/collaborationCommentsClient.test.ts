@@ -1,4 +1,5 @@
 import {type ClientConfig, type CollaborationCommentDocument, createClient} from '@sanity/client'
+import {getCommentTargetDocumentRef} from '@sanity/client/collaboration'
 import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, take, toArray} from 'rxjs'
 import {describe, expect, test} from 'vitest'
@@ -1026,6 +1027,14 @@ describe('collaboration.comments', () => {
     expect(() => getMockClient().collaboration.comments.getTargetDocumentRef('')).toThrow(
       'Document ID must be provided',
     )
+  })
+
+  test('agrees with the client method for the same resource', () => {
+    const {comments} = getMockClient().collaboration
+
+    for (const id of ['doc-1', 'drafts.doc-1', 'versions.summer-drop.doc-1', 'drafts.foo.doc-1']) {
+      expect(getCommentTargetDocumentRef(resource, id)).toBe(comments.getTargetDocumentRef(id))
+    }
   })
 
   test('builds target document references from projectId and dataset', () => {
