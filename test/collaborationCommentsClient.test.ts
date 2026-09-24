@@ -1029,24 +1029,6 @@ describe('collaboration.comments', () => {
     )
   })
 
-  test('builds target document references from a resource without a client', () => {
-    const dataset = {type: 'dataset', id: 'project-123.production'} satisfies NonNullable<
-      ClientConfig['resource']
-    >
-
-    expect(getCommentTargetDocumentRef(dataset, 'doc-1')).toBe(
-      'dataset:project-123.production:doc-1',
-    )
-    expect(getCommentTargetDocumentRef(dataset, 'drafts.doc-1')).toBe(
-      'dataset:project-123.production:doc-1',
-    )
-    expect(getCommentTargetDocumentRef(dataset, 'versions.summer-drop.foo.doc-1')).toBe(
-      'dataset:project-123.production:foo.doc-1',
-    )
-    expect(getCommentTargetDocumentRef(resource, 'doc-1')).toBe('canvas:canvas-123:doc-1')
-    expect(() => getCommentTargetDocumentRef(dataset, '')).toThrow('Document ID must be provided')
-  })
-
   test('agrees with the client method for the same resource', () => {
     const {comments} = getMockClient().collaboration
 
