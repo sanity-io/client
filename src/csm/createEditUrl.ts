@@ -56,6 +56,7 @@ export function createEditUrl(options: CreateEditUrlOptions): `${StudioBaseUrl}$
   if (dataset) {
     searchParams.set('dataset', dataset)
   }
+  // @TODO what is going on here?
   if (isPublishedId(_id)) {
     searchParams.set('perspective', 'published')
   } else if (isVersionId(_id)) {
