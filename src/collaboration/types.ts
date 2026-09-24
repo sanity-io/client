@@ -154,6 +154,7 @@ export interface CollaborationCommentDocument extends SanityDocument {
  * Each endpoint pairs the `_key` of a Portable Text block with a character
  * offset into that block's plain text.
  *
+ * @deprecated Use {@link CollaborationCommentAnchor}.
  * @alpha
  */
 export interface CollaborationCommentRange {
@@ -162,8 +163,8 @@ export interface CollaborationCommentRange {
 }
 
 /**
- * Portable Text covering a comment `range`. Callers can send just the blocks
- * from the `range` start `_key` through end `_key`, or the full field.
+ * Portable Text covering an inline comment anchor. Callers can send just the
+ * blocks from the anchor start `_key` through end `_key`, or the full field.
  *
  * @alpha
  */
@@ -174,15 +175,32 @@ export type CollaborationCommentFieldValue = Array<{
 }>
 
 /**
+ * Where in `path` a comment is anchored.
+ *
+ * For `portable-text`, each endpoint pairs the `_key` of a Portable Text
+ * block with a character offset into that block's plain text. An optional
+ * `fieldValue` is Portable Text covering the anchor. When set, the selection
+ * is resolved from those blocks instead of from the live document.
+ *
+ * @alpha
+ */
+export type CollaborationCommentAnchor = {
+  type: 'portable-text'
+  start: {_key: string; offset: number}
+  end: {_key: string; offset: number}
+  fieldValue?: CollaborationCommentFieldValue
+}
+
+/**
  * Target for a top-level comment. Inline selections require both `path` and
- * `range`; field-level comments may set `path` alone.
+ * `anchor`; field-level comments may set `path` alone.
  *
  * The created comment stores this in a different shape: `path` becomes
- * `target.path.field`, and `range` is resolved against the document into
+ * `target.path.field`, and `anchor` is resolved against the document into
  * `target.path.selection` and `contentSnapshot` rather than being stored.
  *
- * An optional `fieldValue` is Portable Text covering the `range`. When set,
- * the `range` is resolved from those blocks instead of from the live document.
+ * Deprecated `range` + top-level `fieldValue` are still accepted and converted
+ * to a `portable-text` `anchor` before the request is sent.
  *
  * @alpha
  */
@@ -194,17 +212,43 @@ export type CollaborationCommentTarget = {
   | {
       /** Path to the field containing the inline comment selection */
       path: string
+      anchor: CollaborationCommentAnchor
+      /**
+       * @deprecated Use `anchor`.
+       */
+      range?: never
+      /**
+       * @deprecated Use `anchor.fieldValue`.
+       */
+      fieldValue?: never
+    }
+  | {
+      /** Path to the field containing the inline comment selection */
+      path: string
+      /**
+       * @deprecated Use `anchor`.
+       */
       range: CollaborationCommentRange
       /**
-       * Portable Text covering the `range`. When set, the `range` is resolved
+       * Portable Text covering the `range`. When set, the selection is resolved
        * from these blocks instead of from the live document.
+       *
+       * @deprecated Use `anchor.fieldValue`.
        */
       fieldValue?: CollaborationCommentFieldValue
+      anchor?: never
     }
   | {
       /** Path to the commented field */
       path?: string
+      anchor?: never
+      /**
+       * @deprecated Use `anchor`.
+       */
       range?: never
+      /**
+       * @deprecated Use `anchor.fieldValue`.
+       */
       fieldValue?: never
     }
 )
@@ -234,7 +278,11 @@ export type CollaborationCommentTarget = {
  *     documentId: 'doc-1',
  *     documentType: 'article',
  *     path: 'body',
- *     range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 5}},
+ *     anchor: {
+ *       type: 'portable-text',
+ *       start: {_key: 'block-1', offset: 0},
+ *       end: {_key: 'block-1', offset: 5},
+ *     },
  *   },
  * })
  * ```
@@ -270,11 +318,13 @@ export type CollaborationCommentCreate = {
 /**
  * Fields that can be updated on an existing comment.
  *
- * A `range` re-anchors the comment within the field it already targets.
+ * An `anchor` re-anchors the comment within the field it already targets.
  * Pass `null` to remove the selection and leave a field-level comment.
- * An optional `fieldValue` is Portable Text covering that `range`; when set,
- * the `range` is resolved from those blocks instead of from the live document.
- * `fieldValue` cannot be sent alone or together with `range: null`.
+ * An optional `fieldValue` on a `portable-text` anchor is resolved from those
+ * blocks instead of from the live document.
+ *
+ * Deprecated `range` + top-level `fieldValue` (and `range: null`) are still
+ * accepted and converted to `anchor` before the request is sent.
  *
  * @alpha
  */
@@ -285,19 +335,61 @@ export type CollaborationCommentUpdate = {
   status?: CollaborationCommentStatus
 } & (
   | {
-      range: CollaborationCommentRange
+      anchor: CollaborationCommentAnchor
       /**
-       * Portable Text covering the `range`. When set, the `range` is resolved
-       * from these blocks instead of from the live document.
+       * @deprecated Use `anchor`.
        */
-      fieldValue?: CollaborationCommentFieldValue
-    }
-  | {
-      range: null
+      range?: never
+      /**
+       * @deprecated Use `anchor.fieldValue`.
+       */
       fieldValue?: never
     }
   | {
+      anchor: null
+      /**
+       * @deprecated Use `anchor`.
+       */
+      range?: never
+      /**
+       * @deprecated Use `anchor.fieldValue`.
+       */
+      fieldValue?: never
+    }
+  | {
+      /**
+       * @deprecated Use `anchor`.
+       */
+      range: CollaborationCommentRange
+      /**
+       * Portable Text covering the `range`. When set, the selection is resolved
+       * from these blocks instead of from the live document.
+       *
+       * @deprecated Use `anchor.fieldValue`.
+       */
+      fieldValue?: CollaborationCommentFieldValue
+      anchor?: never
+    }
+  | {
+      /**
+       * @deprecated Use `anchor: null`.
+       */
+      range: null
+      /**
+       * @deprecated Use `anchor.fieldValue`.
+       */
+      fieldValue?: never
+      anchor?: never
+    }
+  | {
+      anchor?: undefined
+      /**
+       * @deprecated Use `anchor`.
+       */
       range?: undefined
+      /**
+       * @deprecated Use `anchor.fieldValue`.
+       */
       fieldValue?: never
     }
 )

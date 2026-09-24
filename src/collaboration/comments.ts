@@ -22,8 +22,11 @@ import defaults from '../util/defaults'
 import {pick} from '../util/pick'
 import {type CommentResource, getCommentTargetDocumentRef} from './getCommentTargetDocumentRef'
 import {
+  type CollaborationCommentAnchor,
   type CollaborationCommentCreate,
   type CollaborationCommentDocument,
+  type CollaborationCommentFieldValue,
+  type CollaborationCommentRange,
   type CollaborationCommentReactionShortName,
   type CollaborationCommentsListenOptions,
   type CollaborationCommentsRequestOptions,
@@ -168,6 +171,25 @@ function writeMutationResult(...args: WriteArgs): Observable<MultipleMutationRes
   )
 }
 
+/**
+ * Moves the deprecated `range` + `fieldValue` onto a `portable-text` `anchor`.
+ * Anything else passes through unchanged, and invalid combinations are left
+ * for the API to reject.
+ */
+function withAnchor(input: {
+  anchor?: CollaborationCommentAnchor | null
+  range?: CollaborationCommentRange | null
+  fieldValue?: CollaborationCommentFieldValue
+}) {
+  const {range, fieldValue, ...rest} = input
+
+  if (range === undefined || input.anchor !== undefined) return input
+
+  if (range === null) return fieldValue ? input : {...rest, anchor: null}
+
+  return {...rest, anchor: {type: 'portable-text', ...range, ...(fieldValue && {fieldValue})}}
+}
+
 /** @internal */
 export function _create(
   client: Client,
@@ -181,7 +203,7 @@ export function _create(
     httpRequest,
     'POST',
     '/collaboration/comments',
-    body,
+    body.target ? {...body, target: withAnchor(body.target)} : body,
     options,
   )
 }
@@ -194,7 +216,7 @@ export function _update(
   body: CollaborationCommentUpdate,
   options?: CollaborationCommentsWriteOptions,
 ): Observable<CollaborationCommentDocument> {
-  return writeDocument(id, client, httpRequest, 'PATCH', commentUrl(id), body, options)
+  return writeDocument(id, client, httpRequest, 'PATCH', commentUrl(id), withAnchor(body), options)
 }
 
 /** @internal */

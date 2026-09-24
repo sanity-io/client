@@ -44,6 +44,42 @@ describe('CollaborationCommentCreate', () => {
         documentId: 'doc-1',
         documentType: 'article',
         path: 'body',
+        anchor: {
+          type: 'portable-text' as const,
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-2', offset: 10},
+        },
+      },
+    }).toMatchTypeOf<CollaborationCommentCreate>()
+
+    expectTypeOf({
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        anchor: {
+          type: 'portable-text' as const,
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-2', offset: 10},
+          fieldValue: [
+            {
+              _type: 'block',
+              _key: 'key-1',
+              children: [{_type: 'span', text: 'Hello'}],
+            },
+          ],
+        },
+      },
+    }).toMatchTypeOf<CollaborationCommentCreate>()
+
+    // Deprecated `range` + top-level `fieldValue` remain accepted.
+    expectTypeOf({
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
         range: {
           start: {_key: 'key-1', offset: 0},
           end: {_key: 'key-2', offset: 10},
@@ -72,8 +108,23 @@ describe('CollaborationCommentCreate', () => {
     }).toMatchTypeOf<CollaborationCommentCreate>()
   })
 
-  test('requires path when range is provided', () => {
-    const comment: CollaborationCommentCreate = {
+  test('requires path when anchor or range is provided', () => {
+    const withAnchor: CollaborationCommentCreate = {
+      message,
+      // @ts-expect-error - anchor requires path
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        anchor: {
+          type: 'portable-text',
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-2', offset: 10},
+        },
+      },
+    }
+    expectTypeOf(withAnchor).toEqualTypeOf<CollaborationCommentCreate>()
+
+    const withRange: CollaborationCommentCreate = {
       message,
       // @ts-expect-error - range requires path
       target: {
@@ -85,11 +136,10 @@ describe('CollaborationCommentCreate', () => {
         },
       },
     }
-
-    expectTypeOf(comment).toEqualTypeOf<CollaborationCommentCreate>()
+    expectTypeOf(withRange).toEqualTypeOf<CollaborationCommentCreate>()
   })
 
-  test('requires range when fieldValue is provided', () => {
+  test('requires range when top-level fieldValue is provided', () => {
     const comment: CollaborationCommentCreate = {
       message,
       // @ts-expect-error - fieldValue requires range
@@ -104,8 +154,65 @@ describe('CollaborationCommentCreate', () => {
     expectTypeOf(comment).toEqualTypeOf<CollaborationCommentCreate>()
   })
 
+  test('rejects anchor combined with range or top-level fieldValue', () => {
+    const withRange: CollaborationCommentCreate = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        anchor: {
+          type: 'portable-text',
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-1', offset: 5},
+        },
+        // @ts-expect-error - anchor cannot be combined with range
+        range: {
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-1', offset: 5},
+        },
+      },
+    }
+
+    const withFieldValue: CollaborationCommentCreate = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        anchor: {
+          type: 'portable-text',
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-1', offset: 5},
+        },
+        // @ts-expect-error - anchor cannot be combined with top-level fieldValue
+        fieldValue: [{_type: 'block', _key: 'key-1'}],
+      },
+    }
+
+    expectTypeOf(withRange).toEqualTypeOf<CollaborationCommentCreate>()
+    expectTypeOf(withFieldValue).toEqualTypeOf<CollaborationCommentCreate>()
+  })
+
   test('requires `_key` on fieldValue items', () => {
-    const comment: CollaborationCommentCreate = {
+    const withAnchor: CollaborationCommentCreate = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        anchor: {
+          type: 'portable-text',
+          start: {_key: 'key-1', offset: 0},
+          end: {_key: 'key-1', offset: 5},
+          // @ts-expect-error - fieldValue items require `_key`
+          fieldValue: [{_type: 'block', children: [{_type: 'span', text: 'Hello'}]}],
+        },
+      },
+    }
+    expectTypeOf(withAnchor).toEqualTypeOf<CollaborationCommentCreate>()
+
+    const withRange: CollaborationCommentCreate = {
       message,
       target: {
         documentId: 'doc-1',
@@ -120,7 +227,7 @@ describe('CollaborationCommentCreate', () => {
       },
     }
 
-    expectTypeOf(comment).toEqualTypeOf<CollaborationCommentCreate>()
+    expectTypeOf(withRange).toEqualTypeOf<CollaborationCommentCreate>()
   })
 
   test('allows replies without target or threadId', () => {
@@ -160,7 +267,7 @@ describe('CollaborationCommentDocument', () => {
       {field: string; selection?: CollaborationCommentSelection} | undefined
     >()
 
-    // `range` is resolved into the selection at create time, and never stored
+    // `anchor` is resolved into the selection at create time, and never stored
     expectTypeOf<NonNullable<NonNullable<StoredPath>['selection']>['value']>().toEqualTypeOf<
       {_key: string; text: string}[]
     >()
@@ -182,13 +289,32 @@ describe('collaboration.comments write results', () => {
     >()
     expectTypeOf(
       comments.update('comment-1', {
-        range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+        anchor: {
+          type: 'portable-text',
+          start: {_key: 'block-1', offset: 0},
+          end: {_key: 'block-1', offset: 12},
+        },
       }),
     ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
     expectTypeOf(
       comments.update('comment-1', {
+        anchor: {
+          type: 'portable-text',
+          start: {_key: 'block-1', offset: 0},
+          end: {_key: 'block-1', offset: 12},
+          fieldValue: [
+            {_type: 'block', _key: 'block-1', children: [{_type: 'span', text: 'Hello'}]},
+          ],
+        },
+      }),
+    ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
+    expectTypeOf(comments.update('comment-1', {anchor: null})).toEqualTypeOf<
+      Promise<CollaborationCommentDocument>
+    >()
+    // Deprecated `range` remains accepted.
+    expectTypeOf(
+      comments.update('comment-1', {
         range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
-        fieldValue: [{_type: 'block', _key: 'block-1', children: [{_type: 'span', text: 'Hello'}]}],
       }),
     ).toEqualTypeOf<Promise<CollaborationCommentDocument>>()
     expectTypeOf(
@@ -211,10 +337,19 @@ describe('collaboration.comments write results', () => {
       status: 'resolved',
       fieldValue: [{_type: 'block', _key: 'block-1'}],
     })
+    // @ts-expect-error - anchor cannot be combined with range
     void comments.update('comment-1', {
+      anchor: null,
       range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
-      // @ts-expect-error - fieldValue items require `_key`
-      fieldValue: [{_type: 'block', children: [{_type: 'span', text: 'Hello'}]}],
+    })
+    void comments.update('comment-1', {
+      anchor: {
+        type: 'portable-text',
+        start: {_key: 'block-1', offset: 0},
+        end: {_key: 'block-1', offset: 12},
+        // @ts-expect-error - fieldValue items require `_key`
+        fieldValue: [{_type: 'block', children: [{_type: 'span', text: 'Hello'}]}],
+      },
     })
     expectTypeOf(comments.addReaction('comment-1', ':heart:')).toEqualTypeOf<
       Promise<CollaborationCommentDocument>

@@ -2448,6 +2448,7 @@ export type {
   CollaborationCommentsWriteOptions,
   CollaborationCommentTarget,
   CollaborationCommentUpdate,
+  CollaborationCommentAnchor,
   CollaborationCommentRange,
   CollaborationCommentFieldValue,
 } from './collaboration/types'

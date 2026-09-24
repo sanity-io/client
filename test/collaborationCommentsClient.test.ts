@@ -48,7 +48,7 @@ const replyDocument: CollaborationCommentDocument = {
 }
 
 /**
- * An inline comment, as the API stores it: the `path` and `range` sent on
+ * An inline comment, as the API stores it: the `path` and `anchor` sent on
  * create come back as `target.path.field` and `target.path.selection`, with the
  * selected text wrapped in marker characters, plus a snapshot of the content
  * the comment was anchored to.
@@ -185,40 +185,55 @@ describe('collaboration.comments', () => {
       message,
       target: {documentId: 'doc-1', documentType: 'article', path: 'title'},
     }
+
+    const portableTextAnchor = {
+      type: 'portable-text' as const,
+      start: {_key: 'block-1', offset: 6},
+      end: {_key: 'block-1', offset: 11},
+    }
+
+    const fieldValue = [
+      {
+        _type: 'block',
+        _key: 'block-1',
+        children: [{_type: 'span', text: 'Hello World again'}],
+      },
+    ]
+
     const inlineComment = {
       message,
       target: {
         documentId: 'doc-1',
         documentType: 'article',
         path: 'body',
-        range: {
-          start: {_key: 'block-1', offset: 6},
-          end: {_key: 'block-1', offset: 11},
-        },
+        anchor: portableTextAnchor,
       },
     }
+
     const inlineWithFieldValue = {
       message,
       target: {
         documentId: 'doc-1',
         documentType: 'article',
         path: 'body',
-        range: {
-          start: {_key: 'block-1', offset: 6},
-          end: {_key: 'block-1', offset: 11},
-        },
-        fieldValue: [
-          {
-            _type: 'block',
-            _key: 'block-1',
-            children: [{_type: 'span', text: 'Hello World again'}],
-          },
-        ],
+        anchor: {...portableTextAnchor, fieldValue},
+      },
+    }
+
+    // Deprecated `range` is still accepted, and sent as `anchor`.
+    const legacyInlineComment = {
+      message,
+      target: {
+        documentId: 'doc-1',
+        documentType: 'article',
+        path: 'body',
+        range: {start: portableTextAnchor.start, end: portableTextAnchor.end},
+        fieldValue,
       },
     }
 
     // The stored target is shaped differently from the created one: `path`
-    // becomes `target.path.field`, and `range` is resolved into a selection.
+    // becomes `target.path.field`, and `anchor` is resolved into a selection.
     const fieldCommentDocument: CollaborationCommentDocument = {
       ...commentDocument,
       target: {...commentDocument.target, path: {field: 'title'}},
@@ -252,11 +267,23 @@ describe('collaboration.comments', () => {
           {id: 'comment-3', operation: 'create', document: inlineCommentDocument},
         ]),
       })
+    scope
+      .on('POST', '/v2026-07-18/collaboration/comments', {
+        query: commonQuery,
+        body: inlineWithFieldValue,
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-4', operation: 'create', document: inlineCommentDocument},
+        ]),
+      })
 
     const {comments} = getMockClient().collaboration
     const field = await comments.create(fieldComment)
     const inline = await comments.create(inlineComment)
     const inlineFieldValue = await comments.create(inlineWithFieldValue)
+    const legacyInline = await comments.create(legacyInlineComment)
 
     expect(field.target.path, 'a field comment stores the path, and no selection').toEqual({
       field: 'title',
@@ -273,6 +300,7 @@ describe('collaboration.comments', () => {
       },
     ])
     expect(inlineFieldValue.target.path).toEqual(inline.target.path)
+    expect(legacyInline.target.path).toEqual(inline.target.path)
   })
 
   test('updates the message of an existing comment', async () => {
@@ -299,11 +327,13 @@ describe('collaboration.comments', () => {
     ).resolves.toEqual(editedDocument)
   })
 
-  test('updates and clears the range of an existing comment', async () => {
-    const range = {
+  test('updates and clears the anchor of an existing comment', async () => {
+    const anchor = {
+      type: 'portable-text' as const,
       start: {_key: 'block-1', offset: 0},
       end: {_key: 'block-1', offset: 12},
     }
+
     const fieldValue = [
       {
         _type: 'block',
@@ -312,11 +342,13 @@ describe('collaboration.comments', () => {
       },
     ]
 
+    const range = {start: anchor.start, end: anchor.end}
+
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
         query: commonQuery,
-        body: {range},
+        body: {anchor},
       })
       .respond({
         status: 200,
@@ -327,7 +359,7 @@ describe('collaboration.comments', () => {
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
         query: commonQuery,
-        body: {range, fieldValue},
+        body: {anchor: {...anchor, fieldValue}},
       })
       .respond({
         status: 200,
@@ -338,23 +370,82 @@ describe('collaboration.comments', () => {
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
         query: commonQuery,
-        body: {range: null},
+        body: {anchor: null},
       })
       .respond({
         status: 200,
         body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
       })
+    // Deprecated `range` is converted to `anchor` on the wire.
+    scope
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {anchor},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-1', operation: 'update', document: inlineCommentDocument},
+        ]),
+      })
+    scope
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {anchor: null},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
+      })
+    scope
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {anchor: {...anchor, fieldValue}},
+      })
+      .respond({
+        status: 200,
+        body: mutationResponse([
+          {id: 'comment-1', operation: 'update', document: inlineCommentDocument},
+        ]),
+      })
 
-    const client = getMockClient()
-    await expect(client.collaboration.comments.update('comment-1', {range})).resolves.toEqual(
+    const {comments} = getMockClient().collaboration
+    await expect(comments.update('comment-1', {anchor})).resolves.toEqual(inlineCommentDocument)
+    await expect(comments.update('comment-1', {anchor: {...anchor, fieldValue}})).resolves.toEqual(
       inlineCommentDocument,
     )
-    await expect(
-      client.collaboration.comments.update('comment-1', {range, fieldValue}),
-    ).resolves.toEqual(inlineCommentDocument)
-    await expect(client.collaboration.comments.update('comment-1', {range: null})).resolves.toEqual(
-      commentDocument,
+    await expect(comments.update('comment-1', {anchor: null})).resolves.toEqual(commentDocument)
+    await expect(comments.update('comment-1', {range})).resolves.toEqual(inlineCommentDocument)
+    await expect(comments.update('comment-1', {range: null})).resolves.toEqual(commentDocument)
+    await expect(comments.update('comment-1', {range, fieldValue})).resolves.toEqual(
+      inlineCommentDocument,
     )
+  })
+
+  test('leaves invalid deprecated range input for the API to reject', async () => {
+    const fieldValue = [{_type: 'block', _key: 'block-1'}]
+
+    getActiveMock()
+      .scope(apiHost)
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
+        query: commonQuery,
+        body: {range: null, fieldValue},
+      })
+      .respond({
+        status: 400,
+        body: {
+          error: 'Bad Request',
+          message: 'range is required when fieldValue is provided',
+          statusCode: 400,
+        },
+      })
+
+    const {comments} = getMockClient().collaboration
+
+    await expect(
+      // @ts-expect-error - fieldValue requires a non-null range
+      comments.update('comment-1', {range: null, fieldValue}),
+    ).rejects.toThrow('range is required when fieldValue is provided')
   })
 
   test('uses resource query parameters', async () => {
