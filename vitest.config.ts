@@ -36,6 +36,8 @@ export const browserOnlyExclude = ['test/**/*.browser.test.ts']
 export function sourceAlias(entry: 'default' | 'node'): Record<string, string> {
   const main = entry === 'node' ? pkg.exports['.'].node.source : pkg.exports['.'].source
   return {
+    '@sanity/client/collaboration': new URL(pkg.exports['./collaboration'].source, import.meta.url)
+      .pathname,
     '@sanity/client/csm': new URL(pkg.exports['./csm'].source, import.meta.url).pathname,
     '@sanity/client/stega': new URL(pkg.exports['./stega'].source, import.meta.url).pathname,
     '@sanity/client': new URL(main, import.meta.url).pathname,

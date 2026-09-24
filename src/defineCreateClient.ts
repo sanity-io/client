@@ -3,7 +3,6 @@ import type {ClientConfig, HttpRequest} from './types'
 
 export {isTimeoutError, type TimeoutErrorLike} from 'get-it'
 
-export {getCommentTargetDocumentRef} from './collaboration/comments'
 export {validateApiPerspective} from './config'
 export {
   ChannelError,

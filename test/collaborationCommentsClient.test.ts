@@ -1,9 +1,5 @@
-import {
-  type ClientConfig,
-  type CollaborationCommentDocument,
-  createClient,
-  getCommentTargetDocumentRef,
-} from '@sanity/client'
+import {type ClientConfig, type CollaborationCommentDocument, createClient} from '@sanity/client'
+import {getCommentTargetDocumentRef} from '@sanity/client/collaboration'
 import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, take, toArray} from 'rxjs'
 import {describe, expect, test} from 'vitest'

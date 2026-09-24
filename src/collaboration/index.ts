@@ -1,0 +1,1 @@
+export {getCommentTargetDocumentRef} from './getCommentTargetDocumentRef'

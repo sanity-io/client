@@ -2769,7 +2769,7 @@ const draftComments = await client.collaboration.comments.fetch(
 The same ref can be built without a client, from a resource and a document id. Use `getCommentTargetDocumentRef()` where the resource is at hand and no client should be created or looked up, such as in a state selector:
 
 ```js
-import {getCommentTargetDocumentRef} from '@sanity/client'
+import {getCommentTargetDocumentRef} from '@sanity/client/collaboration'
 
 getCommentTargetDocumentRef({type: 'dataset', id: 'your-project-id.production'}, 'drafts.doc-1')
 // 'dataset:your-project-id.production:doc-1'
