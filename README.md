@@ -2684,7 +2684,7 @@ const reply = await client.collaboration.comments.create({
 })
 ```
 
-Field comments pass a `path`. Inline comments also pass a `range` (block `_key` + character offset). An optional `fieldValue` is Portable Text covering that `range` (a slice or the full field); when set with `range`, the `range` is resolved from those blocks instead of from the live document:
+Field comments pass a `path`. Inline comments also pass an `anchor` (`type: 'portable-text'` with block `_key` + character offset). An optional `fieldValue` on the anchor is Portable Text covering that selection (a slice or the full field); when set, the selection is resolved from those blocks instead of from the live document:
 
 ```js
 await client.collaboration.comments.create({
@@ -2693,7 +2693,8 @@ await client.collaboration.comments.create({
     documentId: 'doc-1',
     documentType: 'article',
     path: 'body',
-    range: {
+    anchor: {
+      type: 'portable-text',
       start: {_key: 'block-1', offset: 6},
       end: {_key: 'block-1', offset: 11},
     },
@@ -2701,19 +2702,27 @@ await client.collaboration.comments.create({
 })
 ```
 
-When querying, the field is stored as `target.path.field`, so filter with `target.path.field == "body"`, not `target.path == "body"`. The `range` itself is not stored: the API resolves it into a selection (and content snapshot) when the comment is written.
+Deprecated `range` + top-level `fieldValue` are still accepted and converted to a `portable-text` `anchor` before the request is sent.
+
+When querying, the field is stored as `target.path.field`, so filter with `target.path.field == "body"`, not `target.path == "body"`. The `anchor` itself is not stored: the API resolves it into a selection (and content snapshot) when the comment is written.
 
 #### Updating and deleting comments
 
-`update()` can change `message`, `status`, and/or `range`. Status changes cascade to replies. A `range` re-anchors an inline comment within the field it already targets; pass `null` to turn a text-level comment into a field-level one. An optional `fieldValue` may be passed with a non-null `range` for the same purpose as on create (not alone or with `range: null`):
+`update()` can change `message`, `status`, and/or `anchor`. Status changes cascade to replies. An `anchor` re-anchors an inline comment within the field it already targets; pass `null` to turn a text-level comment into a field-level one. An optional `fieldValue` may sit on a `portable-text` anchor for the same purpose as on create:
 
 ```js
 await client.collaboration.comments.update('comment-1', {status: 'resolved'})
 await client.collaboration.comments.update('comment-1', {
-  range: {start: {_key: 'block-1', offset: 0}, end: {_key: 'block-1', offset: 12}},
+  anchor: {
+    type: 'portable-text',
+    start: {_key: 'block-1', offset: 0},
+    end: {_key: 'block-1', offset: 12},
+  },
 })
-await client.collaboration.comments.update('comment-1', {range: null})
+await client.collaboration.comments.update('comment-1', {anchor: null})
 ```
+
+Deprecated `range` / `range: null` remain accepted and are converted the same way as on create.
 
 `delete()` also deletes replies. The returned `documentIds` covers the comment and every deleted reply:
 
