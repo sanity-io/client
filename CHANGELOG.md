@@ -1,5 +1,29 @@
 # @sanity/client
 
+## 8.8.0
+
+### Minor Changes
+
+- **collaboration:** accept comment `anchor`, deprecate `range` ([#1346](https://github.com/sanity-io/client/pull/1346)) ([4ce6968](https://github.com/sanity-io/client/commit/4ce6968893a91a0ba79c13cfebd0b98529dd5dbb))
+
+  Create and update now take a typed `anchor` (`type: "portable-text"` with optional `fieldValue` on the anchor). Deprecated `range` + top-level `fieldValue` (and `range: null`) are still accepted and sent as `anchor`.
+
+- export `getCommentTargetDocumentRef` from `@sanity/client/collaboration` ([#1343](https://github.com/sanity-io/client/pull/1343)) ([71d414a](https://github.com/sanity-io/client/commit/71d414ae47fbd20a2fa4e5ddfe80c7d639274af0))
+
+  Builds the global document reference a collaboration comment stores in `target.document._ref` from a resource and a document ID, with no client involved. `client.collaboration.comments.getTargetDocumentRef` is unchanged and now calls it, reading the resource off the client's configuration.
+
+  Until now the reference could only be built through a client instance, which meant code that needs it somewhere a client should not be fetched or created, such as a state selector, had to reach for one anyway. Pass the same value `ClientConfig['resource']` takes, for example `{type: 'dataset', id: 'abc123.production'}`.
+
+  ```js
+  import { getCommentTargetDocumentRef } from "@sanity/client/collaboration";
+
+  getCommentTargetDocumentRef(
+    { type: "dataset", id: "abc123.production" },
+    "drafts.doc-1"
+  );
+  // 'dataset:abc123.production:doc-1'
+  ```
+
 ## 8.7.0
 
 ### Minor Changes
