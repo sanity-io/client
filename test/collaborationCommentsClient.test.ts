@@ -4,6 +4,7 @@ import {encode} from 'eventsource-encoder'
 import {firstValueFrom, lastValueFrom, take, toArray} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
+import {version as clientVersion} from '../package.json'
 import {getActiveMock, streamBody, streamStall, testResolveFetch} from './helpers/mockFetch'
 
 const apiHost = 'https://api.sanity.url'
@@ -108,6 +109,7 @@ describe('collaboration.comments', () => {
     organizationId,
     resourceId: resource.id,
     resourceType: resource.type,
+    clientVersion,
   }
 
   test('creates comments with resource query parameters and write options', async () => {
@@ -462,6 +464,7 @@ describe('collaboration.comments', () => {
             organizationId,
             resourceId: currentResource.id,
             resourceType: currentResource.type,
+            clientVersion,
           },
         })
         .respond({
@@ -982,6 +985,7 @@ describe('collaboration.comments', () => {
       organizationId,
       resourceId: `${projectId}.${dataset}`,
       resourceType: 'dataset',
+      clientVersion,
     }
     const datasetComment: CollaborationCommentDocument = {
       ...commentDocument,
@@ -1324,6 +1328,7 @@ describe('collaboration.comments.listen', () => {
       query,
       resourceId: resource.id,
       resourceType: resource.type,
+      clientVersion,
       tag: 'comments.listen',
     })
     expect(request).toHaveHeader('authorization', 'Bearer token-123')
@@ -1364,6 +1369,7 @@ describe('collaboration.comments.listen', () => {
       query,
       resourceId: resource.id,
       resourceType: resource.type,
+      clientVersion,
     })
   })
 

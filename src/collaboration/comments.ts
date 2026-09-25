@@ -1,6 +1,7 @@
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
+import {version} from '../../package.json'
 import {_requestObservable, getQuerySizeLimit} from '../data/dataMethods'
 import {encodeQueryString} from '../data/encodeQueryString'
 import {
@@ -73,10 +74,13 @@ function resourceQuery(client: Client): Record<string, string> {
 
   const resource = resolveCommentResource(client)
 
+  // Browsers don't let scripts set `User-Agent`, so the version travels in the
+  // query string, where it also avoids a CORS preflight.
   return {
     organizationId,
     resourceId: resource.id,
     resourceType: resource.type,
+    clientVersion: version,
   }
 }
 
