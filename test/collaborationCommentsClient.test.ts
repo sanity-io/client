@@ -105,18 +105,18 @@ const getMockClient = (config: Partial<ClientConfig> = {}) =>
   createClient({...baseConfig, resolveFetch: testResolveFetch, ...config})
 
 describe('collaboration.comments', () => {
-  const commonQuery = {
+  const readQuery = {
     organizationId,
     resourceId: resource.id,
     resourceType: resource.type,
-    clientVersion,
   }
+  const writeQuery = {...readQuery, clientVersion}
 
   test('creates comments with resource query parameters and write options', async () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', '/v2026-07-18/collaboration/comments', {
-        query: {...commonQuery, tag: 'comments.create', transactionId: 'txn-123'},
+        query: {...writeQuery, tag: 'comments.create', transactionId: 'txn-123'},
         body: {target: {documentId: 'doc-1', documentType: 'article'}, message},
       })
       .respond({
@@ -144,7 +144,7 @@ describe('collaboration.comments', () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', '/v2026-07-18/collaboration/comments', {
-        query: commonQuery,
+        query: writeQuery,
         body: {parentCommentId: 'comment-1', message},
       })
       .respond({
@@ -171,7 +171,7 @@ describe('collaboration.comments', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery, body})
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: writeQuery, body})
       .respond({
         status: 200,
         body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
@@ -243,7 +243,7 @@ describe('collaboration.comments', () => {
 
     const scope = getActiveMock().scope(apiHost)
     scope
-      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery, body: fieldComment})
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: writeQuery, body: fieldComment})
       .respond({
         status: 200,
         body: mutationResponse([
@@ -251,7 +251,7 @@ describe('collaboration.comments', () => {
         ]),
       })
     scope
-      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery, body: inlineComment})
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: writeQuery, body: inlineComment})
       .respond({
         status: 200,
         body: mutationResponse([
@@ -260,7 +260,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('POST', '/v2026-07-18/collaboration/comments', {
-        query: commonQuery,
+        query: writeQuery,
         body: inlineWithFieldValue,
       })
       .respond({
@@ -271,7 +271,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('POST', '/v2026-07-18/collaboration/comments', {
-        query: commonQuery,
+        query: writeQuery,
         body: inlineWithFieldValue,
       })
       .respond({
@@ -316,7 +316,7 @@ describe('collaboration.comments', () => {
     getActiveMock()
       .scope(apiHost)
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {message: edited},
       })
       .respond({
@@ -349,7 +349,7 @@ describe('collaboration.comments', () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {anchor},
       })
       .respond({
@@ -360,7 +360,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {anchor: {...anchor, fieldValue}},
       })
       .respond({
@@ -371,7 +371,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {anchor: null},
       })
       .respond({
@@ -381,7 +381,7 @@ describe('collaboration.comments', () => {
     // Deprecated `range` is converted to `anchor` on the wire.
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {anchor},
       })
       .respond({
@@ -392,7 +392,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {anchor: null},
       })
       .respond({
@@ -401,7 +401,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {anchor: {...anchor, fieldValue}},
       })
       .respond({
@@ -430,7 +430,7 @@ describe('collaboration.comments', () => {
     getActiveMock()
       .scope(apiHost)
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {range: null, fieldValue},
       })
       .respond({
@@ -448,6 +448,26 @@ describe('collaboration.comments', () => {
       // @ts-expect-error - fieldValue requires a non-null range
       comments.update('comment-1', {range: null, fieldValue}),
     ).rejects.toThrow('range is required when fieldValue is provided')
+  })
+
+  test('sends the client version on writes but not on queries', async () => {
+    const query = '*[_type == "sanity.comment"]'
+    const scope = getActiveMock().scope(apiHost)
+    scope.on('POST', '/v2026-07-18/collaboration/comments').respond({
+      status: 200,
+      body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
+    })
+    scope
+      .on('GET', '/v2026-07-18/collaboration/comments/query')
+      .respond({status: 200, body: {result: []}})
+
+    const {comments} = getMockClient().collaboration
+    await comments.create({target: {documentId: 'doc-1', documentType: 'article'}, message})
+    await comments.fetch(query)
+
+    const [write, read] = getActiveMock().getRequests()
+    expect(write.query.clientVersion).toBe(clientVersion)
+    expect(read.query).not.toHaveProperty('clientVersion')
   })
 
   test('uses resource query parameters', async () => {
@@ -508,7 +528,7 @@ describe('collaboration.comments', () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment%2F1', {
-        query: commonQuery,
+        query: writeQuery,
         body: {status: 'resolved'},
       })
       .respond({
@@ -516,11 +536,11 @@ describe('collaboration.comments', () => {
         body: mutationResponse([{id: 'comment/1', operation: 'update', document: resolved}]),
       })
     scope
-      .on('DELETE', '/v2026-07-18/collaboration/comments/comment%2F1', {query: commonQuery})
+      .on('DELETE', '/v2026-07-18/collaboration/comments/comment%2F1', {query: writeQuery})
       .respond({status: 200, body: mutationResponse([{id: 'comment/1', operation: 'delete'}])})
     scope
       .on('POST', '/v2026-07-18/collaboration/comments/comment%2F1/reactions', {
-        query: commonQuery,
+        query: writeQuery,
         body: {shortName: ':heart:'},
       })
       .respond({
@@ -529,7 +549,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment%2F1/reactions/%3Aheart%3A', {
-        query: commonQuery,
+        query: writeQuery,
       })
       .respond({
         status: 200,
@@ -554,7 +574,7 @@ describe('collaboration.comments', () => {
 
   test('forwards the transaction id on every write', async () => {
     const client = getMockClient()
-    const query = {...commonQuery, transactionId: 'txn-123'}
+    const query = {...writeQuery, transactionId: 'txn-123'}
     const options = {transactionId: 'txn-123'}
 
     const scope = getActiveMock().scope(apiHost)
@@ -595,7 +615,7 @@ describe('collaboration.comments', () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: {...commonQuery, tag: 'comments.update'},
+        query: {...writeQuery, tag: 'comments.update'},
       })
       .respond({
         status: 200,
@@ -603,12 +623,12 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {
-        query: {...commonQuery, tag: 'comments.delete'},
+        query: {...writeQuery, tag: 'comments.delete'},
       })
       .respond({status: 200, body: mutationResponse([{id: 'comment-1', operation: 'delete'}])})
     scope
       .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {
-        query: {...commonQuery, tag: 'comments.react'},
+        query: {...writeQuery, tag: 'comments.react'},
       })
       .respond({
         status: 200,
@@ -616,7 +636,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1/reactions/%3Aheart%3A', {
-        query: {...commonQuery, tag: 'comments.unreact'},
+        query: {...writeQuery, tag: 'comments.unreact'},
       })
       .respond({
         status: 200,
@@ -624,7 +644,7 @@ describe('collaboration.comments', () => {
       })
     scope
       .on('GET', '/v2026-07-18/collaboration/comments/query', {
-        query: {...commonQuery, query: groq, tag: 'comments.fetch'},
+        query: {...readQuery, query: groq, tag: 'comments.fetch'},
       })
       .respond({status: 200, body: {result: []}})
 
@@ -667,7 +687,7 @@ describe('collaboration.comments', () => {
       getActiveMock()
         .scope(apiHost)
         .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {
-          query: commonQuery,
+          query: writeQuery,
           body: {status: 'resolved'},
         })
         .respond({
@@ -690,7 +710,7 @@ describe('collaboration.comments', () => {
   test('rejects when a write response carries only replies', async () => {
     getActiveMock()
       .scope(apiHost)
-      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond({
         status: 200,
         body: mutationResponse([{id: 'reply-1', operation: 'update', document: replyDocument}]),
@@ -704,7 +724,7 @@ describe('collaboration.comments', () => {
   test('returns the deleted comment and reply ids', async () => {
     getActiveMock()
       .scope(apiHost)
-      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond({
         status: 200,
         body: mutationResponse([
@@ -726,7 +746,7 @@ describe('collaboration.comments', () => {
   test('resolves delete with no document ids when nothing matched', async () => {
     getActiveMock()
       .scope(apiHost)
-      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond({status: 200, body: mutationResponse([])})
 
     await expect(getMockClient().collaboration.comments.delete('comment-1')).resolves.toEqual({
@@ -739,10 +759,10 @@ describe('collaboration.comments', () => {
   test('rejects when a write response carries no comment document', async () => {
     const scope = getActiveMock().scope(apiHost)
     scope
-      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond({status: 200, body: mutationResponse([])})
     scope
-      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {query: commonQuery})
+      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {query: writeQuery})
       .respond({status: 200, body: mutationResponse([{id: 'comment-1', operation: 'update'}])})
 
     const client = getMockClient()
@@ -767,14 +787,14 @@ describe('collaboration.comments', () => {
 
     const scope = getActiveMock().scope(apiHost)
     scope
-      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond(notFound)
     scope
-      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {query: commonQuery})
+      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {query: writeQuery})
       .respond(notFound)
     scope
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1/reactions/%3Aheart%3A', {
-        query: commonQuery,
+        query: writeQuery,
       })
       .respond(notFound)
 
@@ -800,7 +820,7 @@ describe('collaboration.comments', () => {
       .scope(apiHost)
       .on('GET', '/v2026-07-18/collaboration/comments/query', {
         query: {
-          ...commonQuery,
+          ...readQuery,
           $ref: JSON.stringify('canvas:canvas-123:doc-1'),
           query,
         },
@@ -822,7 +842,7 @@ describe('collaboration.comments', () => {
       .scope(apiHost)
       .on('GET', '/v2026-07-18/collaboration/comments/query', {
         query: {
-          ...commonQuery,
+          ...readQuery,
           $ref: JSON.stringify('canvas:canvas-123:doc-1'),
           query,
         },
@@ -843,11 +863,11 @@ describe('collaboration.comments', () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('GET', '/v2026-07-18/collaboration/comments/query', {
-        query: {...commonQuery, query},
+        query: {...readQuery, query},
         headers,
       })
       .respond({status: 200, body: {result: []}})
-    scope.on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery, headers}).respond({
+    scope.on('POST', '/v2026-07-18/collaboration/comments', {query: writeQuery, headers}).respond({
       status: 200,
       body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
     })
@@ -871,7 +891,7 @@ describe('collaboration.comments', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...commonQuery, query}})
+      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...readQuery, query}})
       .respond({status: 200, body: {result: []}, delay: 250})
 
     const error = await getMockClient()
@@ -892,7 +912,7 @@ describe('collaboration.comments', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...commonQuery, query}})
+      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...readQuery, query}})
       .respond({status: 200, body: {result: []}, delay: 100})
 
     const abortController = new AbortController()
@@ -916,7 +936,7 @@ describe('collaboration.comments', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery})
+      .on('POST', '/v2026-07-18/collaboration/comments', {query: writeQuery})
       .respond({
         status: 200,
         body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
@@ -1035,7 +1055,7 @@ describe('collaboration.comments', () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', '/v2026-07-18/collaboration/comments', {
-        query: commonQuery,
+        query: writeQuery,
         body: {target: {documentId: 'doc-1', documentType: 'article'}, message},
       })
       .respond({
@@ -1176,7 +1196,7 @@ describe('collaboration.comments', () => {
 
     getActiveMock()
       .scope(apiHost)
-      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...commonQuery, query}})
+      .on('GET', '/v2026-07-18/collaboration/comments/query', {query: {...readQuery, query}})
       .respond({status: 200, body: {result: []}})
 
     await expect(getMockClient().collaboration.comments.fetch(query)).resolves.toEqual([])
@@ -1188,7 +1208,7 @@ describe('collaboration.comments', () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', '/v2026-07-18/collaboration/comments/query', {
-        query: commonQuery,
+        query: readQuery,
         body: {query, params: {}},
       })
       .respond({status: 200, body: {result: []}})
@@ -1203,7 +1223,7 @@ describe('collaboration.comments', () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', '/v2026-07-18/collaboration/comments/query', {
-        query: commonQuery,
+        query: readQuery,
         body: {query, params},
       })
       .respond({status: 200, body: {result: [commentDocument]}})
@@ -1217,31 +1237,31 @@ describe('collaboration.comments', () => {
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('GET', '/v2026-07-18/collaboration/comments/query', {
-        query: {...commonQuery, query: '*[_type == "sanity.comment"]'},
+        query: {...readQuery, query: '*[_type == "sanity.comment"]'},
       })
       .respond({status: 200, body: {result: []}})
-    scope.on('POST', '/v2026-07-18/collaboration/comments', {query: commonQuery}).respond({
+    scope.on('POST', '/v2026-07-18/collaboration/comments', {query: writeQuery}).respond({
       status: 200,
       body: mutationResponse([{id: 'comment-1', operation: 'create', document: commentDocument}]),
     })
     scope
-      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond({status: 200, body: mutationResponse([{id: 'comment-1', operation: 'delete'}])})
     scope
-      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: commonQuery})
+      .on('PATCH', '/v2026-07-18/collaboration/comments/comment-1', {query: writeQuery})
       .respond({
         status: 200,
         body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
       })
     scope
-      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {query: commonQuery})
+      .on('POST', '/v2026-07-18/collaboration/comments/comment-1/reactions', {query: writeQuery})
       .respond({
         status: 200,
         body: mutationResponse([{id: 'comment-1', operation: 'update', document: commentDocument}]),
       })
     scope
       .on('DELETE', '/v2026-07-18/collaboration/comments/comment-1/reactions/%3Aheart%3A', {
-        query: commonQuery,
+        query: writeQuery,
       })
       .respond({
         status: 200,
@@ -1328,7 +1348,6 @@ describe('collaboration.comments.listen', () => {
       query,
       resourceId: resource.id,
       resourceType: resource.type,
-      clientVersion,
       tag: 'comments.listen',
     })
     expect(request).toHaveHeader('authorization', 'Bearer token-123')
@@ -1369,7 +1388,6 @@ describe('collaboration.comments.listen', () => {
       query,
       resourceId: resource.id,
       resourceType: resource.type,
-      clientVersion,
     })
   })
 

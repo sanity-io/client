@@ -74,13 +74,10 @@ function resourceQuery(client: Client): Record<string, string> {
 
   const resource = resolveCommentResource(client)
 
-  // Browsers don't let scripts set `User-Agent`, so the version travels in the
-  // query string, where it also avoids a CORS preflight.
   return {
     organizationId,
     resourceId: resource.id,
     resourceType: resource.type,
-    clientVersion: version,
   }
 }
 
@@ -138,6 +135,8 @@ function write<T>(
     body,
     query: {
       ...resourceQuery(client),
+      // Records the client version for telemetry (writes only).
+      clientVersion: version,
       ...(options.transactionId ? {transactionId: options.transactionId} : {}),
     },
     ...pick(options, possibleRequestOptions),
