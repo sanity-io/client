@@ -121,7 +121,10 @@ export const initConfig = (
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 
   const hasToken = Boolean(newConfig.token)
-  if (newConfig.withCredentials && hasToken) {
+  if (hasToken && newConfig.auth?.oauth) {
+    throw new Error('`token` and `auth.oauth` are mutually exclusive, configure one or the other')
+  }
+  if (newConfig.withCredentials && (hasToken || newConfig.auth?.oauth)) {
     warnings.printCredentialedTokenWarning()
     newConfig.withCredentials = false
   }

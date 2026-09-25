@@ -110,7 +110,7 @@ describe('.live.events()', () => {
   test('requires token when includeDrafts is true', () => {
     const client = createClient({projectId: 'abc123', dataset: 'prod', apiVersion: 'vX'})
     expect(() => client.live.events({includeDrafts: true})).toThrowErrorMatchingInlineSnapshot(
-      `[Error: The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.]`,
+      `[Error: The live events API requires a token, auth.oauth or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.]`,
     )
   })
   test('allows apiVersion 2021-03-26 when includeDrafts is true', () => {
@@ -254,6 +254,40 @@ describe('.live.events()', () => {
     expect(request.query).toMatchObject({includeDrafts: 'true'})
     expect(request).not.toHaveHeader('authorization')
     expect(request.init?.credentials).toBe('include')
+  })
+
+  test('authenticates includeDrafts with an OAuth token setup', async () => {
+    expect.assertions(2)
+
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/oauth-drafts')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'oauth-drafts',
+      useCdn: false,
+      apiVersion: 'X',
+      auth: {
+        oauth: {
+          getToken: async () => 'oauth-token',
+          refresh: () => Promise.reject(new Error('not needed')),
+        },
+      },
+    })
+
+    // `auth.oauth` is mutually exclusive with `token` and switches
+    // `withCredentials` off, so it has to count as credentials on its own.
+    await firstValueFrom(client.live.events({includeDrafts: true}))
+
+    const [request] = getActiveMock().getRequests()
+    expect(request.query).toMatchObject({includeDrafts: 'true'})
+    expect(request).toHaveHeader('authorization', 'Bearer oauth-token')
   })
 
   test('does not send cookies when withCredentials is set but drafts are not requested', async () => {
