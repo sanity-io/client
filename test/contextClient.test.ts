@@ -163,12 +163,12 @@ describe('ContextClient', () => {
 
     const result = await kbContext.issues.resolve({
       issueId: 'issue.abc',
-      resolution: 'keep_existing',
+      resolution: 0,
     })
 
     const req = httpRequest.mock.calls[0][0]
     expect(req.url).toContain('/issues/issue.abc/resolve')
-    expect(req.body).toEqual({resolution: 'keep_existing'})
+    expect(req.body).toEqual({resolution: 0})
     expect(result.issue.status).toBe('accepted')
   })
 

@@ -44,7 +44,7 @@ export interface paths {
     post?: never
     /**
      * Delete a knowledge base
-     * @description Removes the knowledge base and everything it owns: sources, imports, and revisions. Content documents in the bound dataset are deleted best-effort, and stored source files are reclaimed by a separate cleanup.
+     * @description Removes the knowledge base and everything it owns: sources, imports, revisions, the content documents in the bound dataset, and the stored source files. Returns 409 `buildInFlight` while a build, refresh, apply, or import is running, since that work would write files back after the delete; retry once it finishes.
      */
     delete: operations['deleteKnowledgeBase']
     options?: never
@@ -151,7 +151,7 @@ export interface paths {
     put?: never
     /**
      * Start a file-upload import
-     * @description Creates a file-upload import and returns a single-use signed upload URL. PUT the file bytes to it, then call `POST .../imports/uploads/{importId}/complete` to start ingestion. The bytes never pass through this API. Supports the `Idempotency-Key` header.
+     * @description Creates a file-upload import and returns a single-use signed upload URL, valid for one hour. PUT the file bytes to it, then call `POST .../imports/uploads/{importId}/complete` to start ingestion. When `contentType` is set, the PUT must send the same `Content-Type` header; when omitted, the PUT may send any or none. An import that is not completed within 24 hours is deleted. The bytes never pass through this API. Supports the `Idempotency-Key` header.
      */
     post: operations['startUpload']
     delete?: never
@@ -235,7 +235,7 @@ export interface paths {
     put?: never
     /**
      * Author a human instruction
-     * @description Creates a standing rule that every future build honors. Tie it to one or more sources with `scopeSourceIds`, or leave it null to apply knowledge-base-wide. Pass `rebuildPaths` to immediately rebuild those entries under the new rule; the response carries the rebuild job id, or null when the rebuild could not start (the rule is saved either way). Pass `verified` after a completed synchronous contradiction check to skip the background one; if the requested rebuild fails to start, the background check runs anyway so the contradicting pages get filed as issues.
+     * @description Creates a standing rule for how entries citing its sources are written. Tie it to one or more sources with `scopeSourceIds`; every rule is source-tied. Pass `rebuildPaths` to immediately rebuild those entries under the new rule; the response carries the rebuild job id, or null when the rebuild could not start (the rule is saved either way). Pass `verified` after a completed synchronous contradiction check to skip the background one; if the requested rebuild fails to start, the background check runs anyway so the contradicting pages get filed as issues.
      */
     post: operations['createInstruction']
     delete?: never
@@ -339,7 +339,7 @@ export interface paths {
     put?: never
     /**
      * Resolve a conflict issue
-     * @description Settles a conflict with one of two choices: `keep_existing` or `accept_new` (rewrites the entry; the returned `jobId` tracks it). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
+     * @description Settles a conflict by choosing a side: `resolution` is an index into `content.sides`. Index 0 of a per-entry conflict is the entry's own position, so choosing it keeps the body; any other side rewrites the entry (the returned `jobId` tracks it). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
      */
     post: operations['resolveIssue']
     delete?: never
@@ -357,7 +357,7 @@ export interface paths {
     }
     /**
      * Get a job by id
-     * @description Returns the status of a job, such as a build or an import. Job ids come from the endpoint that queued the work.
+     * @description Returns the status of a job, such as a build, an import, or a refresh. Job ids come from the endpoint that queued the work.
      */
     get: operations['getJob']
     put?: never
@@ -462,7 +462,7 @@ export interface paths {
     get?: never
     /**
      * Record a conversation
-     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata`, `sharing`, and model fields only overwrite when present. Last write per thread wins — retries are safe. `sharing` records your opt-in to share telemetry with Sanity: metadata-only metrics, or full transcripts.
+     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata`, `sharing`, and model fields only overwrite when present. `tokenUsage` accumulates: each save reports one generation call and the stored value is the conversation total, added only when the save changes the transcript so retries never double-count. Report a failure as `error` on the message where it happened: a tool result for a failed tool call, an assistant message for a turn that failed instead of answering. The dashboard highlights conversations with a failed turn and counts failed tool calls separately, since agents often recover from one. Last write per thread wins — retries are safe. `sharing` records your opt-in to share telemetry with Sanity: metadata-only metrics, or full transcripts.
      */
     put: operations['saveConversation']
     post?: never
@@ -514,6 +514,13 @@ export interface components {
          * @enum {string|null}
          */
         toolType: 'call' | 'result' | null
+        /** @default null */
+        error: string | null
+        /**
+         * Format: date-time
+         * @default null
+         */
+        timestamp: string | null
       }[]
       modelProvider: string | null
       modelId: string | null
@@ -667,33 +674,50 @@ export interface components {
           /** @enum {number} */
           schemaVersion: 1
           /** @description IssueContent */
-          content: {
-            /** @enum {string} */
-            kind:
-              | 'conflict'
-              | 'gap'
-              | 'update_required'
-              | 'add_entry'
-              | 'remove_entry'
-              | 'split_entry'
-              | 'merge_entry'
-            /** @enum {string} */
-            severity: 'critical' | 'suggestion'
-            scopePath: string
-            issue: string
-            suggestedFix: string
-            citedSourceIds?: string[]
-            claimKey?: string
-            involvedScopes?: string[]
-            currentClaim?: string
-            alternativeClaim?: string
-            /** @enum {string} */
-            currentAuthority?: 'primary' | 'secondary' | 'community'
-            /** @enum {string} */
-            alternativeAuthority?: 'primary' | 'secondary' | 'community'
-            /** @enum {string} */
-            suggestedResolution?: 'keep_existing' | 'accept_new'
-          }
+          content:
+            | {
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                /** @enum {string} */
+                kind: 'conflict'
+                claimKey: string
+                sides: {
+                  claim: string
+                  value?: string
+                  entryPaths?: string[]
+                  sourceIds?: string[]
+                  /** @description ConflictSpan */
+                  span?: {
+                    sourceId: string
+                    lineStart: number
+                    lineEnd: number
+                  }
+                  /** @enum {string} */
+                  authority?: 'primary' | 'secondary' | 'community'
+                }[]
+                suggested?: number
+              }
+            | {
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                /** @enum {string} */
+                kind:
+                  | 'gap'
+                  | 'update_required'
+                  | 'add_entry'
+                  | 'remove_entry'
+                  | 'split_entry'
+                  | 'merge_entry'
+                citedSourceIds?: string[]
+                claimKey?: string
+                involvedScopes?: string[]
+              }
           fingerprint: string
           revisionId: string | null
           /** @enum {string} */
@@ -718,33 +742,50 @@ export interface components {
           /** @enum {number} */
           schemaVersion: 1
           /** @description IssueContent */
-          content: {
-            /** @enum {string} */
-            kind:
-              | 'conflict'
-              | 'gap'
-              | 'update_required'
-              | 'add_entry'
-              | 'remove_entry'
-              | 'split_entry'
-              | 'merge_entry'
-            /** @enum {string} */
-            severity: 'critical' | 'suggestion'
-            scopePath: string
-            issue: string
-            suggestedFix: string
-            citedSourceIds?: string[]
-            claimKey?: string
-            involvedScopes?: string[]
-            currentClaim?: string
-            alternativeClaim?: string
-            /** @enum {string} */
-            currentAuthority?: 'primary' | 'secondary' | 'community'
-            /** @enum {string} */
-            alternativeAuthority?: 'primary' | 'secondary' | 'community'
-            /** @enum {string} */
-            suggestedResolution?: 'keep_existing' | 'accept_new'
-          }
+          content:
+            | {
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                /** @enum {string} */
+                kind: 'conflict'
+                claimKey: string
+                sides: {
+                  claim: string
+                  value?: string
+                  entryPaths?: string[]
+                  sourceIds?: string[]
+                  /** @description ConflictSpan */
+                  span?: {
+                    sourceId: string
+                    lineStart: number
+                    lineEnd: number
+                  }
+                  /** @enum {string} */
+                  authority?: 'primary' | 'secondary' | 'community'
+                }[]
+                suggested?: number
+              }
+            | {
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                /** @enum {string} */
+                kind:
+                  | 'gap'
+                  | 'update_required'
+                  | 'add_entry'
+                  | 'remove_entry'
+                  | 'split_entry'
+                  | 'merge_entry'
+                citedSourceIds?: string[]
+                claimKey?: string
+                involvedScopes?: string[]
+              }
           fingerprint: string
           revisionId: string | null
           /** @enum {string} */
@@ -756,8 +797,7 @@ export interface components {
             /** @enum {string} */
             kind: 'user' | 'robot'
           } | null
-          /** @enum {string|null} */
-          resolution: 'keep_existing' | 'accept_new' | null
+          resolution: number | null
         }
       | {
           _id: string
@@ -772,33 +812,50 @@ export interface components {
           /** @enum {number} */
           schemaVersion: 1
           /** @description IssueContent */
-          content: {
-            /** @enum {string} */
-            kind:
-              | 'conflict'
-              | 'gap'
-              | 'update_required'
-              | 'add_entry'
-              | 'remove_entry'
-              | 'split_entry'
-              | 'merge_entry'
-            /** @enum {string} */
-            severity: 'critical' | 'suggestion'
-            scopePath: string
-            issue: string
-            suggestedFix: string
-            citedSourceIds?: string[]
-            claimKey?: string
-            involvedScopes?: string[]
-            currentClaim?: string
-            alternativeClaim?: string
-            /** @enum {string} */
-            currentAuthority?: 'primary' | 'secondary' | 'community'
-            /** @enum {string} */
-            alternativeAuthority?: 'primary' | 'secondary' | 'community'
-            /** @enum {string} */
-            suggestedResolution?: 'keep_existing' | 'accept_new'
-          }
+          content:
+            | {
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                /** @enum {string} */
+                kind: 'conflict'
+                claimKey: string
+                sides: {
+                  claim: string
+                  value?: string
+                  entryPaths?: string[]
+                  sourceIds?: string[]
+                  /** @description ConflictSpan */
+                  span?: {
+                    sourceId: string
+                    lineStart: number
+                    lineEnd: number
+                  }
+                  /** @enum {string} */
+                  authority?: 'primary' | 'secondary' | 'community'
+                }[]
+                suggested?: number
+              }
+            | {
+                /** @enum {string} */
+                severity: 'critical' | 'suggestion'
+                scopePath: string
+                issue: string
+                suggestedFix: string
+                /** @enum {string} */
+                kind:
+                  | 'gap'
+                  | 'update_required'
+                  | 'add_entry'
+                  | 'remove_entry'
+                  | 'split_entry'
+                  | 'merge_entry'
+                citedSourceIds?: string[]
+                claimKey?: string
+                involvedScopes?: string[]
+              }
           fingerprint: string
           revisionId: string | null
           /** @enum {string} */
@@ -932,6 +989,11 @@ export interface operations {
                 used: number
                 limit: number
               } | null
+              /** @description PlanRestriction */
+              buildRestriction: {
+                code: string
+                message: string
+              } | null
               refreshEnabled: boolean
               /** @enum {string} */
               refreshFrequency: 'weekly' | 'monthly'
@@ -1038,6 +1100,11 @@ export interface operations {
               used: number
               limit: number
             } | null
+            /** @description PlanRestriction */
+            buildRestriction: {
+              code: string
+              message: string
+            } | null
             refreshEnabled: boolean
             /** @enum {string} */
             refreshFrequency: 'weekly' | 'monthly'
@@ -1133,6 +1200,11 @@ export interface operations {
             sourceUsage: {
               used: number
               limit: number
+            } | null
+            /** @description PlanRestriction */
+            buildRestriction: {
+              code: string
+              message: string
             } | null
             refreshEnabled: boolean
             /** @enum {string} */
@@ -1261,6 +1333,11 @@ export interface operations {
             sourceUsage: {
               used: number
               limit: number
+            } | null
+            /** @description PlanRestriction */
+            buildRestriction: {
+              code: string
+              message: string
             } | null
             refreshEnabled: boolean
             /** @enum {string} */
@@ -1685,7 +1762,7 @@ export interface operations {
       content: {
         'application/json': {
           statement: string
-          scopeSourceIds?: string[] | null
+          scopeSourceIds: string[]
           rebuildPaths?: string[]
           verified?: boolean
         }
@@ -1708,7 +1785,7 @@ export interface operations {
               /** @enum {string} */
               status: 'active' | 'archived'
               statement: string
-              scopeSourceIds: string[] | null
+              scopeSourceIds: string[]
               /** Format: date-time */
               archivedAt: string | null
               archivedReason: string | null
@@ -1772,7 +1849,7 @@ export interface operations {
       content: {
         'application/json': {
           statement?: string
-          scopeSourceIds?: string[] | null
+          scopeSourceIds?: string[]
         }
       }
     }
@@ -1791,7 +1868,7 @@ export interface operations {
             /** @enum {string} */
             status: 'active' | 'archived'
             statement: string
-            scopeSourceIds: string[] | null
+            scopeSourceIds: string[]
             /** Format: date-time */
             archivedAt: string | null
             archivedReason: string | null
@@ -1867,37 +1944,53 @@ export interface operations {
             id: string
             knowledgeBaseId: string
             /** @description IssueContent */
-            content: {
-              /** @enum {string} */
-              kind:
-                | 'conflict'
-                | 'gap'
-                | 'update_required'
-                | 'add_entry'
-                | 'remove_entry'
-                | 'split_entry'
-                | 'merge_entry'
-              /** @enum {string} */
-              severity: 'critical' | 'suggestion'
-              scopePath: string
-              issue: string
-              suggestedFix: string
-              citedSourceIds?: string[]
-              claimKey?: string
-              involvedScopes?: string[]
-              currentClaim?: string
-              alternativeClaim?: string
-              /** @enum {string} */
-              currentAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              alternativeAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new'
-            }
+            content:
+              | {
+                  /** @enum {string} */
+                  severity: 'critical' | 'suggestion'
+                  scopePath: string
+                  issue: string
+                  suggestedFix: string
+                  /** @enum {string} */
+                  kind: 'conflict'
+                  claimKey: string
+                  sides: {
+                    claim: string
+                    value?: string
+                    entryPaths?: string[]
+                    sourceIds?: string[]
+                    /** @description ConflictSpan */
+                    span?: {
+                      sourceId: string
+                      lineStart: number
+                      lineEnd: number
+                    }
+                    /** @enum {string} */
+                    authority?: 'primary' | 'secondary' | 'community'
+                  }[]
+                  suggested?: number
+                }
+              | {
+                  /** @enum {string} */
+                  severity: 'critical' | 'suggestion'
+                  scopePath: string
+                  issue: string
+                  suggestedFix: string
+                  /** @enum {string} */
+                  kind:
+                    | 'gap'
+                    | 'update_required'
+                    | 'add_entry'
+                    | 'remove_entry'
+                    | 'split_entry'
+                    | 'merge_entry'
+                  citedSourceIds?: string[]
+                  claimKey?: string
+                  involvedScopes?: string[]
+                }
             /** @enum {string} */
             status: 'open' | 'accepted' | 'rejected'
-            /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | null
+            resolution: number | null
             /** @description IssueResolvedBy */
             resolvedBy: {
               id: string
@@ -1935,37 +2028,53 @@ export interface operations {
             id: string
             knowledgeBaseId: string
             /** @description IssueContent */
-            content: {
-              /** @enum {string} */
-              kind:
-                | 'conflict'
-                | 'gap'
-                | 'update_required'
-                | 'add_entry'
-                | 'remove_entry'
-                | 'split_entry'
-                | 'merge_entry'
-              /** @enum {string} */
-              severity: 'critical' | 'suggestion'
-              scopePath: string
-              issue: string
-              suggestedFix: string
-              citedSourceIds?: string[]
-              claimKey?: string
-              involvedScopes?: string[]
-              currentClaim?: string
-              alternativeClaim?: string
-              /** @enum {string} */
-              currentAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              alternativeAuthority?: 'primary' | 'secondary' | 'community'
-              /** @enum {string} */
-              suggestedResolution?: 'keep_existing' | 'accept_new'
-            }
+            content:
+              | {
+                  /** @enum {string} */
+                  severity: 'critical' | 'suggestion'
+                  scopePath: string
+                  issue: string
+                  suggestedFix: string
+                  /** @enum {string} */
+                  kind: 'conflict'
+                  claimKey: string
+                  sides: {
+                    claim: string
+                    value?: string
+                    entryPaths?: string[]
+                    sourceIds?: string[]
+                    /** @description ConflictSpan */
+                    span?: {
+                      sourceId: string
+                      lineStart: number
+                      lineEnd: number
+                    }
+                    /** @enum {string} */
+                    authority?: 'primary' | 'secondary' | 'community'
+                  }[]
+                  suggested?: number
+                }
+              | {
+                  /** @enum {string} */
+                  severity: 'critical' | 'suggestion'
+                  scopePath: string
+                  issue: string
+                  suggestedFix: string
+                  /** @enum {string} */
+                  kind:
+                    | 'gap'
+                    | 'update_required'
+                    | 'add_entry'
+                    | 'remove_entry'
+                    | 'split_entry'
+                    | 'merge_entry'
+                  citedSourceIds?: string[]
+                  claimKey?: string
+                  involvedScopes?: string[]
+                }
             /** @enum {string} */
             status: 'open' | 'accepted' | 'rejected'
-            /** @enum {string|null} */
-            resolution: 'keep_existing' | 'accept_new' | null
+            resolution: number | null
             /** @description IssueResolvedBy */
             resolvedBy: {
               id: string
@@ -1994,8 +2103,7 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
-          /** @enum {string} */
-          resolution: 'keep_existing' | 'accept_new'
+          resolution: number
         }
       }
     }
@@ -2012,37 +2120,53 @@ export interface operations {
               id: string
               knowledgeBaseId: string
               /** @description IssueContent */
-              content: {
-                /** @enum {string} */
-                kind:
-                  | 'conflict'
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @enum {string} */
-                severity: 'critical' | 'suggestion'
-                scopePath: string
-                issue: string
-                suggestedFix: string
-                citedSourceIds?: string[]
-                claimKey?: string
-                involvedScopes?: string[]
-                currentClaim?: string
-                alternativeClaim?: string
-                /** @enum {string} */
-                currentAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                alternativeAuthority?: 'primary' | 'secondary' | 'community'
-                /** @enum {string} */
-                suggestedResolution?: 'keep_existing' | 'accept_new'
-              }
+              content:
+                | {
+                    /** @enum {string} */
+                    severity: 'critical' | 'suggestion'
+                    scopePath: string
+                    issue: string
+                    suggestedFix: string
+                    /** @enum {string} */
+                    kind: 'conflict'
+                    claimKey: string
+                    sides: {
+                      claim: string
+                      value?: string
+                      entryPaths?: string[]
+                      sourceIds?: string[]
+                      /** @description ConflictSpan */
+                      span?: {
+                        sourceId: string
+                        lineStart: number
+                        lineEnd: number
+                      }
+                      /** @enum {string} */
+                      authority?: 'primary' | 'secondary' | 'community'
+                    }[]
+                    suggested?: number
+                  }
+                | {
+                    /** @enum {string} */
+                    severity: 'critical' | 'suggestion'
+                    scopePath: string
+                    issue: string
+                    suggestedFix: string
+                    /** @enum {string} */
+                    kind:
+                      | 'gap'
+                      | 'update_required'
+                      | 'add_entry'
+                      | 'remove_entry'
+                      | 'split_entry'
+                      | 'merge_entry'
+                    citedSourceIds?: string[]
+                    claimKey?: string
+                    involvedScopes?: string[]
+                  }
               /** @enum {string} */
               status: 'open' | 'accepted' | 'rejected'
-              /** @enum {string|null} */
-              resolution: 'keep_existing' | 'accept_new' | null
+              resolution: number | null
               /** @description IssueResolvedBy */
               resolvedBy: {
                 id: string
@@ -2156,6 +2280,7 @@ export interface operations {
               tldr: string | null
               topics: string[] | null
               canonicalUrl: string | null
+              externalId: string | null
               /** Format: date-time */
               fetchedAt: string | null
               /** Format: date-time */
@@ -2201,6 +2326,7 @@ export interface operations {
             tldr: string | null
             topics: string[] | null
             canonicalUrl: string | null
+            externalId: string | null
             /** Format: date-time */
             fetchedAt: string | null
             /** Format: date-time */
@@ -2299,6 +2425,8 @@ export interface operations {
              * @enum {string|null}
              */
             toolType?: 'call' | 'result' | null
+            /** @default null */
+            error?: string | null
           }[]
           modelProvider?: string
           modelId?: string
@@ -2351,6 +2479,13 @@ export interface operations {
                * @enum {string|null}
                */
               toolType: 'call' | 'result' | null
+              /** @default null */
+              error: string | null
+              /**
+               * Format: date-time
+               * @default null
+               */
+              timestamp: string | null
             }[]
             modelProvider: string | null
             modelId: string | null
@@ -2438,6 +2573,13 @@ export interface operations {
                * @enum {string|null}
                */
               toolType: 'call' | 'result' | null
+              /** @default null */
+              error: string | null
+              /**
+               * Format: date-time
+               * @default null
+               */
+              timestamp: string | null
             }[]
             modelProvider: string | null
             modelId: string | null
