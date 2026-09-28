@@ -1,6 +1,7 @@
 import {type Observable, throwError} from 'rxjs'
 import {map} from 'rxjs/operators'
 
+import {version} from '../../package.json'
 import {_requestObservable, getQuerySizeLimit} from '../data/dataMethods'
 import {encodeQueryString} from '../data/encodeQueryString'
 import {
@@ -134,6 +135,8 @@ function write<T>(
     body,
     query: {
       ...resourceQuery(client),
+      // Records the client version for telemetry (writes only).
+      clientVersion: version,
       ...(options.transactionId ? {transactionId: options.transactionId} : {}),
     },
     ...pick(options, possibleRequestOptions),
