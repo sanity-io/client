@@ -3,7 +3,7 @@ import {expect, test, vi} from 'vitest'
 
 import {stegaEncodeSourceMap} from '../../src/stega/stegaEncodeSourceMap'
 import type {ContentSourceMap, Logger} from '../../src/stega/types'
-import stegaSnapshotContentReleases from './stegaSnapshotContentReleases.json' with {type: 'json'}
+import stegaSnapshotContentReleases from './stegaSnapshotContentReleases'
 
 const mock = {
   query:
@@ -633,7 +633,7 @@ test('Handles Content Releases', () => {
   const studioUrl = 'https://test.sanity.studio'
   const encoded = stegaEncodeSourceMap(
     stegaSnapshotContentReleases.result,
-    stegaSnapshotContentReleases.resultSourceMap as ContentSourceMap,
+    stegaSnapshotContentReleases.resultSourceMap,
     {
       enabled: true,
       studioUrl,
