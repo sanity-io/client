@@ -13,13 +13,13 @@ export interface paths {
     }
     /**
      * List knowledge bases
-     * @description Returns the organization's knowledge bases visible to the caller, cursor-paginated.
+     * @description Returns the knowledge bases you can access in the organization set by `organizationId`. Results are cursor-paginated.
      */
     get: operations['listKnowledgeBases']
     put?: never
     /**
      * Create a knowledge base
-     * @description Creates a knowledge base bound to a Sanity dataset, where its content documents will be stored.
+     * @description Creates a knowledge base in your organization. To add content to it, create an import.
      */
     post: operations['createKnowledgeBase']
     delete?: never
@@ -37,21 +37,21 @@ export interface paths {
     }
     /**
      * Get a knowledge base
-     * @description Returns the knowledge base object: metadata and state. Resolves from the id alone, the public id (`kb...`) or the uuid; access is decided against the knowledge base's own organization, and an id the caller cannot read returns 404. For the built content, use the outline or entries endpoints.
+     * @description Returns a knowledge base's metadata and state. `knowledgeBaseId` accepts the public ID (`kb...`) or the UUID, and you don't need to pass an organization. If you can't read the knowledge base, the request returns `404`. To read the built entries, query `sanity.context.entry` documents with GROQ from your organization's document store.
      */
     get: operations['getKnowledgeBase']
     put?: never
     post?: never
     /**
      * Delete a knowledge base
-     * @description Removes the knowledge base and everything it owns: sources, imports, revisions, the content documents in the bound dataset, and the stored source files. Returns 409 `buildInFlight` while a build, refresh, apply, or import is running, since that work would write files back after the delete; retry once it finishes.
+     * @description Deletes the knowledge base and everything it owns: its sources, imports, revisions, stored source files, and its documents in your organization's document store. While a build, refresh, apply, or import is running, the request returns `409` with code `buildInFlight`. Retry after that work finishes.
      */
     delete: operations['deleteKnowledgeBase']
     options?: never
     head?: never
     /**
      * Update a knowledge base
-     * @description Edits the name and description, or the recurring refresh controls (`refreshEnabled`, `refreshFrequency`). Refresh fields return 422 for knowledge bases with no web or dataset source. Disabling pauses the schedule; manual refresh still works.
+     * @description Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Setting a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.
      */
     patch: operations['updateKnowledgeBase']
     trace?: never
@@ -66,8 +66,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Trigger a knowledge base build
-     * @description Queues a build over the current corpus and returns a job id right away. If a build is already running, you get that job instead of a second one.
+     * Start a knowledge base build
+     * @description Queues a build over the knowledge base's current sources and returns a job ID immediately. If a build is already running, the response returns that build's job ID instead of starting a second build.
      */
     post: operations['buildKnowledgeBase']
     delete?: never
@@ -86,8 +86,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Cancel an in-progress build
-     * @description Cancels the running build and resets the knowledge base so it can be rebuilt.
+     * Cancel a knowledge base build
+     * @description Cancels the running build and resets the knowledge base so you can build it again. Returns `cancelled: false` when no build is running.
      */
     post: operations['cancelKnowledgeBaseBuild']
     delete?: never
@@ -107,7 +107,7 @@ export interface paths {
     put?: never
     /**
      * Rebuild an entry from its sources
-     * @description Queues a re-write of the entry at this path from its cited sources and the active instructions, and returns a job id right away. The response also names the other entries citing any of the same sources: a source-tied rule affects every page citing that source, so those may change too.
+     * @description Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID immediately. The response also lists the other entries that cite any of the same sources. An instruction applies to every entry that cites its sources, so those entries can change too.
      */
     post: operations['rebuildEntry']
     delete?: never
@@ -125,13 +125,21 @@ export interface paths {
     }
     /**
      * List imports
-     * @description Everything added to this knowledge base, one row per import: a file upload, web crawl, dataset bind, or inline text. Cursor-paginated. The sources each import produced live under `/sources`.
+     * @description Lists everything added to a knowledge base, one item per import: a file upload, website crawl, Sanity dataset, or inline text. Results are cursor-paginated. To list the sources each import produced, use `GET .../sources`.
      */
     get: operations['listImports']
     put?: never
     /**
-     * Create an import (text, crawl, or dataset)
-     * @description Adds content, discriminated on `type`: `text` for inline content, `crawl` for a website, `dataset` for a GROQ-filtered Sanity dataset. Each variant queues processing and returns a job id to poll. For files, use `POST .../imports/uploads` instead. Re-adding an existing crawl url returns 409 `webSourceRootConflict`; exceeding the crawl root limit returns 409 `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
+     * Create a text, crawl, or dataset import
+     * @description Adds content to a knowledge base. Set `type` to choose what to import:
+     *
+     *     - `text`: inline content
+     *     - `crawl`: a website
+     *     - `dataset`: documents from a Sanity dataset, selected by a GROQ filter
+     *
+     *     Each import queues processing and returns a job ID to poll. To import a file, use `POST .../imports/uploads` instead.
+     *
+     *     Adding a crawl URL that already exists returns `409` with code `webSourceRootConflict`. Adding more crawl URLs than your limit allows returns `409` with code `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
      */
     post: operations['createImport']
     delete?: never
@@ -150,8 +158,13 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Start a file-upload import
-     * @description Creates a file-upload import and returns a single-use signed upload URL, valid for one hour. PUT the file bytes to it, then call `POST .../imports/uploads/{importId}/complete` to start ingestion. When `contentType` is set, the PUT must send the same `Content-Type` header; when omitted, the PUT may send any or none. An import that is not completed within 24 hours is deleted. The bytes never pass through this API. Supports the `Idempotency-Key` header.
+     * Start a file upload
+     * @description Creates a file import and returns a single-use signed upload URL that's valid for one hour. To finish the upload:
+     *
+     *     1. Send the file in a `PUT` request to the upload URL.
+     *     2. Call `POST .../imports/uploads/{importId}/complete` to start processing.
+     *
+     *     If you set `contentType`, the `PUT` request must send the same `Content-Type` header. If you omit it, the `PUT` request can send any `Content-Type` header or none. An import that isn't completed within 24 hours is deleted. Supports the `Idempotency-Key` header.
      */
     post: operations['startUpload']
     delete?: never
@@ -170,8 +183,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Complete a file-upload import
-     * @description Call after the file bytes are uploaded to the signed URL. Starts processing and returns a job id to poll.
+     * Complete a file upload
+     * @description Starts processing a file after you upload it to the signed URL from `POST .../imports/uploads`. Returns a job ID to poll.
      */
     post: operations['completeUpload']
     delete?: never
@@ -188,15 +201,15 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get a single import
-     * @description Returns one import with its kind and processing status.
+     * Get an import
+     * @description Returns an import with its `sourceKind` and processing `status`.
      */
     get: operations['getImport']
     put?: never
     post?: never
     /**
      * Delete an import
-     * @description Removes the import and every source it produced, and cancels its ingest if one is still running. Use it to discard something added by mistake.
+     * @description Deletes the import and every source it produced, and cancels its processing if it is still running. Use it to remove content you added by mistake.
      */
     delete: operations['deleteImport']
     options?: never
@@ -213,7 +226,7 @@ export interface paths {
     }
     /**
      * Get a download URL for an import
-     * @description Mints a short-lived signed URL serving the import's original bytes as an attachment. Use it before `expiresAt`; the bytes never pass through this API. Only file and text imports carry original bytes; crawls and dataset binds return 409 `importInvalidState`.
+     * @description Returns a short-lived signed URL that downloads the import's original content. Use the URL before `expiresAt`. Only file and text imports keep their original content. For crawl and dataset imports, the request returns `409` with code `importInvalidState`.
      */
     get: operations['downloadImport']
     put?: never
@@ -234,8 +247,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Author a human instruction
-     * @description Creates a standing rule for how entries citing its sources are written. Tie it to one or more sources with `scopeSourceIds`; every rule is source-tied. Pass `rebuildPaths` to immediately rebuild those entries under the new rule; the response carries the rebuild job id, or null when the rebuild could not start (the rule is saved either way). Pass `verified` after a completed synchronous contradiction check to skip the background one; if the requested rebuild fails to start, the background check runs anyway so the contradicting pages get filed as issues.
+     * Create an instruction
+     * @description Creates a standing instruction for how entries that cite its sources are written. Every instruction applies to specific sources, set in `scopeSourceIds`. To rebuild entries under the new instruction right away, pass their paths in `rebuildPaths`. The response includes the rebuild job ID, or `null` if the rebuild could not start. The instruction is saved either way. After the instruction is saved, a background check files issues for entries that contradict it. If you already checked the instruction for contradictions, set `verified` to skip the background check. If the requested rebuild does not start, the background check runs even when `verified` is set.
      */
     post: operations['createInstruction']
     delete?: never
@@ -256,14 +269,14 @@ export interface paths {
     post?: never
     /**
      * Delete an instruction
-     * @description Deletes the rule. Builds stop honoring it from the next run.
+     * @description Deletes the instruction. Builds stop applying it from the next run.
      */
     delete: operations['deleteInstruction']
     options?: never
     head?: never
     /**
-     * Edit an instruction
-     * @description Edits the statement or scope. The change applies from the next build. Any edit re-affirms the rule: an archived rule returns to active, re-anchored to the sources' current content.
+     * Update an instruction
+     * @description Updates the instruction's statement or sources. The change applies from the next build. Any update also reactivates an archived instruction and ties it to the current content of its sources.
      */
     patch: operations['updateInstruction']
     trace?: never
@@ -278,8 +291,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Apply accepted issues to a Context
-     * @description Queues a job that applies accepted issues, rewrites the affected entries, and commits a new revision. Returns a job id. Issue ids that no longer exist are skipped.
+     * Accept and apply issues
+     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped.
      */
     post: operations['applyIssues']
     delete?: never
@@ -299,7 +312,7 @@ export interface paths {
     put?: never
     /**
      * Dismiss an issue
-     * @description Marks the issue rejected. Idempotent: dismissing an issue that already left the queue returns it as-is. 422 `issueDocumentInvalid` when the document was hand-edited into an unverifiable shape; 409 `issueTransitionConflict` on a concurrent edit, safe to retry.
+     * @description Marks the issue as rejected. If the issue already left triage, the request returns it unchanged. Returns `422` with code `issueDocumentInvalid` if the issue document was edited into a shape the API cannot verify. Returns `409` with code `issueTransitionConflict` if another change to the issue happened at the same time. You can safely retry a `409`.
      */
     post: operations['dismissIssue']
     delete?: never
@@ -319,7 +332,7 @@ export interface paths {
     put?: never
     /**
      * Reopen an accepted conflict
-     * @description Returns an accepted conflict to triage, clearing its resolution and deleting the instruction it minted. Idempotent for issues that are not accepted conflicts.
+     * @description Returns an accepted conflict issue to triage, clears its resolution, and deletes the instruction the resolution created. Reopening an open or dismissed conflict returns it unchanged. Other issue types return `422` with code `issueNotResolvable`.
      */
     post: operations['reopenIssue']
     delete?: never
@@ -339,7 +352,7 @@ export interface paths {
     put?: never
     /**
      * Resolve a conflict issue
-     * @description Settles a conflict by choosing a side: `resolution` is an index into `content.sides`. Index 0 of a per-entry conflict is the entry's own position, so choosing it keeps the body; any other side rewrites the entry (the returned `jobId` tracks it). Only conflict issues are resolvable, and a dismissed issue must be reopened first. The decision becomes a standing instruction for every future build; `resolvedBy` records who decided.
+     * @description Resolves a conflict issue by choosing one of its sides. Set `resolution` to the index of a side in `content.sides`. For a conflict on a single entry, index `0` is the entry's current content, so choosing it keeps the entry as it is. Choosing any other side rewrites the entry, and the returned `jobId` tracks the rewrite. The decision becomes a standing instruction for every future build, and `resolvedBy` records who made it. To change a decision, resolve the accepted conflict again. Other issue types, dismissed conflicts, and out-of-range indexes return `422` with code `issueNotResolvable`.
      */
     post: operations['resolveIssue']
     delete?: never
@@ -356,8 +369,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get a job by id
-     * @description Returns the status of a job, such as a build, an import, or a refresh. Job ids come from the endpoint that queued the work.
+     * Get a job
+     * @description Returns the status of a background job, such as a build, import, or refresh. The endpoint that starts the work returns the job ID.
      */
     get: operations['getJob']
     put?: never
@@ -378,8 +391,8 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Trigger an incremental refresh
-     * @description Queues a refresh: recrawls each web source, diffs the corpus against the last build, and files change issues. Returns a job id, with `started: false` when a refresh was already in flight. Supports the `Idempotency-Key` header.
+     * Refresh a knowledge base
+     * @description Queues a refresh that recrawls website sources, re-syncs dataset sources, compares the result with the last build, and files issues for what changed. Returns a job ID. If a refresh is already running, the response has `started: false` and that refresh's job ID. Supports the `Idempotency-Key` header.
      */
     post: operations['refreshKnowledgeBase']
     delete?: never
@@ -397,7 +410,7 @@ export interface paths {
     }
     /**
      * List sources
-     * @description The distilled units builds cite: the pages, files, and documents your imports expanded into. Read-only; add content via `/imports`. Cursor-paginated, filter by `status`.
+     * @description Lists the sources in a knowledge base: the pages, files, and documents that imports produce and builds cite. Sources are read-only. To add content, create an import. Results are cursor-paginated, and you can filter them by `status`.
      */
     get: operations['listSources']
     put?: never
@@ -416,15 +429,15 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get a single source
-     * @description Returns one source with its metadata and processing status.
+     * Get a source
+     * @description Returns a source with its metadata and processing status.
      */
     get: operations['getSource']
     put?: never
     post?: never
     /**
      * Delete a source
-     * @description Removes the source immediately. Entries are not modified here — citations to it are cleaned up by the next build or check for changes, where entries left without sources become removal proposals. Human-edited entries are never modified.
+     * @description Deletes the source immediately. Entries that cite it stay the same until the next build or refresh, which removes the citations and proposes removing any entry left with no sources.
      */
     delete: operations['deleteSource']
     options?: never
@@ -440,8 +453,8 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Read a source's distilled content
-     * @description The distilled markdown builds cite, the same text the pipeline itself reads. Use it to verify an issue's claims against the sources its `citedSourceIds` name. Optional `startLine` and `endLine` (1-indexed, inclusive) fetch just a span. JSON by default; `?format=markdown` returns the raw text. 409 `sourceNotDistilled` until distillation has produced content.
+     * Get a source's distilled content
+     * @description Returns the source's distilled content: the markdown extracted from the original page, file, or document, which is the text builds cite. Use it to check an issue's claims against the sources listed in its `citedSourceIds`. To fetch a range of lines, set `startLine` and `endLine` (1-indexed, inclusive). The response is JSON by default. Set `format` to `markdown` or `plain` to get the text alone. Until the source finishes processing, the request returns `409` with code `sourceNotDistilled`.
      */
     get: operations['getSourceContent']
     put?: never
@@ -462,7 +475,13 @@ export interface paths {
     get?: never
     /**
      * Record a conversation
-     * @description Upserts the conversation telemetry for one thread. `threadId` identifies the conversation within your organization — reuse means the same conversation. Messages replace the stored transcript wholesale; `metadata`, `sharing`, and model fields only overwrite when present. `tokenUsage` accumulates: each save reports one generation call and the stored value is the conversation total, added only when the save changes the transcript so retries never double-count. Report a failure as `error` on the message where it happened: a tool result for a failed tool call, an assistant message for a turn that failed instead of answering. The dashboard highlights conversations with a failed turn and counts failed tool calls separately, since agents often recover from one. Last write per thread wins — retries are safe. `sharing` records your opt-in to share telemetry with Sanity: metadata-only metrics, or full transcripts.
+     * @description Creates or updates the recorded conversation for one thread. `threadId` identifies the conversation within your organization, so saving with the same `threadId` updates the same conversation. Requires Context Editor access or higher.
+     *
+     *     Each save replaces the stored messages. `metadata`, `sharing`, and the model fields change only when you include them. `tokenUsage` is cumulative: send the usage for one generation call, and the API adds it to the conversation total. Usage is added only when the save changes the messages, so retries don't count it twice.
+     *
+     *     To report a failure, set `error` on the message where it happened: the tool result for a failed tool call, or the assistant message for a turn that failed instead of answering. The Insights dashboard highlights conversations with a failed turn and counts failed tool calls separately, because agents often recover from them.
+     *
+     *     The last write for a thread wins, so retries are safe. `sharing` records whether you share telemetry with Sanity: metrics only, or full transcripts.
      */
     put: operations['saveConversation']
     post?: never
@@ -470,8 +489,13 @@ export interface paths {
     options?: never
     head?: never
     /**
-     * Record a classification verdict
-     * @description Records the classification your own model produced for one thread: exactly one of `coreMetrics` (a verdict — the server stamps `classifiedAt` and clears any recorded failure) or `classificationError` (why classification failed; an earlier verdict stays untouched). No revision guard — like the ingest upsert the writer is an automated classifier, so last write wins and a re-classification simply overwrites.
+     * Record a conversation classification
+     * @description Records the classification your own model produced for one thread. Send exactly one of these fields:
+     *
+     *     - `coreMetrics`: the classification result. The API sets `classifiedAt` and clears any recorded failure.
+     *     - `classificationError`: why classification failed. Any earlier result stays unchanged.
+     *
+     *     Requires the same access as recording a conversation. The last write wins, so a new classification replaces the previous one.
      */
     patch: operations['classifyConversation']
     trace?: never
@@ -480,91 +504,162 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
-    /** @description A `sanity.context.conversation` document, one agent conversation transcript with its classification, stored in the organization store. Not returned by any endpoint raw; published so GROQ reads can be typed. Write through the conversation ingest and classify endpoints, never with a raw client. */
+    /** @description A `sanity.context.conversation` document: one agent conversation and its classification, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results. To record conversations, use the conversations endpoints. */
     ConversationDoc: {
+      /** @description The document ID. */
       _id: string
+      /** @description The document revision. It changes on every write. */
       _rev: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the document was created, as an ISO 8601 timestamp.
+       */
       _createdAt: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the document was last changed, as an ISO 8601 timestamp.
+       */
       _updatedAt: string
-      /** @enum {string} */
+      /**
+       * @description The document type. Always `sanity.context.conversation`.
+       * @enum {string}
+       */
       _type: 'sanity.context.conversation'
-      /** @enum {number} */
+      /**
+       * @description The version of the document shape. Currently `1`.
+       * @enum {number}
+       */
       schemaVersion: 1
+      /** @description The ID of the organization that owns the conversation. Filter on it in every query, because the document store also holds documents from other features. */
       organizationId: string
+      /** @description Your identifier for the conversation thread, unique within the organization. It is the `threadId` in the conversations endpoint path and determines the document `_id`. */
       threadId: string
-      /** @description ConversationMetadata */
+      /** @description Tags that describe the conversation, such as `mcpEndpoints`, `app`, and `environment`. Filter on them in GROQ queries. `null` until a save includes `metadata`. */
       metadata: {
         [key: string]: string | string[]
       } | null
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the API received the first save for this thread, as an ISO 8601 timestamp.
+       */
       startedAt: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the conversation was last saved, as an ISO 8601 timestamp.
+       */
       messagesUpdatedAt: string
+      /** @description The conversation transcript, in order. Each save replaces it. */
       messages: {
-        /** @enum {string} */
+        /**
+         * @description Who sent the message. `user` is the person talking to the agent, `assistant` is the agent, `system` is a system prompt, and `tool` is a tool call or tool result.
+         * @enum {string}
+         */
         role: 'user' | 'assistant' | 'system' | 'tool'
-        /** @default null */
+        /**
+         * @description The message text. `null` when the message has no text, such as a tool call.
+         * @default null
+         */
         content: string | null
-        /** @default null */
+        /**
+         * @description The name of the tool for a `tool` message. `null` on other messages.
+         * @default null
+         */
         toolName: string | null
         /**
+         * @description The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.
          * @default null
          * @enum {string|null}
          */
         toolType: 'call' | 'result' | null
-        /** @default null */
+        /**
+         * @description Why this step failed, including any stack trace. Set it on the tool result for a failed tool call, or on the assistant message for a turn that failed instead of answering. `null` when the step succeeded.
+         * @default null
+         */
         error: string | null
         /**
          * Format: date-time
+         * @description When the API first received this message, as an ISO 8601 timestamp. The API sets it. Resending an unchanged message at the same position keeps its timestamp. `null` for messages recorded before timestamps existed.
          * @default null
          */
         timestamp: string | null
       }[]
+      /** @description The provider of the model the agent used. `null` until a save includes `modelProvider`. */
       modelProvider: string | null
+      /** @description The ID of the model the agent used. `null` until a save includes `modelId`. */
       modelId: string | null
-      /** @description ConversationTokenUsage */
+      /** @description The running total of token usage for the conversation. `null` until a save includes `tokenUsage`. */
       tokenUsage: {
+        /** @description The number of input tokens. */
         inputTokens?: number
+        /** @description The number of output tokens. */
         outputTokens?: number
+        /** @description The total number of tokens. */
         totalTokens?: number
       } | null
-      /** @description ConversationCoreMetrics */
+      /** @description The latest classification result. `null` until you record one. */
       coreMetrics: {
+        /** @description How well the agent resolved the user's needs, from 1 to 10. */
         successScore?: number
-        /** @enum {string} */
+        /**
+         * @description The overall sentiment of the conversation.
+         * @enum {string}
+         */
         sentiment?: 'positive' | 'neutral' | 'negative'
+        /** @description Topics the agent couldn't answer because it lacked content. */
         contentGaps?: string[]
       } | null
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the latest classification result was recorded, as an ISO 8601 timestamp. The API sets it. `null` until you record a result.
+       */
       classifiedAt: string | null
+      /** @description Why your classifier couldn't classify the conversation. `null` when no failure is recorded. Recording a result clears it. */
       classificationError: string | null
       /**
-       * @description ConversationSharing
+       * @description Your choice to share conversation telemetry with Sanity. `null` until a save includes `sharing`.
        * @default null
        */
       sharing: {
+        /** @description Whether to share classification metrics with Sanity: scores, sentiment, content gap counts, message counts and sizes, tool names, and model and token usage. Message content is not included. */
         metrics?: boolean
+        /** @description Whether to share full conversation transcripts with Sanity. When `true`, the API also sets `metrics` to `true`. */
         conversations?: boolean
+        /** @description How the Sanity team can reach you about your agent, such as an email address or a Discord handle. */
         contact?: string
       } | null
     }
-    /** @description A `sanity.context.entry` document, one outline node stored in the bound dataset. Not returned by any endpoint; published so GROQ reads against the dataset can be typed. The entries endpoints serve the validated wire view. */
+    /** @description A `sanity.context.entry` document: one entry in a knowledge base outline, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results. */
     EntryDoc: {
+      /** @description The document ID. */
       _id: string
+      /** @description The document revision. It changes on every write. */
       _rev: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the document was created, as an ISO 8601 timestamp.
+       */
       _createdAt: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the document was last changed, as an ISO 8601 timestamp.
+       */
       _updatedAt: string
+      /** @description The ID (`kb…`) of the knowledge base this document belongs to. */
       knowledgeBaseId: string
-      /** @enum {string} */
+      /**
+       * @description The document type. Always `sanity.context.entry`.
+       * @enum {string}
+       */
       _type: 'sanity.context.entry'
+      /** @description The version of the document shape. Currently `1`. */
       schemaVersion: number
+      /** @description The ID of the build that last wrote this entry's content. An unchanged entry keeps its earlier value across builds. */
       revisionId: string
+      /** @description The entry's slash-delimited path, such as `docs/api/webhooks`. Order entries by `path` to get the knowledge base outline. */
       path: string
+      /** @description The entry title. */
       title: string
+      /** @description A summary of the entry. `scope` is what the entry covers, and `excludes` is what it does not cover. `neighbors` lists the paths of related entries. `centrality` is how important the entry is: `core`, `standard`, or `peripheral`. */
       tldr?: {
         scope: string
         excludes: string
@@ -572,141 +667,269 @@ export interface components {
         /** @enum {string} */
         centrality: 'core' | 'standard' | 'peripheral'
       }
+      /** @description The entry content in Markdown, with inline `[N]` citation markers. Absent when the entry has no content of its own, such as a `virtual` entry. */
       body?: string
+      /** @description The H2 and H3 heading titles in `body`. Absent when the entry has no `body`. */
       topicHeadings?: string[]
+      /** @description The sources that back this entry, one item per source. */
       citations?: {
+        /** @description ID of the cited source. */
         sourceId: string
+        /** @description Which facts in the entry body this source backs, in a short phrase. */
         supports?: string
+        /** @description Line ranges in the source's distilled content that back those facts, with the quoted text. */
         spans?: {
+          /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
           sourceLineStart: number
+          /** @description Last line of the range, inclusive. */
           sourceLineEnd: number
+          /** @description The exact text of the line range in the source. */
           quote: string
         }[]
+        /** @description The text in the entry body that this citation backs. */
         claim?: {
+          /** @description The exact entry text the citation backs. */
           exact: string
+          /** @description Text immediately before `exact`, to tell apart repeated phrases. */
           prefix?: string
+          /** @description Text immediately after `exact`, to tell apart repeated phrases. */
           suffix?: string
         }
         /** @enum {string} */
         groundingState?: 'drifted'
+        /** @description A unique key for this item in the `citations` array. */
         _key: string
-        /** @enum {string} */
+        /**
+         * @description The citation type. Always `sanity.context.citation`.
+         * @enum {string}
+         */
         _type: 'sanity.context.citation'
+        /** @description A display name for the cited source. Builds currently set it to the `sourceId`. */
         filename: string
         mime?: string
         excerpt?: string
       }[]
-      /** @enum {string} */
+      /**
+       * @description The entry state. Builds currently write only two values: `virtual` for an entry that groups child entries and has no `body`, and `filled` for an entry with a written `body`. The other values are reserved.
+       * @enum {string}
+       */
       status: 'virtual' | 'outlined' | 'filled' | 'stale' | 'generation_failed'
+      /** @description When the build that last wrote this entry's content ran, as an ISO 8601 timestamp. */
       generatedAt: string
     }
-    /** @description A `sanity.context.instruction` document, a standing decision steering every build, stored in the bound dataset. Not returned by any endpoint; published so GROQ reads against the dataset can be typed. Write through the instructions endpoints, never with a raw client. */
+    /** @description A `sanity.context.instruction` document: a standing instruction that steers every build, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results. To change instructions, use the instructions endpoints. */
     InstructionDoc:
       | {
+          /** @description The document ID. */
           _id: string
+          /** @description The document revision. It changes on every write. */
           _rev: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was created, as an ISO 8601 timestamp.
+           */
           _createdAt: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was last changed, as an ISO 8601 timestamp.
+           */
           _updatedAt: string
+          /** @description The ID (`kb…`) of the knowledge base this document belongs to. */
           knowledgeBaseId: string
-          /** @enum {string} */
+          /**
+           * @description The document type. Always `sanity.context.instruction`.
+           * @enum {string}
+           */
           _type: 'sanity.context.instruction'
-          /** @enum {number} */
+          /**
+           * @description The version of the document shape. Currently `1`. An instruction without the current version doesn't appear in lists and doesn't affect builds.
+           * @enum {number}
+           */
           schemaVersion: 1
+          /** @description The instruction, in plain language. Builds follow it over the raw sources. */
           statement: string
+          /** @description The sources the instruction is tied to. The instruction affects the entries that cite these sources. The API always sets at least one source. When `null`, the instruction isn't tied to any source and doesn't affect builds. */
           scopeSources:
             | {
+                /** @description A unique key for this item in the array. It matches `sourceId`. */
                 _key: string
+                /** @description The ID of the source the instruction is tied to. */
                 sourceId: string
+                /** @description The source's content hash when the instruction was last checked against it. When the source content changes, the instruction is checked again. */
                 contentHash: string
               }[]
             | null
-          /** @enum {string} */
+          /**
+           * @description The instruction state. `active` instructions apply to every build. `archived` instructions don't apply: a source changed and no longer supports the instruction. Editing an archived instruction makes it `active` again.
+           * @enum {string}
+           */
           status: 'active' | 'archived'
+          /** @description When the instruction was archived, as an ISO 8601 timestamp. `null` while `active`. */
           archivedAt: string | null
+          /** @description Why the instruction was archived. `null` while `active`. */
           archivedReason: string | null
-          /** @enum {string} */
+          /**
+           * @description Where the instruction came from. `conflict` means it was created when you resolved a conflict issue.
+           * @enum {string}
+           */
           origin: 'conflict'
+          /** @description The `_id` of the conflict issue this instruction resolved. Reopening that issue deletes this instruction. */
           sourceIssueId: string
         }
       | {
+          /** @description The document ID. */
           _id: string
+          /** @description The document revision. It changes on every write. */
           _rev: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was created, as an ISO 8601 timestamp.
+           */
           _createdAt: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was last changed, as an ISO 8601 timestamp.
+           */
           _updatedAt: string
+          /** @description The ID (`kb…`) of the knowledge base this document belongs to. */
           knowledgeBaseId: string
-          /** @enum {string} */
+          /**
+           * @description The document type. Always `sanity.context.instruction`.
+           * @enum {string}
+           */
           _type: 'sanity.context.instruction'
-          /** @enum {number} */
+          /**
+           * @description The version of the document shape. Currently `1`. An instruction without the current version doesn't appear in lists and doesn't affect builds.
+           * @enum {number}
+           */
           schemaVersion: 1
+          /** @description The instruction, in plain language. Builds follow it over the raw sources. */
           statement: string
+          /** @description The sources the instruction is tied to. The instruction affects the entries that cite these sources. The API always sets at least one source. When `null`, the instruction isn't tied to any source and doesn't affect builds. */
           scopeSources:
             | {
+                /** @description A unique key for this item in the array. It matches `sourceId`. */
                 _key: string
+                /** @description The ID of the source the instruction is tied to. */
                 sourceId: string
+                /** @description The source's content hash when the instruction was last checked against it. When the source content changes, the instruction is checked again. */
                 contentHash: string
               }[]
             | null
-          /** @enum {string} */
+          /**
+           * @description The instruction state. `active` instructions apply to every build. `archived` instructions don't apply: a source changed and no longer supports the instruction. Editing an archived instruction makes it `active` again.
+           * @enum {string}
+           */
           status: 'active' | 'archived'
+          /** @description When the instruction was archived, as an ISO 8601 timestamp. `null` while `active`. */
           archivedAt: string | null
+          /** @description Why the instruction was archived. `null` while `active`. */
           archivedReason: string | null
-          /** @enum {string} */
+          /**
+           * @description Where the instruction came from. `human` means it was created directly through the API or the dashboard.
+           * @enum {string}
+           */
           origin: 'human'
-          /** @enum {string|null} */
+          /**
+           * @description Always `null` for a `human` instruction.
+           * @enum {string|null}
+           */
           sourceIssueId: null
         }
-    /** @description A `sanity.context.issue` document, a build finding awaiting triage, stored in the bound dataset. Not returned by any endpoint; published so GROQ reads and trigger filters can be typed. Status transitions flow through the issues endpoints, which own the state machine. One invariant the schema cannot express: only a `conflict` issue ever carries a non-null `resolution`. */
+    /** @description A `sanity.context.issue` document: a build finding waiting for triage, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results and Sanity Function filters. To change an issue's status, use the issues endpoints. Only a `conflict` issue can have a non-null `resolution`. */
     IssueDoc:
       | {
+          /** @description The document ID. */
           _id: string
+          /** @description The document revision. It changes on every write. */
           _rev: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was created, as an ISO 8601 timestamp.
+           */
           _createdAt: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was last changed, as an ISO 8601 timestamp.
+           */
           _updatedAt: string
+          /** @description The ID (`kb…`) of the knowledge base this document belongs to. */
           knowledgeBaseId: string
-          /** @enum {string} */
+          /**
+           * @description The document type. Always `sanity.context.issue`.
+           * @enum {string}
+           */
           _type: 'sanity.context.issue'
-          /** @enum {number} */
+          /**
+           * @description The version of the document shape. Currently `1`.
+           * @enum {number}
+           */
           schemaVersion: 1
-          /** @description IssueContent */
+          /** @description What an issue found. The shape depends on `kind`. */
           content:
             | {
-                /** @enum {string} */
+                /**
+                 * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                 * @enum {string}
+                 */
                 severity: 'critical' | 'suggestion'
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                 scopePath: string
+                /** @description What the problem is, in one or two sentences. */
                 issue: string
+                /** @description What to do to fix the issue. */
                 suggestedFix: string
-                /** @enum {string} */
+                /**
+                 * @description The issue type. `conflict` means two or more positions disagree on the same fact, and you choose which one is correct.
+                 * @enum {string}
+                 */
                 kind: 'conflict'
+                /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
+                  /** @description The position as a self-contained sentence. This is the option you choose from. */
                   claim: string
+                  /** @description The disputed value on its own, such as `10,000/month`, without the sentence. */
                   value?: string
+                  /** @description Paths of the entries that state this position. */
                   entryPaths?: string[]
+                  /** @description IDs of the sources that directly back this position. */
                   sourceIds?: string[]
-                  /** @description ConflictSpan */
+                  /** @description Where in a source this position was read. */
                   span?: {
+                    /** @description ID of the source the position was read from. */
                     sourceId: string
+                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
                     lineStart: number
+                    /** @description Last line of the range, inclusive. */
                     lineEnd: number
                   }
-                  /** @enum {string} */
+                  /**
+                   * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
+                   * @enum {string}
+                   */
                   authority?: 'primary' | 'secondary' | 'community'
                 }[]
+                /** @description Index in `sides` of the suggested side, when there is one. It is only a hint: nothing is chosen until you resolve the issue. */
                 suggested?: number
               }
             | {
-                /** @enum {string} */
+                /**
+                 * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                 * @enum {string}
+                 */
                 severity: 'critical' | 'suggestion'
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                 scopePath: string
+                /** @description What the problem is, in one or two sentences. */
                 issue: string
+                /** @description What to do to fix the issue. */
                 suggestedFix: string
-                /** @enum {string} */
+                /**
+                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @enum {string}
+                 */
                 kind:
                   | 'gap'
                   | 'update_required'
@@ -714,67 +937,130 @@ export interface components {
                   | 'remove_entry'
                   | 'split_entry'
                   | 'merge_entry'
+                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
                 citedSourceIds?: string[]
+                /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
+                /** @description Paths of the entries the issue involves, when it spans more than one entry. */
                 involvedScopes?: string[]
               }
+          /** @description An identity for the finding that doesn't depend on its wording. It determines the issue's `_id`, so a reworded finding updates the same issue. */
           fingerprint: string
+          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a source leaves an entry without sources. */
           revisionId: string | null
-          /** @enum {string} */
+          /**
+           * @description The issue status. `open` means it is waiting for triage.
+           * @enum {string}
+           */
           status: 'open'
-          /** @enum {string|null} */
+          /**
+           * @description Always `null` while the issue is `open`.
+           * @enum {string|null}
+           */
           resolution: null
-          /** @enum {string|null} */
+          /**
+           * @description Always `null` while the issue is `open`.
+           * @enum {string|null}
+           */
           resolvedAt: null
-          /** @enum {string|null} */
+          /**
+           * @description Always `null` while the issue is `open`.
+           * @enum {string|null}
+           */
           resolvedBy: null
         }
       | {
+          /** @description The document ID. */
           _id: string
+          /** @description The document revision. It changes on every write. */
           _rev: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was created, as an ISO 8601 timestamp.
+           */
           _createdAt: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was last changed, as an ISO 8601 timestamp.
+           */
           _updatedAt: string
+          /** @description The ID (`kb…`) of the knowledge base this document belongs to. */
           knowledgeBaseId: string
-          /** @enum {string} */
+          /**
+           * @description The document type. Always `sanity.context.issue`.
+           * @enum {string}
+           */
           _type: 'sanity.context.issue'
-          /** @enum {number} */
+          /**
+           * @description The version of the document shape. Currently `1`.
+           * @enum {number}
+           */
           schemaVersion: 1
-          /** @description IssueContent */
+          /** @description What an issue found. The shape depends on `kind`. */
           content:
             | {
-                /** @enum {string} */
+                /**
+                 * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                 * @enum {string}
+                 */
                 severity: 'critical' | 'suggestion'
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                 scopePath: string
+                /** @description What the problem is, in one or two sentences. */
                 issue: string
+                /** @description What to do to fix the issue. */
                 suggestedFix: string
-                /** @enum {string} */
+                /**
+                 * @description The issue type. `conflict` means two or more positions disagree on the same fact, and you choose which one is correct.
+                 * @enum {string}
+                 */
                 kind: 'conflict'
+                /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
+                  /** @description The position as a self-contained sentence. This is the option you choose from. */
                   claim: string
+                  /** @description The disputed value on its own, such as `10,000/month`, without the sentence. */
                   value?: string
+                  /** @description Paths of the entries that state this position. */
                   entryPaths?: string[]
+                  /** @description IDs of the sources that directly back this position. */
                   sourceIds?: string[]
-                  /** @description ConflictSpan */
+                  /** @description Where in a source this position was read. */
                   span?: {
+                    /** @description ID of the source the position was read from. */
                     sourceId: string
+                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
                     lineStart: number
+                    /** @description Last line of the range, inclusive. */
                     lineEnd: number
                   }
-                  /** @enum {string} */
+                  /**
+                   * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
+                   * @enum {string}
+                   */
                   authority?: 'primary' | 'secondary' | 'community'
                 }[]
+                /** @description Index in `sides` of the suggested side, when there is one. It is only a hint: nothing is chosen until you resolve the issue. */
                 suggested?: number
               }
             | {
-                /** @enum {string} */
+                /**
+                 * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                 * @enum {string}
+                 */
                 severity: 'critical' | 'suggestion'
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                 scopePath: string
+                /** @description What the problem is, in one or two sentences. */
                 issue: string
+                /** @description What to do to fix the issue. */
                 suggestedFix: string
-                /** @enum {string} */
+                /**
+                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @enum {string}
+                 */
                 kind:
                   | 'gap'
                   | 'update_required'
@@ -782,69 +1068,132 @@ export interface components {
                   | 'remove_entry'
                   | 'split_entry'
                   | 'merge_entry'
+                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
                 citedSourceIds?: string[]
+                /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
+                /** @description Paths of the entries the issue involves, when it spans more than one entry. */
                 involvedScopes?: string[]
               }
+          /** @description An identity for the finding that doesn't depend on its wording. It determines the issue's `_id`, so a reworded finding updates the same issue. */
           fingerprint: string
+          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a source leaves an entry without sources. */
           revisionId: string | null
-          /** @enum {string} */
+          /**
+           * @description The issue status. `accepted` means the issue was resolved or its fix applied.
+           * @enum {string}
+           */
           status: 'accepted'
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the issue left `open`, as an ISO 8601 timestamp.
+           */
           resolvedAt: string
+          /** @description Who triaged the issue. `null` while the issue is open, or when the caller could not be identified. */
           resolvedBy: {
+            /** @description The ID of the Sanity user or robot token that triaged the issue. */
             id: string
-            /** @enum {string} */
+            /**
+             * @description What triaged the issue. `user` is a person, and `robot` is a robot token.
+             * @enum {string}
+             */
             kind: 'user' | 'robot'
           } | null
+          /** @description The index of the chosen side in `content.sides`. For a conflict on one entry, index `0` is the entry's own position. `null` when the fix was applied without choosing a side. */
           resolution: number | null
         }
       | {
+          /** @description The document ID. */
           _id: string
+          /** @description The document revision. It changes on every write. */
           _rev: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was created, as an ISO 8601 timestamp.
+           */
           _createdAt: string
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the document was last changed, as an ISO 8601 timestamp.
+           */
           _updatedAt: string
+          /** @description The ID (`kb…`) of the knowledge base this document belongs to. */
           knowledgeBaseId: string
-          /** @enum {string} */
+          /**
+           * @description The document type. Always `sanity.context.issue`.
+           * @enum {string}
+           */
           _type: 'sanity.context.issue'
-          /** @enum {number} */
+          /**
+           * @description The version of the document shape. Currently `1`.
+           * @enum {number}
+           */
           schemaVersion: 1
-          /** @description IssueContent */
+          /** @description What an issue found. The shape depends on `kind`. */
           content:
             | {
-                /** @enum {string} */
+                /**
+                 * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                 * @enum {string}
+                 */
                 severity: 'critical' | 'suggestion'
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                 scopePath: string
+                /** @description What the problem is, in one or two sentences. */
                 issue: string
+                /** @description What to do to fix the issue. */
                 suggestedFix: string
-                /** @enum {string} */
+                /**
+                 * @description The issue type. `conflict` means two or more positions disagree on the same fact, and you choose which one is correct.
+                 * @enum {string}
+                 */
                 kind: 'conflict'
+                /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
+                  /** @description The position as a self-contained sentence. This is the option you choose from. */
                   claim: string
+                  /** @description The disputed value on its own, such as `10,000/month`, without the sentence. */
                   value?: string
+                  /** @description Paths of the entries that state this position. */
                   entryPaths?: string[]
+                  /** @description IDs of the sources that directly back this position. */
                   sourceIds?: string[]
-                  /** @description ConflictSpan */
+                  /** @description Where in a source this position was read. */
                   span?: {
+                    /** @description ID of the source the position was read from. */
                     sourceId: string
+                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
                     lineStart: number
+                    /** @description Last line of the range, inclusive. */
                     lineEnd: number
                   }
-                  /** @enum {string} */
+                  /**
+                   * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
+                   * @enum {string}
+                   */
                   authority?: 'primary' | 'secondary' | 'community'
                 }[]
+                /** @description Index in `sides` of the suggested side, when there is one. It is only a hint: nothing is chosen until you resolve the issue. */
                 suggested?: number
               }
             | {
-                /** @enum {string} */
+                /**
+                 * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                 * @enum {string}
+                 */
                 severity: 'critical' | 'suggestion'
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                 scopePath: string
+                /** @description What the problem is, in one or two sentences. */
                 issue: string
+                /** @description What to do to fix the issue. */
                 suggestedFix: string
-                /** @enum {string} */
+                /**
+                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @enum {string}
+                 */
                 kind:
                   | 'gap'
                   | 'update_required'
@@ -852,53 +1201,101 @@ export interface components {
                   | 'remove_entry'
                   | 'split_entry'
                   | 'merge_entry'
+                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
                 citedSourceIds?: string[]
+                /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
+                /** @description Paths of the entries the issue involves, when it spans more than one entry. */
                 involvedScopes?: string[]
               }
+          /** @description An identity for the finding that doesn't depend on its wording. It determines the issue's `_id`, so a reworded finding updates the same issue. */
           fingerprint: string
+          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a source leaves an entry without sources. */
           revisionId: string | null
-          /** @enum {string} */
+          /**
+           * @description The issue status. `rejected` means the issue was dismissed. Dismissal is final.
+           * @enum {string}
+           */
           status: 'rejected'
-          /** Format: date-time */
+          /**
+           * Format: date-time
+           * @description When the issue left `open`, as an ISO 8601 timestamp.
+           */
           resolvedAt: string
+          /** @description Who triaged the issue. `null` while the issue is open, or when the caller could not be identified. */
           resolvedBy: {
+            /** @description The ID of the Sanity user or robot token that triaged the issue. */
             id: string
-            /** @enum {string} */
+            /**
+             * @description What triaged the issue. `user` is a person, and `robot` is a robot token.
+             * @enum {string}
+             */
             kind: 'user' | 'robot'
           } | null
-          /** @enum {string|null} */
+          /**
+           * @description Always `null`, because a dismissal chooses no side.
+           * @enum {string|null}
+           */
           resolution: null
         }
-    /** @description A `sanity.context.mcp` document, an org-owned MCP endpoint configuration stored in the organization store. Not returned by any endpoint raw; published so GROQ reads and trigger filters can be typed. Write through the mcp endpoints, never with a raw client. The mcp endpoints serve the validated wire view. */
+    /** @description A `sanity.context.mcp` document: the configuration of one MCP endpoint, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results and Sanity Function filters. Manage MCP endpoints in the Context dashboard. */
     McpDoc: {
+      /** @description The document ID. */
       _id: string
+      /** @description The document revision. It changes on every write. */
       _rev: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the document was created, as an ISO 8601 timestamp.
+       */
       _createdAt: string
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description When the document was last changed, as an ISO 8601 timestamp.
+       */
       _updatedAt: string
-      /** @enum {string} */
+      /**
+       * @description The document type. Always `sanity.context.mcp`.
+       * @enum {string}
+       */
       _type: 'sanity.context.mcp'
-      /** @enum {number} */
+      /**
+       * @description The version of the document shape. Currently `1`.
+       * @enum {number}
+       */
       schemaVersion: 1
+      /** @description The ID of the organization that owns the MCP endpoint. Filter on it in every query, because the document store also holds documents from other features. */
       organizationId: string
+      /** @description The MCP endpoint's public ID (`mcp…`). It is set once at creation, never changes, and determines the document `_id`. */
       publicId: string
+      /** @description The MCP endpoint's display name. You can change it at any time. */
       title: string
+      /** @description The MCP endpoint's name in its URL, in lowercase kebab case such as `my-endpoint`. It is unique within the organization and can't change after creation. */
       name: string
+      /** @description The content sources the MCP endpoint serves. Each source appears once, and the order has no meaning. */
       sources: (
         | {
-            /** @enum {string} */
+            /**
+             * @description The source type. `knowledge-base` serves a whole knowledge base.
+             * @enum {string}
+             */
             type: 'knowledge-base'
+            /** @description The knowledge base ID (`kb…`). */
             id: string
           }
         | {
-            /** @enum {string} */
+            /**
+             * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+             * @enum {string}
+             */
             type: 'dataset'
+            /** @description The dataset, as `<projectId>.<datasetName>`. */
             id: string
           }
       )[]
+      /** @description Prompt text the MCP endpoint serves to connecting agents. `null` when unset. */
       instructions: string | null
+      /** @description A GROQ filter that limits what the MCP endpoint's `dataset` sources serve. It has no effect on `knowledge-base` sources. `null` when unset. */
       groqFilter: string | null
     }
   }
@@ -913,8 +1310,11 @@ export interface operations {
   listKnowledgeBases: {
     parameters: {
       query: {
+        /** @description The `nextCursor` value from the previous page. Omit it to get the first page. */
         cursor?: string
+        /** @description The maximum number of items to return. */
         limit?: number
+        /** @description The organization to list knowledge bases for. */
         organizationId: string
       }
       header?: never
@@ -925,28 +1325,47 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description A page of knowledge bases. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The items on this page. */
             data: {
-              /** Format: uuid */
+              /**
+               * Format: uuid
+               * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+               */
               id: string
+              /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
               publicId: string
+              /** @description The ID of the organization that owns the knowledge base. */
               organizationId: string
+              /** @description The knowledge base's title. */
               title: string
+              /** @description A short description of what the knowledge base covers. */
               description: string
-              /** @enum {string} */
+              /**
+               * @description The knowledge base's build state. `created`: not built yet. `ready`: built, with no open issues. `review`: built, with open issues to review. A failed build doesn't change the state. `building`, `stale`, and `paused` aren't currently returned. To check for a running build, use `isBuilding`.
+               * @enum {string}
+               */
               state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
+              /** @description The job ID of the most recent build, or `null` if no build has started. Check its progress with `GET .../jobs/{jobId}`. */
               activeJobId: string | null
+              /** @description Whether a build is running now. */
               isBuilding: boolean
+              /** @description Progress of the most recent build, by stage. `null` until a build reports progress. It can briefly belong to an earlier build, so use it only when its `jobId` matches `activeJobId`. */
               buildStageState: {
+                /** @description The ID of the build job this progress belongs to. */
                 jobId: string
+                /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
                 stages: {
-                  /** @enum {string} */
+                  /**
+                   * @description The stage's ID. The values are listed in the order stages run.
+                   * @enum {string}
+                   */
                   id:
                     | 'tldr'
                     | 'map'
@@ -957,61 +1376,113 @@ export interface operations {
                     | 'write'
                     | 'review'
                     | 'polish'
-                  /** @enum {string} */
+                  /**
+                   * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
+                   * @enum {string}
+                   */
                   status: 'pending' | 'running' | 'done' | 'failed'
+                  /** @description The stage's progress counts. Absent when the stage hasn't reported counts. */
                   units?: {
-                    /** @enum {string} */
+                    /**
+                     * @description What `done` and `total` count: `sources`, `groups` of related content, `entries`, or `rounds` of final fixes. A `rounds` stage has no `total`.
+                     * @enum {string}
+                     */
                     unit: 'sources' | 'groups' | 'entries' | 'rounds'
+                    /** @description How many units the stage has finished. */
                     done: number
+                    /** @description How many units the stage will process. Absent when `unit` is `rounds`. */
                     total?: number
                   }
                 }[]
               } | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When a refresh last checked the knowledge base for changes, whether or not anything changed. `null` until the first refresh.
+               */
               lastCheckedAt: string | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
+               */
               lastChangedAt: string | null
+              /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
               hasPendingChanges: boolean
+              /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
               pendingChanges: {
+                /** @description Sources added since the last successful build, including sources no successful build has included yet. */
                 added: number
+                /** @description Sources whose content changed since the last successful build. */
                 changed: number
+                /** @description Sources that recent refreshes no longer find. */
                 removed: number
               } | null
+              /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
               pipelineOutdated: boolean
+              /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
               rebuildRecommended: {
+                /** @description Why a rebuild is recommended, written to show to users. */
                 reason: string
-                /** Format: date-time */
+                /**
+                 * Format: date-time
+                 * @description When the recommendation was made.
+                 */
                 at: string
               } | null
+              /** @description Whether the knowledge base has at least one website source. */
               hasWebSource: boolean
+              /** @description Whether the knowledge base has at least one Sanity dataset source. */
               hasDatasetSource: boolean
+              /** @description How many sources the knowledge base uses, and its source limit. */
               sourceUsage: {
+                /** @description The number of sources counted toward the limit, including parts split from large sources. */
                 used: number
+                /** @description The maximum number of sources the knowledge base can have. */
                 limit: number
               } | null
-              /** @description PlanRestriction */
+              /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
               buildRestriction: {
+                /** @description A stable code for the restriction, such as `planLimitReached`. */
                 code: string
+                /** @description A readable explanation that you can show to users. */
                 message: string
               } | null
+              /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
               refreshEnabled: boolean
-              /** @enum {string} */
+              /**
+               * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
+               * @enum {string}
+               */
               refreshFrequency: 'weekly' | 'monthly'
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
+               */
               refreshNextRunAt: string | null
+              /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
               refreshInFlight: boolean
+              /** @description The number of open issues waiting for review. Always `0` before the first build. */
               openIssueCount: number
+              /** @description The number of active instructions for the knowledge base. */
               instructionCount: number
-              /** @description Actor */
+              /** @description Who created the knowledge base. `null` if unknown. */
               createdBy: {
+                /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
                 id: string | null
+                /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
                 displayName: string | null
               } | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the knowledge base was created.
+               */
               createdAt: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the knowledge base was last updated.
+               */
               updatedAt: string
             }[]
+            /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
             nextCursor: string | null
           }
         }
@@ -1030,34 +1501,55 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
+          /** @description The ID of the organization to create the knowledge base in. */
           organizationId: string
+          /** @description The knowledge base's title. */
           title: string
+          /** @description A short description of what the knowledge base covers. */
           description: string
         }
       }
     }
     responses: {
-      /** @description KnowledgeBase */
+      /** @description A knowledge base and its current state. */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             */
             id: string
+            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
             publicId: string
+            /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
+            /** @description The knowledge base's title. */
             title: string
+            /** @description A short description of what the knowledge base covers. */
             description: string
-            /** @enum {string} */
+            /**
+             * @description The knowledge base's build state. `created`: not built yet. `ready`: built, with no open issues. `review`: built, with open issues to review. A failed build doesn't change the state. `building`, `stale`, and `paused` aren't currently returned. To check for a running build, use `isBuilding`.
+             * @enum {string}
+             */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
+            /** @description The job ID of the most recent build, or `null` if no build has started. Check its progress with `GET .../jobs/{jobId}`. */
             activeJobId: string | null
+            /** @description Whether a build is running now. */
             isBuilding: boolean
+            /** @description Progress of the most recent build, by stage. `null` until a build reports progress. It can briefly belong to an earlier build, so use it only when its `jobId` matches `activeJobId`. */
             buildStageState: {
+              /** @description The ID of the build job this progress belongs to. */
               jobId: string
+              /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
-                /** @enum {string} */
+                /**
+                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @enum {string}
+                 */
                 id:
                   | 'tldr'
                   | 'map'
@@ -1068,59 +1560,110 @@ export interface operations {
                   | 'write'
                   | 'review'
                   | 'polish'
-                /** @enum {string} */
+                /**
+                 * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
+                 * @enum {string}
+                 */
                 status: 'pending' | 'running' | 'done' | 'failed'
+                /** @description The stage's progress counts. Absent when the stage hasn't reported counts. */
                 units?: {
-                  /** @enum {string} */
+                  /**
+                   * @description What `done` and `total` count: `sources`, `groups` of related content, `entries`, or `rounds` of final fixes. A `rounds` stage has no `total`.
+                   * @enum {string}
+                   */
                   unit: 'sources' | 'groups' | 'entries' | 'rounds'
+                  /** @description How many units the stage has finished. */
                   done: number
+                  /** @description How many units the stage will process. Absent when `unit` is `rounds`. */
                   total?: number
                 }
               }[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When a refresh last checked the knowledge base for changes, whether or not anything changed. `null` until the first refresh.
+             */
             lastCheckedAt: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
+             */
             lastChangedAt: string | null
+            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
             hasPendingChanges: boolean
+            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
+              /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
+              /** @description Sources whose content changed since the last successful build. */
               changed: number
+              /** @description Sources that recent refreshes no longer find. */
               removed: number
             } | null
+            /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
             pipelineOutdated: boolean
+            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
             rebuildRecommended: {
+              /** @description Why a rebuild is recommended, written to show to users. */
               reason: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the recommendation was made.
+               */
               at: string
             } | null
+            /** @description Whether the knowledge base has at least one website source. */
             hasWebSource: boolean
+            /** @description Whether the knowledge base has at least one Sanity dataset source. */
             hasDatasetSource: boolean
+            /** @description How many sources the knowledge base uses, and its source limit. */
             sourceUsage: {
+              /** @description The number of sources counted toward the limit, including parts split from large sources. */
               used: number
+              /** @description The maximum number of sources the knowledge base can have. */
               limit: number
             } | null
-            /** @description PlanRestriction */
+            /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
             buildRestriction: {
+              /** @description A stable code for the restriction, such as `planLimitReached`. */
               code: string
+              /** @description A readable explanation that you can show to users. */
               message: string
             } | null
+            /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
             refreshEnabled: boolean
-            /** @enum {string} */
+            /**
+             * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
+             * @enum {string}
+             */
             refreshFrequency: 'weekly' | 'monthly'
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
+             */
             refreshNextRunAt: string | null
+            /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
             refreshInFlight: boolean
+            /** @description The number of open issues waiting for review. Always `0` before the first build. */
             openIssueCount: number
+            /** @description The number of active instructions for the knowledge base. */
             instructionCount: number
-            /** @description Actor */
+            /** @description Who created the knowledge base. `null` if unknown. */
             createdBy: {
+              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
               id: string | null
+              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
               displayName: string | null
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the knowledge base was created.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the knowledge base was last updated.
+             */
             updatedAt: string
           }
         }
@@ -1132,33 +1675,52 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description KnowledgeBase */
+      /** @description A knowledge base and its current state. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             */
             id: string
+            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
             publicId: string
+            /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
+            /** @description The knowledge base's title. */
             title: string
+            /** @description A short description of what the knowledge base covers. */
             description: string
-            /** @enum {string} */
+            /**
+             * @description The knowledge base's build state. `created`: not built yet. `ready`: built, with no open issues. `review`: built, with open issues to review. A failed build doesn't change the state. `building`, `stale`, and `paused` aren't currently returned. To check for a running build, use `isBuilding`.
+             * @enum {string}
+             */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
+            /** @description The job ID of the most recent build, or `null` if no build has started. Check its progress with `GET .../jobs/{jobId}`. */
             activeJobId: string | null
+            /** @description Whether a build is running now. */
             isBuilding: boolean
+            /** @description Progress of the most recent build, by stage. `null` until a build reports progress. It can briefly belong to an earlier build, so use it only when its `jobId` matches `activeJobId`. */
             buildStageState: {
+              /** @description The ID of the build job this progress belongs to. */
               jobId: string
+              /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
-                /** @enum {string} */
+                /**
+                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @enum {string}
+                 */
                 id:
                   | 'tldr'
                   | 'map'
@@ -1169,59 +1731,110 @@ export interface operations {
                   | 'write'
                   | 'review'
                   | 'polish'
-                /** @enum {string} */
+                /**
+                 * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
+                 * @enum {string}
+                 */
                 status: 'pending' | 'running' | 'done' | 'failed'
+                /** @description The stage's progress counts. Absent when the stage hasn't reported counts. */
                 units?: {
-                  /** @enum {string} */
+                  /**
+                   * @description What `done` and `total` count: `sources`, `groups` of related content, `entries`, or `rounds` of final fixes. A `rounds` stage has no `total`.
+                   * @enum {string}
+                   */
                   unit: 'sources' | 'groups' | 'entries' | 'rounds'
+                  /** @description How many units the stage has finished. */
                   done: number
+                  /** @description How many units the stage will process. Absent when `unit` is `rounds`. */
                   total?: number
                 }
               }[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When a refresh last checked the knowledge base for changes, whether or not anything changed. `null` until the first refresh.
+             */
             lastCheckedAt: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
+             */
             lastChangedAt: string | null
+            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
             hasPendingChanges: boolean
+            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
+              /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
+              /** @description Sources whose content changed since the last successful build. */
               changed: number
+              /** @description Sources that recent refreshes no longer find. */
               removed: number
             } | null
+            /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
             pipelineOutdated: boolean
+            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
             rebuildRecommended: {
+              /** @description Why a rebuild is recommended, written to show to users. */
               reason: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the recommendation was made.
+               */
               at: string
             } | null
+            /** @description Whether the knowledge base has at least one website source. */
             hasWebSource: boolean
+            /** @description Whether the knowledge base has at least one Sanity dataset source. */
             hasDatasetSource: boolean
+            /** @description How many sources the knowledge base uses, and its source limit. */
             sourceUsage: {
+              /** @description The number of sources counted toward the limit, including parts split from large sources. */
               used: number
+              /** @description The maximum number of sources the knowledge base can have. */
               limit: number
             } | null
-            /** @description PlanRestriction */
+            /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
             buildRestriction: {
+              /** @description A stable code for the restriction, such as `planLimitReached`. */
               code: string
+              /** @description A readable explanation that you can show to users. */
               message: string
             } | null
+            /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
             refreshEnabled: boolean
-            /** @enum {string} */
+            /**
+             * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
+             * @enum {string}
+             */
             refreshFrequency: 'weekly' | 'monthly'
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
+             */
             refreshNextRunAt: string | null
+            /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
             refreshInFlight: boolean
+            /** @description The number of open issues waiting for review. Always `0` before the first build. */
             openIssueCount: number
+            /** @description The number of active instructions for the knowledge base. */
             instructionCount: number
-            /** @description Actor */
+            /** @description Who created the knowledge base. `null` if unknown. */
             createdBy: {
+              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
               id: string | null
+              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
               displayName: string | null
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the knowledge base was created.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the knowledge base was last updated.
+             */
             updatedAt: string
           }
         }
@@ -1233,13 +1846,14 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description The knowledge base was deleted. */
       204: {
         headers: {
           [name: string]: unknown
@@ -1255,6 +1869,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
@@ -1262,36 +1877,60 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
+          /** @description The knowledge base's new title. */
           title?: string
+          /** @description The knowledge base's new description. */
           description?: string
+          /** @description Whether scheduled refresh is on. Turning it off stops only scheduled refreshes, so you can still start a refresh yourself. Turning it on requires a plan that includes scheduled refresh. Requires a website or dataset source. */
           refreshEnabled?: boolean
-          /** @enum {string} */
+          /**
+           * @description How often scheduled refresh runs: `weekly` or `monthly`. Requires a website or dataset source and a plan that includes scheduled refresh.
+           * @enum {string}
+           */
           refreshFrequency?: 'weekly' | 'monthly'
         }
       }
     }
     responses: {
-      /** @description KnowledgeBase */
+      /** @description A knowledge base and its current state. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             */
             id: string
+            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
             publicId: string
+            /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
+            /** @description The knowledge base's title. */
             title: string
+            /** @description A short description of what the knowledge base covers. */
             description: string
-            /** @enum {string} */
+            /**
+             * @description The knowledge base's build state. `created`: not built yet. `ready`: built, with no open issues. `review`: built, with open issues to review. A failed build doesn't change the state. `building`, `stale`, and `paused` aren't currently returned. To check for a running build, use `isBuilding`.
+             * @enum {string}
+             */
             state: 'created' | 'building' | 'ready' | 'review' | 'stale' | 'paused'
+            /** @description The job ID of the most recent build, or `null` if no build has started. Check its progress with `GET .../jobs/{jobId}`. */
             activeJobId: string | null
+            /** @description Whether a build is running now. */
             isBuilding: boolean
+            /** @description Progress of the most recent build, by stage. `null` until a build reports progress. It can briefly belong to an earlier build, so use it only when its `jobId` matches `activeJobId`. */
             buildStageState: {
+              /** @description The ID of the build job this progress belongs to. */
               jobId: string
+              /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
-                /** @enum {string} */
+                /**
+                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @enum {string}
+                 */
                 id:
                   | 'tldr'
                   | 'map'
@@ -1302,59 +1941,110 @@ export interface operations {
                   | 'write'
                   | 'review'
                   | 'polish'
-                /** @enum {string} */
+                /**
+                 * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
+                 * @enum {string}
+                 */
                 status: 'pending' | 'running' | 'done' | 'failed'
+                /** @description The stage's progress counts. Absent when the stage hasn't reported counts. */
                 units?: {
-                  /** @enum {string} */
+                  /**
+                   * @description What `done` and `total` count: `sources`, `groups` of related content, `entries`, or `rounds` of final fixes. A `rounds` stage has no `total`.
+                   * @enum {string}
+                   */
                   unit: 'sources' | 'groups' | 'entries' | 'rounds'
+                  /** @description How many units the stage has finished. */
                   done: number
+                  /** @description How many units the stage will process. Absent when `unit` is `rounds`. */
                   total?: number
                 }
               }[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When a refresh last checked the knowledge base for changes, whether or not anything changed. `null` until the first refresh.
+             */
             lastCheckedAt: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
+             */
             lastChangedAt: string | null
+            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
             hasPendingChanges: boolean
+            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
+              /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
+              /** @description Sources whose content changed since the last successful build. */
               changed: number
+              /** @description Sources that recent refreshes no longer find. */
               removed: number
             } | null
+            /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
             pipelineOutdated: boolean
+            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
             rebuildRecommended: {
+              /** @description Why a rebuild is recommended, written to show to users. */
               reason: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the recommendation was made.
+               */
               at: string
             } | null
+            /** @description Whether the knowledge base has at least one website source. */
             hasWebSource: boolean
+            /** @description Whether the knowledge base has at least one Sanity dataset source. */
             hasDatasetSource: boolean
+            /** @description How many sources the knowledge base uses, and its source limit. */
             sourceUsage: {
+              /** @description The number of sources counted toward the limit, including parts split from large sources. */
               used: number
+              /** @description The maximum number of sources the knowledge base can have. */
               limit: number
             } | null
-            /** @description PlanRestriction */
+            /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
             buildRestriction: {
+              /** @description A stable code for the restriction, such as `planLimitReached`. */
               code: string
+              /** @description A readable explanation that you can show to users. */
               message: string
             } | null
+            /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
             refreshEnabled: boolean
-            /** @enum {string} */
+            /**
+             * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
+             * @enum {string}
+             */
             refreshFrequency: 'weekly' | 'monthly'
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
+             */
             refreshNextRunAt: string | null
+            /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
             refreshInFlight: boolean
+            /** @description The number of open issues waiting for review. Always `0` before the first build. */
             openIssueCount: number
+            /** @description The number of active instructions for the knowledge base. */
             instructionCount: number
-            /** @description Actor */
+            /** @description Who created the knowledge base. `null` if unknown. */
             createdBy: {
+              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
               id: string | null
+              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
               displayName: string | null
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the knowledge base was created.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the knowledge base was last updated.
+             */
             updatedAt: string
           }
         }
@@ -1366,19 +2056,21 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description JobAccepted */
+      /** @description A queued job that you can poll for progress. */
       202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
             jobId: string
           }
         }
@@ -1390,19 +2082,21 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description The result of the cancel request. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description Whether a running build was cancelled. `false` when no build was running. */
             cancelled: boolean
           }
         }
@@ -1414,24 +2108,31 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded. */
         entryPath: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description RebuildEntryResponse */
+      /** @description The job that rebuilds the entry, and the other entries that share its sources. */
       202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description ID of the job that rebuilds the entry. Poll it with `GET .../jobs/{jobId}`. */
             jobId: string
+            /** @description Other entries that cite any of this entry's sources. An instruction applies to every entry that cites its sources, so these entries can change when they are next rebuilt. */
             affectedEntries: {
+              /** @description The entry's document ID. */
               id: string
+              /** @description The entry's path, such as `products/api/webhooks`. */
               path: string
+              /** @description The entry's title. */
               title: string
             }[]
           }
@@ -1442,68 +2143,110 @@ export interface operations {
   listImports: {
     parameters: {
       query?: {
+        /** @description The `nextCursor` value from the previous page. Omit it to get the first page. */
         cursor?: string
+        /** @description The maximum number of items to return. */
         limit?: number
       }
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description A page of imports. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The items on this page. */
             data: {
-              /** Format: uuid */
+              /**
+               * Format: uuid
+               * @description The import's ID.
+               */
               id: string
-              /** Format: uuid */
+              /**
+               * Format: uuid
+               * @description The `id` of the knowledge base that the import belongs to.
+               */
               knowledgeBaseId: string
+              /** @description A label for the import: the file name for an upload, the root URL for a crawl, a label for a dataset query, or the title for inline text. */
               name: string | null
+              /** @description The size of the uploaded file or inline text, in bytes. `null` for crawl and dataset imports, and until a file upload completes. */
               sizeBytes: number | null
-              /** @enum {string} */
+              /**
+               * @description The import's status. `uploading`: waiting for the file upload to complete. `processing`: content is being fetched and processed. `complete`: processing finished. `failed`: the import, or at least one of its sources, couldn't be processed. See `statusDetail` and `error` for details.
+               * @enum {string}
+               */
               status: 'uploading' | 'processing' | 'complete' | 'failed'
-              /** @enum {string} */
+              /**
+               * @description The kind of sources the import produces. `file`: uploads and inline text. `web`: crawls. `dataset`: Sanity datasets.
+               * @enum {string}
+               */
               sourceKind: 'web' | 'file' | 'dataset'
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the import's website or dataset was last checked, even if nothing changed. `null` for file and text imports, and before the first check.
+               */
               lastCheckedAt: string | null
+              /** @description The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources. */
               sourceCount: number
+              /** @description The number of sources expected to be distilled, including parts split from large sources. Excludes skipped sources. */
               totalDistillableCount: number
+              /** @description The number of sources distilled so far. Compare it with `totalDistillableCount` to show progress. */
               distilledCount: number
+              /** @description The number of sources skipped because their file type isn't supported, such as images. */
               unsupportedCount: number
+              /** @description A note about the import's outcome, written to show to users. It explains a failure or a partial result, such as a crawl that stopped at the source limit. `null` when there's nothing to note. Prefer it over `error`. */
               statusDetail: string | null
+              /** @description When `status` is `failed`, a readable reason from one failed source. `null` for any other status, or when no single source failed. */
               error: string | null
-              /** @description CrawlOptions */
+              /** @description The options the next crawl of this website uses. An empty object means the defaults. `null` for other import types, and for a crawl whose root URL was removed. */
               crawlOptions: {
+                /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
                 includePaths?: string[]
+                /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
                 excludePaths?: string[]
+                /** @description How many levels deep the crawl goes from the root URL. */
                 maxDepth?: number
+                /** @description Whether to crawl only the pages listed in the site's sitemap. */
                 sitemapOnly?: boolean
+                /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
                 ignoreQueryParameters?: boolean
+                /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
                 pageLimit?: number
               } | null
-              /** @description DatasetSourceBinding */
+              /** @description The Sanity project, dataset, and full query a dataset import reads from. `null` for other import types. */
               datasetSource: {
+                /** @description The ID of the Sanity project the documents come from. */
                 sanityProjectId: string
+                /** @description The dataset the documents come from. */
                 sanityDatasetId: string
+                /** @description The full GROQ query that selects the documents, exactly as saved. */
                 query: string
               } | null
-              /** @description Actor */
+              /** @description Who added the import. `null` if unknown. */
               createdBy: {
+                /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
                 id: string | null
+                /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
                 displayName: string | null
               } | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the import was created.
+               */
               createdAt: string
               /** Format: date-time */
               completedAt: string | null
             }[]
+            /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
             nextCursor: string | null
           }
         }
@@ -1515,57 +2258,83 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
-    /** @description CreateImportInput */
+    /** @description Content to add to a knowledge base. The `type` field sets the kind of import. */
     requestBody: {
       content: {
         'application/json':
           | {
-              /** @enum {string} */
+              /**
+               * @description The import type. `text` imports inline content.
+               * @enum {string}
+               */
               type: 'text'
+              /** @description The import's title, shown in the list of imports. */
               title: string
+              /** @description The text or markdown to import, up to 1,000,000 bytes of UTF-8. */
               content: string
               /**
+               * @description The format of `content`: `text/markdown` (the default) or `text/plain`.
                * @default text/markdown
                * @enum {string}
                */
               contentType?: 'text/markdown' | 'text/plain'
             }
           | {
-              /** Format: uri */
+              /**
+               * Format: uri
+               * @description The URL to start crawling from. It must be a public `http` or `https` URL.
+               */
               url: string
-              /** @description CrawlOptions */
+              /** @description Options for the crawl. Options you omit use the defaults. */
               options?: {
+                /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
                 includePaths?: string[]
+                /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
                 excludePaths?: string[]
+                /** @description How many levels deep the crawl goes from the root URL. */
                 maxDepth?: number
+                /** @description Whether to crawl only the pages listed in the site's sitemap. */
                 sitemapOnly?: boolean
+                /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
                 ignoreQueryParameters?: boolean
+                /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
                 pageLimit?: number
               }
-              /** @enum {string} */
+              /**
+               * @description The import type. `crawl` imports a website.
+               * @enum {string}
+               */
               type: 'crawl'
             }
           | {
+              /** @description The ID of the Sanity project to read documents from. You need full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. */
               sanityProjectId: string
+              /** @description The dataset to read documents from, in the project set by `sanityProjectId`. */
               sanityDatasetId: string
+              /** @description A GROQ query that selects the documents to import, with an optional projection. It can match up to 5,000 documents. Each refresh runs the query again. */
               query: string
-              /** @enum {string} */
+              /**
+               * @description The import type. `dataset` imports documents from a Sanity dataset.
+               * @enum {string}
+               */
               type: 'dataset'
             }
       }
     }
     responses: {
-      /** @description JobAccepted */
+      /** @description A queued job that you can poll for progress. */
       202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
             jobId: string
           }
         }
@@ -1577,6 +2346,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
@@ -1584,22 +2354,30 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
+          /** @description The file's name. */
           filename: string
+          /** @description The file's MIME type. If you set it, the `PUT` upload must send the same `Content-Type` header. */
           contentType?: string
         }
       }
     }
     responses: {
-      /** @description Default Response */
+      /** @description The new file import and the URL to upload the file to. */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The ID of the new import. Use it to complete the upload and track the import.
+             */
             importId: string
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description A signed URL to send the file to in a single `PUT` request. It expires after one hour.
+             */
             uploadUrl: string
           }
         }
@@ -1611,20 +2389,23 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The import's ID. */
         importId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description JobAccepted */
+      /** @description A queued job that you can poll for progress. */
       202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
             jobId: string
           }
         }
@@ -1636,59 +2417,98 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The import's ID. */
         importId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Import */
+      /** @description Content added to a knowledge base: a file upload, website crawl, Sanity dataset, or inline text. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The import's ID.
+             */
             id: string
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The `id` of the knowledge base that the import belongs to.
+             */
             knowledgeBaseId: string
+            /** @description A label for the import: the file name for an upload, the root URL for a crawl, a label for a dataset query, or the title for inline text. */
             name: string | null
+            /** @description The size of the uploaded file or inline text, in bytes. `null` for crawl and dataset imports, and until a file upload completes. */
             sizeBytes: number | null
-            /** @enum {string} */
+            /**
+             * @description The import's status. `uploading`: waiting for the file upload to complete. `processing`: content is being fetched and processed. `complete`: processing finished. `failed`: the import, or at least one of its sources, couldn't be processed. See `statusDetail` and `error` for details.
+             * @enum {string}
+             */
             status: 'uploading' | 'processing' | 'complete' | 'failed'
-            /** @enum {string} */
+            /**
+             * @description The kind of sources the import produces. `file`: uploads and inline text. `web`: crawls. `dataset`: Sanity datasets.
+             * @enum {string}
+             */
             sourceKind: 'web' | 'file' | 'dataset'
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the import's website or dataset was last checked, even if nothing changed. `null` for file and text imports, and before the first check.
+             */
             lastCheckedAt: string | null
+            /** @description The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources. */
             sourceCount: number
+            /** @description The number of sources expected to be distilled, including parts split from large sources. Excludes skipped sources. */
             totalDistillableCount: number
+            /** @description The number of sources distilled so far. Compare it with `totalDistillableCount` to show progress. */
             distilledCount: number
+            /** @description The number of sources skipped because their file type isn't supported, such as images. */
             unsupportedCount: number
+            /** @description A note about the import's outcome, written to show to users. It explains a failure or a partial result, such as a crawl that stopped at the source limit. `null` when there's nothing to note. Prefer it over `error`. */
             statusDetail: string | null
+            /** @description When `status` is `failed`, a readable reason from one failed source. `null` for any other status, or when no single source failed. */
             error: string | null
-            /** @description CrawlOptions */
+            /** @description The options the next crawl of this website uses. An empty object means the defaults. `null` for other import types, and for a crawl whose root URL was removed. */
             crawlOptions: {
+              /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
               includePaths?: string[]
+              /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
               excludePaths?: string[]
+              /** @description How many levels deep the crawl goes from the root URL. */
               maxDepth?: number
+              /** @description Whether to crawl only the pages listed in the site's sitemap. */
               sitemapOnly?: boolean
+              /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
               ignoreQueryParameters?: boolean
+              /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
               pageLimit?: number
             } | null
-            /** @description DatasetSourceBinding */
+            /** @description The Sanity project, dataset, and full query a dataset import reads from. `null` for other import types. */
             datasetSource: {
+              /** @description The ID of the Sanity project the documents come from. */
               sanityProjectId: string
+              /** @description The dataset the documents come from. */
               sanityDatasetId: string
+              /** @description The full GROQ query that selects the documents, exactly as saved. */
               query: string
             } | null
-            /** @description Actor */
+            /** @description Who added the import. `null` if unknown. */
             createdBy: {
+              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
               id: string | null
+              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
               displayName: string | null
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the import was created.
+             */
             createdAt: string
             /** Format: date-time */
             completedAt: string | null
@@ -1702,14 +2522,16 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The import's ID. */
         importId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description The import and its sources were deleted. */
       204: {
         headers: {
           [name: string]: unknown
@@ -1725,23 +2547,31 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The import's ID. */
         importId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description A short-lived URL that downloads the import's original content. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description A signed URL that downloads the import's original content as a file.
+             */
             url: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When `url` expires, 10 minutes after the request.
+             */
             expiresAt: string
           }
         }
@@ -1753,58 +2583,89 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
-    /** @description CreateInstructionInput */
+    /** @description The instruction to create, and any entries to rebuild under it. */
     requestBody: {
       content: {
         'application/json': {
+          /** @description The instruction in plain language. Builds follow it over what the sources say. */
           statement: string
+          /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
           scopeSourceIds: string[]
+          /** @description Paths of entries to rebuild under the new instruction right away. The response returns the rebuild job ID in `rebuildJobId`. */
           rebuildPaths?: string[]
+          /** @description Whether you already checked the instruction for entries that contradict it. When `true`, the background check that files issues for those entries is skipped. It still runs if the rebuild you requested in `rebuildPaths` does not start. */
           verified?: boolean
         }
       }
     }
     responses: {
-      /** @description CreateInstructionResponse */
+      /** @description The created instruction, and the rebuild it started. */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** @description Instruction */
+            /** @description The created instruction. */
             instruction: {
+              /** @description The instruction's document ID. */
               id: string
+              /** @description ID of the knowledge base the instruction belongs to. */
               knowledgeBaseId: string
-              /** @enum {string} */
+              /**
+               * @description How the instruction was created. `human`: someone wrote it. `conflict`: it records the side chosen when a conflict issue was resolved. Both kinds work the same way in builds.
+               * @enum {string}
+               */
               origin: 'conflict' | 'human'
-              /** @enum {string} */
+              /**
+               * @description Whether builds apply the instruction. `active`: builds apply it. `archived`: a refresh found that its sources no longer support it, so builds stop applying it. To reactivate an archived instruction, update it.
+               * @enum {string}
+               */
               status: 'active' | 'archived'
+              /** @description The instruction in plain language. Builds follow it over what the sources say. */
               statement: string
+              /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. An empty array means all of its sources were removed, so it applies to no entries. */
               scopeSourceIds: string[]
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When a refresh archived the instruction. `null` while it is active.
+               */
               archivedAt: string | null
+              /** @description Why the instruction was archived. `null` while it is active. */
               archivedReason: string | null
+              /** @description ID of the conflict issue this instruction records. `null` when `origin` is `human`. */
               sourceIssueId: string | null
-              /** @description Actor */
+              /** @description Who created the instruction. `null` for instructions created by resolving a conflict, and when the creator is unknown. */
               createdBy: {
+                /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
                 id: string | null
+                /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
                 displayName: string | null
               } | null
-              /** @description Actor */
+              /** @description Who last updated the instruction through the API. `null` when it was never updated, or when the person is unknown. */
               updatedBy: {
+                /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
                 id: string | null
+                /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
                 displayName: string | null
               } | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the instruction was created.
+               */
               createdAt: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the instruction last changed, including changes a refresh makes. `null` when the time is unknown.
+               */
               updatedAt: string | null
             }
+            /** @description ID of the job that rebuilds the entries in `rebuildPaths`. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuildPaths` or the rebuild could not start. The instruction is saved either way. */
             rebuildJobId: string | null
           }
         }
@@ -1816,14 +2677,16 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The instruction's ID. */
         instructionId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description The instruction was deleted. */
       204: {
         headers: {
           [name: string]: unknown
@@ -1839,53 +2702,82 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The instruction's ID. */
         instructionId: string
       }
       cookie?: never
     }
-    /** @description UpdateInstructionInput */
+    /** @description The changes to make to an instruction. Set `statement`, `scopeSourceIds`, or both. Any update also reactivates an archived instruction. */
     requestBody: {
       content: {
         'application/json': {
+          /** @description The new instruction text. Omit it to keep the current text. */
           statement?: string
+          /** @description IDs of the sources the instruction applies to. Replaces the current list. Omit it to keep the current sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
           scopeSourceIds?: string[]
         }
       }
     }
     responses: {
-      /** @description Instruction */
+      /** @description A standing instruction that shapes how entries that cite its sources are written. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The instruction's document ID. */
             id: string
+            /** @description ID of the knowledge base the instruction belongs to. */
             knowledgeBaseId: string
-            /** @enum {string} */
+            /**
+             * @description How the instruction was created. `human`: someone wrote it. `conflict`: it records the side chosen when a conflict issue was resolved. Both kinds work the same way in builds.
+             * @enum {string}
+             */
             origin: 'conflict' | 'human'
-            /** @enum {string} */
+            /**
+             * @description Whether builds apply the instruction. `active`: builds apply it. `archived`: a refresh found that its sources no longer support it, so builds stop applying it. To reactivate an archived instruction, update it.
+             * @enum {string}
+             */
             status: 'active' | 'archived'
+            /** @description The instruction in plain language. Builds follow it over what the sources say. */
             statement: string
+            /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. An empty array means all of its sources were removed, so it applies to no entries. */
             scopeSourceIds: string[]
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When a refresh archived the instruction. `null` while it is active.
+             */
             archivedAt: string | null
+            /** @description Why the instruction was archived. `null` while it is active. */
             archivedReason: string | null
+            /** @description ID of the conflict issue this instruction records. `null` when `origin` is `human`. */
             sourceIssueId: string | null
-            /** @description Actor */
+            /** @description Who created the instruction. `null` for instructions created by resolving a conflict, and when the creator is unknown. */
             createdBy: {
+              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
               id: string | null
+              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
               displayName: string | null
             } | null
-            /** @description Actor */
+            /** @description Who last updated the instruction through the API. `null` when it was never updated, or when the person is unknown. */
             updatedBy: {
+              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
               id: string | null
+              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
               displayName: string | null
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the instruction was created.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the instruction last changed, including changes a refresh makes. `null` when the time is unknown.
+             */
             updatedAt: string | null
           }
         }
@@ -1897,6 +2789,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
@@ -1904,18 +2797,20 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
+          /** @description The IDs of the issues to accept and apply. */
           issueIds: string[]
         }
       }
     }
     responses: {
-      /** @description JobAccepted */
+      /** @description A queued job that you can poll for progress. */
       202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
             jobId: string
           }
         }
@@ -1927,56 +2822,91 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The issue's document ID. */
         issueId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Issue */
+      /** @description An issue found in a knowledge base, and its triage status. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
             id: string
+            /** @description ID of the knowledge base the issue belongs to. */
             knowledgeBaseId: string
-            /** @description IssueContent */
+            /** @description What the issue found. The shape depends on `kind`. */
             content:
               | {
-                  /** @enum {string} */
+                  /**
+                   * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                   * @enum {string}
+                   */
                   severity: 'critical' | 'suggestion'
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                   scopePath: string
+                  /** @description What the problem is, in one or two sentences. */
                   issue: string
+                  /** @description What to do to fix the issue. */
                   suggestedFix: string
-                  /** @enum {string} */
+                  /**
+                   * @description The issue type. `conflict` means two or more positions disagree on the same fact, and you choose which one is correct.
+                   * @enum {string}
+                   */
                   kind: 'conflict'
+                  /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                   claimKey: string
+                  /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                   sides: {
+                    /** @description The position as a self-contained sentence. This is the option you choose from. */
                     claim: string
+                    /** @description The disputed value on its own, such as `10,000/month`, without the sentence. */
                     value?: string
+                    /** @description Paths of the entries that state this position. */
                     entryPaths?: string[]
+                    /** @description IDs of the sources that directly back this position. */
                     sourceIds?: string[]
-                    /** @description ConflictSpan */
+                    /** @description Where in a source this position was read. */
                     span?: {
+                      /** @description ID of the source the position was read from. */
                       sourceId: string
+                      /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
                       lineStart: number
+                      /** @description Last line of the range, inclusive. */
                       lineEnd: number
                     }
-                    /** @enum {string} */
+                    /**
+                     * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
+                     * @enum {string}
+                     */
                     authority?: 'primary' | 'secondary' | 'community'
                   }[]
+                  /** @description Index in `sides` of the suggested side, when there is one. It is only a hint: nothing is chosen until you resolve the issue. */
                   suggested?: number
                 }
               | {
-                  /** @enum {string} */
+                  /**
+                   * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                   * @enum {string}
+                   */
                   severity: 'critical' | 'suggestion'
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                   scopePath: string
+                  /** @description What the problem is, in one or two sentences. */
                   issue: string
+                  /** @description What to do to fix the issue. */
                   suggestedFix: string
-                  /** @enum {string} */
+                  /**
+                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                   * @enum {string}
+                   */
                   kind:
                     | 'gap'
                     | 'update_required'
@@ -1984,22 +2914,39 @@ export interface operations {
                     | 'remove_entry'
                     | 'split_entry'
                     | 'merge_entry'
+                  /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
                   citedSourceIds?: string[]
+                  /** @description A key naming the specific finding, when the check that found it sets one. */
                   claimKey?: string
+                  /** @description Paths of the entries the issue involves, when it spans more than one entry. */
                   involvedScopes?: string[]
                 }
-            /** @enum {string} */
+            /**
+             * @description The triage status. `open`: waiting for triage. `accepted`: accepted with `POST .../issues/apply`, or a conflict resolved to one side. `rejected`: dismissed. A rejected issue stays rejected. You can return an accepted conflict to `open` with `POST .../issues/{issueId}/reopen`.
+             * @enum {string}
+             */
             status: 'open' | 'accepted' | 'rejected'
+            /** @description Index in `content.sides` of the side chosen when the conflict was resolved. For a conflict on a single entry, index `0` is the entry's current content. `null` until a conflict is resolved, and always `null` for other issue types. */
             resolution: number | null
-            /** @description IssueResolvedBy */
+            /** @description Who triaged the issue, so you can review what your agents decided. `null` while the issue is open, or when the caller could not be identified. */
             resolvedBy: {
+              /** @description Sanity user ID of the person or robot that triaged the issue. */
               id: string
-              /** @enum {string} */
+              /**
+               * @description `user` when a person made the decision. `robot` when a robot token did, such as an agent.
+               * @enum {string}
+               */
               kind: 'user' | 'robot'
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the issue was first filed.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the issue left `open`. `null` while the issue is open.
+             */
             resolvedAt: string | null
           }
         }
@@ -2011,56 +2958,91 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The issue's document ID. */
         issueId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Issue */
+      /** @description An issue found in a knowledge base, and its triage status. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
             id: string
+            /** @description ID of the knowledge base the issue belongs to. */
             knowledgeBaseId: string
-            /** @description IssueContent */
+            /** @description What the issue found. The shape depends on `kind`. */
             content:
               | {
-                  /** @enum {string} */
+                  /**
+                   * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                   * @enum {string}
+                   */
                   severity: 'critical' | 'suggestion'
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                   scopePath: string
+                  /** @description What the problem is, in one or two sentences. */
                   issue: string
+                  /** @description What to do to fix the issue. */
                   suggestedFix: string
-                  /** @enum {string} */
+                  /**
+                   * @description The issue type. `conflict` means two or more positions disagree on the same fact, and you choose which one is correct.
+                   * @enum {string}
+                   */
                   kind: 'conflict'
+                  /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                   claimKey: string
+                  /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                   sides: {
+                    /** @description The position as a self-contained sentence. This is the option you choose from. */
                     claim: string
+                    /** @description The disputed value on its own, such as `10,000/month`, without the sentence. */
                     value?: string
+                    /** @description Paths of the entries that state this position. */
                     entryPaths?: string[]
+                    /** @description IDs of the sources that directly back this position. */
                     sourceIds?: string[]
-                    /** @description ConflictSpan */
+                    /** @description Where in a source this position was read. */
                     span?: {
+                      /** @description ID of the source the position was read from. */
                       sourceId: string
+                      /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
                       lineStart: number
+                      /** @description Last line of the range, inclusive. */
                       lineEnd: number
                     }
-                    /** @enum {string} */
+                    /**
+                     * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
+                     * @enum {string}
+                     */
                     authority?: 'primary' | 'secondary' | 'community'
                   }[]
+                  /** @description Index in `sides` of the suggested side, when there is one. It is only a hint: nothing is chosen until you resolve the issue. */
                   suggested?: number
                 }
               | {
-                  /** @enum {string} */
+                  /**
+                   * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                   * @enum {string}
+                   */
                   severity: 'critical' | 'suggestion'
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                   scopePath: string
+                  /** @description What the problem is, in one or two sentences. */
                   issue: string
+                  /** @description What to do to fix the issue. */
                   suggestedFix: string
-                  /** @enum {string} */
+                  /**
+                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                   * @enum {string}
+                   */
                   kind:
                     | 'gap'
                     | 'update_required'
@@ -2068,22 +3050,39 @@ export interface operations {
                     | 'remove_entry'
                     | 'split_entry'
                     | 'merge_entry'
+                  /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
                   citedSourceIds?: string[]
+                  /** @description A key naming the specific finding, when the check that found it sets one. */
                   claimKey?: string
+                  /** @description Paths of the entries the issue involves, when it spans more than one entry. */
                   involvedScopes?: string[]
                 }
-            /** @enum {string} */
+            /**
+             * @description The triage status. `open`: waiting for triage. `accepted`: accepted with `POST .../issues/apply`, or a conflict resolved to one side. `rejected`: dismissed. A rejected issue stays rejected. You can return an accepted conflict to `open` with `POST .../issues/{issueId}/reopen`.
+             * @enum {string}
+             */
             status: 'open' | 'accepted' | 'rejected'
+            /** @description Index in `content.sides` of the side chosen when the conflict was resolved. For a conflict on a single entry, index `0` is the entry's current content. `null` until a conflict is resolved, and always `null` for other issue types. */
             resolution: number | null
-            /** @description IssueResolvedBy */
+            /** @description Who triaged the issue, so you can review what your agents decided. `null` while the issue is open, or when the caller could not be identified. */
             resolvedBy: {
+              /** @description Sanity user ID of the person or robot that triaged the issue. */
               id: string
-              /** @enum {string} */
+              /**
+               * @description `user` when a person made the decision. `robot` when a robot token did, such as an agent.
+               * @enum {string}
+               */
               kind: 'user' | 'robot'
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the issue was first filed.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the issue left `open`. `null` while the issue is open.
+             */
             resolvedAt: string | null
           }
         }
@@ -2095,7 +3094,9 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The issue's document ID. */
         issueId: string
       }
       cookie?: never
@@ -2103,56 +3104,90 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': {
+          /** @description The index of the chosen side in the issue's `content.sides`. */
           resolution: number
         }
       }
     }
     responses: {
-      /** @description ResolveIssueResponse */
+      /** @description The resolved issue, plus the job that rewrites the entry when the decision changes it. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** @description Issue */
+            /** @description The resolved conflict issue, now `accepted`. */
             issue: {
+              /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
               id: string
+              /** @description ID of the knowledge base the issue belongs to. */
               knowledgeBaseId: string
-              /** @description IssueContent */
+              /** @description What the issue found. The shape depends on `kind`. */
               content:
                 | {
-                    /** @enum {string} */
+                    /**
+                     * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                     * @enum {string}
+                     */
                     severity: 'critical' | 'suggestion'
+                    /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                     scopePath: string
+                    /** @description What the problem is, in one or two sentences. */
                     issue: string
+                    /** @description What to do to fix the issue. */
                     suggestedFix: string
-                    /** @enum {string} */
+                    /**
+                     * @description The issue type. `conflict` means two or more positions disagree on the same fact, and you choose which one is correct.
+                     * @enum {string}
+                     */
                     kind: 'conflict'
+                    /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                     claimKey: string
+                    /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                     sides: {
+                      /** @description The position as a self-contained sentence. This is the option you choose from. */
                       claim: string
+                      /** @description The disputed value on its own, such as `10,000/month`, without the sentence. */
                       value?: string
+                      /** @description Paths of the entries that state this position. */
                       entryPaths?: string[]
+                      /** @description IDs of the sources that directly back this position. */
                       sourceIds?: string[]
-                      /** @description ConflictSpan */
+                      /** @description Where in a source this position was read. */
                       span?: {
+                        /** @description ID of the source the position was read from. */
                         sourceId: string
+                        /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
                         lineStart: number
+                        /** @description Last line of the range, inclusive. */
                         lineEnd: number
                       }
-                      /** @enum {string} */
+                      /**
+                       * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
+                       * @enum {string}
+                       */
                       authority?: 'primary' | 'secondary' | 'community'
                     }[]
+                    /** @description Index in `sides` of the suggested side, when there is one. It is only a hint: nothing is chosen until you resolve the issue. */
                     suggested?: number
                   }
                 | {
-                    /** @enum {string} */
+                    /**
+                     * @description How serious the issue is. `critical`: content is wrong or missing in a way that can mislead an agent. `suggestion`: a change that improves quality.
+                     * @enum {string}
+                     */
                     severity: 'critical' | 'suggestion'
+                    /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
                     scopePath: string
+                    /** @description What the problem is, in one or two sentences. */
                     issue: string
+                    /** @description What to do to fix the issue. */
                     suggestedFix: string
-                    /** @enum {string} */
+                    /**
+                     * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                     * @enum {string}
+                     */
                     kind:
                       | 'gap'
                       | 'update_required'
@@ -2160,24 +3195,42 @@ export interface operations {
                       | 'remove_entry'
                       | 'split_entry'
                       | 'merge_entry'
+                    /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
                     citedSourceIds?: string[]
+                    /** @description A key naming the specific finding, when the check that found it sets one. */
                     claimKey?: string
+                    /** @description Paths of the entries the issue involves, when it spans more than one entry. */
                     involvedScopes?: string[]
                   }
-              /** @enum {string} */
+              /**
+               * @description The triage status. `open`: waiting for triage. `accepted`: accepted with `POST .../issues/apply`, or a conflict resolved to one side. `rejected`: dismissed. A rejected issue stays rejected. You can return an accepted conflict to `open` with `POST .../issues/{issueId}/reopen`.
+               * @enum {string}
+               */
               status: 'open' | 'accepted' | 'rejected'
+              /** @description Index in `content.sides` of the side chosen when the conflict was resolved. For a conflict on a single entry, index `0` is the entry's current content. `null` until a conflict is resolved, and always `null` for other issue types. */
               resolution: number | null
-              /** @description IssueResolvedBy */
+              /** @description Who triaged the issue, so you can review what your agents decided. `null` while the issue is open, or when the caller could not be identified. */
               resolvedBy: {
+                /** @description Sanity user ID of the person or robot that triaged the issue. */
                 id: string
-                /** @enum {string} */
+                /**
+                 * @description `user` when a person made the decision. `robot` when a robot token did, such as an agent.
+                 * @enum {string}
+                 */
                 kind: 'user' | 'robot'
               } | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the issue was first filed.
+               */
               createdAt: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the issue left `open`. `null` while the issue is open.
+               */
               resolvedAt: string | null
             }
+            /** @description ID of the job that rewrites the entry to match the chosen side. Poll it with `GET .../jobs/{jobId}`. `null` when nothing is rewritten: you chose index `0`, or the conflict applies to the whole knowledge base. */
             jobId: string | null
           }
         }
@@ -2189,28 +3242,42 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The job ID returned by the endpoint that started the work. */
         jobId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Job */
+      /** @description A background job, such as a build, refresh, or import, and its status. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The job's ID. */
             id: string
-            /** @enum {string} */
+            /**
+             * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+             * @enum {string}
+             */
             status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the job started.
+             */
             startedAt: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the job finished. `null` while the job is queued or running.
+             */
             completedAt: string | null
+            /** @description The job's output. Only present when `status` is `succeeded`. Its shape depends on the kind of job. */
             result?: unknown
+            /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
             error?: string | null
           }
         }
@@ -2222,20 +3289,23 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description RefreshAccepted */
+      /** @description A queued refresh job that you can poll for progress. */
       202: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
             jobId: string
+            /** @description Whether this request started a new refresh. `false` means a refresh was already running, and `jobId` is that refresh. */
             started: boolean
           }
         }
@@ -2245,49 +3315,84 @@ export interface operations {
   listSources: {
     parameters: {
       query?: {
+        /** @description The `nextCursor` value from the previous page. Omit it to get the first page. */
         cursor?: string
+        /** @description The maximum number of items to return. */
         limit?: number
+        /** @description Return only sources with this status. */
         status?: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
+        /** @description Return only the sources that this import produced. */
         importId?: string
+        /** @description Comma-separated IDs of the sources to return, up to 200. Includes the parts of large sources that were split, which the default list leaves out. When set, `status` and `cursor` are ignored and every matching source is returned in one page. */
         ids?: string
       }
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description A page of sources. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The items on this page. */
             data: {
-              /** Format: uuid */
+              /**
+               * Format: uuid
+               * @description The source's ID.
+               */
               id: string
-              /** Format: uuid */
+              /**
+               * Format: uuid
+               * @description The `id` of the knowledge base that the source belongs to.
+               */
               knowledgeBaseId: string
+              /** @description The source's name: the file name for an upload, the page title for a web page, or the document title for a dataset document. */
               filename: string
-              /** @enum {string} */
+              /**
+               * @description Where the source came from. `web`: a crawled web page. `file`: an uploaded file or inline text. `dataset`: a document from a Sanity dataset.
+               * @enum {string}
+               */
               kind: 'web' | 'file' | 'dataset'
+              /** @description The source's size in bytes. */
               sizeBytes: number
-              /** @enum {string} */
+              /**
+               * @description The source's processing status. `pending`: waiting to be processed. `processing`: distilled and being summarized. `ready`: processed and available to builds. `failed`: couldn't be processed. `skipped`: not processed, because its file type isn't supported, it's too large, or it was split into smaller sources.
+               * @enum {string}
+               */
               status: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
+              /** @description A short summary of the source. `null` until the source is summarized. */
               tldr: string | null
+              /** @description Topics the source covers. `null` until the source is summarized. */
               topics: string[] | null
+              /** @description The page URL of a `web` source. `null` for other kinds. */
               canonicalUrl: string | null
+              /** @description The `_id` of the Sanity document a `dataset` source came from. Use it to find the document in your studio. `null` for other kinds. */
               externalId: string | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the source's content was last fetched.
+               */
               fetchedAt: string | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the source's content was last distilled into markdown. `null` until it's distilled.
+               */
               distilledAt: string | null
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When the source was added.
+               */
               createdAt: string
             }[]
+            /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
             nextCursor: string | null
           }
         }
@@ -2299,39 +3404,68 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The source's ID. */
         sourceId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Source */
+      /** @description A page, file, or document that an import produced and that builds cite. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The source's ID.
+             */
             id: string
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The `id` of the knowledge base that the source belongs to.
+             */
             knowledgeBaseId: string
+            /** @description The source's name: the file name for an upload, the page title for a web page, or the document title for a dataset document. */
             filename: string
-            /** @enum {string} */
+            /**
+             * @description Where the source came from. `web`: a crawled web page. `file`: an uploaded file or inline text. `dataset`: a document from a Sanity dataset.
+             * @enum {string}
+             */
             kind: 'web' | 'file' | 'dataset'
+            /** @description The source's size in bytes. */
             sizeBytes: number
-            /** @enum {string} */
+            /**
+             * @description The source's processing status. `pending`: waiting to be processed. `processing`: distilled and being summarized. `ready`: processed and available to builds. `failed`: couldn't be processed. `skipped`: not processed, because its file type isn't supported, it's too large, or it was split into smaller sources.
+             * @enum {string}
+             */
             status: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
+            /** @description A short summary of the source. `null` until the source is summarized. */
             tldr: string | null
+            /** @description Topics the source covers. `null` until the source is summarized. */
             topics: string[] | null
+            /** @description The page URL of a `web` source. `null` for other kinds. */
             canonicalUrl: string | null
+            /** @description The `_id` of the Sanity document a `dataset` source came from. Use it to find the document in your studio. `null` for other kinds. */
             externalId: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the source's content was last fetched.
+             */
             fetchedAt: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the source's content was last distilled into markdown. `null` until it's distilled.
+             */
             distilledAt: string | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the source was added.
+             */
             createdAt: string
           }
         }
@@ -2343,14 +3477,16 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The source's ID. */
         sourceId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description Default Response */
+      /** @description The source was deleted. */
       204: {
         headers: {
           [name: string]: unknown
@@ -2364,33 +3500,45 @@ export interface operations {
   getSourceContent: {
     parameters: {
       query?: {
-        /** @description Output representation. `json` (default) returns the structured resource; `markdown` / `plain` return the rendered, LLM-ready text. */
+        /** @description Response format. `json` (default) returns the structured resource. `markdown` and `plain` return the content as rendered text, ready to pass to a model. */
         format?: 'json' | 'markdown' | 'plain'
+        /** @description The first line to return, starting at 1. Omit `startLine` and `endLine` to get the whole content. */
         startLine?: number
+        /** @description The last line to return, inclusive. A value past the end returns everything up to the last line. */
         endLine?: number
       }
       header?: never
       path: {
+        /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The source's ID. */
         sourceId: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description SourceContent */
+      /** @description A source's distilled markdown, or a range of its lines. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The source's ID.
+             */
             sourceId: string
+            /** @description The distilled markdown, or the requested lines of it. */
             content: string
+            /** @description The number of lines in the full distilled content. */
             totalLines: number
+            /** @description The range of lines returned, 1-indexed and inclusive. It can be shorter than requested when the range runs past the end. Both values are `0` when no lines are returned. */
             slice: {
+              /** @description The first line returned. */
               start: number
+              /** @description The last line returned. */
               end: number
             }
           }
@@ -2405,115 +3553,184 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
         threadId: string
       }
       cookie?: never
     }
-    /** @description SaveConversationInput */
+    /** @description A conversation transcript to save for one thread. */
     requestBody: {
       content: {
         'application/json': {
+          /** @description The full transcript so far, in order. It replaces the stored messages. */
           messages: {
-            /** @enum {string} */
+            /**
+             * @description Who sent the message. `user` is the person talking to the agent, `assistant` is the agent, `system` is a system prompt, and `tool` is a tool call or tool result.
+             * @enum {string}
+             */
             role: 'user' | 'assistant' | 'system' | 'tool'
-            /** @default null */
+            /**
+             * @description The message text. `null` when the message has no text, such as a tool call.
+             * @default null
+             */
             content?: string | null
-            /** @default null */
+            /**
+             * @description The name of the tool for a `tool` message. `null` on other messages.
+             * @default null
+             */
             toolName?: string | null
             /**
+             * @description The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.
              * @default null
              * @enum {string|null}
              */
             toolType?: 'call' | 'result' | null
-            /** @default null */
+            /**
+             * @description Why this step failed, including any stack trace. Set it on the tool result for a failed tool call, or on the assistant message for a turn that failed instead of answering. `null` when the step succeeded.
+             * @default null
+             */
             error?: string | null
           }[]
+          /** @description The provider of the model the agent used. When absent, the stored value stays unchanged. */
           modelProvider?: string
+          /** @description The ID of the model the agent used. When absent, the stored value stays unchanged. */
           modelId?: string
-          /** @description ConversationTokenUsage */
+          /** @description Token usage for one generation call. The API adds it to the conversation total, but only when this save changes the messages. */
           tokenUsage?: {
+            /** @description The number of input tokens. */
             inputTokens?: number
+            /** @description The number of output tokens. */
             outputTokens?: number
+            /** @description The total number of tokens. */
             totalTokens?: number
           }
-          /** @description ConversationMetadata */
+          /** @description Up to 20 tags that describe the conversation. Well-known keys are `mcpEndpoints` (names of the MCP endpoints the conversation used), `app`, and `environment`. Add any other keys you need. Replaces the stored metadata. When absent, the stored value stays unchanged. */
           metadata?: {
             [key: string]: string | string[]
           }
-          /** @description ConversationSharing */
+          /** @description Your choice to share conversation telemetry with Sanity. Replaces the stored setting. When absent, the stored value stays unchanged. */
           sharing?: {
+            /** @description Whether to share classification metrics with Sanity: scores, sentiment, content gap counts, message counts and sizes, tool names, and model and token usage. Message content is not included. */
             metrics?: boolean
+            /** @description Whether to share full conversation transcripts with Sanity. When `true`, the API also sets `metrics` to `true`. */
             conversations?: boolean
+            /** @description How the Sanity team can reach you about your agent, such as an email address or a Discord handle. */
             contact?: string
           }
         }
       }
     }
     responses: {
-      /** @description Conversation */
+      /** @description A recorded agent conversation: its transcript, metadata, token usage, and classification. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The conversation ID, unique within the organization. It matches the `_id` of the conversation document in your document store. */
             id: string
+            /** @description Your identifier for the conversation thread, unique within the organization. Saving with the same `threadId` updates the same conversation. */
             threadId: string
-            /** @description ConversationMetadata */
+            /** @description Tags that describe the conversation, such as `mcpEndpoints`, `app`, and `environment`. Filter on them in GROQ queries. `null` until a save includes `metadata`. */
             metadata: {
               [key: string]: string | string[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the API received the first save for this thread, as an ISO 8601 timestamp.
+             */
             startedAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the conversation was last saved, as an ISO 8601 timestamp.
+             */
             messagesUpdatedAt: string
+            /** @description The conversation transcript, in order. Each save replaces it. */
             messages: {
-              /** @enum {string} */
+              /**
+               * @description Who sent the message. `user` is the person talking to the agent, `assistant` is the agent, `system` is a system prompt, and `tool` is a tool call or tool result.
+               * @enum {string}
+               */
               role: 'user' | 'assistant' | 'system' | 'tool'
-              /** @default null */
+              /**
+               * @description The message text. `null` when the message has no text, such as a tool call.
+               * @default null
+               */
               content: string | null
-              /** @default null */
+              /**
+               * @description The name of the tool for a `tool` message. `null` on other messages.
+               * @default null
+               */
               toolName: string | null
               /**
+               * @description The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.
                * @default null
                * @enum {string|null}
                */
               toolType: 'call' | 'result' | null
-              /** @default null */
+              /**
+               * @description Why this step failed, including any stack trace. Set it on the tool result for a failed tool call, or on the assistant message for a turn that failed instead of answering. `null` when the step succeeded.
+               * @default null
+               */
               error: string | null
               /**
                * Format: date-time
+               * @description When the API first received this message, as an ISO 8601 timestamp. The API sets it. Resending an unchanged message at the same position keeps its timestamp. `null` for messages recorded before timestamps existed.
                * @default null
                */
               timestamp: string | null
             }[]
+            /** @description The provider of the model the agent used. `null` until a save includes `modelProvider`. */
             modelProvider: string | null
+            /** @description The ID of the model the agent used. `null` until a save includes `modelId`. */
             modelId: string | null
-            /** @description ConversationTokenUsage */
+            /** @description The running total of token usage for the conversation. `null` until a save includes `tokenUsage`. */
             tokenUsage: {
+              /** @description The number of input tokens. */
               inputTokens?: number
+              /** @description The number of output tokens. */
               outputTokens?: number
+              /** @description The total number of tokens. */
               totalTokens?: number
             } | null
-            /** @description ConversationCoreMetrics */
+            /** @description The latest classification result. `null` until you record one. */
             coreMetrics: {
+              /** @description How well the agent resolved the user's needs, from 1 to 10. */
               successScore?: number
-              /** @enum {string} */
+              /**
+               * @description The overall sentiment of the conversation.
+               * @enum {string}
+               */
               sentiment?: 'positive' | 'neutral' | 'negative'
+              /** @description Topics the agent couldn't answer because it lacked content. */
               contentGaps?: string[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the latest classification result was recorded, as an ISO 8601 timestamp. The API sets it. `null` until you record a result.
+             */
             classifiedAt: string | null
+            /** @description Why your classifier couldn't classify the conversation. `null` when no failure is recorded. Recording a result clears it. */
             classificationError: string | null
-            /** @description ConversationSharing */
+            /** @description Your choice to share conversation telemetry with Sanity. `null` until a save includes `sharing`. */
             sharing: {
+              /** @description Whether to share classification metrics with Sanity: scores, sentiment, content gap counts, message counts and sizes, tool names, and model and token usage. Message content is not included. */
               metrics?: boolean
+              /** @description Whether to share full conversation transcripts with Sanity. When `true`, the API also sets `metrics` to `true`. */
               conversations?: boolean
+              /** @description How the Sanity team can reach you about your agent, such as an email address or a Discord handle. */
               contact?: string
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the conversation was created, as an ISO 8601 timestamp.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the conversation was last changed, as an ISO 8601 timestamp.
+             */
             updatedAt: string
           }
         }
@@ -2525,89 +3742,143 @@ export interface operations {
       query?: never
       header?: never
       path: {
+        /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
         threadId: string
       }
       cookie?: never
     }
-    /** @description ClassifyConversationInput */
+    /** @description A classification result or failure for one conversation. Send exactly one of `coreMetrics` or `classificationError`. */
     requestBody: {
       content: {
         'application/json': {
+          /** @description The classification result. The API sets `classifiedAt` and clears any recorded `classificationError`. */
           coreMetrics?: {
+            /** @description How well the agent resolved the user's needs, as an integer from 1 to 10. */
             successScore: number
-            /** @enum {string} */
+            /**
+             * @description The overall sentiment of the conversation.
+             * @enum {string}
+             */
             sentiment: 'positive' | 'neutral' | 'negative'
+            /** @description Topics the agent couldn't answer because it lacked content. */
             contentGaps: string[]
           }
+          /** @description Why your classifier couldn't classify the conversation. Any earlier classification result stays unchanged. */
           classificationError?: string
         }
       }
     }
     responses: {
-      /** @description Conversation */
+      /** @description A recorded agent conversation: its transcript, metadata, token usage, and classification. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': {
+            /** @description The conversation ID, unique within the organization. It matches the `_id` of the conversation document in your document store. */
             id: string
+            /** @description Your identifier for the conversation thread, unique within the organization. Saving with the same `threadId` updates the same conversation. */
             threadId: string
-            /** @description ConversationMetadata */
+            /** @description Tags that describe the conversation, such as `mcpEndpoints`, `app`, and `environment`. Filter on them in GROQ queries. `null` until a save includes `metadata`. */
             metadata: {
               [key: string]: string | string[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the API received the first save for this thread, as an ISO 8601 timestamp.
+             */
             startedAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the conversation was last saved, as an ISO 8601 timestamp.
+             */
             messagesUpdatedAt: string
+            /** @description The conversation transcript, in order. Each save replaces it. */
             messages: {
-              /** @enum {string} */
+              /**
+               * @description Who sent the message. `user` is the person talking to the agent, `assistant` is the agent, `system` is a system prompt, and `tool` is a tool call or tool result.
+               * @enum {string}
+               */
               role: 'user' | 'assistant' | 'system' | 'tool'
-              /** @default null */
+              /**
+               * @description The message text. `null` when the message has no text, such as a tool call.
+               * @default null
+               */
               content: string | null
-              /** @default null */
+              /**
+               * @description The name of the tool for a `tool` message. `null` on other messages.
+               * @default null
+               */
               toolName: string | null
               /**
+               * @description The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.
                * @default null
                * @enum {string|null}
                */
               toolType: 'call' | 'result' | null
-              /** @default null */
+              /**
+               * @description Why this step failed, including any stack trace. Set it on the tool result for a failed tool call, or on the assistant message for a turn that failed instead of answering. `null` when the step succeeded.
+               * @default null
+               */
               error: string | null
               /**
                * Format: date-time
+               * @description When the API first received this message, as an ISO 8601 timestamp. The API sets it. Resending an unchanged message at the same position keeps its timestamp. `null` for messages recorded before timestamps existed.
                * @default null
                */
               timestamp: string | null
             }[]
+            /** @description The provider of the model the agent used. `null` until a save includes `modelProvider`. */
             modelProvider: string | null
+            /** @description The ID of the model the agent used. `null` until a save includes `modelId`. */
             modelId: string | null
-            /** @description ConversationTokenUsage */
+            /** @description The running total of token usage for the conversation. `null` until a save includes `tokenUsage`. */
             tokenUsage: {
+              /** @description The number of input tokens. */
               inputTokens?: number
+              /** @description The number of output tokens. */
               outputTokens?: number
+              /** @description The total number of tokens. */
               totalTokens?: number
             } | null
-            /** @description ConversationCoreMetrics */
+            /** @description The latest classification result. `null` until you record one. */
             coreMetrics: {
+              /** @description How well the agent resolved the user's needs, from 1 to 10. */
               successScore?: number
-              /** @enum {string} */
+              /**
+               * @description The overall sentiment of the conversation.
+               * @enum {string}
+               */
               sentiment?: 'positive' | 'neutral' | 'negative'
+              /** @description Topics the agent couldn't answer because it lacked content. */
               contentGaps?: string[]
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the latest classification result was recorded, as an ISO 8601 timestamp. The API sets it. `null` until you record a result.
+             */
             classifiedAt: string | null
+            /** @description Why your classifier couldn't classify the conversation. `null` when no failure is recorded. Recording a result clears it. */
             classificationError: string | null
-            /** @description ConversationSharing */
+            /** @description Your choice to share conversation telemetry with Sanity. `null` until a save includes `sharing`. */
             sharing: {
+              /** @description Whether to share classification metrics with Sanity: scores, sentiment, content gap counts, message counts and sizes, tool names, and model and token usage. Message content is not included. */
               metrics?: boolean
+              /** @description Whether to share full conversation transcripts with Sanity. When `true`, the API also sets `metrics` to `true`. */
               conversations?: boolean
+              /** @description How the Sanity team can reach you about your agent, such as an email address or a Discord handle. */
               contact?: string
             } | null
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the conversation was created, as an ISO 8601 timestamp.
+             */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the conversation was last changed, as an ISO 8601 timestamp.
+             */
             updatedAt: string
           }
         }
