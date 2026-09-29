@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.9.0
+
+### Minor Changes
+
+- update client.context types with the latest Context API descriptions ([#1349](https://github.com/sanity-io/client/pull/1349)) ([5b9a346](https://github.com/sanity-io/client/commit/5b9a346449400796c626e96572f087fe7ef7e3f4))
+
 ## 8.8.0
 
 ### Minor Changes
