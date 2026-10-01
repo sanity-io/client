@@ -1,8 +1,9 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
 import {anySignal} from 'get-it/any-signal'
-import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
+import {defer, Observable, of} from 'rxjs'
+import {filter, map, mergeMap} from 'rxjs/operators'
 
+import {applyAuth, getStaticAuth, hasRequestAuth, resolveAuth} from '../auth'
 import {validateApiPerspective} from '../config'
 import {type FetchRequest, requestOptions} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
@@ -12,6 +13,7 @@ import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
   Any,
+  AuthState,
   BaseActionOptions,
   BaseMutationOptions,
   ClientVariantConditions,
@@ -37,6 +39,7 @@ import type {
   UnpublishVersionAction,
   UploadEvent,
 } from '../types'
+import {withAbortSignal} from '../util/abortSignal'
 import {getSelection} from '../util/getSelection'
 import * as validate from '../validators'
 import * as validators from '../validators'
@@ -1010,11 +1013,10 @@ const isData = (client: Client, uri: string) =>
 
 /**
  * Build the final request options (URL, headers, query params, etc.) used by
- * both the regular request pipeline and the asset upload path.
- *
- * @internal
+ * both the regular request pipeline and the asset upload path. Everything but
+ * the client's credential, which {@link _prepareAuthenticatedRequest} adds.
  */
-export function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
+function _prepareRequest(client: Client, options: RequestObservableOptions): FetchRequest {
   if (options.uri !== undefined) {
     printDeprecatedUriOptionWarning()
   }
@@ -1115,6 +1117,75 @@ export function _prepareRequest(client: Client, options: RequestObservableOption
 }
 
 /**
+ * {@link _prepareRequest}, then the client's credential: the current value of
+ * `config.auth`, applied as a bearer token or `credentials: 'include'`. A
+ * `token` or `Authorization` header on the request itself replaces the
+ * client's token; the client's cookie mode still applies.
+ *
+ * Synchronous for a static config, so those requests reach the transport
+ * exactly as they did before `auth` existed. A reactive `auth` is awaited even
+ * when the request carries its own bearer, since the client's cookie mode
+ * still applies to it. The wait is cancelled by the request's `signal` and
+ * bounded by the request's `timeout`, which the request then runs under for
+ * the time that remains, so a source that never emits fails like a hung
+ * request rather than hanging forever.
+ *
+ * @internal
+ */
+export function _prepareAuthenticatedRequest(
+  client: Client,
+  options: RequestObservableOptions,
+): FetchRequest | Promise<FetchRequest> {
+  const request = _prepareRequest(client, options)
+  const config = client.config()
+  const requestBearer = hasRequestAuth(options)
+  // A bearer on the request itself replaces the client's token. Cookie mode
+  // is additive, as a per-request `withCredentials: true` has always been, so
+  // a cookie-mode client keeps sending cookies alongside a request's bearer;
+  // only an explicit `withCredentials: false` on the request keeps them off.
+  const apply = (auth: AuthState) => {
+    if (auth !== undefined && 'token' in auth && requestBearer) return request
+    if (auth !== undefined && 'withCredentials' in auth && options.withCredentials === false) {
+      return request
+    }
+    return applyAuth(request, auth)
+  }
+  const staticAuth = getStaticAuth(config)
+  if (staticAuth) return apply(staticAuth.value)
+  // One deadline covers both the credential wait and the request itself.
+  const deadline = requestTimeoutMs(request)
+  const startedAt = Date.now()
+  return resolveAuth(config, options.signal, deadline).then((auth) =>
+    deadline === undefined
+      ? apply(auth)
+      : withRemainingTimeout(apply(auth), Math.max(1, deadline - (Date.now() - startedAt))),
+  )
+}
+
+/** The request with its `timeout` reduced to what is left of the deadline. */
+function withRemainingTimeout(request: FetchRequest, remainingMs: number): FetchRequest {
+  const {timeout} = request
+  if (typeof timeout === 'object' && timeout !== null) {
+    return {...request, timeout: {...timeout, total: remainingMs}}
+  }
+  return {...request, timeout: remainingMs}
+}
+
+/**
+ * The deadline the request will run under, as milliseconds, or `undefined`
+ * when timeouts are disabled (`timeout: 0`). Mirrors what `requestOptions`
+ * resolved from the per-request and client-level `timeout`.
+ */
+function requestTimeoutMs(request: FetchRequest): number | undefined {
+  const {timeout} = request
+  if (typeof timeout === 'number') return timeout
+  if (typeof timeout === 'object' && timeout !== null && typeof timeout.total === 'number') {
+    return timeout.total
+  }
+  return undefined
+}
+
+/**
  * Wrap a promise-returning request in a cold, single-value Observable.
  *
  * Each subscription invokes `run` with a fresh `AbortSignal` that is aborted
@@ -1156,8 +1227,10 @@ export function _observe<R>(
  * @internal
  */
 export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
-  const reqOptions = _prepareRequest(client, options)
-  return httpRequest(reqOptions, client.config().requestHandler).then((body) => body as R)
+  const prepared = _prepareAuthenticatedRequest(client, options)
+  const send = (reqOptions: FetchRequest) => httpRequest(reqOptions, client.config().requestHandler)
+  const response = prepared instanceof Promise ? prepared.then(send) : send(prepared)
+  return response.then((body) => body as R)
 }
 
 /**
@@ -1190,11 +1263,12 @@ export function _uploadObservable<T>(
   client: Client,
   options: RequestObservableOptions,
 ): Observable<UploadEvent<T>> {
-  const reqOptions = _prepareRequest(client, options)
   const requester = client.config().requester
-  const request = new Observable<Any>((subscriber) =>
-    requester(reqOptions).subscribe(subscriber),
-  ).pipe(
+  const request = defer(() => {
+    const prepared = _prepareAuthenticatedRequest(client, options)
+    return prepared instanceof Promise ? prepared : of(prepared)
+  }).pipe(
+    mergeMap((reqOptions): Observable<Any> => requester(reqOptions)),
     filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
     map((event: Any): UploadEvent<T> =>
       event.type === 'progress'
@@ -1209,7 +1283,7 @@ export function _uploadObservable<T>(
         : {type: 'response', body: event.body as T},
     ),
   )
-  return options.signal ? request.pipe(_withAbortSignal(options.signal)) : request
+  return options.signal ? request.pipe(withAbortSignal(options.signal)) : request
 }
 
 /**
@@ -1237,37 +1311,6 @@ export function _getUrl(client: Client, uri: string, canUseCdn = false): string 
   const {url, cdnUrl} = client.config()
   const base = canUseCdn ? cdnUrl : url
   return `${base}/${uri.replace(/^\//, '')}`
-}
-
-/**
- * @internal
- */
-function _withAbortSignal<T>(signal: AbortSignal): MonoTypeOperatorFunction<T> {
-  return (input) => {
-    return new Observable((observer) => {
-      const abort = () => observer.error(_createAbortError(signal))
-
-      if (signal && signal.aborted) {
-        abort()
-        return
-      }
-      const subscription = input.subscribe(observer)
-      signal.addEventListener('abort', abort)
-      return () => {
-        signal.removeEventListener('abort', abort)
-        subscription.unsubscribe()
-      }
-    })
-  }
-}
-/**
- * `DOMException` is globally available in every supported runtime
- * (Node 22.12+ and all modern browsers), so we can construct one directly.
- *
- * @internal
- */
-function _createAbortError(signal?: AbortSignal): DOMException {
-  return new DOMException(signal?.reason ?? 'The operation was aborted.', 'AbortError')
 }
 
 const resourceDataBase = (config: InitializedClientConfig): string => {
