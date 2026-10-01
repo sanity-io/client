@@ -1,7 +1,7 @@
 import {defer, lastValueFrom, type Observable} from 'rxjs'
 import {filter, map, mergeAll} from 'rxjs/operators'
 
-import {_prepareRequest, _uploadObservable} from '../data/dataMethods'
+import {_prepareAuthenticatedRequest, _uploadObservable} from '../data/dataMethods'
 import type {FetchRequest} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
@@ -261,7 +261,7 @@ function _upload<
       // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
       // credentials and timeout are identical across both upload transports.
       // The XHR API needs the query baked into the URL, though.
-      const req = _prepareRequest(client, {...baseRequest})
+      const req = await _prepareAuthenticatedRequest(client, {...baseRequest})
       return uploadWithProgress<T>({
         url: appendQuery(req.url, req.query),
         method: req.method ?? 'POST',

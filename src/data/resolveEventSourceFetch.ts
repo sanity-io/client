@@ -6,17 +6,13 @@ import type {InitializedClientConfig} from '../types'
 /** @internal */
 export interface EventSourceFetchOptions {
   /**
-   * Headers that must be merged into every EventSource request. Used for
-   * the `Authorization` token, custom `headers` from the client config,
-   * etc. — things the native EventSource API has no equivalent for.
+   * Headers that must be merged into every EventSource request: the custom
+   * `headers` from the client config, which the native EventSource API has
+   * no equivalent for. The credential is not applied here; the stream that
+   * owns the connection wraps this fetch and adds it per attempt (see
+   * `connectAuthenticatedEventSource`).
    */
   headers?: Record<string, string>
-  /**
-   * If the client was configured with `withCredentials: true`, the
-   * resolved fetch forwards `credentials: 'include'` so the browser
-   * attaches cookies to the SSE request.
-   */
-  withCredentials?: boolean
 }
 
 /**
@@ -50,7 +46,6 @@ export function resolveEventSourceFetch(
   options: EventSourceFetchOptions = {},
 ): EventSourceFetch {
   const extraHeaders = options.headers
-  const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
 
   return function eventSourceFetch(url, init) {
     const baseFetch = pickBaseFetch(config)
@@ -65,9 +60,6 @@ export function resolveEventSourceFetch(
         headers.set(key, value)
       }
       mergedInit.headers = headers
-    }
-    if (credentials !== undefined) {
-      mergedInit.credentials = credentials
     }
     // get-it's `FetchResponse` is a structural superset of the package's
     // `FetchLikeResponse`, so it can be handed over as-is.

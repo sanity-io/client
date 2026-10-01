@@ -1,11 +1,12 @@
-import {EventSource} from 'eventsource'
 import type {FetchFunction} from 'get-it'
 import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
+import {getStaticAuth, peekAuth} from '../auth'
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
+  AuthState,
   InitializedClientConfig,
   LiveEvent,
   LiveEventGoAway,
@@ -17,10 +18,9 @@ import type {
 } from '../types'
 import {isRecord} from '../util/isRecord'
 import {shareReplayLatest} from '../util/shareReplayLatest'
+import {connectAuthenticatedEventSource} from './authenticatedEventSource'
 import {_getDataUrl} from './dataMethods'
-import {connectEventSource} from './eventsource'
-import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
-import {pickBaseFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
+import {pickBaseFetch} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
 
@@ -56,14 +56,7 @@ export class LiveClient {
     waitFor?: 'function'
   } = {}): Observable<LiveEvent> {
     const config = this.#client.config()
-    const {
-      projectId,
-      apiVersion: _apiVersion,
-      token,
-      withCredentials,
-      requestTagPrefix,
-      headers: configHeaders,
-    } = config
+    const {projectId, apiVersion: _apiVersion, requestTagPrefix, headers: configHeaders} = config
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {
       throw new Error(
@@ -72,7 +65,11 @@ export class LiveClient {
           `Please update your API version to use this feature.`,
       )
     }
-    if (includeDrafts && !token && !withCredentials) {
+    // Only a static config can be checked up front; a reactive `auth` observable
+    // is unknown until subscribed, and an anonymous value there surfaces as
+    // the server's own rejection.
+    const staticAuth = getStaticAuth(config)
+    if (includeDrafts && staticAuth !== undefined && staticAuth.value === undefined) {
       throw new Error(
         `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
       )
@@ -89,58 +86,54 @@ export class LiveClient {
     if (waitFor) {
       url.searchParams.set('waitFor', waitFor)
     }
-    const eventSourceHeaders: Record<string, string> = {}
-    if (includeDrafts && token) {
-      eventSourceHeaders.Authorization = `Bearer ${token}`
+    // Drafts are only visible to authenticated connections, so that is the
+    // one case the credential travels on the EventSource request itself.
+    const withAuth = Boolean(includeDrafts)
+    // Whether the connection being diagnosed sent cookies. Read when the CORS
+    // probe runs, not up front: under a reactive `auth` observable the value
+    // is only known once a connection has resolved it.
+    const sentCredentials = () => {
+      if (!withAuth) return false
+      const auth = peekAuth(config)
+      return auth !== undefined && 'withCredentials' in auth
     }
-    if (configHeaders) {
-      Object.assign(eventSourceHeaders, configHeaders)
-    }
-    const eventSourceWithCredentials = Boolean(includeDrafts && withCredentials)
 
-    let transportCache = eventsCache.get(config.resolveFetch)
-    if (!transportCache) {
-      transportCache = new Map()
-      eventsCache.set(config.resolveFetch, transportCache)
-    }
+    // Two clients whose auth is the same static value, or the same reactive
+    // observable (by reference), share one stream; a reactive observable is keyed by
+    // identity because its value is not knowable here. Anonymous connections
+    // (`includeDrafts: false`) share regardless of the client's credential.
+    const authKey: Observable<Promise<AuthState>> | null =
+      withAuth && staticAuth === undefined ? config.auth : null
+    const transportCache = getOrCreate(eventsCache, config.resolveFetch, () => new Map())
+    const authCache = getOrCreate(transportCache, authKey, () => new Map())
     const cacheKey = JSON.stringify([
       url.href,
       typeof config.proxy === 'string' ? config.proxy : null,
-      eventSourceHeaders,
-      eventSourceWithCredentials,
+      configHeaders ?? null,
+      withAuth ? (staticAuth?.value ?? null) : null,
     ])
-    const existing = transportCache.get(cacheKey)
+    const existing = authCache.get(cacheKey)
 
     if (existing) {
       return existing
     }
 
-    const initEventSource = () =>
-      new EventSource(url.href, {
-        fetch: resolveEventSourceFetch(config, {
-          headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
-          withCredentials: eventSourceWithCredentials,
-        }),
-      })
-
-    const events = connectEventSource(initEventSource, [
-      'message',
-      'restart',
-      'welcome',
-      'reconnect',
-      'goaway',
-    ])
+    const events = connectAuthenticatedEventSource(
+      config,
+      url.href,
+      ['message', 'restart', 'welcome', 'reconnect', 'goaway'],
+      {headers: configHeaders, withAuth},
+    )
 
     const checkCors = checkCorsObservable(
       new URL(this.#client.getUrl('/check/cors', false)),
       projectId,
-      eventSourceWithCredentials,
+      sentCredentials,
       pickBaseFetch(config),
     )
 
     const observable = events
       .pipe(
-        reconnectOnConnectionFailure(),
         mergeMap((event) => {
           if (event.type === 'reconnect') {
             // Check for CORS on reconnect events (which happen on 403s)
@@ -173,14 +166,15 @@ export class LiveClient {
       )
       .pipe(
         finalize(() => {
-          transportCache.delete(cacheKey)
+          authCache.delete(cacheKey)
+          if (authCache.size === 0) transportCache.delete(authKey)
           if (transportCache.size === 0) eventsCache.delete(config.resolveFetch)
         }),
         shareReplayLatest({
           predicate: (event) => event.type === 'welcome',
         }),
       )
-    transportCache.set(cacheKey, observable)
+    authCache.set(cacheKey, observable)
     return observable
   }
 }
@@ -224,10 +218,11 @@ export class LiveClient {
 function checkCorsObservable(
   url: URL,
   projectId: string | undefined,
-  requireCredentials: boolean,
+  sentCredentials: () => boolean,
   fetcher: FetchFunction,
 ): Observable<void> {
   return new Observable<void>((observer) => {
+    const requireCredentials = sentCredentials()
     const controller = new AbortController()
     const {signal} = controller
     fetcher(url.href, {method: 'GET', credentials: 'omit', signal})
@@ -281,11 +276,21 @@ function checkCorsObservable(
 }
 
 /**
- * Cached observables capture their transport (`initEventSource` closes over
- * `config.resolveFetch` and `config.proxy`), so the cache is scoped per
- * resolver — `undefined` covers the `globalThis.fetch` fallback.
+ * Cached observables capture their transport (`config.resolveFetch` and
+ * `config.proxy`) and, for draft streams, their credential source, so the
+ * cache is scoped per resolver (`undefined` covers the `globalThis.fetch`
+ * fallback), then per reactive `auth` observable (`null` for static and anonymous
+ * connections, whose credential is part of the string key instead).
  */
 const eventsCache = new Map<
   InitializedClientConfig['resolveFetch'],
-  Map<string, Observable<LiveEvent>>
+  Map<Observable<Promise<AuthState>> | null, Map<string, Observable<LiveEvent>>>
 >()
+
+function getOrCreate<K, V>(cache: Map<K, V>, key: K, create: () => V): V {
+  const existing = cache.get(key)
+  if (existing) return existing
+  const created = create()
+  cache.set(key, created)
+  return created
+}

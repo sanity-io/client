@@ -5,6 +5,14 @@ import type {Any} from '../types'
 const projectHeader = 'X-Sanity-Project-ID'
 
 /**
+ * The deadline a request runs under when neither the request nor the client
+ * sets a `timeout`. Also bounds the wait for a reactive `auth` credential.
+ *
+ * @internal
+ */
+export const DEFAULT_REQUEST_TIMEOUT_MS = 5 * 60 * 1000
+
+/**
  * The request shape the transport (`defineRequester`) consumes: get-it v9's
  * own options, with `headers` pinned to the plain-record form this builder
  * always produces.
@@ -23,7 +31,11 @@ export type FetchRequest = Omit<GetItRequestOptions, 'headers'> & {
  * the transport — everything below it speaks get-it v9.
  *
  * Reads the live client config, so reconfiguration via `client.config()` /
- * `withConfig()` (token, headers, proxy, ...) applies to subsequent requests.
+ * `withConfig()` (headers, proxy, ...) applies to subsequent requests.
+ *
+ * The client's own credential is not applied here: `applyAuth` attaches the
+ * value resolved from `config.auth` afterwards. Only the per-request `token`
+ * and `withCredentials` overrides are translated.
  *
  * @internal
  */
@@ -34,9 +46,8 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     Object.assign(headers, config.headers)
   }
 
-  const token = overrides.token || config.token
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
+  if (overrides.token) {
+    headers['Authorization'] = `Bearer ${overrides.token}`
   }
 
   if (!overrides.useGlobalApi && !config.useProjectHostname && config.projectId) {
@@ -53,12 +64,7 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
   if (overrides.query) request.query = expandQueryArrays(overrides.query)
   if (overrides.signal) request.signal = overrides.signal
 
-  const withCredentials = Boolean(
-    typeof overrides.withCredentials === 'undefined'
-      ? config.withCredentials
-      : overrides.withCredentials,
-  )
-  if (withCredentials) request.credentials = 'include'
+  if (overrides.withCredentials) request.credentials = 'include'
 
   // The public option is the legacy `maxRedirects` count, but only "follow"
   // vs "don't" ever worked — fetch has no redirect budget.
@@ -69,7 +75,8 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
   // Public semantics: `0` disables the timeout (get-it uses `false`), default
   // is five minutes.
   const timeout = typeof overrides.timeout === 'undefined' ? config.timeout : overrides.timeout
-  request.timeout = typeof timeout === 'undefined' ? 5 * 60 * 1000 : timeout === 0 ? false : timeout
+  request.timeout =
+    typeof timeout === 'undefined' ? DEFAULT_REQUEST_TIMEOUT_MS : timeout === 0 ? false : timeout
 
   // `useAbortSignal: false` is set by the query path when the caller provided
   // no signal of their own, and means no AbortSignal may reach the fetch
