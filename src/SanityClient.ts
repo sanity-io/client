@@ -3,11 +3,12 @@ import {Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
+import {resolveCurrentAuth} from './auth'
 import {
   CollaborationCommentsClient,
   ObservableCollaborationCommentsClient,
 } from './collaboration/CollaborationCommentsClient'
-import {defaultConfig, initConfig} from './config'
+import {defaultConfig, exposeConfig, initConfig, mergeConfig} from './config'
 import {ContextClient, ObservableContextClient} from './context/ContextClient'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
@@ -34,6 +35,7 @@ import type {
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
+  GetAuthOptions,
   HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
@@ -49,6 +51,7 @@ import type {
   RawQuerylessQueryResponse,
   RawQueryResponse,
   RawRequestOptions,
+  ResolvedAuth,
   SanityDocument,
   SanityDocumentStub,
   SingleActionResult,
@@ -195,7 +198,7 @@ export class ObservableSanityClient {
   config(newConfig?: Partial<ClientConfig>): this
   config(newConfig?: Partial<ClientConfig>): ClientConfig | this {
     if (newConfig === undefined) {
-      return {...this.#clientConfig}
+      return exposeConfig(this.#clientConfig)
     }
 
     if (this.#clientConfig && this.#clientConfig.allowReconfigure === false) {
@@ -216,17 +219,24 @@ export class ObservableSanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClient {
-    const thisConfig = this.config()
-    return new ObservableSanityClient(this.#httpRequest, {
-      ...thisConfig,
-      ...newConfig,
-      stega: {
-        ...thisConfig.stega,
-        ...(typeof newConfig?.stega === 'boolean'
-          ? {enabled: newConfig.stega}
-          : newConfig?.stega || {}),
-      },
-    })
+    return new ObservableSanityClient(this.#httpRequest, mergeConfig(this.#clientConfig, newConfig))
+  }
+
+  /**
+   * The credential the client would attach to a request right now: `{token}`,
+   * `{withCredentials: true}` or `{}` for anonymous, so it can be destructured.
+   * Emits once and completes. Correct for a static configuration and for a
+   * reactive `auth` alike; under the latter it waits while a renewal is
+   * pending, so it never yields a credential the client itself would not
+   * send. The wait is cancelled by `options.signal` and bounded by the
+   * client's `timeout`. Subscribe to `config().auth` instead to follow changes.
+   *
+   * @category Configuration
+   */
+  getAuth(options: GetAuthOptions = {}): Observable<ResolvedAuth> {
+    return dataMethods._observe(options.signal, (signal) =>
+      resolveCurrentAuth(this.#clientConfig, {signal}),
+    )
   }
 
   /**
@@ -1363,7 +1373,7 @@ export class SanityClient {
   config(newConfig?: Partial<ClientConfig>): this
   config(newConfig?: Partial<ClientConfig>): ClientConfig | this {
     if (newConfig === undefined) {
-      return {...this.#clientConfig}
+      return exposeConfig(this.#clientConfig)
     }
 
     if (this.#clientConfig && this.#clientConfig.allowReconfigure === false) {
@@ -1388,17 +1398,22 @@ export class SanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): SanityClient {
-    const thisConfig = this.config()
-    return new SanityClient(this.#httpRequest, {
-      ...thisConfig,
-      ...newConfig,
-      stega: {
-        ...thisConfig.stega,
-        ...(typeof newConfig?.stega === 'boolean'
-          ? {enabled: newConfig.stega}
-          : newConfig?.stega || {}),
-      },
-    })
+    return new SanityClient(this.#httpRequest, mergeConfig(this.#clientConfig, newConfig))
+  }
+
+  /**
+   * The credential the client would attach to a request right now: `{token}`,
+   * `{withCredentials: true}` or `{}` for anonymous, so it can be destructured.
+   * Correct for a static configuration and for a reactive `auth` alike; under
+   * the latter it waits while a renewal is pending, so it never resolves to
+   * a credential the client itself would not send. The wait is
+   * cancelled by `options.signal` and bounded by the client's `timeout`.
+   * Subscribe to `config().auth` instead to follow changes.
+   *
+   * @category Configuration
+   */
+  getAuth(options: GetAuthOptions = {}): Promise<ResolvedAuth> {
+    return resolveCurrentAuth(this.#clientConfig, options)
   }
 
   /**
