@@ -41,6 +41,27 @@ export function validateApiPerspective(
   }
 }
 
+/**
+ * Gradient rejects `drafts` and `previewDrafts` on the API-CDN. Stacked
+ * perspectives that include those values are treated the same. Other stacked
+ * perspectives still fall back to the Live API with a warning.
+ *
+ * @internal
+ */
+export function perspectiveConflictsWithCdn(perspective: ClientPerspective): boolean {
+  if (perspective === 'previewDrafts' || perspective === 'drafts') {
+    return true
+  }
+  if (Array.isArray(perspective)) {
+    return perspective.includes('drafts') || perspective.includes('previewDrafts')
+  }
+  return false
+}
+
+/** @internal */
+export const CDN_INCOMPATIBLE_PERSPECTIVE_ERROR =
+  'The Sanity client is configured with the `perspective` set to `drafts` or `previewDrafts`, which does not support the API-CDN. Set `useCdn: false`.'
+
 export const initConfig = (
   config: Partial<ClientConfig>,
   prevConfig: Partial<ClientConfig>,

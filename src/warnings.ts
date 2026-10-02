@@ -17,8 +17,8 @@ export const printCdnWarning = createWarningPrinter([
   `\`useCdn: false\` to use the Live API. Note: You may incur higher costs using the live API.`,
 ])
 
-export const printCdnPreviewDraftsWarning = createWarningPrinter([
-  `The Sanity client is configured with the \`perspective\` set to \`drafts\` or \`previewDrafts\`, which doesn't support the API-CDN.`,
+export const printCdnStackedPerspectiveWarning = createWarningPrinter([
+  `The Sanity client is configured with a stacked \`perspective\`, which doesn't support the API-CDN.`,
   `The Live API will be used instead. Set \`useCdn: false\` in your configuration to hide this warning.`,
 ])
 
