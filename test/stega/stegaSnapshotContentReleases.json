@@ -1,0 +1,230 @@
+{
+  "query": "*[_type == \"post\" && defined(slug.current)] | order(date desc, _updatedAt desc) {\n  \"author\": author-\u003E{_id, _originalId, \"name\": coalesce(name, \"Anonymous\"), picture},\n    \n  }",
+  "result": [
+    {
+      "author": {
+        "_id": "18c9ae1a-5c14-4ffe-b32e-8e488f043718",
+        "_originalId": "18c9ae1a-5c14-4ffe-b32e-8e488f043718",
+        "name": "Test Author",
+        "picture": {
+          "_type": "image",
+          "alt": "a computer generated image of a green swirl on a black background",
+          "asset": {
+            "_ref": "image-bcc7684cc81521607725dcc720fb260377c4a813-4000x6000-jpg",
+            "_type": "reference"
+          }
+        }
+      }
+    },
+    {
+      "author": {
+        "_id": "e1674ab7-5f96-49b0-8291-7608e087ef0a",
+        "_originalId": "versions.rrRHoDGSr.e1674ab7-5f96-49b0-8291-7608e087ef0a",
+        "name": "Another One!! BLACK FRIDAY",
+        "picture": {
+          "_type": "image",
+          "alt": "the letter a is lit up on a blue wall",
+          "asset": {
+            "_ref": "image-c4c54a778ff4d2587a598403f59ee148dc869e14-5436x3514-jpg",
+            "_type": "reference"
+          }
+        }
+      }
+    },
+    {
+      "author": {
+        "_id": "f99b873f-85c2-41c4-ac65-807b1d72c084",
+        "_originalId": "drafts.f99b873f-85c2-41c4-ac65-807b1d72c084",
+        "name": "John Doe",
+        "picture": {
+          "_type": "image",
+          "alt": "the letter a is lit up on a blue wall",
+          "asset": {
+            "_ref": "image-c4c54a778ff4d2587a598403f59ee148dc869e14-5436x3514-jpg",
+            "_type": "reference"
+          }
+        }
+      }
+    },
+    {
+      "author": {
+        "_id": "f99b873f-85c2-41c4-ac65-807b1d72c084",
+        "_originalId": "drafts.f99b873f-85c2-41c4-ac65-807b1d72c084",
+        "name": "John Doe",
+        "picture": {
+          "_type": "image",
+          "alt": "the letter a is lit up on a blue wall",
+          "asset": {
+            "_ref": "image-c4c54a778ff4d2587a598403f59ee148dc869e14-5436x3514-jpg",
+            "_type": "reference"
+          }
+        }
+      }
+    }
+  ],
+  "resultSourceMap": {
+    "documents": [
+      {
+        "_id": "18c9ae1a-5c14-4ffe-b32e-8e488f043718",
+        "_type": "author"
+      },
+      {
+        "_id": "drafts.f99b873f-85c2-41c4-ac65-807b1d72c084",
+        "_type": "author"
+      },
+      {
+        "_id": "versions.rrRHoDGSr.e1674ab7-5f96-49b0-8291-7608e087ef0a",
+        "_type": "author"
+      }
+    ],
+    "paths": [
+      "$['_id']",
+      "$['_originalId']",
+      "$['name']",
+      "$['picture']"
+    ],
+    "mappings": {
+      "$[0]['author']['_id']": {
+        "source": {
+          "document": 0,
+          "path": 0,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[0]['author']['_originalId']": {
+        "source": {
+          "document": 0,
+          "path": 1,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[0]['author']['name']": {
+        "source": {
+          "document": 0,
+          "path": 2,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[0]['author']['picture']": {
+        "source": {
+          "document": 0,
+          "path": 3,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[1]['author']['_id']": {
+        "source": {
+          "document": 2,
+          "path": 0,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[1]['author']['_originalId']": {
+        "source": {
+          "document": 2,
+          "path": 1,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[1]['author']['name']": {
+        "source": {
+          "document": 2,
+          "path": 2,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[1]['author']['picture']": {
+        "source": {
+          "document": 2,
+          "path": 3,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[2]['author']['_id']": {
+        "source": {
+          "document": 1,
+          "path": 0,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[2]['author']['_originalId']": {
+        "source": {
+          "document": 1,
+          "path": 1,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[2]['author']['name']": {
+        "source": {
+          "document": 1,
+          "path": 2,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[2]['author']['picture']": {
+        "source": {
+          "document": 1,
+          "path": 3,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[3]['author']['_id']": {
+        "source": {
+          "document": 1,
+          "path": 0,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[3]['author']['_originalId']": {
+        "source": {
+          "document": 1,
+          "path": 1,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[3]['author']['name']": {
+        "source": {
+          "document": 1,
+          "path": 2,
+          "type": "documentValue"
+        },
+        "type": "value"
+      },
+      "$[3]['author']['picture']": {
+        "source": {
+          "document": 1,
+          "path": 3,
+          "type": "documentValue"
+        },
+        "type": "value"
+      }
+    }
+  },
+  "syncTags": [
+    "s1:0SlxPg",
+    "s1:ZJkujg",
+    "s1:QDYUMw",
+    "s1:yDDKLw",
+    "s1:7/9iuA",
+    "s1:ilW8Kw",
+    "s1:84gAkQ",
+    "s1:ZUu7JA",
+    "s1:w/zRqQ",
+    "s1:ujwhFw"
+  ],
+  "ms": 8
+}
