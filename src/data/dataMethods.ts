@@ -13,7 +13,7 @@ import type {
   AllDocumentIdsMutationOptions,
   AllDocumentsMutationOptions,
   Any,
-  AuthState,
+  Auth,
   BaseActionOptions,
   BaseMutationOptions,
   ClientVariantConditions,
@@ -1143,7 +1143,7 @@ export function _prepareAuthenticatedRequest(
   // is additive, as a per-request `withCredentials: true` has always been, so
   // a cookie-mode client keeps sending cookies alongside a request's bearer;
   // only an explicit `withCredentials: false` on the request keeps them off.
-  const apply = (auth: AuthState) => {
+  const apply = (auth: Auth) => {
     if (auth !== undefined && 'token' in auth && requestBearer) return request
     if (auth !== undefined && 'withCredentials' in auth && options.withCredentials === false) {
       return request

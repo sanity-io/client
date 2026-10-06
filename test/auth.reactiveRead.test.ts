@@ -1,4 +1,4 @@
-import {type AuthState, createClient as createCoreClient} from '@sanity/client'
+import {type Auth, createClient as createCoreClient} from '@sanity/client'
 import {BehaviorSubject} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -34,9 +34,7 @@ describe('auth: deprecated config().token under a reactive source', () => {
       .on('GET', queryPath, {headers: {Authorization: 'Bearer resolved'}})
       .respond({status: 200, body: {result: []}})
 
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'resolved'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'resolved'}))
     const client = createClient({...baseConfig, auth})
     warn.mockClear()
 
