@@ -1069,10 +1069,10 @@ and configure the client with a token or `withCredentials: true`. The token shou
 When the credential changes while the client is alive, for example in an app whose OAuth access token is refreshed or whose user signs in and out, pass an observable as `auth` instead of a static `token`. Each emission is a promise of the credential: an already settled one for a credential you hold, or the refresh call itself while a renewal is in progress. Every request waits for the latest emission to settle, and every open `listen()` or `live.events()` stream reconnects when a new credential settles, resuming from its last event id.
 
 ```ts
-import {createClient, type AuthState} from '@sanity/client'
+import {createClient, type Auth} from '@sanity/client'
 import {BehaviorSubject} from 'rxjs'
 
-const auth = new BehaviorSubject(Promise.resolve<AuthState>({token: initialAccessToken}))
+const auth = new BehaviorSubject(Promise.resolve<Auth>({token: initialAccessToken}))
 
 const client = createClient({
   projectId: 'your-project-id',

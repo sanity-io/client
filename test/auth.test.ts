@@ -1,5 +1,5 @@
 import {
-  type AuthState,
+  type Auth,
   type ClientConfig,
   ConnectionFailedError,
   CorsOriginError,
@@ -43,9 +43,7 @@ const sseHeaders = {'Content-Type': 'text/event-stream'}
 
 describe('auth: requests', () => {
   test('sends the token the source currently holds, and follows changes', async () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'first'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
     const scope = getActiveMock().scope(apiHost)
     scope
       .on('GET', queryPath, {headers: {Authorization: 'Bearer first'}})
@@ -57,7 +55,7 @@ describe('auth: requests', () => {
     const client = createClient({...baseConfig, auth})
     await expect(client.fetch('*')).resolves.toEqual([1])
 
-    auth.next(Promise.resolve<AuthState>({token: 'second'}))
+    auth.next(Promise.resolve<Auth>({token: 'second'}))
     await expect(client.fetch('*')).resolves.toEqual([2])
   })
 
@@ -69,7 +67,7 @@ describe('auth: requests', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({withCredentials: true})),
+      auth: of(Promise.resolve<Auth>({withCredentials: true})),
     })
     await client.fetch('*')
 
@@ -93,7 +91,7 @@ describe('auth: requests', () => {
   })
 
   test('a request waits while the source withholds, and goes out with the value that arrives', async () => {
-    const auth = new ReplaySubject<Promise<AuthState>>(1)
+    const auth = new ReplaySubject<Promise<Auth>>(1)
     getActiveMock()
       .scope(apiHost)
       .on('GET', queryPath, {headers: {Authorization: 'Bearer late'}})
@@ -105,12 +103,12 @@ describe('auth: requests', () => {
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(getActiveMock().getRequests()).toHaveLength(0)
 
-    auth.next(Promise.resolve<AuthState>({token: 'late'}))
+    auth.next(Promise.resolve<Auth>({token: 'late'}))
     await expect(pending).resolves.toEqual(['late'])
   })
 
   test('aborting a request that is waiting for the source rejects with AbortError', async () => {
-    const auth = new Subject<Promise<AuthState>>()
+    const auth = new Subject<Promise<Auth>>()
     const client = createClient({...baseConfig, auth})
     const controller = new AbortController()
 
@@ -124,7 +122,7 @@ describe('auth: requests', () => {
   test('a source that never emits fails with the request timeout, not a hang', async () => {
     const client = createClient({
       ...baseConfig,
-      auth: new Subject<Promise<AuthState>>(),
+      auth: new Subject<Promise<Auth>>(),
       timeout: 30,
     })
     await expect(client.fetch('*')).rejects.toMatchObject({
@@ -134,7 +132,7 @@ describe('auth: requests', () => {
       ),
     })
     // A per-request timeout applies the same way.
-    const slow = createClient({...baseConfig, auth: new Subject<Promise<AuthState>>()})
+    const slow = createClient({...baseConfig, auth: new Subject<Promise<Auth>>()})
     await expect(slow.fetch('*', {}, {timeout: 20})).rejects.toMatchObject({name: 'TimeoutError'})
     expect(getActiveMock().getRequests()).toHaveLength(0)
   })
@@ -145,9 +143,9 @@ describe('auth: requests', () => {
       .on('GET', queryPath, {headers: {Authorization: 'Bearer renewed'}})
       .respond({status: 200, body: {result: ['renewed']}})
 
-    let renew: (state: AuthState) => void = () => {}
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      new Promise<AuthState>((resolve) => {
+    let renew: (state: Auth) => void = () => {}
+    const auth = new BehaviorSubject<Promise<Auth>>(
+      new Promise<Auth>((resolve) => {
         renew = resolve
       }),
     )
@@ -184,7 +182,7 @@ describe('auth: requests', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'from-source'})),
+      auth: of(Promise.resolve<Auth>({token: 'from-source'})),
     })
     await client.fetch('*', {}, {token: 'override'})
   })
@@ -199,12 +197,12 @@ describe('auth: requests', () => {
     const query = {query: '*', returnQuery: 'false'}
     const tokenClient = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'from-source'})),
+      auth: of(Promise.resolve<Auth>({token: 'from-source'})),
     })
     await tokenClient.request({url: '/data/query/prod', query, withCredentials: true})
     const cookieClient = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({withCredentials: true})),
+      auth: of(Promise.resolve<Auth>({withCredentials: true})),
     })
     await cookieClient.request({url: '/data/query/prod', query, withCredentials: false})
 
@@ -222,7 +220,7 @@ describe('auth: requests', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'from-source'})),
+      auth: of(Promise.resolve<Auth>({token: 'from-source'})),
     })
     await client.request({
       url: '/data/query/prod',
@@ -245,7 +243,7 @@ describe('auth: requests', () => {
     await fixed.request({url: '/data/query/prod', query, token: 'request'})
     const reactive = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({withCredentials: true})),
+      auth: of(Promise.resolve<Auth>({withCredentials: true})),
     })
     await reactive.request({url: '/data/query/prod', query, token: 'request'})
 
@@ -263,7 +261,7 @@ describe('auth: requests', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'handled'})),
+      auth: of(Promise.resolve<Auth>({token: 'handled'})),
       requestHandler: (request, next) => {
         seenAuthorization = new Headers(request.headers).get('authorization') ?? undefined
         return next(request)
@@ -291,7 +289,7 @@ describe('auth: requests', () => {
 
     const reactive = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'reactive'})),
+      auth: of(Promise.resolve<Auth>({token: 'reactive'})),
       requestHandler,
     })
     const pendingReactive = reactive.fetch('*')
@@ -308,7 +306,7 @@ describe('auth: requests', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'real'})),
+      auth: of(Promise.resolve<Auth>({token: 'real'})),
       headers: {Authorization: 'Bearer from-headers'},
     })
     await client.fetch('*')
@@ -331,14 +329,14 @@ describe('auth: getAuth()', () => {
   })
 
   test('follows a reactive source and waits while it withholds', async () => {
-    const auth = new ReplaySubject<Promise<AuthState>>(1)
+    const auth = new ReplaySubject<Promise<Auth>>(1)
     const client = createClient({...baseConfig, auth})
 
     const pending = client.getAuth()
-    auth.next(Promise.resolve<AuthState>({token: 'first'}))
+    auth.next(Promise.resolve<Auth>({token: 'first'}))
     await expect(pending).resolves.toEqual({token: 'first'})
 
-    auth.next(Promise.resolve<AuthState>({token: 'second'}))
+    auth.next(Promise.resolve<Auth>({token: 'second'}))
     await expect(client.getAuth()).resolves.toEqual({token: 'second'})
     auth.next(Promise.resolve(undefined))
     await expect(client.getAuth()).resolves.toEqual({})
@@ -346,7 +344,7 @@ describe('auth: getAuth()', () => {
 
   test('is cancelled by its signal and bounded by the client timeout', async () => {
     const controller = new AbortController()
-    const aborted = createClient({...baseConfig, auth: new Subject<Promise<AuthState>>()}).getAuth({
+    const aborted = createClient({...baseConfig, auth: new Subject<Promise<Auth>>()}).getAuth({
       signal: controller.signal,
     })
     controller.abort()
@@ -354,7 +352,7 @@ describe('auth: getAuth()', () => {
 
     const timedOut = createClient({
       ...baseConfig,
-      auth: new Subject<Promise<AuthState>>(),
+      auth: new Subject<Promise<Auth>>(),
       timeout: 20,
     })
     await expect(timedOut.getAuth()).rejects.toMatchObject({name: 'TimeoutError'})
@@ -363,7 +361,7 @@ describe('auth: getAuth()', () => {
   test('the observable client emits the credential once and completes', async () => {
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'reactive'})),
+      auth: of(Promise.resolve<Auth>({token: 'reactive'})),
     })
     await expect(lastValueFrom(client.observable.getAuth().pipe(toArray()))).resolves.toEqual([
       {token: 'reactive'},
@@ -399,9 +397,7 @@ describe('auth: configuration', () => {
   })
 
   test('a reactive source is exposed as-is and shared by reference through withConfig', () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'shared'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'shared'}))
     const client = createClient({...baseConfig, auth})
 
     expect(client.config().auth).toBe(auth)
@@ -411,9 +407,7 @@ describe('auth: configuration', () => {
   })
 
   test('withConfig with a static credential replaces the inherited source', async () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'reactive'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'reactive'}))
     const client = createClient({...baseConfig, auth})
 
     const withToken = client.withConfig({token: 'static'})
@@ -430,7 +424,7 @@ describe('auth: configuration', () => {
   test('withConfig with explicit undefined clears the inherited credential', async () => {
     const reactive = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'reactive'})),
+      auth: of(Promise.resolve<Auth>({token: 'reactive'})),
     })
     const cleared = reactive.withConfig({token: undefined, withCredentials: false})
     await expect(firstValueFrom(cleared.config().auth)).resolves.toBeUndefined()
@@ -444,7 +438,7 @@ describe('auth: configuration', () => {
   test('withConfig({auth: undefined}) on a reactive client yields an anonymous client', async () => {
     const reactive = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'r'})),
+      auth: of(Promise.resolve<Auth>({token: 'r'})),
     })
     const cleared = reactive.withConfig({auth: undefined})
     await expect(cleared.getAuth()).resolves.toEqual({})
@@ -452,7 +446,7 @@ describe('auth: configuration', () => {
   })
 
   test('withConfig with a reactive source replaces an inherited static token', () => {
-    const auth = of(Promise.resolve<AuthState>({token: 'reactive'}))
+    const auth = of(Promise.resolve<Auth>({token: 'reactive'}))
     const derived = createClient({...baseConfig, token: 'static'}).withConfig({auth})
 
     expect(derived.config().auth).toBe(auth)
@@ -466,9 +460,7 @@ describe('auth: configuration', () => {
   })
 
   test('reconfiguring with config() switches between the two forms', async () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'reactive'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'reactive'}))
     const client = createClient({...baseConfig, token: 'static'})
 
     client.config({auth})
@@ -486,7 +478,7 @@ describe('auth: configuration', () => {
 
     const reactive = createClient({
       ...baseConfig,
-      auth: new BehaviorSubject<Promise<AuthState>>(Promise.resolve({token: 'secret-token'})),
+      auth: new BehaviorSubject<Promise<Auth>>(Promise.resolve({token: 'secret-token'})),
     })
     await reactive.fetch('*')
     const keys = Object.keys(reactive.config())
@@ -504,9 +496,7 @@ describe('auth: configuration', () => {
   })
 
   test('spreading config() of a reactive client carries the source, not a snapshot', () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'reactive'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'reactive'}))
     const client = createClient({...baseConfig, auth})
     const copy = createClient({...client.config()})
     expect(copy.config().auth).toBe(auth)
@@ -519,9 +509,7 @@ describe('auth: configuration', () => {
     const cookieClient = createClient({...baseConfig, withCredentials: true}).clone()
     await expect(cookieClient.getAuth()).resolves.toEqual({withCredentials: true})
 
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'reactive'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'reactive'}))
     const reactive = createClient({...baseConfig, auth})
     expect(reactive.clone().config().auth).toBe(auth)
     expect(reactive.observable.clone().config().auth).toBe(auth)
@@ -532,9 +520,7 @@ describe('auth: configuration', () => {
       .scope(apiHost)
       .on('GET', queryPath, {headers: {Authorization: 'Bearer reactive'}})
       .respond({status: 200, body: {result: []}})
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'reactive'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'reactive'}))
     const client = createClient({...baseConfig, auth})
     // Resolve a credential, so the deprecated `token` getter has a value to return.
     await client.fetch('*')
@@ -551,9 +537,7 @@ describe('auth: listen()', () => {
 
   test('reconnects with Last-Event-ID when the source emits a new credential', async () => {
     expect.assertions(1)
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'first'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
     const scope = getActiveMock().scope(apiHost)
     scope.on('GET', listenPath, {headers: {Authorization: 'Bearer first'}}).respond({
       status: 200,
@@ -582,7 +566,7 @@ describe('auth: listen()', () => {
         tap((event) => {
           if (event.documentId === 'a') {
             // Rotate the credential once the first connection is established.
-            queueMicrotask(() => auth.next(Promise.resolve<AuthState>({token: 'second'})))
+            queueMicrotask(() => auth.next(Promise.resolve<Auth>({token: 'second'})))
           }
         }),
         take(2),
@@ -597,8 +581,8 @@ describe('auth: listen()', () => {
     // A source that answers each subscriber with whatever is current and
     // never emits again: nothing here can trigger a client-driven reconnect,
     // so the second connection can only come from the package's retry.
-    let current = Promise.resolve<AuthState>({token: 'first'})
-    const auth = new Observable<Promise<AuthState>>((subscriber) => {
+    let current = Promise.resolve<Auth>({token: 'first'})
+    const auth = new Observable<Promise<Auth>>((subscriber) => {
       subscriber.next(current)
     })
     const scope = getActiveMock().scope(apiHost)
@@ -618,7 +602,7 @@ describe('auth: listen()', () => {
     const events = await lastValueFrom(
       client.listen('*', {}, {events: ['welcome']}).pipe(
         tap(() => {
-          current = Promise.resolve<AuthState>({token: 'second'})
+          current = Promise.resolve<Auth>({token: 'second'})
         }),
         take(2),
         toArray(),
@@ -630,7 +614,7 @@ describe('auth: listen()', () => {
 
   test('a 401 in cookie mode is superseded by a re-login settling to a new credential', async () => {
     expect.assertions(2)
-    const auth = new BehaviorSubject<Promise<AuthState>>(Promise.resolve({withCredentials: true}))
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve({withCredentials: true}))
     const scope = getActiveMock().scope(apiHost)
     scope.on('GET', listenPath).respond({status: 401, body: '', delay: 10})
     scope
@@ -641,7 +625,7 @@ describe('auth: listen()', () => {
     const welcome = firstValueFrom(client.listen('*', {}, {events: ['welcome']}))
     // The user logs in again while the first attempt is in flight: same
     // mode, new credential object.
-    setTimeout(() => auth.next(Promise.resolve<AuthState>({withCredentials: true})), 3)
+    setTimeout(() => auth.next(Promise.resolve<Auth>({withCredentials: true})), 3)
 
     await expect(welcome).resolves.toMatchObject({type: 'welcome'})
     expect(getActiveMock()).toHaveReceivedRequestTimes('GET', listenPath, 2)
@@ -652,7 +636,7 @@ describe('auth: listen()', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: new BehaviorSubject<Promise<AuthState>>(Promise.resolve<AuthState>({token: 'revoked'})),
+      auth: new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'revoked'})),
     })
     const error = await firstValueFrom(client.listen('*').pipe(catchError((err) => of(err))))
 
@@ -665,13 +649,11 @@ describe('auth: listen()', () => {
     // The first attempt goes out with the token the server has stopped
     // accepting. By the time the 401 is handled the source holds a pending
     // renewal, so the stream waits for it instead of erroring.
-    let renew: (state: AuthState) => void = () => {}
-    const renewal = new Promise<AuthState>((resolve) => {
+    let renew: (state: Auth) => void = () => {}
+    const renewal = new Promise<Auth>((resolve) => {
       renew = resolve
     })
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'expired'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'expired'}))
     const scope = getActiveMock().scope(apiHost)
     scope.on('GET', listenPath, {headers: {Authorization: 'Bearer expired'}}).respond({
       status: 401,
@@ -695,9 +677,7 @@ describe('auth: listen()', () => {
   })
 
   test('unsubscribing while a 401 waits on a pending renewal releases the source', async () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'expired'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'expired'}))
     getActiveMock()
       .scope(apiHost)
       .on('GET', listenPath, {headers: {Authorization: 'Bearer expired'}})
@@ -706,7 +686,7 @@ describe('auth: listen()', () => {
     const client = createClient({...baseConfig, auth})
     const subscription = client.listen('*', {}, {events: ['welcome']}).subscribe()
     // A renewal that never settles: the 401 handler is left waiting on it.
-    setTimeout(() => auth.next(new Promise<AuthState>(() => {})), 3)
+    setTimeout(() => auth.next(new Promise<Auth>(() => {})), 3)
     await new Promise((resolve) => setTimeout(resolve, 30))
 
     subscription.unsubscribe()
@@ -715,9 +695,7 @@ describe('auth: listen()', () => {
 
   test('a pending renewal does not reconnect an open stream; its settling does', async () => {
     expect.assertions(1)
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'first'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
     const scope = getActiveMock().scope(apiHost)
     scope.on('GET', listenPath, {headers: {Authorization: 'Bearer first'}}).respond({
       status: 200,
@@ -738,14 +716,14 @@ describe('auth: listen()', () => {
         ),
       })
 
-    let renew: (state: AuthState) => void = () => {}
+    let renew: (state: Auth) => void = () => {}
     const client = createClient({...baseConfig, auth})
     const events = await lastValueFrom(
       client.listen('*').pipe(
         tap((event) => {
           if (event.documentId === 'a') {
             // A pending renewal: the connection stays up until it settles.
-            auth.next(new Promise<AuthState>((resolve) => (renew = resolve)))
+            auth.next(new Promise<Auth>((resolve) => (renew = resolve)))
             setTimeout(() => renew({token: 'second'}), 20)
           }
         }),
@@ -771,7 +749,7 @@ describe('auth: listen()', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({token: 'real'})),
+      auth: of(Promise.resolve<Auth>({token: 'real'})),
       headers: {Authorization: 'Bearer from-headers', 'X-Custom': 'kept'},
     })
     await firstValueFrom(client.listen('*', {}, {events: ['welcome']}))
@@ -781,7 +759,7 @@ describe('auth: listen()', () => {
   })
 
   test('a rejected renewal ends an open stream with that error', async () => {
-    const auth = new BehaviorSubject<Promise<AuthState>>(Promise.resolve({token: 'first'}))
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve({token: 'first'}))
     getActiveMock()
       .scope(apiHost)
       .on('GET', listenPath, {headers: {Authorization: 'Bearer first'}})
@@ -797,7 +775,7 @@ describe('auth: listen()', () => {
       client.listen('*', {}, {events: ['welcome']}).pipe(
         tap(() => {
           // The connection is healthy; the credential behind it is not.
-          const renewal = Promise.reject<AuthState>(refreshFailed)
+          const renewal = Promise.reject<Auth>(refreshFailed)
           renewal.catch(() => {})
           auth.next(renewal)
         }),
@@ -818,7 +796,7 @@ describe('auth: listen()', () => {
 
     const client = createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<AuthState>({withCredentials: true})),
+      auth: of(Promise.resolve<Auth>({withCredentials: true})),
     })
     await firstValueFrom(client.listen('*', {}, {events: ['welcome']}))
 
@@ -834,9 +812,7 @@ describe('auth: live.events()', () => {
 
   test('includeDrafts sends the current credential and reconnects with Last-Event-ID on change', async () => {
     expect.assertions(1)
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'first'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
     const scope = getActiveMock().scope(apiHost)
     scope.on('GET', livePath, {headers: {Authorization: 'Bearer first'}}).respond({
       status: 200,
@@ -856,7 +832,7 @@ describe('auth: live.events()', () => {
       client.live.events({includeDrafts: true}).pipe(
         tap((event) => {
           if ('id' in event && event.id === 'w1') {
-            queueMicrotask(() => auth.next(Promise.resolve<AuthState>({token: 'second'})))
+            queueMicrotask(() => auth.next(Promise.resolve<Auth>({token: 'second'})))
           }
         }),
         take(2),
@@ -883,12 +859,8 @@ describe('auth: live.events()', () => {
   })
 
   test('two clients sharing one source share one draft stream; different sources do not', async () => {
-    const shared = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'shared'}),
-    )
-    const other = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'shared'}),
-    )
+    const shared = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'shared'}))
+    const other = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'shared'}))
     const scope = getActiveMock().scope(apiHost)
     const body = () => streamBody(encode({id: 'w1', event: 'welcome', data: '{}'}), streamStall())
     scope.on('GET', livePath).respond({status: 200, headers: liveHeaders, body: body()})
@@ -920,7 +892,7 @@ describe('auth: live.events()', () => {
 
     const client = createClient({
       ...liveConfig,
-      auth: of(Promise.resolve<AuthState>({withCredentials: true})),
+      auth: of(Promise.resolve<Auth>({withCredentials: true})),
     })
     const error = await firstValueFrom(
       client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
@@ -938,14 +910,12 @@ describe('auth: live.events()', () => {
         body: streamBody(encode({id: 'w1', event: 'welcome', data: '{}'}), streamStall()),
       })
 
-    const auth = new BehaviorSubject<Promise<AuthState>>(
-      Promise.resolve<AuthState>({token: 'first'}),
-    )
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
     const client = createClient({...liveConfig, auth})
     const welcome = await firstValueFrom(
       client.live.events().pipe(
         tap(() => {
-          auth.next(Promise.resolve<AuthState>({token: 'second'}))
+          auth.next(Promise.resolve<Auth>({token: 'second'}))
         }),
       ),
     )

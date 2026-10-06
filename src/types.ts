@@ -133,10 +133,10 @@ type ClientConfigResource =
  *
  * @public
  */
-export type AuthState = {token: string} | {withCredentials: true} | undefined
+export type Auth = {token: string} | {withCredentials: true} | undefined
 
 /**
- * What `client.getAuth()` resolves to: the current {@link AuthState} as an
+ * What `client.getAuth()` resolves to: the current {@link Auth} as an
  * object, so it can be destructured. Anonymous access is `{}`; the two
  * credential forms are the same objects the `auth` observable emits.
  *
@@ -195,7 +195,7 @@ export interface ClientConfig {
    * options trigger are skipped: set `useCdn: false` yourself when the observable
    * may emit `{withCredentials: true}`, since cookies never reach the CDN.
    */
-  auth?: Observable<Promise<AuthState>>
+  auth?: Observable<Promise<Auth>>
   /**
    * A static bearer token, sent as `Authorization: Bearer <token>` on every
    * request. Equivalent to `auth: of(Promise.resolve({token}))`. The
@@ -455,7 +455,7 @@ export interface InitializedClientConfig extends ClientConfig {
    * (clients derived through `withConfig` share it unless they set their own
    * credential).
    */
-  auth: Observable<Promise<AuthState>>
+  auth: Observable<Promise<Auth>>
   /**
    * @deprecated Use `client.getAuth()`, which is correct for static and
    * reactive configurations alike. Static configurations return the configured
