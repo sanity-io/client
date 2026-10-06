@@ -13,17 +13,17 @@ import {
 } from 'rxjs'
 
 import {DEFAULT_REQUEST_TIMEOUT_MS, type FetchRequest} from './http/requestOptions'
-import type {Any, AuthState, GetAuthOptions, InitializedClientConfig, ResolvedAuth} from './types'
+import type {Any, Auth, GetAuthOptions, InitializedClientConfig, ResolvedAuth} from './types'
 import {withAbortSignal} from './util/abortSignal'
 
 /**
- * Turn the static config options into the `AuthState` union. Token mode wins
+ * Turn the static config options into the `Auth` union. Token mode wins
  * when both are set, matching the credentialed-token warning `initConfig`
  * prints for that combination.
  *
  * @internal
  */
-export function staticAuthState(token: unknown, withCredentials: unknown): AuthState {
+export function authFromStaticOptions(token: unknown, withCredentials: unknown): Auth {
   if (typeof token === 'string' && token) return {token}
   if (withCredentials) return {withCredentials: true}
   return undefined
@@ -38,18 +38,18 @@ export function staticAuthState(token: unknown, withCredentials: unknown): AuthS
  * @internal
  */
 export interface AuthMarkers {
-  auth?: Observable<Promise<AuthState>>
+  auth?: Observable<Promise<Auth>>
   /**
    * Present when `auth` wraps the static `token` / `withCredentials` options:
    * the observable it describes and the value inside it.
    */
-  staticAuth?: {source: Observable<Promise<AuthState>>; value: AuthState}
+  staticAuth?: {source: Observable<Promise<Auth>>; value: Auth}
   /**
    * Present for a reactive `auth`: records the last credential a request or
    * stream resolved from it, which backs the deprecated `config().token` read.
    * One object per observable, shared with clients derived via `withConfig`.
    */
-  resolvedAuth?: {source: Observable<Promise<AuthState>>; current?: AuthState}
+  resolvedAuth?: {source: Observable<Promise<Auth>>; current?: Auth}
 }
 
 /**
@@ -102,7 +102,7 @@ export function defineAuthMarkers(
  */
 export function getStaticAuth(
   config: AuthMarkers,
-): {source: Observable<Promise<AuthState>>; value: AuthState} | undefined {
+): {source: Observable<Promise<Auth>>; value: Auth} | undefined {
   return authMarkers(config).staticAuth
 }
 
@@ -114,7 +114,7 @@ export function getStaticAuth(
  *
  * @internal
  */
-export function peekAuth(config: AuthMarkers): AuthState {
+export function peekAuth(config: AuthMarkers): Auth {
   const {staticAuth, resolvedAuth} = authMarkers(config)
   return staticAuth !== undefined ? staticAuth.value : resolvedAuth?.current
 }
@@ -124,7 +124,7 @@ export function peekAuth(config: AuthMarkers): AuthState {
  *
  * @internal
  */
-export function isSameAuthState(a: AuthState, b: AuthState): boolean {
+export function isSameAuth(a: Auth, b: Auth): boolean {
   if (a === undefined || b === undefined) return a === b
   if ('token' in a) return 'token' in b && a.token === b.token
   return 'withCredentials' in b
@@ -138,7 +138,7 @@ export function isSameAuthState(a: AuthState, b: AuthState): boolean {
  *
  * @internal
  */
-export function settledAuth(config: InitializedClientConfig): Observable<AuthState> {
+export function settledAuth(config: InitializedClientConfig): Observable<Auth> {
   // A static credential is known synchronously; keep it that way so streams
   // on a static config connect in the same tick they always did.
   const staticAuth = getStaticAuth(config)
@@ -155,10 +155,7 @@ export function settledAuth(config: InitializedClientConfig): Observable<AuthSta
  *
  * @internal
  */
-export function currentAuth(
-  config: InitializedClientConfig,
-  timeoutMs?: number,
-): Observable<AuthState> {
+export function currentAuth(config: InitializedClientConfig, timeoutMs?: number): Observable<Auth> {
   const staticAuth = getStaticAuth(config)
   if (staticAuth) return of(staticAuth.value)
   return settledAuth(config).pipe(
@@ -206,7 +203,7 @@ export function resolveAuth(
   config: InitializedClientConfig,
   signal?: AbortSignal,
   timeoutMs?: number,
-): Promise<AuthState> {
+): Promise<Auth> {
   const staticAuth = getStaticAuth(config)
   if (staticAuth) return Promise.resolve(staticAuth.value)
   // Not `async`: the promise goes back to the caller as is, so a source that
@@ -215,7 +212,7 @@ export function resolveAuth(
   // only attach a microtask later, which some runtimes (workerd) report as an
   // unhandled rejection.
   return firstValueFrom(
-    currentAuth(config, timeoutMs).pipe(signal ? withAbortSignal<AuthState>(signal) : identity),
+    currentAuth(config, timeoutMs).pipe(signal ? withAbortSignal<Auth>(signal) : identity),
   )
 }
 
@@ -265,7 +262,7 @@ export function hasRequestAuth(options: Any): boolean {
  *
  * @internal
  */
-export function applyAuth(request: FetchRequest, auth: AuthState): FetchRequest {
+export function applyAuth(request: FetchRequest, auth: Auth): FetchRequest {
   if (auth === undefined) return request
   if ('token' in auth) {
     const headers: Record<string, string> = {}

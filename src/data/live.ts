@@ -6,7 +6,7 @@ import {getStaticAuth, peekAuth} from '../auth'
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
-  AuthState,
+  Auth,
   InitializedClientConfig,
   LiveEvent,
   LiveEventGoAway,
@@ -102,7 +102,7 @@ export class LiveClient {
     // observable (by reference), share one stream; a reactive observable is keyed by
     // identity because its value is not knowable here. Anonymous connections
     // (`includeDrafts: false`) share regardless of the client's credential.
-    const authKey: Observable<Promise<AuthState>> | null =
+    const authKey: Observable<Promise<Auth>> | null =
       withAuth && staticAuth === undefined ? config.auth : null
     const transportCache = getOrCreate(eventsCache, config.resolveFetch, () => new Map())
     const authCache = getOrCreate(transportCache, authKey, () => new Map())
@@ -284,7 +284,7 @@ function checkCorsObservable(
  */
 const eventsCache = new Map<
   InitializedClientConfig['resolveFetch'],
-  Map<Observable<Promise<AuthState>> | null, Map<string, Observable<LiveEvent>>>
+  Map<Observable<Promise<Auth>> | null, Map<string, Observable<LiveEvent>>>
 >()
 
 function getOrCreate<K, V>(cache: Map<K, V>, key: K, create: () => V): V {

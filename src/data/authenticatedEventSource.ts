@@ -3,7 +3,7 @@ import {catchError, defer, EMPTY, mergeMap, Observable, of, switchMap, tap, thro
 
 import {currentAuth, getStaticAuth, resolveAuth, settledAuth} from '../auth'
 import {DEFAULT_REQUEST_TIMEOUT_MS} from '../http/requestOptions'
-import type {AuthState, InitializedClientConfig} from '../types'
+import type {Auth, InitializedClientConfig} from '../types'
 import {connectEventSource, ConnectionFailedError, type EventSourceEvent} from './eventsource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 import {type EventSourceFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
@@ -62,7 +62,7 @@ export function connectAuthenticatedEventSource<EventName extends string>(
     // the open connection is still valid until a new credential replaces it.
     // A rejected renewal ends the stream, since the credential behind the
     // connection has failed.
-    const auth$: Observable<AuthState> = options.withAuth ? settledAuth(config) : of(undefined)
+    const auth$: Observable<Auth> = options.withAuth ? settledAuth(config) : of(undefined)
     const transport = resolveEventSourceFetch(config)
     // The credential when it is known without waiting: the static value, or
     // `undefined` for an anonymous connection. Absent for a reactive `auth`,
@@ -76,12 +76,12 @@ export function connectAuthenticatedEventSource<EventName extends string>(
         // The credential the most recent attempt went out with: what a 401
         // rejected. Not the emission `switchMap` received, since the
         // package's own reconnects re-resolve it.
-        let lastSentAuth: AuthState
+        let lastSentAuth: Auth
 
         const send = (
           fetchUrl: string | URL,
           init: EventSourceFetchInit | undefined,
-          auth: AuthState,
+          auth: Auth,
         ) => {
           lastSentAuth = auth
           return transport(fetchUrl, withAuthAndResume(init, options.headers, auth, lastEventId))
@@ -143,7 +143,7 @@ export function connectAuthenticatedEventSource<EventName extends string>(
 function withAuthAndResume(
   init: EventSourceFetchInit | undefined,
   configHeaders: Record<string, string> | undefined,
-  auth: AuthState,
+  auth: Auth,
   lastEventId: string | undefined,
 ): EventSourceFetchInit | undefined {
   if (init === undefined) return init

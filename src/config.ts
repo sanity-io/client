@@ -4,12 +4,12 @@ import {
   authMarkers,
   defineAuthMarkers,
   getStaticAuth,
-  isSameAuthState,
+  isSameAuth,
   peekAuth,
-  staticAuthState,
+  authFromStaticOptions,
 } from './auth'
 import {generateHelpUrl} from './generateHelpUrl'
-import type {AuthState, ClientConfig, ClientPerspective, InitializedClientConfig} from './types'
+import type {Auth, ClientConfig, ClientPerspective, InitializedClientConfig} from './types'
 import * as validate from './validators'
 import * as warnings from './warnings'
 
@@ -166,7 +166,7 @@ function resolveAuthInput(
   config: Partial<ClientConfig>,
   prevConfig: Partial<ClientConfig>,
   merged: Partial<ClientConfig>,
-): {auth: Observable<Promise<AuthState>>} | {token: unknown; withCredentials: unknown} {
+): {auth: Observable<Promise<Auth>>} | {token: unknown; withCredentials: unknown} {
   const ownAuth = config.auth
   if (ownAuth !== undefined && hasOwnReactiveAuth(config)) {
     if (hasOwnStaticAuth(config) && (config.token || config.withCredentials)) {
@@ -301,14 +301,14 @@ export const initConfig = (
   }
 
   if (!('auth' in authInput)) {
-    const state = staticAuthState(newConfig.token, newConfig.withCredentials)
+    const state = authFromStaticOptions(newConfig.token, newConfig.withCredentials)
     // An unchanged static credential keeps its observable, so clients derived
     // through `withConfig` share one identity (the live cache keys on it).
     const inherited = inheritedMarkers.staticAuth
     const source =
       inherited !== undefined &&
       inherited.source === newConfig.auth &&
-      isSameAuthState(inherited.value, state)
+      isSameAuth(inherited.value, state)
         ? inherited.source
         : of(Promise.resolve(state))
     newConfig.auth = source
