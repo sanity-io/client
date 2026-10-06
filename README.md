@@ -1064,6 +1064,52 @@ The method will emit different types of events:
 To listen to updates in draft content, set `includeDrafts` to `true`
 and configure the client with a token or `withCredentials: true`. The token should have the lowest possible access role.
 
+### Reactive authentication
+
+When the credential changes while the client is alive, for example in an app whose OAuth access token is refreshed or whose user signs in and out, pass an observable as `auth` instead of a static `token`. Each emission is a promise of the credential: an already settled one for a credential you hold, or the refresh call itself while a renewal is in progress. Every request waits for the latest emission to settle, and every open `listen()` or `live.events()` stream reconnects when a new credential settles, resuming from its last event id.
+
+```ts
+import {createClient, type Auth} from '@sanity/client'
+import {BehaviorSubject} from 'rxjs'
+
+const auth = new BehaviorSubject(Promise.resolve<Auth>({token: initialAccessToken}))
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  apiVersion: '2025-02-06',
+  useCdn: false,
+  auth,
+})
+
+// When a refresh starts, emit the refresh itself; requests and reconnects wait for it to resolve:
+auth.next(refreshAccessToken())
+// On sign-out:
+auth.next(Promise.resolve(undefined))
+```
+
+The settled value is one of `{token: string}`, `{withCredentials: true}` (send the browser's cookies) or `undefined` (anonymous). The observable must emit the current credential to every subscriber and then every change, which a `BehaviorSubject` or `shareReplay(1)` does, and must never complete. While the latest emission is pending, requests wait for it until their `signal` aborts or the request's `timeout` elapses (five minutes by default). Stream reconnects wait for it too, so a reconnect made during a renewal never sends an expired token.
+
+Rejecting the promise means the credential failed. Every request and every open stream on the client then ends with that error (an open connection was authenticated with the credential that just failed, so it is not kept), and later requests keep failing until you emit a new value. Retry a refresh inside the promise, and reject only when the session is over. If the observable itself errors, the same happens with that error.
+
+Nothing awaits the emitted promise while the client is idle, so a rejection at that point is an unhandled rejection, which crashes a Node process by default. Attach your own handler to the promise you emit. The client's requests and streams fail on their own, so the handler only needs to do the app's part:
+
+```ts
+const renewal = refreshAccessToken()
+renewal.catch(showLoginWindow)
+auth.next(renewal)
+```
+
+The client never refreshes a credential itself. When a stream is rejected with a 401, it checks whether the source has moved on: if a renewal is pending or a different credential has settled, it reconnects with that; if the source still presents the rejected credential, the stream ends with a `ConnectionFailedError` and your app decides what to do.
+
+`auth` cannot be combined with `token` or `withCredentials`; those remain the recommended form for scripts, servers and functions, where the credential does not change. Clients derived with `withConfig()` share the parent's `auth` unless they set a credential of their own.
+
+To read the credential, use `const {token, withCredentials} = await client.getAuth()`. It resolves to the credential the client would send right now, for static and reactive configurations alike, and waits while a renewal is pending. An anonymous client resolves to an empty object, so destructuring is safe.
+
+To follow changes, subscribe to `client.config().auth`. It is always present, including for static configurations, and it emits promises, so settle them with `.pipe(switchMap((pending) => from(pending)))`.
+
+`client.config().token` and `client.config().withCredentials` are deprecated in favor of `getAuth()`. For static configurations they keep returning the configured values. Under a reactive `auth` they return the last credential the client resolved: `undefined` before the first request, and possibly stale while a refresh is in progress. The first read prints a warning that says so.
+
 ### Creating documents
 
 ```js
