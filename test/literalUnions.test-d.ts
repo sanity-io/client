@@ -1,3 +1,5 @@
+import {expectTypeOf, test} from 'vitest'
+
 import type {StudioBaseUrl} from '../src/csm/types'
 import type {StackablePerspective} from '../src/types'
 
@@ -17,7 +19,10 @@ type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) exten
 /** `false` for a plain `string`, `true` for a union whose literal members survived. */
 type IsUnion<T> = [T] extends [UnionToIntersection<T>] ? false : true
 
-type Assert<T extends true> = T
+test('perspectives preserve literal union members', () => {
+  expectTypeOf<IsUnion<StackablePerspective>>().toEqualTypeOf<true>()
+})
 
-export type PerspectiveIsUnion = Assert<IsUnion<StackablePerspective>>
-export type StudioBaseUrlIsUnion = Assert<IsUnion<StudioBaseUrl>>
+test('studio URLs preserve literal union members', () => {
+  expectTypeOf<IsUnion<StudioBaseUrl>>().toEqualTypeOf<true>()
+})

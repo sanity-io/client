@@ -21,6 +21,7 @@ deno.lock
 # MacOS
 .DS_Store
 tsconfig.vitest-temp.json
+.vitest
 
 #Jetbrains
 .idea
