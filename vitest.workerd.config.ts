@@ -3,7 +3,7 @@
 // can only resolve via the `node` condition, or reaches for a `node:*` API
 // (including get-it's Node/undici build), fails here - which is the point.
 
-import {cloudflareTest} from '@cloudflare/vitest-pool-workers'
+import {cloudflareTest} from '@cloudflare/vitest-plugin'
 import {defineConfig} from 'vitest/config'
 
 import {browserOnlyExclude, nonNodeExclude, sharedConfig, sourceAlias} from './vitest.config'
@@ -19,6 +19,8 @@ export default defineConfig({
   ],
   test: {
     ...sharedConfig,
+    // workerd cannot read Vitest's transformed modules from the host filesystem.
+    fsModuleCache: false,
     exclude: [...nonNodeExclude, ...browserOnlyExclude],
     alias: sourceAlias('default'),
   },

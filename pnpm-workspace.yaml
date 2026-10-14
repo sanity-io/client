@@ -22,3 +22,6 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - get-it@9.5.2 || 9.5.4 || 9.5.7
   - eventsource@5.1.2
+  - '@cloudflare/vitest-plugin@1.4.1'
+  - miniflare@5.20261006.2-beta
+  - wrangler@4.150.0
