@@ -22,6 +22,7 @@ interface Diagnostics {
   bytesReceived: number
   path: string
   query: Record<string, string>
+  authorization: string | null
 }
 
 function isDiagnostics(value: unknown): value is Diagnostics {
@@ -31,7 +32,8 @@ function isDiagnostics(value: unknown): value is Diagnostics {
     typeof value.aborted === 'boolean' &&
     typeof value.bytesReceived === 'number' &&
     typeof value.path === 'string' &&
-    isRecord(value.query)
+    isRecord(value.query) &&
+    (typeof value.authorization === 'string' || value.authorization === null)
   )
 }
 
@@ -240,5 +242,23 @@ describe('assets.upload() through the XHR path', () => {
     const diagnostics = await fetchDiagnostics(`studio.${tag}`)
     expect(diagnostics.path).toBe('/v1/assets/images/foo')
     expect(diagnostics.query.tag).toBe(`studio.${tag}`)
+  })
+
+  test('authenticates assets.upload() with getToken', async () => {
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'foo',
+      apiVersion: '1',
+      useCdn: false,
+      useProjectHostname: false,
+      apiHost: getApiHost(),
+      getToken: async () => 'browser-uploader',
+    })
+
+    const tag = `asset-${crypto.randomUUID()}`
+    await lastValueFrom(client.observable.assets.upload('image', smallBody(), {tag}))
+
+    const diagnostics = await fetchDiagnostics(tag)
+    expect(diagnostics.authorization).toBe('Bearer browser-uploader')
   })
 })

@@ -6,6 +6,7 @@ import {finalize, map} from 'rxjs/operators'
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
+  GetToken,
   InitializedClientConfig,
   LiveEvent,
   LiveEventGoAway,
@@ -23,6 +24,18 @@ import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 import {pickBaseFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
+
+const getTokenCacheIds = new WeakMap<GetToken, number>()
+let nextGetTokenCacheId = 0
+
+function getTokenCacheId(getToken: GetToken): number {
+  let id = getTokenCacheIds.get(getToken)
+  if (id === undefined) {
+    id = nextGetTokenCacheId++
+    getTokenCacheIds.set(getToken, id)
+  }
+  return id
+}
 
 /**
  * @public
@@ -60,6 +73,7 @@ export class LiveClient {
       projectId,
       apiVersion: _apiVersion,
       token,
+      getToken,
       withCredentials,
       requestTagPrefix,
       headers: configHeaders,
@@ -72,7 +86,7 @@ export class LiveClient {
           `Please update your API version to use this feature.`,
       )
     }
-    if (includeDrafts && !token && !withCredentials) {
+    if (includeDrafts && !token && !getToken && !withCredentials) {
       throw new Error(
         `The live events API requires a token or withCredentials when 'includeDrafts: true'. Please update your client configuration. The token should have the lowest possible access role.`,
       )
@@ -90,7 +104,8 @@ export class LiveClient {
       url.searchParams.set('waitFor', waitFor)
     }
     const eventSourceHeaders: Record<string, string> = {}
-    if (includeDrafts && token) {
+    const draftsGetToken = includeDrafts ? getToken : undefined
+    if (includeDrafts && token && !getToken) {
       eventSourceHeaders.Authorization = `Bearer ${token}`
     }
     if (configHeaders) {
@@ -108,6 +123,7 @@ export class LiveClient {
       typeof config.proxy === 'string' ? config.proxy : null,
       eventSourceHeaders,
       eventSourceWithCredentials,
+      ...(draftsGetToken ? [getTokenCacheId(draftsGetToken)] : []),
     ])
     const existing = transportCache.get(cacheKey)
 
@@ -120,6 +136,7 @@ export class LiveClient {
         fetch: resolveEventSourceFetch(config, {
           headers: Object.keys(eventSourceHeaders).length ? eventSourceHeaders : undefined,
           withCredentials: eventSourceWithCredentials,
+          getToken: draftsGetToken,
         }),
       })
 

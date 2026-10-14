@@ -18,8 +18,9 @@ import http from 'node:http'
  * - `/hang` - never responds at all. Used by the abort tests.
  *
  * Any request carrying an `?id=` or `?tag=` query parameter is recorded
- * (path, query, bytes received, whether the connection closed before a
- * response was sent) and can be inspected afterwards via
+ * (path, query, `authorization` header, bytes received, whether the
+ * connection closed before a response was sent) and can be inspected
+ * afterwards via
  * `GET /diagnostics?id=<the same value>`. That's the only way for a test
  * running in a real browser to prove what the server actually received,
  * now that there is no fake XHR instance left to inspect.
@@ -31,6 +32,7 @@ interface RequestRecord {
   bytesReceived: number
   path: string
   query: Record<string, string>
+  authorization: string | null
 }
 
 export interface UploadServer {
@@ -80,6 +82,7 @@ export async function createUploadServer(): Promise<UploadServer> {
             bytesReceived: 0,
             path: url.pathname,
             query: {},
+            authorization: null,
           },
         ),
       )
@@ -94,6 +97,7 @@ export async function createUploadServer(): Promise<UploadServer> {
         bytesReceived: 0,
         path: url.pathname,
         query: Object.fromEntries(url.searchParams),
+        authorization: req.headers.authorization ?? null,
       }
       records.set(id, record)
       req.on('close', () => {

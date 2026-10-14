@@ -22,6 +22,27 @@ describe('ASSETS', () => {
     expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
+  test('uploads authenticate with getToken', async () => {
+    const fixturePath = fixture('horsehead-nebula.jpg')
+
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/assets/images/foo', {headers: {Authorization: 'Bearer uploader'}})
+      .respond({status: 201, body: {document: {url: 'https://some.asset.url'}}})
+
+    const document = await getClient({getToken: async () => 'uploader'}).assets.upload(
+      'image',
+      fs.createReadStream(fixturePath),
+    )
+    expect(document).toMatchObject({url: 'https://some.asset.url'})
+  })
+
+  test('without getToken, an invalid upload tag throws when upload() is called', () => {
+    expect(() =>
+      getClient().observable.assets.upload('image', Buffer.from([1, 2, 3]), {tag: 'not valid!'}),
+    ).toThrow(/Tag can only contain/)
+  })
+
   test('uploads have no timeout by default, even with a client-level timeout', async () => {
     const fixturePath = fixture('horsehead-nebula.jpg')
     getActiveMock()

@@ -120,7 +120,7 @@ export const initConfig = (
   const isBrowser = typeof window !== 'undefined' && window.location && window.location.hostname
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 
-  const hasToken = Boolean(newConfig.token)
+  const hasToken = Boolean(newConfig.token || newConfig.getToken)
   if (newConfig.withCredentials && hasToken) {
     warnings.printCredentialedTokenWarning()
     newConfig.withCredentials = false
