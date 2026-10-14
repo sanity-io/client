@@ -1,7 +1,7 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
 import {anySignal} from 'get-it/any-signal'
-import {type MonoTypeOperatorFunction, Observable} from 'rxjs'
-import {filter, map} from 'rxjs/operators'
+import {defer, type MonoTypeOperatorFunction, Observable} from 'rxjs'
+import {filter, map, mergeMap} from 'rxjs/operators'
 
 import {validateApiPerspective} from '../config'
 import {type FetchRequest, requestOptions} from '../http/requestOptions'
@@ -1156,8 +1156,26 @@ export function _observe<R>(
  * @internal
  */
 export function _request<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
+  if (client.config().getToken) {
+    return _resolveToken(client, options).then((resolved) =>
+      _send<R>(client, httpRequest, resolved),
+    )
+  }
+  return _send<R>(client, httpRequest, options)
+}
+
+function _send<R>(client: Client, httpRequest: HttpRequest, options: Any): Promise<R> {
   const reqOptions = _prepareRequest(client, options)
   return httpRequest(reqOptions, client.config().requestHandler).then((body) => body as R)
+}
+
+/** @internal */
+export async function _resolveToken(
+  client: Client,
+  options: RequestObservableOptions,
+): Promise<RequestObservableOptions> {
+  const {getToken} = client.config()
+  return getToken && !options.token ? {...options, token: await getToken()} : options
 }
 
 /**
@@ -1190,11 +1208,12 @@ export function _uploadObservable<T>(
   client: Client,
   options: RequestObservableOptions,
 ): Observable<UploadEvent<T>> {
-  const reqOptions = _prepareRequest(client, options)
   const requester = client.config().requester
-  const request = new Observable<Any>((subscriber) =>
-    requester(reqOptions).subscribe(subscriber),
-  ).pipe(
+  const request = defer(() => _resolveToken(client, options)).pipe(
+    mergeMap((resolved) => {
+      const reqOptions = _prepareRequest(client, resolved)
+      return new Observable<Any>((subscriber) => requester(reqOptions).subscribe(subscriber))
+    }),
     filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
     map((event: Any): UploadEvent<T> =>
       event.type === 'progress'

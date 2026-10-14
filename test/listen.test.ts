@@ -95,6 +95,61 @@ describe('.listen()', () => {
     expect(request, 'should send token').toHaveHeader('authorization', 'Bearer foobar')
   })
 
+  test('listener authenticates with getToken, preferring it over token', async () => {
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/v1/data/listen/prod', {headers: {Authorization: 'Bearer dynamic'}})
+      .respond({
+        status: 200,
+        body: encode({event: 'welcome', data: '{}'}),
+        headers: {'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'prod',
+      useCdn: false,
+      apiVersion: '1',
+      token: 'static',
+      getToken: async () => 'dynamic',
+    })
+
+    const event = await firstValueFrom(client.listen('*', {}, {events: ['welcome']}))
+    expect(event).toEqual({type: 'welcome'})
+  })
+
+  test('listener asks getToken for a fresh token when reconnecting', async () => {
+    const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+    const body =
+      encode({retry: 25}) +
+      encode({event: 'mutation', id: '123', data: JSON.stringify({foo: 'bar'})})
+    const streamHeaders = {'Content-Type': 'text/event-stream'}
+
+    scope
+      .on('GET', '/v1/data/listen/prod', {headers: {Authorization: 'Bearer first'}})
+      .respond({status: 200, body, headers: streamHeaders})
+    scope
+      .on('GET', '/v1/data/listen/prod', {headers: {Authorization: 'Bearer second'}})
+      .respond({status: 200, body, headers: streamHeaders})
+
+    const tokens = ['first', 'second']
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'prod',
+      useCdn: false,
+      apiVersion: '1',
+      getToken: async () => tokens.shift() ?? 'exhausted',
+    })
+
+    const events = await lastValueFrom(
+      client.listen('*', {}, {events: ['mutation']}).pipe(take(2), toArray()),
+    )
+    expect(events).toEqual([
+      {type: 'mutation', foo: 'bar'},
+      {type: 'mutation', foo: 'bar'},
+    ])
+  })
+
   test('listener sends includeAllVersions=true if given', async () => {
     expect.assertions(1)
 

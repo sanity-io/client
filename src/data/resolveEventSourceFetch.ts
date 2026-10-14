@@ -1,7 +1,7 @@
 import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
-import type {InitializedClientConfig} from '../types'
+import type {GetToken, InitializedClientConfig} from '../types'
 
 /** @internal */
 export interface EventSourceFetchOptions {
@@ -17,6 +17,11 @@ export interface EventSourceFetchOptions {
    * attaches cookies to the SSE request.
    */
   withCredentials?: boolean
+  /**
+   * Resolved on every connection, including reconnects, and sent as the
+   * `Authorization` header. Explicit `headers` take precedence over it.
+   */
+  getToken?: GetToken
 }
 
 /**
@@ -49,19 +54,23 @@ export function resolveEventSourceFetch(
   config: InitializedClientConfig,
   options: EventSourceFetchOptions = {},
 ): EventSourceFetch {
-  const extraHeaders = options.headers
+  const {headers: extraHeaders, getToken} = options
   const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
 
-  return function eventSourceFetch(url, init) {
+  return async function eventSourceFetch(url, init) {
     const baseFetch = pickBaseFetch(config)
+    const token = getToken ? await getToken() : undefined
 
     // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
     // declare (`mode`, `cache`) survive the spread and reach whichever
     // fetch implementation is effective.
     const mergedInit: FetchInit = {...init}
-    if (extraHeaders) {
+    if (token || extraHeaders) {
       const headers = new Headers(init?.headers)
-      for (const [key, value] of Object.entries(extraHeaders)) {
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+      }
+      for (const [key, value] of Object.entries(extraHeaders ?? {})) {
         headers.set(key, value)
       }
       mergedInit.headers = headers

@@ -206,6 +206,116 @@ describe('http requests', () => {
     expect(docs.length).toEqual(0)
   })
 
+  test('calls getToken for every request', async () => {
+    const qs = '?query=foo.bar&returnQuery=false'
+    const scope = getActiveMock().scope(projectHost())
+    scope
+      .on('GET', `/v1/data/query/foo${qs}`, {headers: {Authorization: 'Bearer first'}})
+      .respond({status: 200, body: {result: []}})
+    scope
+      .on('GET', `/v1/data/query/foo${qs}`, {headers: {Authorization: 'Bearer second'}})
+      .respond({status: 200, body: {result: []}})
+
+    const tokens = ['first', 'second']
+    const client = getClient({getToken: async () => tokens.shift() ?? 'exhausted'})
+
+    await client.fetch('foo.bar')
+    await client.fetch('foo.bar')
+    expect(tokens).toEqual([])
+  })
+
+  test('accepts a synchronous getToken', async () => {
+    const qs = '?query=foo.bar&returnQuery=false'
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/v1/data/query/foo${qs}`, {headers: {Authorization: 'Bearer sync'}})
+      .respond({status: 200, body: {result: []}})
+
+    const docs = await getClient({getToken: () => 'sync'}).fetch('foo.bar')
+    expect(docs).toEqual([])
+  })
+
+  test('uses getToken for the observable client', async () => {
+    const qs = '?query=foo.bar&returnQuery=false'
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/v1/data/query/foo${qs}`, {headers: {Authorization: 'Bearer observed'}})
+      .respond({status: 200, body: {result: []}})
+
+    const docs = await firstValueFrom(
+      getClient({getToken: async () => 'observed'}).observable.fetch('foo.bar'),
+    )
+    expect(docs).toEqual([])
+  })
+
+  test('uses getToken for mutations', async () => {
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/data/mutate/foo?returnIds=true&returnDocuments=true&visibility=sync', {
+        headers: {Authorization: 'Bearer mutator'},
+      })
+      .respond({status: 200, body: {transactionId: 'abc', results: [{id: 'doc', document: {}}]}})
+
+    await getClient({getToken: async () => 'mutator'}).create({_id: 'doc', _type: 'thing'})
+  })
+
+  test('prefers getToken over token', async () => {
+    const qs = '?query=foo.bar&returnQuery=false'
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/v1/data/query/foo${qs}`, {headers: {Authorization: 'Bearer dynamic'}})
+      .respond({status: 200, body: {result: []}})
+
+    const docs = await getClient({token: 'static', getToken: async () => 'dynamic'}).fetch(
+      'foo.bar',
+    )
+    expect(docs).toEqual([])
+  })
+
+  test('a per-request token wins over getToken, which is not called', async () => {
+    const qs = '?query=foo.bar&returnQuery=false'
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/v1/data/query/foo${qs}`, {headers: {Authorization: 'Bearer override'}})
+      .respond({status: 200, body: {result: []}})
+
+    let calls = 0
+    const client = getClient({
+      getToken: async () => {
+        calls++
+        return 'dynamic'
+      },
+    })
+
+    await client.fetch('foo.bar', {}, {token: 'override'})
+    expect(calls).toBe(0)
+  })
+
+  test('rejects with the getToken error without sending a request', async () => {
+    const failure = new Error('token provider unavailable')
+    const client = getClient({
+      getToken: async () => {
+        throw failure
+      },
+    })
+
+    await expect(client.fetch('foo.bar')).rejects.toBe(failure)
+    expect(getActiveMock().getRequests()).toEqual([])
+  })
+
+  test('keeps getToken through withConfig', async () => {
+    const qs = '?query=foo.bar&returnQuery=false'
+    getActiveMock()
+      .scope(projectHost())
+      .on('GET', `/v1/data/query/bar${qs}`, {headers: {Authorization: 'Bearer kept'}})
+      .respond({status: 200, body: {result: []}})
+
+    const docs = await getClient({getToken: async () => 'kept'})
+      .withConfig({dataset: 'bar'})
+      .fetch('foo.bar')
+    expect(docs).toEqual([])
+  })
+
   test('allows overriding timeout', async () => {
     const qs = `?query=${encodeURIComponent('*[][0]')}&returnQuery=false`
     getActiveMock()

@@ -127,12 +127,22 @@ type ClientConfigResource =
     }
 
 /** @public */
+export type GetToken = () => string | Promise<string>
+
+/** @public */
 export interface ClientConfig {
   projectId?: string
   dataset?: string
   /** @defaultValue true */
   useCdn?: boolean
   token?: string
+
+  /**
+   * Resolves the token for each request and each server-sent events connection, including
+   * reconnects. Takes precedence over `token`; a per-request `token` option takes precedence over
+   * both. The client does not cache the result.
+   */
+  getToken?: GetToken
 
   /**
    * Configure the client to work with a specific Sanity resource (Media Library, Canvas, etc.)
