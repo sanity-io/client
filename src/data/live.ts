@@ -123,7 +123,7 @@ export class LiveClient {
       typeof config.proxy === 'string' ? config.proxy : null,
       eventSourceHeaders,
       eventSourceWithCredentials,
-      draftsGetToken ? getTokenCacheId(draftsGetToken) : null,
+      ...(draftsGetToken ? [getTokenCacheId(draftsGetToken)] : []),
     ])
     const existing = transportCache.get(cacheKey)
 

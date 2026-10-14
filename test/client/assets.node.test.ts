@@ -37,6 +37,12 @@ describe('ASSETS', () => {
     expect(document).toMatchObject({url: 'https://some.asset.url'})
   })
 
+  test('without getToken, an invalid upload tag throws when upload() is called', () => {
+    expect(() =>
+      getClient().observable.assets.upload('image', Buffer.from([1, 2, 3]), {tag: 'not valid!'}),
+    ).toThrow(/Tag can only contain/)
+  })
+
   test('uploads have no timeout by default, even with a client-level timeout', async () => {
     const fixturePath = fixture('horsehead-nebula.jpg')
     getActiveMock()

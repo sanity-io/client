@@ -57,9 +57,12 @@ export function resolveEventSourceFetch(
   const {headers: extraHeaders, getToken} = options
   const credentials: FetchInit['credentials'] = options.withCredentials ? 'include' : undefined
 
-  return async function eventSourceFetch(url, init) {
+  const send = (
+    url: Parameters<EventSourceFetch>[0],
+    init: Parameters<EventSourceFetch>[1],
+    token: string | undefined,
+  ): ReturnType<EventSourceFetch> => {
     const baseFetch = pickBaseFetch(config)
-    const token = getToken ? await getToken() : undefined
 
     // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
     // declare (`mode`, `cache`) survive the spread and reach whichever
@@ -81,6 +84,15 @@ export function resolveEventSourceFetch(
     // get-it's `FetchResponse` is a structural superset of the package's
     // `FetchLikeResponse`, so it can be handed over as-is.
     return baseFetch(typeof url === 'string' ? url : url.href, mergedInit)
+  }
+
+  return function eventSourceFetch(url, init) {
+    if (getToken) {
+      return Promise.resolve()
+        .then(getToken)
+        .then((token) => send(url, init, token))
+    }
+    return send(url, init, undefined)
   }
 }
 

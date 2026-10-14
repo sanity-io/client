@@ -261,7 +261,10 @@ function _upload<
       // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
       // credentials and timeout are identical across both upload transports.
       // The XHR API needs the query baked into the URL, though.
-      const req = _prepareRequest(client, await _resolveToken(client, {...baseRequest}))
+      const req = _prepareRequest(
+        client,
+        client.config().getToken ? await _resolveToken(client, {...baseRequest}) : {...baseRequest},
+      )
       return uploadWithProgress<T>({
         url: appendQuery(req.url, req.query),
         method: req.method ?? 'POST',

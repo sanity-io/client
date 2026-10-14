@@ -1208,12 +1208,23 @@ export function _uploadObservable<T>(
   client: Client,
   options: RequestObservableOptions,
 ): Observable<UploadEvent<T>> {
+  if (!client.config().getToken) {
+    return _uploadEvents<T>(client, options)
+  }
+  return defer(() => _resolveToken(client, options)).pipe(
+    mergeMap((resolved) => _uploadEvents<T>(client, resolved)),
+  )
+}
+
+function _uploadEvents<T>(
+  client: Client,
+  options: RequestObservableOptions,
+): Observable<UploadEvent<T>> {
+  const reqOptions = _prepareRequest(client, options)
   const requester = client.config().requester
-  const request = defer(() => _resolveToken(client, options)).pipe(
-    mergeMap((resolved) => {
-      const reqOptions = _prepareRequest(client, resolved)
-      return new Observable<Any>((subscriber) => requester(reqOptions).subscribe(subscriber))
-    }),
+  const request = new Observable<Any>((subscriber) =>
+    requester(reqOptions).subscribe(subscriber),
+  ).pipe(
     filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
     map((event: Any): UploadEvent<T> =>
       event.type === 'progress'
