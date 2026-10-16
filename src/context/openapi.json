@@ -6,6 +6,19 @@
     "version": "2026-05-26"
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A Sanity API token or a user token."
+      },
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sanitySession",
+        "description": "The Sanity session cookie, for requests from the browser."
+      }
+    },
     "schemas": {
       "EntryDoc": {
         "type": "object",
@@ -57,6 +70,13 @@
           "title": {
             "type": "string",
             "description": "The entry title."
+          },
+          "sectionTitles": {
+            "description": "The titles of the sections above the entry, top level first, one for each `path` segment before the last. For `groq/functions/math` it holds the titles of `groq` and `groq/functions`. Absent when the entry was written before section titles were recorded.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "tldr": {
             "description": "A summary of the entry. `scope` is what the entry covers, and `excludes` is what it does not cover. `neighbors` lists the paths of related entries. `centrality` is how important the entry is: `core`, `standard`, or `peripheral`.",
@@ -1612,6 +1632,95 @@
           "groqFilter"
         ],
         "description": "A `sanity.context.mcp` document: the configuration of one MCP endpoint, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results and Sanity Function filters. Manage MCP endpoints in the Context dashboard."
+      },
+      "ApiErrorBody": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "knowledgeBaseNotFound",
+              "jobNotFound",
+              "importNotFound",
+              "sourceNotFound",
+              "entryNotFound",
+              "revisionNotFound",
+              "revisionNotBrowsable",
+              "revisionNotRestorable",
+              "buildDecisionsNotFound",
+              "issueNotFound",
+              "instructionNotFound",
+              "webSourceRootNotFound",
+              "routeNotFound",
+              "buildInFlight",
+              "importInvalidState",
+              "sourceNotDistilled",
+              "webSourceRootConflict",
+              "webSourceRootLimitExceeded",
+              "uploadTooLarge",
+              "payloadTooLarge",
+              "validationError",
+              "unsupportedMediaType",
+              "issueNotResolvable",
+              "issueNotAutoApplicable",
+              "issueDocumentInvalid",
+              "issueTransitionConflict",
+              "refreshControlsUnavailable",
+              "datasetSourceTooLarge",
+              "datasetSourceEmpty",
+              "datasetAlreadyBound",
+              "datasetSourceNotBound",
+              "datasetReadAccessDenied",
+              "invalidGroqFilter",
+              "mcpEndpointNotFound",
+              "mcpEndpointNameConflict",
+              "mcpSourceKnowledgeBaseNotFound",
+              "mcpEndpointNotServable",
+              "conversationNotFound",
+              "missingCredential",
+              "missingOrganization",
+              "organizationAccessDenied",
+              "knowledgeBaseAccessDenied",
+              "contextGrantRequired",
+              "knowledgeBaseCreateAccessDenied",
+              "mcpEndpointManageAccessDenied",
+              "insightsWriteAccessDenied",
+              "projectAdminRequired",
+              "accessCheckFailed",
+              "planLimitReached",
+              "featureNotInPlan",
+              "tooManyConnections",
+              "jobsUnavailable",
+              "contextStoreUnavailable",
+              "crawlingUnavailable",
+              "crawlPreviewUnavailable",
+              "instructionDraftFailed",
+              "instructionScopeVanished",
+              "idempotencyKeyReused",
+              "idempotencyRequestInFlight",
+              "idempotencyParamsMismatch",
+              "internal"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": ["statusCode", "error", "code", "message"],
+        "additionalProperties": false,
+        "description": "The body of every error response. Branch on `code`, a stable identifier; `message` is human-readable and can change."
       }
     }
   },
@@ -1660,7 +1769,8 @@
             },
             "in": "path",
             "name": "apiVersion",
-            "required": true
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -1797,11 +1907,11 @@
                           },
                           "hasPendingChanges": {
                             "type": "boolean",
-                            "description": "Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build."
+                            "description": "Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build."
                           },
                           "pendingChanges": {
                             "nullable": true,
-                            "description": "Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
+                            "description": "Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
                             "type": "object",
                             "properties": {
                               "added": {
@@ -2006,6 +2116,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -2013,7 +2133,7 @@
         "operationId": "createKnowledgeBase",
         "summary": "Create a knowledge base",
         "tags": ["knowledge-bases"],
-        "description": "Creates a knowledge base in your organization. To add content to it, create an import.",
+        "description": "Creates a knowledge base in your organization. To add content to it, create an import. If your organization's Context document store can't be used, the request returns `503` with code `contextStoreUnavailable` and you can retry.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2051,7 +2171,17 @@
             },
             "in": "path",
             "name": "apiVersion",
-            "required": true
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "description": "A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work."
           }
         ],
         "responses": {
@@ -2183,11 +2313,11 @@
                     },
                     "hasPendingChanges": {
                       "type": "boolean",
-                      "description": "Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build."
+                      "description": "Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build."
                     },
                     "pendingChanges": {
                       "nullable": true,
-                      "description": "Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
+                      "description": "Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
                       "type": "object",
                       "properties": {
                         "added": {
@@ -2380,6 +2510,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -2400,6 +2540,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -2531,11 +2680,11 @@
                     },
                     "hasPendingChanges": {
                       "type": "boolean",
-                      "description": "Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build."
+                      "description": "Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build."
                     },
                     "pendingChanges": {
                       "nullable": true,
-                      "description": "Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
+                      "description": "Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
                       "type": "object",
                       "properties": {
                         "added": {
@@ -2725,6 +2874,16 @@
                   ],
                   "additionalProperties": false,
                   "description": "A knowledge base and its current state."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -2779,6 +2938,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -2910,11 +3078,11 @@
                     },
                     "hasPendingChanges": {
                       "type": "boolean",
-                      "description": "Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build."
+                      "description": "Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build."
                     },
                     "pendingChanges": {
                       "nullable": true,
-                      "description": "Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
+                      "description": "Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build.",
                       "type": "object",
                       "properties": {
                         "added": {
@@ -3107,6 +3275,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -3125,6 +3303,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3137,6 +3324,16 @@
                   "nullable": true,
                   "enum": [null],
                   "description": "The knowledge base was deleted."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -3160,6 +3357,24 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "description": "A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work."
           }
         ],
         "responses": {
@@ -3178,6 +3393,16 @@
                   "required": ["jobId"],
                   "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -3201,6 +3426,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3219,6 +3453,16 @@
                   "required": ["cancelled"],
                   "additionalProperties": false,
                   "description": "The result of the cancel request."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -3242,6 +3486,24 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "description": "A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work."
           }
         ],
         "responses": {
@@ -3264,6 +3526,16 @@
                   "required": ["jobId", "started"],
                   "additionalProperties": false,
                   "description": "A queued refresh job that you can poll for progress."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -3338,6 +3610,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3461,6 +3742,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -3492,6 +3783,15 @@
             "name": "sourceId",
             "required": true,
             "description": "The source's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3598,6 +3898,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -3627,6 +3937,15 @@
             "name": "sourceId",
             "required": true,
             "description": "The source's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3639,6 +3958,16 @@
                   "nullable": true,
                   "enum": [null],
                   "description": "The source was deleted."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -3705,6 +4034,15 @@
             "name": "sourceId",
             "required": true,
             "description": "The source's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3768,6 +4106,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -3798,6 +4146,15 @@
             "name": "entryPath",
             "required": true,
             "description": "The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -3843,6 +4200,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -3884,6 +4251,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4068,6 +4444,7 @@
                           },
                           "completedAt": {
                             "nullable": true,
+                            "description": "When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.",
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
@@ -4107,6 +4484,16 @@
                   "required": ["data", "nextCursor"],
                   "additionalProperties": false,
                   "description": "A page of imports."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4257,6 +4644,24 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "description": "A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work."
           }
         ],
         "responses": {
@@ -4275,6 +4680,16 @@
                   "required": ["jobId"],
                   "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4309,6 +4724,15 @@
             "name": "importId",
             "required": true,
             "description": "The import's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4488,6 +4912,7 @@
                     },
                     "completedAt": {
                       "nullable": true,
+                      "description": "When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.",
                       "type": "string",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
@@ -4515,6 +4940,16 @@
                   ],
                   "additionalProperties": false,
                   "description": "Content added to a knowledge base: a file upload, website crawl, Sanity dataset, or inline text."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4547,6 +4982,15 @@
             "name": "importId",
             "required": true,
             "description": "The import's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4559,6 +5003,16 @@
                   "nullable": true,
                   "enum": [null],
                   "description": "The import and its sources were deleted."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4593,6 +5047,15 @@
             "name": "importId",
             "required": true,
             "description": "The import's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4618,6 +5081,16 @@
                   "required": ["url", "expiresAt"],
                   "additionalProperties": false,
                   "description": "A short-lived URL that downloads the import's original content."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4664,6 +5137,24 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "description": "A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work."
           }
         ],
         "responses": {
@@ -4689,6 +5180,16 @@
                   "required": ["importId", "uploadUrl"],
                   "additionalProperties": false,
                   "description": "The new file import and the URL to upload the file to."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4723,6 +5224,15 @@
             "name": "importId",
             "required": true,
             "description": "The import's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4741,6 +5251,16 @@
                   "required": ["jobId"],
                   "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4774,6 +5294,15 @@
             "name": "jobId",
             "required": true,
             "description": "The job ID returned by the endpoint that started the work."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4822,6 +5351,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -4831,7 +5370,7 @@
         "operationId": "applyIssues",
         "summary": "Accept and apply issues",
         "tags": ["issues"],
-        "description": "Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped.",
+        "description": "Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), a `merge_entry`, or a `gap`, `update_required` or `split_entry` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.",
         "requestBody": {
           "required": true,
           "content": {
@@ -4864,6 +5403,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -4882,6 +5430,16 @@
                   "required": ["jobId"],
                   "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -4915,6 +5473,15 @@
             "name": "issueId",
             "required": true,
             "description": "The issue's document ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -5164,6 +5731,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -5213,6 +5790,15 @@
             "name": "issueId",
             "required": true,
             "description": "The issue's document ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -5481,6 +6067,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -5511,6 +6107,15 @@
             "name": "issueId",
             "required": true,
             "description": "The issue's document ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -5760,6 +6365,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -5826,6 +6441,15 @@
             "name": "knowledgeBaseId",
             "required": true,
             "description": "The knowledge base's public ID (`kb...`) or UUID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -5969,6 +6593,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -6030,6 +6664,15 @@
             "name": "instructionId",
             "required": true,
             "description": "The instruction's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
@@ -6160,6 +6803,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -6167,8 +6820,18 @@
         "operationId": "deleteInstruction",
         "summary": "Delete an instruction",
         "tags": ["instructions"],
-        "description": "Deletes the instruction. Builds stop applying it from the next run.",
+        "description": "Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text until they are rebuilt; pass `rebuild=true` to rebuild every entry that cites its sources right away.",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "in": "query",
+            "name": "rebuild",
+            "required": false,
+            "description": "Set to `true` to rebuild every entry that cites the instruction's sources once it is deleted, so pages written under the instruction reflect their sources again. The response returns the rebuild job ID in `rebuildJobId`."
+          },
           {
             "schema": {
               "type": "string",
@@ -6188,18 +6851,44 @@
             "name": "instructionId",
             "required": true,
             "description": "The instruction's ID."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
           }
         ],
         "responses": {
-          "204": {
-            "description": "The instruction was deleted.",
+          "200": {
+            "description": "The rebuild the delete started, if any.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "nullable": true,
-                  "enum": [null],
-                  "description": "The instruction was deleted."
+                  "type": "object",
+                  "properties": {
+                    "rebuildJobId": {
+                      "nullable": true,
+                      "description": "ID of the job that rebuilds the entries citing the instruction's sources. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuild=true`, no entry cites those sources, or the rebuild could not start. The instruction is deleted either way.",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["rebuildJobId"],
+                  "additionalProperties": false,
+                  "description": "The rebuild the delete started, if any."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -6305,6 +6994,24 @@
             "name": "mcpEndpointName",
             "required": true,
             "description": "The MCP endpoint's name, set when the endpoint was created."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
           }
         ],
         "responses": {
@@ -6421,11 +7128,39 @@
             "name": "mcpEndpointName",
             "required": true,
             "description": "The MCP endpoint's name, set when the endpoint was created."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
           }
         ],
         "responses": {
           "200": {
             "description": "Default Response"
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -6571,6 +7306,24 @@
             "name": "threadId",
             "required": true,
             "description": "Your ID for the conversation thread, unique within your organization. Up to 200 characters."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
           }
         ],
         "responses": {
@@ -6800,6 +7553,16 @@
                   ],
                   "additionalProperties": false,
                   "description": "A recorded agent conversation: its transcript, metadata, token usage, and classification."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
                 }
               }
             }
@@ -6868,6 +7631,24 @@
             "name": "threadId",
             "required": true,
             "description": "Your ID for the conversation thread, unique within your organization. Up to 200 characters."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
           }
         ],
         "responses": {
@@ -7100,6 +7881,16 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -7109,6 +7900,14 @@
     {
       "url": "https://api.sanity.io",
       "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {
+      "sessionCookie": []
     }
   ],
   "tags": [

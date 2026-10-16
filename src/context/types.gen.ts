@@ -19,7 +19,7 @@ export interface paths {
     put?: never
     /**
      * Create a knowledge base
-     * @description Creates a knowledge base in your organization. To add content to it, create an import.
+     * @description Creates a knowledge base in your organization. To add content to it, create an import. If your organization's Context document store can't be used, the request returns `503` with code `contextStoreUnavailable` and you can retry.
      */
     post: operations['createKnowledgeBase']
     delete?: never
@@ -269,7 +269,7 @@ export interface paths {
     post?: never
     /**
      * Delete an instruction
-     * @description Deletes the instruction. Builds stop applying it from the next run.
+     * @description Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text until they are rebuilt; pass `rebuild=true` to rebuild every entry that cites its sources right away.
      */
     delete: operations['deleteInstruction']
     options?: never
@@ -292,7 +292,7 @@ export interface paths {
     put?: never
     /**
      * Accept and apply issues
-     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped.
+     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), a `merge_entry`, or a `gap`, `update_required` or `split_entry` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.
      */
     post: operations['applyIssues']
     delete?: never
@@ -504,6 +504,78 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** @description The body of every error response. Branch on `code`, a stable identifier; `message` is human-readable and can change. */
+    ApiErrorBody: {
+      statusCode: number
+      error: string
+      /** @enum {string} */
+      code:
+        | 'knowledgeBaseNotFound'
+        | 'jobNotFound'
+        | 'importNotFound'
+        | 'sourceNotFound'
+        | 'entryNotFound'
+        | 'revisionNotFound'
+        | 'revisionNotBrowsable'
+        | 'revisionNotRestorable'
+        | 'buildDecisionsNotFound'
+        | 'issueNotFound'
+        | 'instructionNotFound'
+        | 'webSourceRootNotFound'
+        | 'routeNotFound'
+        | 'buildInFlight'
+        | 'importInvalidState'
+        | 'sourceNotDistilled'
+        | 'webSourceRootConflict'
+        | 'webSourceRootLimitExceeded'
+        | 'uploadTooLarge'
+        | 'payloadTooLarge'
+        | 'validationError'
+        | 'unsupportedMediaType'
+        | 'issueNotResolvable'
+        | 'issueNotAutoApplicable'
+        | 'issueDocumentInvalid'
+        | 'issueTransitionConflict'
+        | 'refreshControlsUnavailable'
+        | 'datasetSourceTooLarge'
+        | 'datasetSourceEmpty'
+        | 'datasetAlreadyBound'
+        | 'datasetSourceNotBound'
+        | 'datasetReadAccessDenied'
+        | 'invalidGroqFilter'
+        | 'mcpEndpointNotFound'
+        | 'mcpEndpointNameConflict'
+        | 'mcpSourceKnowledgeBaseNotFound'
+        | 'mcpEndpointNotServable'
+        | 'conversationNotFound'
+        | 'missingCredential'
+        | 'missingOrganization'
+        | 'organizationAccessDenied'
+        | 'knowledgeBaseAccessDenied'
+        | 'contextGrantRequired'
+        | 'knowledgeBaseCreateAccessDenied'
+        | 'mcpEndpointManageAccessDenied'
+        | 'insightsWriteAccessDenied'
+        | 'projectAdminRequired'
+        | 'accessCheckFailed'
+        | 'planLimitReached'
+        | 'featureNotInPlan'
+        | 'tooManyConnections'
+        | 'jobsUnavailable'
+        | 'contextStoreUnavailable'
+        | 'crawlingUnavailable'
+        | 'crawlPreviewUnavailable'
+        | 'instructionDraftFailed'
+        | 'instructionScopeVanished'
+        | 'idempotencyKeyReused'
+        | 'idempotencyRequestInFlight'
+        | 'idempotencyParamsMismatch'
+        | 'internal'
+      message: string
+      fields?: {
+        [key: string]: unknown
+      }
+    }
     /** @description A `sanity.context.conversation` document: one agent conversation and its classification, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results. To record conversations, use the conversations endpoints. */
     ConversationDoc: {
       /** @description The document ID. */
@@ -659,6 +731,8 @@ export interface components {
       path: string
       /** @description The entry title. */
       title: string
+      /** @description The titles of the sections above the entry, top level first, one for each `path` segment before the last. For `groq/functions/math` it holds the titles of `groq` and `groq/functions`. Absent when the entry was written before section titles were recorded. */
+      sectionTitles?: string[]
       /** @description A summary of the entry. `scope` is what the entry covers, and `excludes` is what it does not cover. `neighbors` lists the paths of related entries. `centrality` is how important the entry is: `core`, `standard`, or `peripheral`. */
       tldr?: {
         scope: string
@@ -1319,6 +1393,7 @@ export interface operations {
       }
       header?: never
       path: {
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
       }
       cookie?: never
@@ -1405,9 +1480,9 @@ export interface operations {
                * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
                */
               lastChangedAt: string | null
-              /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+              /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
               hasPendingChanges: boolean
-              /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+              /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
               pendingChanges: {
                 /** @description Sources added since the last successful build, including sources no successful build has included yet. */
                 added: number
@@ -1487,13 +1562,26 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   createKnowledgeBase: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
       }
       cookie?: never
@@ -1589,9 +1677,9 @@ export interface operations {
              * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
              */
             lastChangedAt: string | null
-            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+            /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
             hasPendingChanges: boolean
-            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+            /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
               /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
@@ -1668,6 +1756,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getKnowledgeBase: {
@@ -1677,6 +1774,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -1760,9 +1859,9 @@ export interface operations {
              * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
              */
             lastChangedAt: string | null
-            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+            /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
             hasPendingChanges: boolean
-            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+            /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
               /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
@@ -1839,6 +1938,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   deleteKnowledgeBase: {
@@ -1848,6 +1956,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -1862,6 +1972,15 @@ export interface operations {
           'application/json': null
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   updateKnowledgeBase: {
@@ -1871,6 +1990,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -1970,9 +2091,9 @@ export interface operations {
              * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
              */
             lastChangedAt: string | null
-            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+            /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
             hasPendingChanges: boolean
-            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+            /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
               /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
@@ -2049,15 +2170,29 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   buildKnowledgeBase: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2075,6 +2210,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   cancelKnowledgeBaseBuild: {
@@ -2084,6 +2228,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2101,6 +2247,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   rebuildEntry: {
@@ -2112,6 +2267,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded. */
         entryPath: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2138,6 +2295,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   listImports: {
@@ -2152,6 +2318,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2243,7 +2411,10 @@ export interface operations {
                * @description When the import was created.
                */
               createdAt: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.
+               */
               completedAt: string | null
             }[]
             /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
@@ -2251,15 +2422,29 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   createImport: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2339,15 +2524,29 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   startUpload: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2382,6 +2581,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   completeUpload: {
@@ -2393,6 +2601,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2410,6 +2620,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getImport: {
@@ -2421,6 +2640,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2510,9 +2731,21 @@ export interface operations {
              * @description When the import was created.
              */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.
+             */
             completedAt: string | null
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2526,6 +2759,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2540,6 +2775,15 @@ export interface operations {
           'application/json': null
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   downloadImport: {
@@ -2551,6 +2795,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2576,6 +2822,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   createInstruction: {
@@ -2585,6 +2840,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2670,29 +2927,55 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   deleteInstruction: {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Set to `true` to rebuild every entry that cites the instruction's sources once it is deleted, so pages written under the instruction reflect their sources again. The response returns the rebuild job ID in `rebuildJobId`. */
+        rebuild?: 'true' | 'false'
+      }
       header?: never
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
         /** @description The instruction's ID. */
         instructionId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description The instruction was deleted. */
-      204: {
+      /** @description The rebuild the delete started, if any. */
+      200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': null
+          'application/json': {
+            /** @description ID of the job that rebuilds the entries citing the instruction's sources. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuild=true`, no entry cites those sources, or the rebuild could not start. The instruction is deleted either way. */
+            rebuildJobId: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2706,6 +2989,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The instruction's ID. */
         instructionId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2782,6 +3067,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   applyIssues: {
@@ -2791,6 +3085,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2815,6 +3111,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   dismissIssue: {
@@ -2826,6 +3131,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2949,6 +3256,15 @@ export interface operations {
              */
             resolvedAt: string | null
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2962,6 +3278,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3087,6 +3405,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   resolveIssue: {
@@ -3098,6 +3425,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3235,6 +3564,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getJob: {
@@ -3246,6 +3584,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The job ID returned by the endpoint that started the work. */
         jobId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3282,15 +3622,29 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   refreshKnowledgeBase: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3308,6 +3662,15 @@ export interface operations {
             /** @description Whether this request started a new refresh. `false` means a refresh was already running, and `jobId` is that refresh. */
             started: boolean
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -3330,6 +3693,8 @@ export interface operations {
       path: {
         /** @description The knowledge base's public ID (`kb...`) or UUID. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3397,6 +3762,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getSource: {
@@ -3408,6 +3782,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3470,6 +3846,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   deleteSource: {
@@ -3481,6 +3866,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3493,6 +3880,15 @@ export interface operations {
         }
         content: {
           'application/json': null
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -3513,6 +3909,8 @@ export interface operations {
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3546,6 +3944,15 @@ export interface operations {
           'text/plain': string
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   saveConversation: {
@@ -3555,6 +3962,10 @@ export interface operations {
       path: {
         /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
         threadId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
       }
       cookie?: never
     }
@@ -3735,6 +4146,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   classifyConversation: {
@@ -3744,6 +4164,10 @@ export interface operations {
       path: {
         /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
         threadId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
       }
       cookie?: never
     }
@@ -3881,6 +4305,15 @@ export interface operations {
              */
             updatedAt: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
