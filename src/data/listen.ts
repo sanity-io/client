@@ -1,4 +1,3 @@
-import {EventSource} from 'eventsource'
 import {Observable, throwError} from 'rxjs'
 import {filter, map} from 'rxjs/operators'
 
@@ -20,11 +19,9 @@ import {
 } from '../types'
 import defaults from '../util/defaults'
 import {pick} from '../util/pick'
+import {connectAuthenticatedEventSource} from './authenticatedEventSource'
 import {_getDataUrl} from './dataMethods'
 import {encodeQueryString} from './encodeQueryString'
-import {connectEventSource} from './eventsource'
-import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
-import {resolveEventSourceFetch} from './resolveEventSourceFetch'
 
 // Limit is 16K for a _request_, eg including headers. Have to account for an
 // unknown range of headers, but an average EventSource request from Chrome seems
@@ -163,26 +160,11 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
   listenFor: string[],
 ): Observable<TEvent> {
   const config = client.config()
-  const {token, withCredentials, headers: configHeaders} = config
 
-  const headers: Record<string, string> = {}
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  if (configHeaders) {
-    Object.assign(headers, configHeaders)
-  }
-
-  const initEventSource = () =>
-    new EventSource(uri, {
-      fetch: resolveEventSourceFetch(config, {
-        headers: Object.keys(headers).length ? headers : undefined,
-        withCredentials,
-      }),
-    })
-
-  return connectEventSource(initEventSource, listenFor).pipe(
-    reconnectOnConnectionFailure(),
+  return connectAuthenticatedEventSource(config, uri, listenFor, {
+    headers: config.headers,
+    withAuth: true,
+  }).pipe(
     filter((event) => listenFor.includes(event.type)),
     map((event) => ({
       type: event.type,
