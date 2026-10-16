@@ -142,6 +142,14 @@ export type CreateInstructionResponse = JsonResponse<
 >
 /** @beta */
 export type EditInstructionParams = JsonBody<paths[InstructionPath]['patch']>
+/**
+ * The rebuild a delete started: `rebuildJobId` is `null` unless `rebuild: true`
+ * was passed and an entry cites the instruction's sources.
+ * @beta
+ */
+export type DeleteInstructionResponse = JsonResponse<
+  paths[InstructionPath]['delete']['responses']['200']
+>
 
 /** @beta */
 export type KnowledgeBasesResponse = JsonResponse<

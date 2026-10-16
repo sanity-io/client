@@ -25,6 +25,12 @@ describe('client.context return types', () => {
     expectTypeOf(await kb.sources.delete({sourceId: 'source1'})).toEqualTypeOf<void>()
   })
 
+  test('instructions.delete resolves to the rebuild job', async () => {
+    expectTypeOf(
+      await kb.instructions.delete({instructionId: 'ins1', rebuild: true}),
+    ).toEqualTypeOf<Context.DeleteInstructionResponse>()
+  })
+
   test('imports.delete resolves to void', async () => {
     expectTypeOf(await kb.imports.delete({importId: 'imp1'})).toEqualTypeOf<void>()
   })

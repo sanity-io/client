@@ -28,6 +28,7 @@ import type {
   CreateImportParams,
   CreateInstructionParams,
   CreateInstructionResponse,
+  DeleteInstructionResponse,
   CreateKnowledgeBaseParams,
   DismissIssueResponse,
   EditInstructionParams,
@@ -526,12 +527,22 @@ export class ContextClient {
         ...options,
       })
     },
-    delete: async (params: {instructionId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/instructions/${encodeURIComponent(params.instructionId)}`, {
-        method: 'DELETE',
-        ...options,
-      })
-    },
+    /**
+     * Delete an instruction. With `rebuild: true`, also rebuilds every entry
+     * citing the instruction's sources and resolves with that job's id.
+     */
+    delete: (
+      params: {instructionId: string; rebuild?: boolean},
+      options?: RequestOptions,
+    ): Promise<DeleteInstructionResponse> =>
+      this.#request<DeleteInstructionResponse>(
+        `/instructions/${encodeURIComponent(params.instructionId)}`,
+        {
+          method: 'DELETE',
+          query: _query({rebuild: params.rebuild ? 'true' : undefined}),
+          ...options,
+        },
+      ),
   }
 
   /**
