@@ -1,5 +1,16 @@
 # @sanity/client
 
+## 8.10.0
+
+### Minor Changes
+
+- **context:** types include the Context API's error body and every path param ([#1360](https://github.com/sanity-io/client/pull/1360)) ([dd998bc](https://github.com/sanity-io/client/commit/dd998bc82fe47153526a7e271c34410e539b30d1))
+
+### Patch Changes
+
+- **stega:** add mux video machine fields to default filter denylist ([#1190](https://github.com/sanity-io/client/pull/1190)) ([91eb733](https://github.com/sanity-io/client/commit/91eb733206522c487f91d2368bc9a7838bd6bf4b))
+- **deps:** update dependency get-it to ^9.6.1 ([#1352](https://github.com/sanity-io/client/pull/1352)) ([95ccd24](https://github.com/sanity-io/client/commit/95ccd245c4f5050878fcf403237e55b164d57b9e))
+
 ## 8.9.0
 
 ### Minor Changes
