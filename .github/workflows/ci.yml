@@ -70,7 +70,7 @@ jobs:
           node-version: lts/*
       - run: pnpm install --frozen-lockfile
       - run: pnpm run coverage
-      - uses: davelosert/vitest-coverage-report-action@8b157684c6a6b259b97d45e72b44242865c0f6a5 # v2
+      - uses: davelosert/vitest-coverage-report-action@8f86cfb56ed6d5613ea8cdc5259f207fbfd51ece # v2
         if: always()
 
   test:
@@ -244,7 +244,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: 2.9.6
+          deno-version: v2.9.7
       - run: pnpm run test:deno
 
   bun-runtime:
