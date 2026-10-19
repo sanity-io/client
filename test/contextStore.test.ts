@@ -130,6 +130,43 @@ describe('context GROQ reads', () => {
     ).rejects.toMatchObject({statusCode: 404})
   })
 
+  test('conversations.delete forwards the request tag and the abort signal on both clients', async () => {
+    const path = `/v2026-08-25/context/organizations/${organizationId}/conversations/thread-1`
+    const scope = getActiveMock().scope(apiHost)
+    scope.on('DELETE', path).respond({status: 204})
+    scope.on('DELETE', path).respond({status: 204})
+    const client = getMockClient()
+
+    await client.context.conversations.delete({threadId: 'thread-1'}, {tag: 'erasure'})
+    await firstValueFrom(
+      client.observable.context.conversations.delete({threadId: 'thread-1'}, {tag: 'erasure'}),
+    )
+    expect(
+      getActiveMock()
+        .getRequests()
+        .map((request) => request.query.tag),
+    ).toEqual(['erasure', 'erasure'])
+
+    scope.on('DELETE', path).respond({status: 204, delay: 60_000})
+    scope.on('DELETE', path).respond({status: 204, delay: 60_000})
+    const promiseCaller = new AbortController()
+    const observableCaller = new AbortController()
+    const promiseDelete = client.context.conversations.delete(
+      {threadId: 'thread-1'},
+      {signal: promiseCaller.signal},
+    )
+    const observableDelete = firstValueFrom(
+      client.observable.context.conversations.delete(
+        {threadId: 'thread-1'},
+        {signal: observableCaller.signal},
+      ),
+    )
+    promiseCaller.abort()
+    observableCaller.abort()
+    await expect(promiseDelete).rejects.toHaveProperty('name', 'AbortError')
+    await expect(observableDelete).rejects.toHaveProperty('name', 'AbortError')
+  })
+
   test('conversation writes require context.organizationId in the client configuration', () => {
     const withoutOrg = getMockClient({context: undefined})
     const orgError = '`context.organizationId` must be configured to record conversations'

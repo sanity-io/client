@@ -18,9 +18,9 @@ const KB = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 const PATH_ALLOWLIST = [
   '/{apiVersion}/context/knowledge-bases',
   KB,
-  // Conversation ingest + classification: the API-owned writes. Reads go
-  // through the GROQ surface (context.fetch/listen), so the REST reads are
-  // deliberately not exposed here.
+  // Conversation ingest, classification, and deletion: the API-owned writes.
+  // Reads go through the GROQ surface (context.fetch/listen), so the REST
+  // reads are deliberately not exposed here.
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}',
   `${KB}/build`,
   `${KB}/build/cancel`,
