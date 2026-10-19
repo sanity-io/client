@@ -288,6 +288,24 @@ describe('ContextClient', () => {
     expect(result).toBeUndefined()
   })
 
+  test('instructions.delete passes rebuild as a query param and returns the rebuild job', async () => {
+    httpRequest
+      .mockResolvedValueOnce({rebuildJobId: 'ctx-rebuild-1'})
+      .mockResolvedValueOnce({rebuildJobId: null})
+
+    const rebuilt = await kbContext.instructions.delete({instructionId: 'ins1', rebuild: true})
+    const plain = await kbContext.instructions.delete({instructionId: 'ins1'})
+
+    expect(httpRequest.mock.calls[0][0]).toMatchObject({
+      method: 'DELETE',
+      url: expect.stringContaining('/instructions/ins1'),
+      query: {rebuild: 'true'},
+    })
+    expect(httpRequest.mock.calls[1][0].query).toEqual({})
+    expect(rebuilt).toEqual({rebuildJobId: 'ctx-rebuild-1'})
+    expect(plain).toEqual({rebuildJobId: null})
+  })
+
   test('imports.delete issues a DELETE and resolves to nothing', async () => {
     httpRequest.mockResolvedValueOnce(undefined)
 
