@@ -161,10 +161,13 @@ describe('context GROQ reads', () => {
         {signal: observableCaller.signal},
       ),
     )
+    const aborted = Promise.all([
+      expect(promiseDelete).rejects.toHaveProperty('name', 'AbortError'),
+      expect(observableDelete).rejects.toHaveProperty('name', 'AbortError'),
+    ])
     promiseCaller.abort()
     observableCaller.abort()
-    await expect(promiseDelete).rejects.toHaveProperty('name', 'AbortError')
-    await expect(observableDelete).rejects.toHaveProperty('name', 'AbortError')
+    await aborted
   })
 
   test('conversation writes require context.organizationId in the client configuration', () => {
