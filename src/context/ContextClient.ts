@@ -345,6 +345,18 @@ export class ContextClient {
       })
     },
     /**
+     * Delete one recorded conversation, transcript and classification
+     * included. Rejects with a 404 when the thread was never recorded.
+     */
+    delete: (params: {threadId: string}, options?: RequestOptions): Promise<void> => {
+      const url = _conversationUrl(this.#client, params.threadId)
+      return _request<void>(this.#client, this.#httpRequest, {
+        url,
+        method: 'DELETE',
+        ...options,
+      }).then(() => undefined)
+    },
+    /**
      * One recorded conversation by its thread id, or `null` when the thread
      * was never recorded. Runs:
      *
@@ -825,6 +837,19 @@ export class ObservableContextClient {
         }),
       )
     },
+    /**
+     * Delete one recorded conversation, transcript and classification
+     * included. Errors with a 404 when the thread was never recorded.
+     */
+    delete: (params: {threadId: string}, options?: RequestOptions): Observable<void> =>
+      _observe(options?.signal, (signal) =>
+        _request<void>(this.#client, this.#httpRequest, {
+          url: _conversationUrl(this.#client, params.threadId),
+          method: 'DELETE',
+          tag: options?.tag,
+          signal,
+        }),
+      ),
     /**
      * One recorded conversation by its thread id, or `null` when the thread
      * was never recorded. Runs:

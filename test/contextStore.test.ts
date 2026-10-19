@@ -107,12 +107,46 @@ describe('context GROQ reads', () => {
     ).resolves.toEqual(conversation)
   })
 
-  test('conversations.save requires context.organizationId in the client configuration', () => {
+  test('conversations.delete DELETEs the thread and rejects an unknown one with 404', async () => {
+    const path = `/v2026-08-25/context/organizations/${organizationId}/conversations`
+    const scope = getActiveMock().scope(apiHost)
+    scope.on('DELETE', `${path}/thread-1`).respond({status: 204})
+    scope.on('DELETE', `${path}/thread-2`).respond({status: 204})
+    scope.on('DELETE', `${path}/missing`).respond({
+      status: 404,
+      body: {statusCode: 404, error: 'Not Found', code: 'conversationNotFound'},
+    })
+
+    await expect(
+      getMockClient().context.conversations.delete({threadId: 'thread-1'}),
+    ).resolves.toBeUndefined()
+    await expect(
+      firstValueFrom(
+        getMockClient().observable.context.conversations.delete({threadId: 'thread-2'}),
+      ),
+    ).resolves.toBeUndefined()
+    await expect(
+      getMockClient().context.conversations.delete({threadId: 'missing'}),
+    ).rejects.toMatchObject({statusCode: 404})
+  })
+
+  test('conversation writes require context.organizationId in the client configuration', () => {
     const withoutOrg = getMockClient({context: undefined})
+    const orgError = '`context.organizationId` must be configured to record conversations'
 
     expect(() =>
       withoutOrg.context.conversations.save({threadId: 'thread-1', messages: []}),
-    ).toThrow('`context.organizationId` must be configured to record conversations')
+    ).toThrow(orgError)
+    expect(() => withoutOrg.context.conversations.delete({threadId: 'thread-1'})).toThrow(orgError)
+  })
+
+  test('conversations.delete rejects an empty threadId before any request', async () => {
+    expect(() => getMockClient().context.conversations.delete({threadId: ''})).toThrow(
+      '`threadId` must be provided',
+    )
+    await expect(
+      firstValueFrom(getMockClient().observable.context.conversations.delete({threadId: ''})),
+    ).rejects.toThrow('`threadId` must be provided')
   })
 
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {

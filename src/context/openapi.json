@@ -2894,7 +2894,7 @@
         "operationId": "updateKnowledgeBase",
         "summary": "Update a knowledge base",
         "tags": ["knowledge-bases"],
-        "description": "Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Setting a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.",
+        "description": "Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Fields equal to their current value are ignored, so sending the current values changes nothing. Changing a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.",
         "requestBody": {
           "required": true,
           "content": {
@@ -6908,15 +6908,6 @@
               "type": "string"
             },
             "in": "query",
-            "name": "tools",
-            "required": false,
-            "description": "Comma-separated names of the tools to enable for this request: `initial_context`, `groq_query`, `schema_explorer`, `array_field_reader`, `knowledge_base_read`, `knowledge_base_search`. Omit to enable every tool. An unknown tool name returns an error."
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
             "name": "instructions",
             "required": false,
             "description": "Agent instructions that replace the endpoint's configured instructions for this request."
@@ -7028,15 +7019,6 @@
         "tags": ["mcp"],
         "description": "Returns the same text as the `initial_context` MCP tool, as plain text you can add to a system prompt. `heading_offset` shifts markdown headings down by that many levels. The default is `1`, so `#` becomes `##`.",
         "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "name": "tools",
-            "required": false,
-            "description": "Comma-separated names of the tools to enable for this request: `initial_context`, `groq_query`, `schema_explorer`, `array_field_reader`, `knowledge_base_read`, `knowledge_base_search`. Omit to enable every tool. An unknown tool name returns an error."
-          },
           {
             "schema": {
               "type": "string"
@@ -7878,6 +7860,67 @@
                   ],
                   "additionalProperties": false,
                   "description": "A recorded agent conversation: its transcript, metadata, token usage, and classification."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteConversation",
+        "summary": "Delete a conversation",
+        "tags": ["conversations"],
+        "description": "Deletes the recorded conversation for one thread, including its messages and classification. Requires the same access as recording a conversation.\n\nSaving with the same `threadId` afterwards records a new conversation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "description": "Your ID for the conversation thread, unique within your organization. Up to 200 characters."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [null]
                 }
               }
             }

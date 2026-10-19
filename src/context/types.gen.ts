@@ -51,7 +51,7 @@ export interface paths {
     head?: never
     /**
      * Update a knowledge base
-     * @description Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Setting a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.
+     * @description Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Fields equal to their current value are ignored, so sending the current values changes nothing. Changing a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.
      */
     patch: operations['updateKnowledgeBase']
     trace?: never
@@ -485,7 +485,13 @@ export interface paths {
      */
     put: operations['saveConversation']
     post?: never
-    delete?: never
+    /**
+     * Delete a conversation
+     * @description Deletes the recorded conversation for one thread, including its messages and classification. Requires the same access as recording a conversation.
+     *
+     *     Saving with the same `threadId` afterwards records a new conversation.
+     */
+    delete: operations['deleteConversation']
     options?: never
     head?: never
     /**
@@ -4144,6 +4150,42 @@ export interface operations {
              */
             updatedAt: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  deleteConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
+        threadId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
         }
       }
       /** @description Error */

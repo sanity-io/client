@@ -21,6 +21,10 @@ describe('client.context return types', () => {
     ).toEqualTypeOf<Context.ConversationDoc | null>()
   })
 
+  test('conversations.delete resolves to void', async () => {
+    expectTypeOf(await kb.conversations.delete({threadId: 't'})).toEqualTypeOf<void>()
+  })
+
   test('sources.delete resolves to void', async () => {
     expectTypeOf(await kb.sources.delete({sourceId: 'source1'})).toEqualTypeOf<void>()
   })
