@@ -2,7 +2,7 @@ import type {FetchFunction} from 'get-it'
 import {catchError, mergeMap, Observable, of, throwError} from 'rxjs'
 import {finalize, map} from 'rxjs/operators'
 
-import {getStaticAuth, peekAuth} from '../auth'
+import {getStaticAuth} from '../auth'
 import {CorsOriginError} from '../http/errors'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
@@ -89,21 +89,17 @@ export class LiveClient {
     // Drafts are only visible to authenticated connections, so that is the
     // one case the credential travels on the EventSource request itself.
     const withAuth = Boolean(includeDrafts)
-    // Whether the connection being diagnosed sent cookies. Read when the CORS
-    // probe runs, not up front: under a reactive `auth` observable the value
-    // is only known once a connection has resolved it.
-    const sentCredentials = () => {
-      if (!withAuth) return false
-      const auth = peekAuth(config)
-      return auth !== undefined && 'withCredentials' in auth
-    }
+    // Whether the connection being diagnosed sent cookies: the credential
+    // its latest attempt went out with, which under a reactive `auth`
+    // observable is only known once a connection has resolved it.
+    let lastSent: Auth
+    const sentCredentials = () => lastSent !== undefined && 'withCredentials' in lastSent
 
     // Two clients whose auth is the same static value, or the same reactive
     // observable (by reference), share one stream; a reactive observable is keyed by
     // identity because its value is not knowable here. Anonymous connections
     // (`includeDrafts: false`) share regardless of the client's credential.
-    const authKey: Observable<Promise<Auth>> | null =
-      withAuth && staticAuth === undefined ? config.auth : null
+    const authKey: Observable<Promise<Auth>> | null = withAuth ? (config.auth ?? null) : null
     const transportCache = getOrCreate(eventsCache, config.resolveFetch, () => new Map())
     const authCache = getOrCreate(transportCache, authKey, () => new Map())
     const cacheKey = JSON.stringify([
@@ -122,7 +118,13 @@ export class LiveClient {
       config,
       url.href,
       ['message', 'restart', 'welcome', 'reconnect', 'goaway'],
-      {headers: configHeaders, withAuth},
+      {
+        headers: configHeaders,
+        withAuth,
+        onSend: (auth) => {
+          lastSent = auth
+        },
+      },
     )
 
     const checkCors = checkCorsObservable(

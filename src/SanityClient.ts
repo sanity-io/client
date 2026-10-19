@@ -3,7 +3,6 @@ import {Observable} from 'rxjs'
 
 import {AgentActionsClient, ObservableAgentsActionClient} from './agent/actions/AgentActionsClient'
 import {AssetsClient, ObservableAssetsClient} from './assets/AssetsClient'
-import {resolveCurrentAuth} from './auth'
 import {
   CollaborationCommentsClient,
   ObservableCollaborationCommentsClient,
@@ -22,6 +21,7 @@ import {
   ObservableMediaLibraryVideoClient,
 } from './mediaLibrary/MediaLibraryVideoClient'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
+import {observeResolvedAuth, resolveCurrentAuth} from './reactiveAuth'
 import {ObservableReleasesClient, ReleasesClient} from './releases/ReleasesClient'
 import type {
   Action,
@@ -229,7 +229,7 @@ export class ObservableSanityClient {
    * reactive `auth` alike; under the latter it waits while a renewal is
    * pending, so it never yields a credential the client itself would not
    * send. The wait is cancelled by `options.signal` and bounded by the
-   * client's `timeout`. Subscribe to `config().auth` instead to follow changes.
+   * client's `timeout`. Use `observeAuth()` instead to follow changes.
    *
    * @category Configuration
    */
@@ -237,6 +237,21 @@ export class ObservableSanityClient {
     return dataMethods._observe(options.signal, (signal) =>
       resolveCurrentAuth(this.#clientConfig, {signal}),
     )
+  }
+
+  /**
+   * Every credential the client would attach to its requests: the current one
+   * when subscribed, then each change, as `{token}`, `{withCredentials: true}`
+   * or `{}` for anonymous, like {@link ObservableSanityClient.getAuth}. Under
+   * a reactive `auth` it emits each credential once it settles, and nothing
+   * while a renewal is pending; a static configuration emits its credential
+   * and completes, so the same code can follow the credential whichever way
+   * the client is configured.
+   *
+   * @category Configuration
+   */
+  observeAuth(): Observable<ResolvedAuth> {
+    return observeResolvedAuth(this.#clientConfig)
   }
 
   /**
@@ -1408,12 +1423,27 @@ export class SanityClient {
    * the latter it waits while a renewal is pending, so it never resolves to
    * a credential the client itself would not send. The wait is
    * cancelled by `options.signal` and bounded by the client's `timeout`.
-   * Subscribe to `config().auth` instead to follow changes.
+   * Use `observeAuth()` instead to follow changes.
    *
    * @category Configuration
    */
   getAuth(options: GetAuthOptions = {}): Promise<ResolvedAuth> {
     return resolveCurrentAuth(this.#clientConfig, options)
+  }
+
+  /**
+   * Every credential the client would attach to its requests: the current one
+   * when subscribed, then each change, as `{token}`, `{withCredentials: true}`
+   * or `{}` for anonymous, like {@link SanityClient.getAuth}. Under
+   * a reactive `auth` it emits each credential once it settles, and nothing
+   * while a renewal is pending; a static configuration emits its credential
+   * and completes, so the same code can follow the credential whichever way
+   * the client is configured.
+   *
+   * @category Configuration
+   */
+  observeAuth(): Observable<ResolvedAuth> {
+    return observeResolvedAuth(this.#clientConfig)
   }
 
   /**

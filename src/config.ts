@@ -1,15 +1,5 @@
-import {type Observable, of} from 'rxjs'
-
-import {
-  authMarkers,
-  defineAuthMarkers,
-  getStaticAuth,
-  isSameAuth,
-  peekAuth,
-  authFromStaticOptions,
-} from './auth'
 import {generateHelpUrl} from './generateHelpUrl'
-import type {Auth, ClientConfig, ClientPerspective, InitializedClientConfig} from './types'
+import type {ClientConfig, ClientPerspective, InitializedClientConfig} from './types'
 import * as validate from './validators'
 import * as warnings from './warnings'
 
@@ -59,15 +49,9 @@ export function validateApiPerspective(
  */
 const hasOwn = (obj: object, key: string) => Object.prototype.propertyIsEnumerable.call(obj, key)
 
-/**
- * Whether `config` carries a caller-supplied reactive `auth` observable of its
- * own. The observables `initConfig` wraps the static options in do not count:
- * they travel alongside the `token` / `withCredentials` they were built from
- * (through `withConfig`, or a `{...client.config()}` spread) and are
- * re-derived from those.
- */
+/** Whether `config` sets a reactive `auth` observable of its own. */
 const hasOwnReactiveAuth = (config: Partial<ClientConfig>) =>
-  hasOwn(config, 'auth') && config.auth !== undefined && !getStaticAuth(config)
+  hasOwn(config, 'auth') && config.auth !== undefined
 
 /** Whether `config` sets (or clears, with `undefined`) a static credential of its own. */
 const hasOwnStaticAuth = (config: Partial<ClientConfig>) =>
@@ -76,12 +60,12 @@ const hasOwnStaticAuth = (config: Partial<ClientConfig>) =>
 /**
  * Merge a partial configuration onto an existing one for `withConfig()`.
  *
- * Plain spread semantics for everything, with the credential merged
- * explicitly: a `token` / `withCredentials` of its own (an own property, even
- * with the value `undefined`) replaces an inherited `auth` observable, and an
- * `auth` of its own replaces the inherited static options, so the result never
- * mixes the two forms. Absent properties inherit, which keeps a reactive
- * `auth` shared by reference between the parent and the derived client.
+ * Plain spread semantics for everything, with one rule for the credential: a
+ * credential the new configuration sets itself replaces the inherited one. An
+ * `auth` of its own drops the inherited `token` / `withCredentials`, and a
+ * `token` / `withCredentials` of its own (an own property, even with the value
+ * `undefined`) drops an inherited `auth`. Setting both forms at once is left
+ * for `initConfig` to reject.
  *
  * @internal
  */
@@ -104,87 +88,33 @@ export function mergeConfig(
     delete merged.withCredentials
   } else if (nextHasStaticAuth && !nextHasReactiveAuth) {
     delete merged.auth
-  } else if (!nextHasReactiveAuth && !nextHasStaticAuth) {
-    // The spread above dropped the parent's non-enumerable markers; carry
-    // them so the inherited `auth` is still recognised as static or keeps
-    // sharing its resolved-credential record.
-    defineAuthMarkers(merged, authMarkers(prev))
   }
   return merged
 }
 
 /**
- * The configuration as `client.config()` returns it. A copy, so callers cannot
- * mutate the client's own config. Under a reactive `auth` observable the
- * `token` / `withCredentials` reads are non-enumerable getters onto the
- * last credential the client resolved: they warn when read, and a spread of
- * the result carries `auth` alone instead of snapshotting a stale value.
+ * The configuration as `client.config()` returns it: a copy, so callers cannot
+ * mutate the client's own config. It describes what was configured. Under a
+ * reactive `auth` observable that is `auth`, so `token` and `withCredentials`
+ * are `undefined`; they are non-enumerable getters that say so once, to help
+ * code that still reads them move to `client.getAuth()`.
  *
  * @internal
  */
 export function exposeConfig(config: InitializedClientConfig): InitializedClientConfig {
   const copy = {...config}
-  defineAuthMarkers(copy, authMarkers(config))
-  if (getStaticAuth(config)) {
-    // Derived from `token` / `withCredentials`, so a spread of this copy
-    // reproduces the source of truth rather than the derivation: keep the
-    // observable readable but out of the enumerable keys.
-    Object.defineProperty(copy, 'auth', {
-      value: config.auth,
+  if (!config.auth) return copy
+  for (const key of ['token', 'withCredentials']) {
+    Object.defineProperty(copy, key, {
       enumerable: false,
-      writable: true,
       configurable: true,
+      get: () => {
+        warnings.printConfigTokenUnderReactiveAuthWarning()
+        return undefined
+      },
     })
-    return copy
   }
-  Object.defineProperty(copy, 'token', {
-    enumerable: false,
-    configurable: true,
-    get: () => {
-      warnings.printDeprecatedConfigTokenWarning()
-      const auth = peekAuth(config)
-      return auth !== undefined && 'token' in auth ? auth.token : undefined
-    },
-  })
-  Object.defineProperty(copy, 'withCredentials', {
-    enumerable: false,
-    configurable: true,
-    get: () => {
-      warnings.printDeprecatedConfigTokenWarning()
-      const auth = peekAuth(config)
-      return auth === undefined ? undefined : 'withCredentials' in auth
-    },
-  })
   return copy
-}
-
-/**
- * Decide which credential the new configuration carries: a reactive `auth`
- * source (its own, or inherited), or the static options.
- */
-function resolveAuthInput(
-  config: Partial<ClientConfig>,
-  prevConfig: Partial<ClientConfig>,
-  merged: Partial<ClientConfig>,
-): {auth: Observable<Promise<Auth>>} | {token: unknown; withCredentials: unknown} {
-  const ownAuth = config.auth
-  if (ownAuth !== undefined && hasOwnReactiveAuth(config)) {
-    if (hasOwnStaticAuth(config) && (config.token || config.withCredentials)) {
-      throw new Error(
-        '`auth` cannot be combined with `token` or `withCredentials`. ' +
-          'Pass the credential through `auth` alone, or use the static options without `auth`. ' +
-          "Note that `client.config()` includes `auth`; to replace an existing client's credential, " +
-          'use `client.withConfig({token})` rather than spreading its config into `createClient()`.',
-      )
-    }
-    return {auth: ownAuth}
-  }
-  // An inherited `auth` is static when the previous config's marker says so;
-  // the spread that built `merged` dropped the non-enumerable marker.
-  if (!hasOwnStaticAuth(config) && merged.auth && !getStaticAuth(prevConfig)) {
-    return {auth: merged.auth}
-  }
-  return {token: merged.token, withCredentials: merged.withCredentials}
 }
 
 export const initConfig = (
@@ -266,53 +196,30 @@ export const initConfig = (
   const isBrowser = typeof window !== 'undefined' && window.location && window.location.hostname
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
 
-  // Normalise the credential into `auth`, the one representation everything
-  // below the config layer reads. A reactive observable is carried by reference:
-  // the live transport cache keys on its identity. The static options stay
-  // readable on the config; under a reactive observable they are removed, and
-  // `exposeConfig` bridges those reads onto the resolved value.
-  const authInput = resolveAuthInput(config, prevConfig, newConfig)
-  // Markers describing the observable we are about to keep, from whichever
-  // config carried it in: a `withConfig` merge, or the previous config on
-  // reconfiguration. `newConfig` itself lost them to the spread above.
-  const inheritedMarkers = config.auth !== undefined ? authMarkers(config) : authMarkers(prevConfig)
-  if ('auth' in authInput) {
-    newConfig.auth = authInput.auth
+  // The credential is either the static `token` / `withCredentials` options or
+  // a reactive `auth` observable, never both. One the new configuration sets
+  // itself replaces the one inherited from `prevConfig`.
+  const ownReactiveAuth = hasOwnReactiveAuth(config)
+  const ownStaticAuth = hasOwnStaticAuth(config)
+  if (ownReactiveAuth && ownStaticAuth && (config.token || config.withCredentials)) {
+    throw new Error(
+      '`auth` cannot be combined with `token` or `withCredentials`. ' +
+        'Pass the credential through `auth` alone, or use the static options without `auth`. ' +
+        'A client configured with `auth` includes it in `client.config()`, so to replace its credential, ' +
+        'use `client.withConfig({token})` rather than spreading its config into `createClient()`.',
+    )
+  }
+  if (ownReactiveAuth) {
     delete newConfig.token
     delete newConfig.withCredentials
-    // Keep the record when the observable is the one the previous config
-    // had, so derived clients keep sharing it; start a fresh one otherwise.
-    const resolved = inheritedMarkers.resolvedAuth
-    defineAuthMarkers(newConfig, {
-      resolvedAuth:
-        resolved !== undefined && resolved.source === authInput.auth
-          ? resolved
-          : {source: authInput.auth},
-    })
-  } else {
-    if (authInput.token === undefined) delete newConfig.token
-    if (authInput.withCredentials === undefined) delete newConfig.withCredentials
+  } else if (ownStaticAuth || !newConfig.auth) {
+    delete newConfig.auth
   }
 
   const hasToken = Boolean(newConfig.token)
   if (newConfig.withCredentials && hasToken) {
     warnings.printCredentialedTokenWarning()
     newConfig.withCredentials = false
-  }
-
-  if (!('auth' in authInput)) {
-    const state = authFromStaticOptions(newConfig.token, newConfig.withCredentials)
-    // An unchanged static credential keeps its observable, so clients derived
-    // through `withConfig` share one identity (the live cache keys on it).
-    const inherited = inheritedMarkers.staticAuth
-    const source =
-      inherited !== undefined &&
-      inherited.source === newConfig.auth &&
-      isSameAuth(inherited.value, state)
-        ? inherited.source
-        : of(Promise.resolve(state))
-    newConfig.auth = source
-    defineAuthMarkers(newConfig, {staticAuth: {source, value: state}})
   }
 
   if (isBrowser && isLocalhost && hasToken && newConfig.ignoreBrowserTokenWarning !== true) {

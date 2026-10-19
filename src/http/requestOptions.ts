@@ -33,9 +33,10 @@ export type FetchRequest = Omit<GetItRequestOptions, 'headers'> & {
  * Reads the live client config, so reconfiguration via `client.config()` /
  * `withConfig()` (headers, proxy, ...) applies to subsequent requests.
  *
- * The client's own credential is not applied here: `applyAuth` attaches the
- * value resolved from `config.auth` afterwards. Only the per-request `token`
- * and `withCredentials` overrides are translated.
+ * The client's own credential is not applied here:
+ * `_prepareAuthenticatedRequest` attaches it afterwards, static or reactive.
+ * Only the per-request `token` and `withCredentials` overrides are
+ * translated.
  *
  * @internal
  */

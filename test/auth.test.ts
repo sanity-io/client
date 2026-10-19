@@ -298,18 +298,22 @@ describe('auth: requests', () => {
     expect(handled).toBe(2)
   })
 
-  test('a static token replaces an Authorization set through config headers, as before', async () => {
-    getActiveMock()
-      .scope(apiHost)
-      .on('GET', queryPath, {headers: {Authorization: 'Bearer real'}})
+  test('the client token replaces an Authorization set through config headers, static or reactive', async () => {
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('GET', queryPath, {headers: {Authorization: 'Bearer static'}})
+      .respond({status: 200, body: {result: []}})
+    scope
+      .on('GET', queryPath, {headers: {Authorization: 'Bearer reactive'}})
       .respond({status: 200, body: {result: []}})
 
-    const client = createClient({
+    const headers = {Authorization: 'Bearer from-headers'}
+    await createClient({...baseConfig, token: 'static', headers}).fetch('*')
+    await createClient({
       ...baseConfig,
-      auth: of(Promise.resolve<Auth>({token: 'real'})),
-      headers: {Authorization: 'Bearer from-headers'},
-    })
-    await client.fetch('*')
+      auth: of(Promise.resolve<Auth>({token: 'reactive'})),
+      headers,
+    }).fetch('*')
   })
 })
 
@@ -369,6 +373,41 @@ describe('auth: getAuth()', () => {
   })
 })
 
+describe('auth: observeAuth()', () => {
+  test('a static client emits its credential once and completes', async () => {
+    await expect(
+      lastValueFrom(
+        createClient({...baseConfig, token: 'static'})
+          .observeAuth()
+          .pipe(toArray()),
+      ),
+    ).resolves.toEqual([{token: 'static'}])
+    await expect(
+      lastValueFrom(createClient(baseConfig).observable.observeAuth().pipe(toArray())),
+    ).resolves.toEqual([{}])
+  })
+
+  test('a reactive client emits each settled credential, and nothing while a renewal is pending', async () => {
+    let renew: (auth: Auth) => void = () => {}
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
+    const client = createClient({...baseConfig, auth})
+    const seen: unknown[] = []
+    const subscription = client.observeAuth().subscribe((value) => seen.push(value))
+
+    await Promise.resolve()
+    auth.next(new Promise<Auth>((resolve) => (renew = resolve)))
+    await Promise.resolve()
+    expect(seen).toEqual([{token: 'first'}])
+
+    renew({withCredentials: true})
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    auth.next(Promise.resolve(undefined))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    subscription.unsubscribe()
+    expect(seen).toEqual([{token: 'first'}, {withCredentials: true}, {}])
+  })
+})
+
 describe('auth: configuration', () => {
   test('`auth` cannot be combined with `token` or `withCredentials`', () => {
     expect(() =>
@@ -386,14 +425,15 @@ describe('auth: configuration', () => {
     )
   })
 
-  test('the static options are normalised into `config().auth`', async () => {
-    await expect(
-      firstValueFrom(createClient({...baseConfig, token: 'static'}).config().auth),
-    ).resolves.toEqual({token: 'static'})
-    await expect(
-      firstValueFrom(createClient({...baseConfig, withCredentials: true}).config().auth),
-    ).resolves.toEqual({withCredentials: true})
-    await expect(firstValueFrom(createClient(baseConfig).config().auth)).resolves.toBeUndefined()
+  test('a static config keeps its options as configured, with no `auth`', () => {
+    const tokenConfig = createClient({...baseConfig, token: 'static'}).config()
+    expect(tokenConfig.token).toBe('static')
+    expect(tokenConfig.auth).toBeUndefined()
+    expect(Object.keys(tokenConfig)).not.toContain('auth')
+
+    const cookieConfig = createClient({...baseConfig, withCredentials: true}).config()
+    expect(cookieConfig.withCredentials).toBe(true)
+    expect(Object.keys(cookieConfig)).not.toContain('auth')
   })
 
   test('a reactive source is exposed as-is and shared by reference through withConfig', () => {
@@ -411,14 +451,13 @@ describe('auth: configuration', () => {
     const client = createClient({...baseConfig, auth})
 
     const withToken = client.withConfig({token: 'static'})
-    expect(withToken.config().auth).not.toBe(auth)
+    expect(withToken.config().auth).toBeUndefined()
     expect(withToken.config().token).toBe('static')
-    await expect(firstValueFrom(withToken.config().auth)).resolves.toEqual({token: 'static'})
+    await expect(withToken.getAuth()).resolves.toEqual({token: 'static'})
 
     const withCookies = client.withConfig({withCredentials: true})
-    await expect(firstValueFrom(withCookies.config().auth)).resolves.toEqual({
-      withCredentials: true,
-    })
+    expect(withCookies.config().auth).toBeUndefined()
+    await expect(withCookies.getAuth()).resolves.toEqual({withCredentials: true})
   })
 
   test('withConfig with explicit undefined clears the inherited credential', async () => {
@@ -427,11 +466,12 @@ describe('auth: configuration', () => {
       auth: of(Promise.resolve<Auth>({token: 'reactive'})),
     })
     const cleared = reactive.withConfig({token: undefined, withCredentials: false})
-    await expect(firstValueFrom(cleared.config().auth)).resolves.toBeUndefined()
+    expect(cleared.config().auth).toBeUndefined()
+    await expect(cleared.getAuth()).resolves.toEqual({})
 
     const fixed = createClient({...baseConfig, token: 'static'})
     const clearedStatic = fixed.withConfig({token: undefined})
-    await expect(firstValueFrom(clearedStatic.config().auth)).resolves.toBeUndefined()
+    await expect(clearedStatic.getAuth()).resolves.toEqual({})
     expect(clearedStatic.config().token).toBeUndefined()
   })
 
@@ -453,10 +493,11 @@ describe('auth: configuration', () => {
     expect(Object.keys(derived.config())).not.toContain('token')
   })
 
-  test('an unchanged static credential keeps the same normalised observable', () => {
+  test('a static credential is inherited through withConfig', async () => {
     const client = createClient({...baseConfig, token: 'static'})
     const derived = client.withConfig({dataset: 'other'})
-    expect(derived.config().auth).toBe(client.config().auth)
+    expect(derived.config().token).toBe('static')
+    await expect(derived.getAuth()).resolves.toEqual({token: 'static'})
   })
 
   test('reconfiguring with config() switches between the two forms', async () => {
@@ -467,10 +508,11 @@ describe('auth: configuration', () => {
     expect(client.config().auth).toBe(auth)
 
     client.config({token: 'static-again'})
-    await expect(firstValueFrom(client.config().auth)).resolves.toEqual({token: 'static-again'})
+    expect(client.config().auth).toBeUndefined()
+    await expect(client.getAuth()).resolves.toEqual({token: 'static-again'})
   })
 
-  test('internal bookkeeping stays out of config() keys and serialisations', async () => {
+  test('a reactive credential stays out of config() keys and serialisations, even after a request', async () => {
     getActiveMock()
       .scope(apiHost)
       .on('GET', queryPath, {headers: {Authorization: 'Bearer secret-token'}})
@@ -481,16 +523,11 @@ describe('auth: configuration', () => {
       auth: new BehaviorSubject<Promise<Auth>>(Promise.resolve({token: 'secret-token'})),
     })
     await reactive.fetch('*')
-    const keys = Object.keys(reactive.config())
-    expect(keys).not.toContain('staticAuth')
-    expect(keys).not.toContain('resolvedAuth')
+    expect(Object.keys(reactive.config())).not.toContain('token')
     expect(JSON.stringify(reactive.config())).not.toContain('secret-token')
 
-    // A static config's `auth` is derived from `token`, so it is readable but
-    // not enumerable: a spread reproduces the token, not the derivation.
+    // A static config is its options, so a spread reproduces them as is.
     const fixed = createClient({...baseConfig, token: 'static'})
-    expect(fixed.config().auth).toBeDefined()
-    expect(Object.keys(fixed.config())).not.toContain('auth')
     const respread = createClient({...fixed.config()})
     await expect(respread.getAuth()).resolves.toEqual({token: 'static'})
   })
@@ -515,17 +552,13 @@ describe('auth: configuration', () => {
     expect(reactive.observable.clone().config().auth).toBe(auth)
   })
 
-  test('config() of a reactive client can be passed back in without spreading it', async () => {
-    getActiveMock()
-      .scope(apiHost)
-      .on('GET', queryPath, {headers: {Authorization: 'Bearer reactive'}})
-      .respond({status: 200, body: {result: []}})
+  test('config() of a reactive client can be passed back in without spreading it', () => {
     const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'reactive'}))
     const client = createClient({...baseConfig, auth})
-    // Resolve a credential, so the deprecated `token` getter has a value to return.
-    await client.fetch('*')
 
-    // `client.config()` already carries `resolveFetch`, so no wrapper is needed.
+    // Its `token` / `withCredentials` getters are non-enumerable, so they do
+    // not count as a static credential next to `auth`. `client.config()`
+    // already carries `resolveFetch`, so no wrapper is needed.
     expect(createCoreClient(client.config()).config().auth).toBe(auth)
     const staticClient = createClient({...baseConfig, token: 'static'})
     expect(staticClient.withConfig(client.config()).config().auth).toBe(auth)
@@ -612,7 +645,7 @@ describe('auth: listen()', () => {
     expect(getActiveMock()).toHaveReceivedRequestTimes('GET', listenPath, 2)
   })
 
-  test('a 401 in cookie mode is superseded by a re-login settling to a new credential', async () => {
+  test('a new credential replaces a connection attempt in flight, even one about to be rejected', async () => {
     expect.assertions(2)
     const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve({withCredentials: true}))
     const scope = getActiveMock().scope(apiHost)
@@ -623,15 +656,15 @@ describe('auth: listen()', () => {
 
     const client = createClient({...baseConfig, auth})
     const welcome = firstValueFrom(client.listen('*', {}, {events: ['welcome']}))
-    // The user logs in again while the first attempt is in flight: same
-    // mode, new credential object.
+    // The user logs in again while the first attempt is in flight, so the
+    // stream reconnects before that attempt's 401 arrives.
     setTimeout(() => auth.next(Promise.resolve<Auth>({withCredentials: true})), 3)
 
     await expect(welcome).resolves.toMatchObject({type: 'welcome'})
     expect(getActiveMock()).toHaveReceivedRequestTimes('GET', listenPath, 2)
   })
 
-  test('a 401 is final when the source still stands by the rejected credential', async () => {
+  test('a 401 ends the stream with a ConnectionFailedError', async () => {
     getActiveMock().scope(apiHost).on('GET', listenPath).respondPersist({status: 401, body: ''})
 
     const client = createClient({
@@ -642,55 +675,6 @@ describe('auth: listen()', () => {
 
     expect(error).toBeInstanceOf(ConnectionFailedError)
     expect(error.status).toBe(401)
-  })
-
-  test('a 401 during a pending renewal waits for it and reconnects with the new credential', async () => {
-    expect.assertions(2)
-    // The first attempt goes out with the token the server has stopped
-    // accepting. By the time the 401 is handled the source holds a pending
-    // renewal, so the stream waits for it instead of erroring.
-    let renew: (state: Auth) => void = () => {}
-    const renewal = new Promise<Auth>((resolve) => {
-      renew = resolve
-    })
-    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'expired'}))
-    const scope = getActiveMock().scope(apiHost)
-    scope.on('GET', listenPath, {headers: {Authorization: 'Bearer expired'}}).respond({
-      status: 401,
-      body: '',
-      delay: 10,
-    })
-    scope.on('GET', listenPath, {headers: {Authorization: 'Bearer fresh'}}).respond({
-      status: 200,
-      headers: sseHeaders,
-      body: encode({event: 'welcome', data: '{}'}),
-    })
-
-    const client = createClient({...baseConfig, auth})
-    const welcome = firstValueFrom(client.listen('*', {}, {events: ['welcome']}))
-    // Renewal starts while the first attempt is in flight, settles after the 401.
-    setTimeout(() => auth.next(renewal), 3)
-    setTimeout(() => renew({token: 'fresh'}), 30)
-
-    await expect(welcome).resolves.toMatchObject({type: 'welcome'})
-    expect(getActiveMock()).toHaveReceivedRequestTimes('GET', listenPath, 2)
-  })
-
-  test('unsubscribing while a 401 waits on a pending renewal releases the source', async () => {
-    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'expired'}))
-    getActiveMock()
-      .scope(apiHost)
-      .on('GET', listenPath, {headers: {Authorization: 'Bearer expired'}})
-      .respond({status: 401, body: '', delay: 10})
-
-    const client = createClient({...baseConfig, auth})
-    const subscription = client.listen('*', {}, {events: ['welcome']}).subscribe()
-    // A renewal that never settles: the 401 handler is left waiting on it.
-    setTimeout(() => auth.next(new Promise<Auth>(() => {})), 3)
-    await new Promise((resolve) => setTimeout(resolve, 30))
-
-    subscription.unsubscribe()
-    expect(auth.observed, 'no wait outlives the stream').toBe(false)
   })
 
   test('a pending renewal does not reconnect an open stream; its settling does', async () => {

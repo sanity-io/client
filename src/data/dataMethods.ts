@@ -3,9 +3,10 @@ import {anySignal} from 'get-it/any-signal'
 import {defer, Observable, of} from 'rxjs'
 import {filter, map, mergeMap} from 'rxjs/operators'
 
-import {applyAuth, getStaticAuth, hasRequestAuth, resolveAuth} from '../auth'
+import {applyAuth, getStaticAuth, hasRequestAuth} from '../auth'
 import {validateApiPerspective} from '../config'
 import {type FetchRequest, requestOptions} from '../http/requestOptions'
+import {resolveAuth} from '../reactiveAuth'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {stegaClean, type StegaCleaned} from '../stega/stegaClean'
 import type {
@@ -1117,10 +1118,11 @@ function _prepareRequest(client: Client, options: RequestObservableOptions): Fet
 }
 
 /**
- * {@link _prepareRequest}, then the client's credential: the current value of
- * `config.auth`, applied as a bearer token or `credentials: 'include'`. A
- * `token` or `Authorization` header on the request itself replaces the
- * client's token; the client's cookie mode still applies.
+ * {@link _prepareRequest}, then the client's credential: its static `token` /
+ * `withCredentials`, or the current value of a reactive `auth`, applied as a
+ * bearer token or `credentials: 'include'`. A `token` or `Authorization`
+ * header on the request itself replaces the client's token; the client's
+ * cookie mode still applies.
  *
  * Synchronous for a static config, so those requests reach the transport
  * exactly as they did before `auth` existed. A reactive `auth` is awaited even

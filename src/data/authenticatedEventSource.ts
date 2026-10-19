@@ -1,10 +1,10 @@
 import {EventSource, type EventSourceFetchInit} from 'eventsource'
-import {catchError, defer, EMPTY, mergeMap, Observable, of, switchMap, tap, throwError} from 'rxjs'
+import {defer, Observable, of, switchMap, tap} from 'rxjs'
 
-import {currentAuth, getStaticAuth, resolveAuth, settledAuth} from '../auth'
-import {DEFAULT_REQUEST_TIMEOUT_MS} from '../http/requestOptions'
+import {getStaticAuth} from '../auth'
+import {resolveAuth, settledAuth} from '../reactiveAuth'
 import type {Auth, InitializedClientConfig} from '../types'
-import {connectEventSource, ConnectionFailedError, type EventSourceEvent} from './eventsource'
+import {connectEventSource, type EventSourceEvent} from './eventsource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 import {type EventSourceFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
 
@@ -17,15 +17,18 @@ export interface AuthenticatedEventSourceOptions {
    * the stream connects anonymously and ignores credential changes.
    */
   withAuth: boolean
+  /** Called with the credential each connection attempt is about to send. */
+  onSend?: (auth: Auth) => void
 }
 
 /**
- * An EventSource connection that follows the client's `auth` observable.
+ * An EventSource connection that follows the client's credential. A static
+ * one is sent as is; the rest of this describes a reactive `auth`.
  *
  * Two mechanisms, both needed:
  *
- * - `switchMap` on every emission of `config.auth` closes the current
- *   connection and opens a new one, which carries `Last-Event-ID` so the
+ * - `switchMap` on every credential `config.auth` settles to closes the
+ *   current connection and opens a new one, which carries `Last-Event-ID` so the
  *   server resumes after the last event the consumer saw. A successful resume
  *   answers `welcomeback` (listen) and nothing is refetched; a failed one
  *   (position aged out) answers `reset` / `restart` and the consumer's normal
@@ -40,11 +43,9 @@ export interface AuthenticatedEventSourceOptions {
  *   every request, cancelled by the abort signal the package passes in `init`.
  *
  * Transient connection failures are retried per credential by
- * `reconnectOnConnectionFailure`. A 401 is final only if the source still
- * stands by the credential that was rejected; if a renewal is pending or a
- * different credential has settled, the stream reconnects with it instead.
- * Any other rejection (4xx) errors the stream with a `ConnectionFailedError`.
- * An error from `auth` itself ends the stream with that error.
+ * `reconnectOnConnectionFailure`. A rejection (4xx, including a 401) errors
+ * the stream with a `ConnectionFailedError`, and what to do about it is the
+ * consumer's call. An error from `auth` itself ends the stream with that error.
  *
  * @internal
  */
@@ -68,22 +69,15 @@ export function connectAuthenticatedEventSource<EventName extends string>(
     // `undefined` for an anonymous connection. Absent for a reactive `auth`,
     // which each attempt resolves on its own.
     const syncAuth = options.withAuth ? getStaticAuth(config) : {value: undefined}
-    // How long a 401 may wait for the source to move on before it is final.
-    const timeoutMs = config.timeout === undefined ? DEFAULT_REQUEST_TIMEOUT_MS : config.timeout
 
     return auth$.pipe(
       switchMap(() => {
-        // The credential the most recent attempt went out with: what a 401
-        // rejected. Not the emission `switchMap` received, since the
-        // package's own reconnects re-resolve it.
-        let lastSentAuth: Auth
-
         const send = (
           fetchUrl: string | URL,
           init: EventSourceFetchInit | undefined,
           auth: Auth,
         ) => {
-          lastSentAuth = auth
+          options.onSend?.(auth)
           return transport(fetchUrl, withAuthAndResume(init, options.headers, auth, lastEventId))
         }
         // A credential known without waiting is sent in the same tick, and the
@@ -98,27 +92,6 @@ export function connectAuthenticatedEventSource<EventName extends string>(
 
         return connectEventSource(() => new EventSource(url, {fetch}), events).pipe(
           reconnectOnConnectionFailure(),
-          // A 401 is final only if the source still stands by the rejected
-          // credential, which is the same settled object: a re-login in cookie
-          // mode settles to a new `{withCredentials: true}` and counts as moved
-          // on. If a renewal is pending, or a different credential has settled,
-          // the outer `switchMap` reconnects with it as soon as it settles;
-          // this attempt just steps aside. The wait is bounded like a
-          // request's; on timeout, or if the source itself fails, the original
-          // rejection is what surfaces.
-          catchError((err: unknown) => {
-            if (
-              !options.withAuth ||
-              !(err instanceof ConnectionFailedError) ||
-              err.status !== 401
-            ) {
-              return throwError(() => err)
-            }
-            return currentAuth(config, timeoutMs).pipe(
-              mergeMap((current) => (current === lastSentAuth ? throwError(() => err) : EMPTY)),
-              catchError(() => throwError(() => err)),
-            )
-          }),
         )
       }),
       tap((event) => {

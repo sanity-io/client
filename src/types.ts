@@ -181,13 +181,11 @@ export interface ClientConfig {
    * if the client may be idle when it rejects, since an unobserved
    * rejection crashes a Node process.
    *
-   * The observable must emit the current credential to every subscriber and
-   * then every change (a `BehaviorSubject` or `shareReplay(1)` does), and
-   * must never complete. A wait is cancelled by the request's `signal` and
+   * The observable must replay its latest emission to every new subscriber
+   * (a `BehaviorSubject` or `shareReplay(1)` does), then emit every change,
+   * and never complete. A wait is cancelled by the request's `signal` and
    * bounded by its `timeout`. The client never refreshes a credential
-   * itself; on a 401 from a stream it reconnects only if the source has
-   * since moved on (a pending renewal, or a different settled credential),
-   * and otherwise errors.
+   * itself, and a 401 on a stream ends it with a `ConnectionFailedError`.
    *
    * Cannot be combined with `token` or `withCredentials`, which are the
    * static forms of the same setting. The credential is unknown at
@@ -198,9 +196,8 @@ export interface ClientConfig {
   auth?: Observable<Promise<Auth>>
   /**
    * A static bearer token, sent as `Authorization: Bearer <token>` on every
-   * request. Equivalent to `auth: of(Promise.resolve({token}))`. The
-   * recommended form for scripts, servers and functions, where the token
-   * does not change.
+   * request. The recommended form for scripts, servers and functions, where
+   * the token does not change. Use `auth` instead when it does.
    */
   token?: string
 
@@ -306,9 +303,7 @@ export interface ClientConfig {
   ignoreWarnings?: string | RegExp | Array<string | RegExp>
   /**
    * Send the browser's cookies for the API origin with every request instead
-   * of a token. Equivalent to
-   * `auth: of(Promise.resolve({withCredentials: true}))`. Disables `useCdn`,
-   * since cookies never reach the CDN.
+   * of a token. Disables `useCdn`, since cookies never reach the CDN.
    */
   withCredentials?: boolean
   allowReconfigure?: boolean
@@ -446,31 +441,15 @@ export interface InitializedClientConfig extends ClientConfig {
    */
   headers?: Record<string, string>
   /**
-   * The credential observable every request and stream on this client reads.
-   * Always present: a static `token` / `withCredentials` is wrapped in an observable
-   * that emits it once, a client configured without either gets one
-   * emitting `undefined`, and a reactive `auth` is the observable that was
-   * passed in. Read it with `firstValueFrom(config.auth)` for a one-off
-   * value, subscribe to follow changes, or key a cache on it by reference
-   * (clients derived through `withConfig` share it unless they set their own
-   * credential).
-   */
-  auth: Observable<Promise<Auth>>
-  /**
-   * @deprecated Use `client.getAuth()`, which is correct for static and
-   * reactive configurations alike. Static configurations return the configured
-   * token here; under a reactive `auth` this is the last credential the client
-   * resolved, `undefined` before the first request or stream and possibly
-   * stale while a refresh is in progress (a warning says so on first read).
+   * The configured static token. `undefined` for a client configured with a
+   * reactive `auth`, where `client.getAuth()` reads the credential the client
+   * sends (a warning says so on first read).
    */
   token?: string
   /**
-   * @deprecated Use `client.getAuth()`, which is correct for static and
-   * reactive configurations alike. Static configurations return the configured
-   * value here; under a reactive `auth` this is derived from the last
-   * credential the client resolved, `undefined` before the first request or
-   * stream and possibly stale while a refresh is in progress (a warning says
-   * so on first read).
+   * The configured static cookie mode. `undefined` for a client configured
+   * with a reactive `auth`, where `client.getAuth()` reads the credential the
+   * client sends (a warning says so on first read).
    */
   withCredentials?: boolean
 }

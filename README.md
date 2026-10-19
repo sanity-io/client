@@ -1066,7 +1066,7 @@ and configure the client with a token or `withCredentials: true`. The token shou
 
 ### Reactive authentication
 
-When the credential changes while the client is alive, for example in an app whose OAuth access token is refreshed or whose user signs in and out, pass an observable as `auth` instead of a static `token`. Each emission is a promise of the credential: an already settled one for a credential you hold, or the refresh call itself while a renewal is in progress. Every request waits for the latest emission to settle, and every open `listen()` or `live.events()` stream reconnects when a new credential settles, resuming from its last event id.
+Pass an observable as `auth` instead of a static `token` when the credential changes while the client is alive, for example when an OAuth access token is refreshed or the user signs in and out. Each emission is a promise of the credential: an already settled one for a credential you hold, or the promise your refresh call returns while a renewal is in progress. Requests wait for the latest emission to settle, and open `listen()` and `live.events()` streams reconnect when a new credential settles, resuming from their last event ID.
 
 ```ts
 import {createClient, type Auth} from '@sanity/client'
@@ -1082,17 +1082,19 @@ const client = createClient({
   auth,
 })
 
-// When a refresh starts, emit the refresh itself; requests and reconnects wait for it to resolve:
+// When a refresh starts, emit its promise. Requests and reconnects wait for it:
 auth.next(refreshAccessToken())
 // On sign-out:
 auth.next(Promise.resolve(undefined))
 ```
 
-The settled value is one of `{token: string}`, `{withCredentials: true}` (send the browser's cookies) or `undefined` (anonymous). The observable must emit the current credential to every subscriber and then every change, which a `BehaviorSubject` or `shareReplay(1)` does, and must never complete. While the latest emission is pending, requests wait for it until their `signal` aborts or the request's `timeout` elapses (five minutes by default). Stream reconnects wait for it too, so a reconnect made during a renewal never sends an expired token.
+The settled credential is one of `{token: string}`, `{withCredentials: true}` (send the browser's cookies) or `undefined` (anonymous). If the observable can emit `{withCredentials: true}`, set `useCdn: false`, because cookies never reach the CDN. The observable must replay its latest emission to every new subscriber, emit every change after that, and never complete. A `BehaviorSubject` or `shareReplay(1)` does this.
 
-Rejecting the promise means the credential failed. Every request and every open stream on the client then ends with that error (an open connection was authenticated with the credential that just failed, so it is not kept), and later requests keep failing until you emit a new value. Retry a refresh inside the promise, and reject only when the session is over. If the observable itself errors, the same happens with that error.
+While the latest emission is pending, a request waits until it settles, the request's `signal` aborts, or the request's `timeout` elapses (five minutes by default). Stream reconnects wait as well, so a reconnect during a renewal never sends an expired token.
 
-Nothing awaits the emitted promise while the client is idle, so a rejection at that point is an unhandled rejection, which crashes a Node process by default. Attach your own handler to the promise you emit. The client's requests and streams fail on their own, so the handler only needs to do the app's part:
+A rejected promise means the credential failed. Every request and every open stream on the client then fails with that error, and later requests keep failing until you emit a new value. Open streams are closed rather than kept, because their connection was authenticated with the credential that failed. Retry a failed refresh inside the promise, and reject only when the session is over. If the observable itself errors, the same happens with its error.
+
+When the client has no request or stream in progress, nothing else handles the promise, so a rejection is unhandled. Node crashes the process on an unhandled rejection by default. Attach your own handler to the promise you emit. The client's requests and streams fail on their own, so the handler only needs to do your app's part:
 
 ```ts
 const renewal = refreshAccessToken()
@@ -1100,15 +1102,13 @@ renewal.catch(showLoginWindow)
 auth.next(renewal)
 ```
 
-The client never refreshes a credential itself. When a stream is rejected with a 401, it checks whether the source has moved on: if a renewal is pending or a different credential has settled, it reconnects with that; if the source still presents the rejected credential, the stream ends with a `ConnectionFailedError` and your app decides what to do.
+The client never refreshes a credential itself. When a stream gets a 401, it ends with a `ConnectionFailedError`, and your app decides what to do, for example resubscribe once a new credential is available.
 
-`auth` cannot be combined with `token` or `withCredentials`; those remain the recommended form for scripts, servers and functions, where the credential does not change. Clients derived with `withConfig()` share the parent's `auth` unless they set a credential of their own.
+You can't combine `auth` with `token` or `withCredentials`. The static options are still the recommended form for scripts, servers and functions, where the credential does not change. A client derived with `withConfig()` shares its parent's `auth` unless it sets a credential of its own.
 
-To read the credential, use `const {token, withCredentials} = await client.getAuth()`. It resolves to the credential the client would send right now, for static and reactive configurations alike, and waits while a renewal is pending. An anonymous client resolves to an empty object, so destructuring is safe.
+To read the credential, call `client.getAuth()`. It resolves to the credential the client would send right now, and waits while a renewal is pending. An anonymous client resolves to an empty object, so `const {token, withCredentials} = await client.getAuth()` is safe. To follow changes, subscribe to `client.observeAuth()`. It emits the current credential in the same form, then each new one once it settles. Both methods work for static configurations too, where `observeAuth()` emits once and completes.
 
-To follow changes, subscribe to `client.config().auth`. It is always present, including for static configurations, and it emits promises, so settle them with `.pipe(switchMap((pending) => from(pending)))`.
-
-`client.config().token` and `client.config().withCredentials` are deprecated in favor of `getAuth()`. For static configurations they keep returning the configured values. Under a reactive `auth` they return the last credential the client resolved: `undefined` before the first request, and possibly stale while a refresh is in progress. The first read prints a warning that says so.
+`client.config()` returns what was configured. For a client configured with `auth`, that includes `auth`, and `config().token` and `config().withCredentials` are `undefined`. The first read of either prints a warning that points to `getAuth()`.
 
 ### Creating documents
 
