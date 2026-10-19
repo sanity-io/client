@@ -86,7 +86,6 @@ function _knowledgeBaseUrl(knowledgeBaseId: string, suffix = ''): string {
   return `${COLLECTION_URL}/${encodeURIComponent(knowledgeBaseId)}${suffix}`
 }
 
-/** Serialize defined values into query params, dropping the undefined ones. */
 function _conversationUrl(client: Client, threadId: string): string {
   const organizationId = client.config().context?.organizationId
 
@@ -101,6 +100,7 @@ function _conversationUrl(client: Client, threadId: string): string {
   return `/context/organizations/${encodeURIComponent(organizationId)}/conversations/${encodeURIComponent(threadId)}`
 }
 
+/** Serialize defined values into query params, dropping the undefined ones. */
 function _query(entries: Record<string, string | number | undefined>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(entries).flatMap(([key, value]) =>
@@ -344,6 +344,16 @@ export class ContextClient {
         ...options,
       })
     },
+    /**
+     * Delete one recorded conversation, transcript and classification
+     * included. Rejects with a 404 when the thread was never recorded.
+     */
+    delete: (params: {threadId: string}, options?: RequestOptions): Promise<void> =>
+      _request<void>(this.#client, this.#httpRequest, {
+        url: _conversationUrl(this.#client, params.threadId),
+        method: 'DELETE',
+        ...options,
+      }),
     /**
      * One recorded conversation by its thread id, or `null` when the thread
      * was never recorded. Runs:
@@ -825,6 +835,19 @@ export class ObservableContextClient {
         }),
       )
     },
+    /**
+     * Delete one recorded conversation, transcript and classification
+     * included. Errors with a 404 when the thread was never recorded.
+     */
+    delete: (params: {threadId: string}, options?: RequestOptions): Observable<void> =>
+      _observe(options?.signal, (signal) =>
+        _request<void>(this.#client, this.#httpRequest, {
+          url: _conversationUrl(this.#client, params.threadId),
+          method: 'DELETE',
+          tag: options?.tag,
+          signal,
+        }),
+      ),
     /**
      * One recorded conversation by its thread id, or `null` when the thread
      * was never recorded. Runs:

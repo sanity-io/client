@@ -75,7 +75,7 @@ describe('context GROQ reads', () => {
     expect(() => withoutOrg.context.listen(query)).toThrow(orgError)
   })
 
-  test('conversations.save PUTs the transcript and classify PATCHes the verdict', async () => {
+  test('conversations.save PUTs the transcript, classify PATCHes the verdict, and delete DELETEs the thread', async () => {
     const conversation = {...conversationDocument, id: 'conversation-1'}
     const scope = getActiveMock().scope(apiHost)
     scope
@@ -91,6 +91,9 @@ describe('context GROQ reads', () => {
         body: {coreMetrics: {successScore: 9, sentiment: 'positive', contentGaps: []}},
       })
       .respond({status: 200, body: conversation})
+    scope
+      .on('DELETE', `/v2026-08-25/context/organizations/${organizationId}/conversations/thread-1`)
+      .respond({status: 204})
 
     await expect(
       getMockClient().context.conversations.save({
@@ -105,14 +108,22 @@ describe('context GROQ reads', () => {
         coreMetrics: {successScore: 9, sentiment: 'positive', contentGaps: []},
       }),
     ).resolves.toEqual(conversation)
+    await expect(
+      getMockClient().context.conversations.delete({threadId: 'thread-1'}),
+    ).resolves.toBeUndefined()
   })
 
-  test('conversations.save requires context.organizationId in the client configuration', () => {
+  test('conversation writes require context.organizationId and a threadId', () => {
     const withoutOrg = getMockClient({context: undefined})
+    const orgError = '`context.organizationId` must be configured to record conversations'
 
     expect(() =>
       withoutOrg.context.conversations.save({threadId: 'thread-1', messages: []}),
-    ).toThrow('`context.organizationId` must be configured to record conversations')
+    ).toThrow(orgError)
+    expect(() => withoutOrg.context.conversations.delete({threadId: 'thread-1'})).toThrow(orgError)
+    expect(() => getMockClient().context.conversations.delete({threadId: ''})).toThrow(
+      '`threadId` must be provided',
+    )
   })
 
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {
