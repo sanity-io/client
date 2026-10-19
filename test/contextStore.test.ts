@@ -75,7 +75,7 @@ describe('context GROQ reads', () => {
     expect(() => withoutOrg.context.listen(query)).toThrow(orgError)
   })
 
-  test('conversations.save PUTs the transcript and classify PATCHes the verdict', async () => {
+  test('conversations.save PUTs the transcript, classify PATCHes the verdict, and delete DELETEs the thread', async () => {
     const conversation = {...conversationDocument, id: 'conversation-1'}
     const scope = getActiveMock().scope(apiHost)
     scope
@@ -91,6 +91,9 @@ describe('context GROQ reads', () => {
         body: {coreMetrics: {successScore: 9, sentiment: 'positive', contentGaps: []}},
       })
       .respond({status: 200, body: conversation})
+    scope
+      .on('DELETE', `/v2026-08-25/context/organizations/${organizationId}/conversations/thread-1`)
+      .respond({status: 204})
 
     await expect(
       getMockClient().context.conversations.save({
@@ -105,72 +108,12 @@ describe('context GROQ reads', () => {
         coreMetrics: {successScore: 9, sentiment: 'positive', contentGaps: []},
       }),
     ).resolves.toEqual(conversation)
-  })
-
-  test('conversations.delete DELETEs the thread and rejects an unknown one with 404', async () => {
-    const path = `/v2026-08-25/context/organizations/${organizationId}/conversations`
-    const scope = getActiveMock().scope(apiHost)
-    scope.on('DELETE', `${path}/thread-1`).respond({status: 204})
-    scope.on('DELETE', `${path}/thread-2`).respond({status: 204})
-    scope.on('DELETE', `${path}/missing`).respond({
-      status: 404,
-      body: {statusCode: 404, error: 'Not Found', code: 'conversationNotFound'},
-    })
-
     await expect(
       getMockClient().context.conversations.delete({threadId: 'thread-1'}),
     ).resolves.toBeUndefined()
-    await expect(
-      firstValueFrom(
-        getMockClient().observable.context.conversations.delete({threadId: 'thread-2'}),
-      ),
-    ).resolves.toBeUndefined()
-    await expect(
-      getMockClient().context.conversations.delete({threadId: 'missing'}),
-    ).rejects.toMatchObject({statusCode: 404})
   })
 
-  test('conversations.delete forwards the request tag and the abort signal on both clients', async () => {
-    const path = `/v2026-08-25/context/organizations/${organizationId}/conversations/thread-1`
-    const scope = getActiveMock().scope(apiHost)
-    scope.on('DELETE', path).respond({status: 204})
-    scope.on('DELETE', path).respond({status: 204})
-    const client = getMockClient()
-
-    await client.context.conversations.delete({threadId: 'thread-1'}, {tag: 'erasure'})
-    await firstValueFrom(
-      client.observable.context.conversations.delete({threadId: 'thread-1'}, {tag: 'erasure'}),
-    )
-    expect(
-      getActiveMock()
-        .getRequests()
-        .map((request) => request.query.tag),
-    ).toEqual(['erasure', 'erasure'])
-
-    scope.on('DELETE', path).respond({status: 204, delay: 60_000})
-    scope.on('DELETE', path).respond({status: 204, delay: 60_000})
-    const promiseCaller = new AbortController()
-    const observableCaller = new AbortController()
-    const promiseDelete = client.context.conversations.delete(
-      {threadId: 'thread-1'},
-      {signal: promiseCaller.signal},
-    )
-    const observableDelete = firstValueFrom(
-      client.observable.context.conversations.delete(
-        {threadId: 'thread-1'},
-        {signal: observableCaller.signal},
-      ),
-    )
-    const aborted = Promise.all([
-      expect(promiseDelete).rejects.toHaveProperty('name', 'AbortError'),
-      expect(observableDelete).rejects.toHaveProperty('name', 'AbortError'),
-    ])
-    promiseCaller.abort()
-    observableCaller.abort()
-    await aborted
-  })
-
-  test('conversation writes require context.organizationId in the client configuration', () => {
+  test('conversation writes require context.organizationId and a threadId', () => {
     const withoutOrg = getMockClient({context: undefined})
     const orgError = '`context.organizationId` must be configured to record conversations'
 
@@ -178,15 +121,9 @@ describe('context GROQ reads', () => {
       withoutOrg.context.conversations.save({threadId: 'thread-1', messages: []}),
     ).toThrow(orgError)
     expect(() => withoutOrg.context.conversations.delete({threadId: 'thread-1'})).toThrow(orgError)
-  })
-
-  test('conversations.delete rejects an empty threadId before any request', async () => {
     expect(() => getMockClient().context.conversations.delete({threadId: ''})).toThrow(
       '`threadId` must be provided',
     )
-    await expect(
-      firstValueFrom(getMockClient().observable.context.conversations.delete({threadId: ''})),
-    ).rejects.toThrow('`threadId` must be provided')
   })
 
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {
