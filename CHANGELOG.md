@@ -1,5 +1,12 @@
 # @sanity/client
 
+## 8.10.1
+
+### Patch Changes
+
+- **deps:** update non-major ([#1328](https://github.com/sanity-io/client/pull/1328)) ([afebd83](https://github.com/sanity-io/client/commit/afebd83813e9ce1e6776e71c3c9ba580486dca54))
+- **deps:** update dependency get-it to ^9.6.2 ([#1369](https://github.com/sanity-io/client/pull/1369)) ([bd56d79](https://github.com/sanity-io/client/commit/bd56d7939097e569ee0788dcdd38d1caad3d8afe))
+
 ## 8.10.0
 
 ### Minor Changes
