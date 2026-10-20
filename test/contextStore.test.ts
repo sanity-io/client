@@ -126,6 +126,56 @@ describe('context GROQ reads', () => {
     )
   })
 
+  test('mcpEndpoints.status and initialContext read an endpoint by name with its runtime options', async () => {
+    const status = {
+      requiredOk: true,
+      checks: {
+        studio: null,
+        semanticSearch: null,
+        schema: null,
+        knowledgeBases: {ok: true, resolved: ['kb3do82whm']},
+      },
+    }
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent/status`, {
+        query: {mode: 'knowledge_base'},
+      })
+      .respond({status: 200, body: status})
+    scope
+      .on(
+        'GET',
+        `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent/initial-context`,
+        {query: {heading_offset: '2'}},
+      )
+      .respond({
+        status: 200,
+        headers: {'content-type': 'text/plain; charset=utf-8'},
+        body: '### Support agent',
+      })
+
+    await expect(
+      getMockClient().context.mcpEndpoints.status({name: 'support-agent', mode: 'knowledge_base'}),
+    ).resolves.toEqual(status)
+    await expect(
+      getMockClient().context.mcpEndpoints.initialContext({
+        name: 'support-agent',
+        heading_offset: '2',
+      }),
+    ).resolves.toBe('### Support agent')
+  })
+
+  test('mcpEndpoints serving reads require context.organizationId and a name', () => {
+    const orgError = '`context.organizationId` must be configured to use MCP endpoints'
+
+    expect(() =>
+      getMockClient({context: undefined}).context.mcpEndpoints.status({name: 'support-agent'}),
+    ).toThrow(orgError)
+    expect(() => getMockClient().context.mcpEndpoints.initialContext({name: ''})).toThrow(
+      '`name` must be provided',
+    )
+  })
+
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {
     const mutation = {
       documentId: 'conversation-1',

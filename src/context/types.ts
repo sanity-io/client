@@ -54,6 +54,7 @@ type KnowledgeBasesPath = '/{apiVersion}/context/knowledge-bases'
 type ConversationPath =
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}'
 type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
+type McpEndpointPath = '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}'
 type ImportsPath = `${KnowledgeBasePath}/imports`
 type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
 type UploadsPath = `${KnowledgeBasePath}/imports/uploads`
@@ -70,6 +71,7 @@ type IssueReopenPath = `${KnowledgeBasePath}/issues/{issueId}/reopen`
 type InstructionsPath = `${KnowledgeBasePath}/instructions`
 
 type JsonResponse<T> = T extends {content: {'application/json': infer R}} ? R : never
+type QueryParams<T> = T extends {parameters: {query?: infer Q}} ? NonNullable<Q> : never
 type JsonBody<T> = T extends {
   requestBody: {content: {'application/json': infer R}}
 }
@@ -244,3 +246,27 @@ export type Entry = Pick<EntryDoc, '_id' | 'path' | 'title' | 'tldr' | 'status'>
  * @beta
  */
 export type ConversationDoc = components['schemas']['ConversationDoc']
+
+/**
+ * Per-request overrides a connection to an MCP endpoint accepts, such as
+ * `mode` to serve one side of an endpoint with both knowledge bases and a
+ * dataset, or `knowledgeBases` to replace its knowledge base list.
+ * @beta
+ */
+export type McpEndpointRuntimeOptions = QueryParams<paths[`${McpEndpointPath}/status`]['get']>
+
+/**
+ * Whether an agent connecting to an MCP endpoint with your credentials and
+ * the same runtime options can use it. A check is `null` when it doesn't
+ * apply to the connection; `requiredOk` is true when every check that
+ * applies passed, except `semanticSearch`.
+ * @beta
+ */
+export type McpEndpointStatus = JsonResponse<
+  paths[`${McpEndpointPath}/status`]['get']['responses']['200']
+>
+
+/** Options for an MCP endpoint's initial context. @beta */
+export type McpEndpointInitialContextOptions = QueryParams<
+  paths[`${McpEndpointPath}/initial-context`]['get']
+>
