@@ -57,7 +57,7 @@
           },
           "schemaVersion": {
             "type": "number",
-            "description": "The version of the document shape. Currently `2`."
+            "description": "The version of the document shape. Currently `1`."
           },
           "revisionId": {
             "type": "string",
@@ -102,7 +102,7 @@
             "required": ["scope", "excludes", "centrality"]
           },
           "body": {
-            "description": "The entry content in Markdown, with inline `[^key]` footnote markers. The text after `^` in each marker is the `_key` of one item in `citations`. Absent when the entry has no content of its own, such as a `virtual` entry.",
+            "description": "The entry content in Markdown, with inline `[N]` citation markers. Absent when the entry has no content of its own, such as a `virtual` entry.",
             "type": "string"
           },
           "topicHeadings": {
@@ -113,90 +113,90 @@
             }
           },
           "citations": {
+            "description": "The sources that back this entry, one item per source.",
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "description": "ID of the cited source."
+                },
+                "supports": {
+                  "description": "Which facts in the entry body this source backs, in a short phrase.",
+                  "type": "string"
+                },
+                "spans": {
+                  "description": "Line ranges in the source's distilled content that back those facts, with the quoted text.",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sourceLineStart": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
+                      },
+                      "sourceLineEnd": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Last line of the range, inclusive."
+                      },
+                      "quote": {
+                        "type": "string",
+                        "description": "The exact text of the line range in the source."
+                      }
+                    },
+                    "required": ["sourceLineStart", "sourceLineEnd", "quote"]
+                  }
+                },
+                "claim": {
+                  "description": "The text in the entry body that this citation backs.",
+                  "type": "object",
+                  "properties": {
+                    "exact": {
+                      "type": "string",
+                      "description": "The exact entry text the citation backs."
+                    },
+                    "prefix": {
+                      "description": "Text immediately before `exact`, to tell apart repeated phrases.",
+                      "type": "string"
+                    },
+                    "suffix": {
+                      "description": "Text immediately after `exact`, to tell apart repeated phrases.",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["exact"]
+                },
+                "groundingState": {
+                  "type": "string",
+                  "enum": ["drifted"]
+                },
                 "_key": {
                   "type": "string",
-                  "pattern": "^[a-z2-7]{10}$",
-                  "description": "Stable ID of this citation: 10 lowercase letters and digits. The entry body points to it with a `[^key]` marker."
+                  "description": "A unique key for this item in the `citations` array."
                 },
                 "_type": {
                   "type": "string",
-                  "enum": ["sanity.context.citation"]
+                  "enum": ["sanity.context.citation"],
+                  "description": "The citation type. Always `sanity.context.citation`."
                 },
-                "sourceId": {
+                "filename": {
                   "type": "string",
-                  "description": "ID of the source document the quote comes from."
+                  "description": "A display name for the cited source. Builds currently set it to the `sourceId`."
                 },
-                "title": {
-                  "type": "string",
-                  "description": "The source's name when the entry was written."
-                },
-                "url": {
-                  "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                "mime": {
                   "type": "string"
                 },
-                "quote": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 300,
-                  "description": "The passage from the source that backs the claims, copied word for word."
-                },
-                "prefix": {
-                  "type": "string",
-                  "maxLength": 32,
-                  "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
-                },
-                "suffix": {
-                  "type": "string",
-                  "maxLength": 32,
-                  "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
-                },
-                "lineStart": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991,
-                  "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
-                },
-                "lineEnd": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991,
-                  "description": "Last line of the quote, inclusive."
-                },
-                "claims": {
-                  "minItems": 1,
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "description": "The statements in the entry body that this passage backs."
+                "excerpt": {
+                  "type": "string"
                 }
               },
-              "required": [
-                "_key",
-                "_type",
-                "sourceId",
-                "title",
-                "quote",
-                "prefix",
-                "suffix",
-                "lineStart",
-                "lineEnd",
-                "claims"
-              ]
-            },
-            "description": "The passages that back this entry, one item per quoted passage, in the order the body first uses them. A source cited twice with different quotes has two items. Empty when the entry has no `body` or the body cites nothing."
-          },
-          "sourceIds": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The IDs of every source attached to this entry, cited or not, sorted. Every citation `sourceId` is in this list."
+              "required": ["sourceId", "_key", "_type", "filename"]
+            }
           },
           "status": {
             "type": "string",
@@ -219,8 +219,6 @@
           "revisionId",
           "path",
           "title",
-          "citations",
-          "sourceIds",
           "status",
           "generatedAt"
         ],
@@ -1654,7 +1652,6 @@
               "importNotFound",
               "sourceNotFound",
               "entryNotFound",
-              "entryDocumentInvalid",
               "revisionNotFound",
               "revisionNotBrowsable",
               "revisionNotRestorable",
@@ -4128,7 +4125,7 @@
         "operationId": "rebuildEntry",
         "summary": "Rebuild an entry from its sources",
         "tags": ["entries"],
-        "description": "Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID immediately. The response also lists the other entries built from any of the same sources. An instruction applies to every entry built from its sources, so those entries can change too. Returns `422` with code `entryDocumentInvalid` if the entry document was edited into a shape the API cannot read.",
+        "description": "Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID immediately. The response also lists the other entries that cite any of the same sources. An instruction applies to every entry that cites its sources, so those entries can change too.",
         "parameters": [
           {
             "schema": {
@@ -4194,7 +4191,7 @@
                         "additionalProperties": false,
                         "description": "Another entry that cites one of the same sources as the rebuilt entry."
                       },
-                      "description": "Other entries built from any of this entry's sources. An instruction applies to every entry built from its sources, so these entries can change when they are next rebuilt."
+                      "description": "Other entries that cite any of this entry's sources. An instruction applies to every entry that cites its sources, so these entries can change when they are next rebuilt."
                     }
                   },
                   "required": ["jobId", "affectedEntries"],
@@ -6607,7 +6604,7 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "description": "IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`."
+                    "description": "IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`."
                   },
                   "rebuildPaths": {
                     "description": "Paths of entries to rebuild under the new instruction right away. The response returns the rebuild job ID in `rebuildJobId`.",
@@ -6692,7 +6689,7 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
-                          "description": "IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. An empty array means all of its sources were removed, so it applies to no entries."
+                          "description": "IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. An empty array means all of its sources were removed, so it applies to no entries."
                         },
                         "archivedAt": {
                           "nullable": true,
@@ -6912,7 +6909,7 @@
                         "format": "uuid",
                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                       },
-                      "description": "IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. An empty array means all of its sources were removed, so it applies to no entries."
+                      "description": "IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. An empty array means all of its sources were removed, so it applies to no entries."
                     },
                     "archivedAt": {
                       "nullable": true,
