@@ -106,7 +106,12 @@ export type JobAccepted = JsonResponse<
   paths[`${KnowledgeBasePath}/build`]['post']['responses']['202']
 >
 
-/** @beta */
+/**
+ * A background job: a `build`, an `update` (applied issues, rebuilt entries)
+ * or a `sync` (refreshes and imports). Narrow on `kind` to read `result`,
+ * which `build` and `update` jobs carry once they succeed.
+ * @beta
+ */
 export type Job = JsonResponse<paths[JobPath]['get']['responses']['200']>
 
 /**
