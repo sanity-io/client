@@ -112,7 +112,12 @@ export type JobAccepted = JsonResponse<
  * which `build` and `update` jobs carry once they succeed.
  * @beta
  */
-export type Job = JsonResponse<paths[JobPath]['get']['responses']['200']>
+export type Job = JsonResponse<paths[JobPath]['get']['responses']['200']> & {
+  // Every job carried `result?: unknown` before results were typed. Keeping it
+  // on each kind lets `job.result` compile without narrowing; `sync` jobs never
+  // send one.
+  result?: unknown
+}
 
 /**
  * Accepted entry rebuild: the job to poll plus every entry the rebuild

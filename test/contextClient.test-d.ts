@@ -31,8 +31,9 @@ describe('client.context return types', () => {
       expectTypeOf(job.result?.revisionId).toEqualTypeOf<string | null | undefined>()
     }
     if (job.kind === 'sync') {
-      expectTypeOf(job).not.toHaveProperty('result')
+      expectTypeOf(job.result).toEqualTypeOf<unknown>()
     }
+    expectTypeOf(job.result).toEqualTypeOf<unknown>()
   })
 
   test('conversations.delete resolves to void', async () => {
