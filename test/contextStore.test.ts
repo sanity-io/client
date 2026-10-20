@@ -126,6 +126,70 @@ describe('context GROQ reads', () => {
     )
   })
 
+  test('mcpEndpoints.create POSTs to the organization, edit PATCHes and delete DELETEs by ID', async () => {
+    const endpoint = {
+      id: 'mcpabc12345',
+      organizationId,
+      title: 'Support agent',
+      name: 'support-agent',
+      sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+      instructions: null,
+      groqFilter: null,
+      url: `https://api.sanity.io/v1/context/organizations/${organizationId}/mcp/support-agent`,
+      createdAt: '2026-10-20T09:00:00.000Z',
+      updatedAt: '2026-10-20T09:00:00.000Z',
+    }
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('POST', `/v2026-08-25/context/organizations/${organizationId}/mcp`, {
+        body: {
+          title: 'Support agent',
+          name: 'support-agent',
+          sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+        },
+      })
+      .respond({status: 201, body: endpoint})
+    scope
+      .on('PATCH', `/v2026-08-25/context/organizations/${organizationId}/mcp/mcpabc12345`, {
+        body: {title: 'Support', instructions: null},
+      })
+      .respond({status: 200, body: {...endpoint, title: 'Support'}})
+    scope
+      .on('DELETE', `/v2026-08-25/context/organizations/${organizationId}/mcp/mcpabc12345`)
+      .respond({status: 204})
+
+    await expect(
+      getMockClient().context.mcpEndpoints.create({
+        title: 'Support agent',
+        name: 'support-agent',
+        sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+      }),
+    ).resolves.toEqual(endpoint)
+    await expect(
+      getMockClient().context.mcpEndpoints.edit({
+        mcpEndpointId: 'mcpabc12345',
+        title: 'Support',
+        instructions: null,
+      }),
+    ).resolves.toEqual({...endpoint, title: 'Support'})
+    await expect(
+      getMockClient().context.mcpEndpoints.delete({mcpEndpointId: 'mcpabc12345'}),
+    ).resolves.toBeUndefined()
+  })
+
+  test('mcpEndpoints management requires context.organizationId and an ID', () => {
+    expect(() =>
+      getMockClient({context: undefined}).context.mcpEndpoints.create({
+        title: 'Support agent',
+        name: 'support-agent',
+        sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+      }),
+    ).toThrow('`context.organizationId` must be configured to use MCP endpoints')
+    expect(() => getMockClient().context.mcpEndpoints.delete({mcpEndpointId: ''})).toThrow(
+      '`mcpEndpointId` must be provided',
+    )
+  })
+
   test('listen opens an EventSource scoped to the organization and emits mutation events', async () => {
     const mutation = {
       documentId: 'conversation-1',

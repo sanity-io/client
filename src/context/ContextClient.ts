@@ -45,7 +45,10 @@ import type {
   JobAccepted,
   KnowledgeBase,
   KnowledgeBasesResponse,
+  CreateMcpEndpointParams,
+  EditMcpEndpointParams,
   McpDoc,
+  McpEndpoint,
   RebuildEntryResponse,
   ReopenIssueResponse,
   RequestOptions,
@@ -98,6 +101,24 @@ function _conversationUrl(client: Client, threadId: string): string {
   }
 
   return `/context/organizations/${encodeURIComponent(organizationId)}/conversations/${encodeURIComponent(threadId)}`
+}
+
+function _mcpEndpointsUrl(client: Client, suffix = ''): string {
+  const organizationId = client.config().context?.organizationId
+
+  if (!organizationId) {
+    throw new Error('`context.organizationId` must be configured to use MCP endpoints')
+  }
+
+  return `/context/organizations/${encodeURIComponent(organizationId)}/mcp${suffix}`
+}
+
+function _mcpEndpointIdUrl(client: Client, mcpEndpointId: string): string {
+  if (!mcpEndpointId) {
+    throw new Error('`mcpEndpointId` must be provided')
+  }
+
+  return _mcpEndpointsUrl(client, `/${encodeURIComponent(mcpEndpointId)}`)
 }
 
 /** Serialize defined values into query params, dropping the undefined ones. */
@@ -602,8 +623,10 @@ export class ContextClient {
   }
 
   /**
-   * MCP endpoint configurations, org-owned documents read with canned GROQ
-   * queries. Requires `context.organizationId` in the client configuration.
+   * MCP endpoints, owned by the organization. Reads run canned GROQ queries
+   * and address an endpoint by name; `create`, `edit` and `delete` go through
+   * the management API and address it by ID. Requires
+   * `context.organizationId` in the client configuration.
    */
   mcpEndpoints = {
     /**
@@ -625,6 +648,45 @@ export class ContextClient {
      */
     get: (params: {name: string}, options?: ContextRequestOptions): Promise<McpDoc | null> =>
       _readMcpEndpoint(this.#client, this.#httpRequest, params.name, options),
+    /**
+     * Create an MCP endpoint. The response includes its ID (`mcp…`), which
+     * `edit` and `delete` take, and the `url` agents connect to. The name
+     * is unique in the organization and can't change later.
+     */
+    create: (params: CreateMcpEndpointParams, options?: RequestOptions): Promise<McpEndpoint> =>
+      _request<McpEndpoint>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointsUrl(this.#client),
+        method: 'POST',
+        body: params,
+        ...options,
+      }),
+    /**
+     * Edit an MCP endpoint by its ID (`mcp…`), not its name. Set an
+     * optional field to `null` to clear it; sending the current values
+     * changes nothing.
+     */
+    edit: (
+      params: {mcpEndpointId: string} & EditMcpEndpointParams,
+      options?: RequestOptions,
+    ): Promise<McpEndpoint> => {
+      const {mcpEndpointId, ...body} = params
+      return _request<McpEndpoint>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointIdUrl(this.#client, mcpEndpointId),
+        method: 'PATCH',
+        body,
+        ...options,
+      })
+    },
+    /**
+     * Delete an MCP endpoint by its ID (`mcp…`). Agents connected through it
+     * lose access, and its name can be used again.
+     */
+    delete: (params: {mcpEndpointId: string}, options?: RequestOptions): Promise<void> =>
+      _request<void>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointIdUrl(this.#client, params.mcpEndpointId),
+        method: 'DELETE',
+        ...options,
+      }),
   }
 
   /** Sources: the distilled units builds cite. */

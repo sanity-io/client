@@ -36,6 +36,20 @@ describe('client.context return types', () => {
     expectTypeOf(job.result).toEqualTypeOf<unknown>()
   })
 
+  test('mcpEndpoints management resolves to the endpoint, delete to void', async () => {
+    expectTypeOf(
+      await kb.mcpEndpoints.create({
+        title: 't',
+        name: 'n',
+        sources: [{type: 'dataset', id: 'proj.production'}],
+      }),
+    ).toEqualTypeOf<Context.McpEndpoint>()
+    expectTypeOf(
+      await kb.mcpEndpoints.edit({mcpEndpointId: 'mcp1', groqFilter: null}),
+    ).toEqualTypeOf<Context.McpEndpoint>()
+    expectTypeOf(await kb.mcpEndpoints.delete({mcpEndpointId: 'mcp1'})).toEqualTypeOf<void>()
+  })
+
   test('conversations.delete resolves to void', async () => {
     expectTypeOf(await kb.conversations.delete({threadId: 't'})).toEqualTypeOf<void>()
   })
