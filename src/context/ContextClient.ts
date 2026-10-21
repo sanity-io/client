@@ -46,6 +46,9 @@ import type {
   KnowledgeBase,
   KnowledgeBasesResponse,
   McpDoc,
+  McpEndpointInitialContextOptions,
+  McpEndpointRuntimeOptions,
+  McpEndpointStatus,
   RebuildEntryResponse,
   ReopenIssueResponse,
   RequestOptions,
@@ -98,6 +101,20 @@ function _conversationUrl(client: Client, threadId: string): string {
   }
 
   return `/context/organizations/${encodeURIComponent(organizationId)}/conversations/${encodeURIComponent(threadId)}`
+}
+
+function _mcpEndpointUrl(client: Client, name: string, suffix: string): string {
+  const organizationId = client.config().context?.organizationId
+
+  if (!organizationId) {
+    throw new Error('`context.organizationId` must be configured to use MCP endpoints')
+  }
+
+  if (!name) {
+    throw new Error('`name` must be provided')
+  }
+
+  return `/context/organizations/${encodeURIComponent(organizationId)}/mcp/${encodeURIComponent(name)}${suffix}`
 }
 
 /** Serialize defined values into query params, dropping the undefined ones. */
@@ -625,6 +642,40 @@ export class ContextClient {
      */
     get: (params: {name: string}, options?: ContextRequestOptions): Promise<McpDoc | null> =>
       _readMcpEndpoint(this.#client, this.#httpRequest, params.name, options),
+    /**
+     * Check whether an agent connecting to the endpoint with this client's
+     * credentials and the same runtime options can use it. Failed checks
+     * resolve with `ok: false` rather than rejecting, so every problem shows
+     * at once; an unknown endpoint rejects with a 404.
+     */
+    status: (
+      params: {name: string} & McpEndpointRuntimeOptions,
+      options?: RequestOptions,
+    ): Promise<McpEndpointStatus> => {
+      const {name, ...query} = params
+      return _request<McpEndpointStatus>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, name, '/status'),
+        query: _query(query),
+        ...options,
+      })
+    },
+    /**
+     * The endpoint's initial context as plain text, the same text the
+     * `initial_context` MCP tool returns, for adding to a system prompt.
+     * `heading_offset` shifts markdown headings down that many levels
+     * (default `1`).
+     */
+    initialContext: (
+      params: {name: string} & McpEndpointInitialContextOptions,
+      options?: RequestOptions,
+    ): Promise<string> => {
+      const {name, ...query} = params
+      return _request<string>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, name, '/initial-context'),
+        query: _query(query),
+        ...options,
+      })
+    },
   }
 
   /** Sources: the distilled units builds cite. */

@@ -36,6 +36,13 @@ describe('client.context return types', () => {
     expectTypeOf(job.result).toEqualTypeOf<unknown>()
   })
 
+  test('mcpEndpoints.status resolves to the status verdicts, initialContext to text', async () => {
+    const status = await kb.mcpEndpoints.status({name: 'n', mode: 'groq'})
+    expectTypeOf(status).toEqualTypeOf<Context.McpEndpointStatus>()
+    expectTypeOf(status.requiredOk).toEqualTypeOf<boolean>()
+    expectTypeOf(await kb.mcpEndpoints.initialContext({name: 'n'})).toEqualTypeOf<string>()
+  })
+
   test('conversations.delete resolves to void', async () => {
     expectTypeOf(await kb.conversations.delete({threadId: 't'})).toEqualTypeOf<void>()
   })

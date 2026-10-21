@@ -22,6 +22,9 @@ const PATH_ALLOWLIST = [
   // Reads go through the GROQ surface (context.fetch/listen), so the REST
   // reads are deliberately not exposed here.
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}',
+  // MCP endpoint readiness and initial context, addressed by endpoint name.
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/status',
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context',
   `${KB}/build`,
   `${KB}/build/cancel`,
   `${KB}/entries/{entryPath}/rebuild`,

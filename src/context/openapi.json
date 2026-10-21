@@ -1605,7 +1605,7 @@
               ],
               "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
             },
-            "description": "The content sources the MCP endpoint serves. Each source appears once, and the order has no meaning."
+            "description": "The content sources the MCP endpoint serves, all at once. Each source appears once, there is at most one `dataset` source, and the order has no meaning."
           },
           "instructions": {
             "nullable": true,
@@ -1614,7 +1614,7 @@
           },
           "groqFilter": {
             "nullable": true,
-            "description": "A GROQ filter that limits what the MCP endpoint's `dataset` sources serve. It has no effect on `knowledge-base` sources. `null` when unset.",
+            "description": "A GROQ filter that limits what the MCP endpoint's `dataset` source serves. It has no effect on `knowledge-base` sources. `null` when unset. The API clears it when the endpoint has no `dataset` source.",
             "type": "string"
           }
         },
@@ -1722,7 +1722,6 @@
           }
         },
         "required": ["statusCode", "error", "code", "message"],
-        "additionalProperties": false,
         "description": "The body of every error response. Branch on `code`, a stable identifier; `message` is human-readable and can change."
       }
     }
@@ -1881,18 +1880,15 @@
                                           "maximum": 9007199254740991
                                         }
                                       },
-                                      "required": ["unit", "done"],
-                                      "additionalProperties": false
+                                      "required": ["unit", "done"]
                                     }
                                   },
-                                  "required": ["id", "status"],
-                                  "additionalProperties": false
+                                  "required": ["id", "status"]
                                 },
                                 "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
                               }
                             },
-                            "required": ["jobId", "stages"],
-                            "additionalProperties": false
+                            "required": ["jobId", "stages"]
                           },
                           "lastCheckedAt": {
                             "nullable": true,
@@ -1936,8 +1932,7 @@
                                 "description": "Sources that recent refreshes no longer find."
                               }
                             },
-                            "required": ["added", "changed", "removed"],
-                            "additionalProperties": false
+                            "required": ["added", "changed", "removed"]
                           },
                           "pipelineOutdated": {
                             "type": "boolean",
@@ -1959,8 +1954,7 @@
                                 "description": "When the recommendation was made."
                               }
                             },
-                            "required": ["reason", "at"],
-                            "additionalProperties": false
+                            "required": ["reason", "at"]
                           },
                           "hasWebSource": {
                             "type": "boolean",
@@ -1988,8 +1982,7 @@
                                 "description": "The maximum number of sources the knowledge base can have."
                               }
                             },
-                            "required": ["used", "limit"],
-                            "additionalProperties": false
+                            "required": ["used", "limit"]
                           },
                           "buildRestriction": {
                             "nullable": true,
@@ -2005,8 +1998,7 @@
                                 "description": "A readable explanation that you can show to users."
                               }
                             },
-                            "required": ["code", "message"],
-                            "additionalProperties": false
+                            "required": ["code", "message"]
                           },
                           "refreshEnabled": {
                             "type": "boolean",
@@ -2056,8 +2048,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["id", "displayName"],
-                            "additionalProperties": false
+                            "required": ["id", "displayName"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -2102,7 +2093,6 @@
                           "createdAt",
                           "updatedAt"
                         ],
-                        "additionalProperties": false,
                         "description": "A knowledge base and its current state."
                       },
                       "description": "The items on this page."
@@ -2114,7 +2104,6 @@
                     }
                   },
                   "required": ["data", "nextCursor"],
-                  "additionalProperties": false,
                   "description": "A page of knowledge bases."
                 }
               }
@@ -2287,18 +2276,15 @@
                                     "maximum": 9007199254740991
                                   }
                                 },
-                                "required": ["unit", "done"],
-                                "additionalProperties": false
+                                "required": ["unit", "done"]
                               }
                             },
-                            "required": ["id", "status"],
-                            "additionalProperties": false
+                            "required": ["id", "status"]
                           },
                           "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
                         }
                       },
-                      "required": ["jobId", "stages"],
-                      "additionalProperties": false
+                      "required": ["jobId", "stages"]
                     },
                     "lastCheckedAt": {
                       "nullable": true,
@@ -2342,8 +2328,7 @@
                           "description": "Sources that recent refreshes no longer find."
                         }
                       },
-                      "required": ["added", "changed", "removed"],
-                      "additionalProperties": false
+                      "required": ["added", "changed", "removed"]
                     },
                     "pipelineOutdated": {
                       "type": "boolean",
@@ -2365,8 +2350,7 @@
                           "description": "When the recommendation was made."
                         }
                       },
-                      "required": ["reason", "at"],
-                      "additionalProperties": false
+                      "required": ["reason", "at"]
                     },
                     "hasWebSource": {
                       "type": "boolean",
@@ -2394,8 +2378,7 @@
                           "description": "The maximum number of sources the knowledge base can have."
                         }
                       },
-                      "required": ["used", "limit"],
-                      "additionalProperties": false
+                      "required": ["used", "limit"]
                     },
                     "buildRestriction": {
                       "nullable": true,
@@ -2411,8 +2394,7 @@
                           "description": "A readable explanation that you can show to users."
                         }
                       },
-                      "required": ["code", "message"],
-                      "additionalProperties": false
+                      "required": ["code", "message"]
                     },
                     "refreshEnabled": {
                       "type": "boolean",
@@ -2462,8 +2444,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName"],
-                      "additionalProperties": false
+                      "required": ["id", "displayName"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -2508,7 +2489,6 @@
                     "createdAt",
                     "updatedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A knowledge base and its current state."
                 }
               }
@@ -2654,18 +2634,15 @@
                                     "maximum": 9007199254740991
                                   }
                                 },
-                                "required": ["unit", "done"],
-                                "additionalProperties": false
+                                "required": ["unit", "done"]
                               }
                             },
-                            "required": ["id", "status"],
-                            "additionalProperties": false
+                            "required": ["id", "status"]
                           },
                           "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
                         }
                       },
-                      "required": ["jobId", "stages"],
-                      "additionalProperties": false
+                      "required": ["jobId", "stages"]
                     },
                     "lastCheckedAt": {
                       "nullable": true,
@@ -2709,8 +2686,7 @@
                           "description": "Sources that recent refreshes no longer find."
                         }
                       },
-                      "required": ["added", "changed", "removed"],
-                      "additionalProperties": false
+                      "required": ["added", "changed", "removed"]
                     },
                     "pipelineOutdated": {
                       "type": "boolean",
@@ -2732,8 +2708,7 @@
                           "description": "When the recommendation was made."
                         }
                       },
-                      "required": ["reason", "at"],
-                      "additionalProperties": false
+                      "required": ["reason", "at"]
                     },
                     "hasWebSource": {
                       "type": "boolean",
@@ -2761,8 +2736,7 @@
                           "description": "The maximum number of sources the knowledge base can have."
                         }
                       },
-                      "required": ["used", "limit"],
-                      "additionalProperties": false
+                      "required": ["used", "limit"]
                     },
                     "buildRestriction": {
                       "nullable": true,
@@ -2778,8 +2752,7 @@
                           "description": "A readable explanation that you can show to users."
                         }
                       },
-                      "required": ["code", "message"],
-                      "additionalProperties": false
+                      "required": ["code", "message"]
                     },
                     "refreshEnabled": {
                       "type": "boolean",
@@ -2829,8 +2802,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName"],
-                      "additionalProperties": false
+                      "required": ["id", "displayName"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -2875,7 +2847,6 @@
                     "createdAt",
                     "updatedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A knowledge base and its current state."
                 }
               }
@@ -3052,18 +3023,15 @@
                                     "maximum": 9007199254740991
                                   }
                                 },
-                                "required": ["unit", "done"],
-                                "additionalProperties": false
+                                "required": ["unit", "done"]
                               }
                             },
-                            "required": ["id", "status"],
-                            "additionalProperties": false
+                            "required": ["id", "status"]
                           },
                           "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
                         }
                       },
-                      "required": ["jobId", "stages"],
-                      "additionalProperties": false
+                      "required": ["jobId", "stages"]
                     },
                     "lastCheckedAt": {
                       "nullable": true,
@@ -3107,8 +3075,7 @@
                           "description": "Sources that recent refreshes no longer find."
                         }
                       },
-                      "required": ["added", "changed", "removed"],
-                      "additionalProperties": false
+                      "required": ["added", "changed", "removed"]
                     },
                     "pipelineOutdated": {
                       "type": "boolean",
@@ -3130,8 +3097,7 @@
                           "description": "When the recommendation was made."
                         }
                       },
-                      "required": ["reason", "at"],
-                      "additionalProperties": false
+                      "required": ["reason", "at"]
                     },
                     "hasWebSource": {
                       "type": "boolean",
@@ -3159,8 +3125,7 @@
                           "description": "The maximum number of sources the knowledge base can have."
                         }
                       },
-                      "required": ["used", "limit"],
-                      "additionalProperties": false
+                      "required": ["used", "limit"]
                     },
                     "buildRestriction": {
                       "nullable": true,
@@ -3176,8 +3141,7 @@
                           "description": "A readable explanation that you can show to users."
                         }
                       },
-                      "required": ["code", "message"],
-                      "additionalProperties": false
+                      "required": ["code", "message"]
                     },
                     "refreshEnabled": {
                       "type": "boolean",
@@ -3227,8 +3191,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName"],
-                      "additionalProperties": false
+                      "required": ["id", "displayName"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -3273,7 +3236,6 @@
                     "createdAt",
                     "updatedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A knowledge base and its current state."
                 }
               }
@@ -3394,7 +3356,6 @@
                     }
                   },
                   "required": ["jobId"],
-                  "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
                 }
               }
@@ -3454,7 +3415,6 @@
                     }
                   },
                   "required": ["cancelled"],
-                  "additionalProperties": false,
                   "description": "The result of the cancel request."
                 }
               }
@@ -3527,7 +3487,6 @@
                     }
                   },
                   "required": ["jobId", "started"],
-                  "additionalProperties": false,
                   "description": "A queued refresh job that you can poll for progress."
                 }
               }
@@ -3728,7 +3687,6 @@
                           "distilledAt",
                           "createdAt"
                         ],
-                        "additionalProperties": false,
                         "description": "A page, file, or document that an import produced and that builds cite."
                       },
                       "description": "The items on this page."
@@ -3740,7 +3698,6 @@
                     }
                   },
                   "required": ["data", "nextCursor"],
-                  "additionalProperties": false,
                   "description": "A page of sources."
                 }
               }
@@ -3896,7 +3853,6 @@
                     "distilledAt",
                     "createdAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A page, file, or document that an import produced and that builds cite."
                 }
               }
@@ -4089,12 +4045,10 @@
                         }
                       },
                       "required": ["start", "end"],
-                      "additionalProperties": false,
                       "description": "The range of lines returned, 1-indexed and inclusive. It can be shorter than requested when the range runs past the end. Both values are `0` when no lines are returned."
                     }
                   },
                   "required": ["sourceId", "content", "totalLines", "slice"],
-                  "additionalProperties": false,
                   "description": "A source's distilled markdown, or a range of its lines."
                 }
               },
@@ -4191,14 +4145,12 @@
                           }
                         },
                         "required": ["id", "path", "title"],
-                        "additionalProperties": false,
                         "description": "Another entry that cites one of the same sources as the rebuilt entry."
                       },
                       "description": "Other entries built from any of this entry's sources. An instruction applies to every entry built from its sources, so these entries can change when they are next rebuilt."
                     }
                   },
                   "required": ["jobId", "affectedEntries"],
-                  "additionalProperties": false,
                   "description": "The job that rebuilds the entry, and the other entries that share its sources."
                 }
               }
@@ -4396,8 +4348,7 @@
                                 "exclusiveMinimum": true,
                                 "maximum": 5000
                               }
-                            },
-                            "additionalProperties": false
+                            }
                           },
                           "datasetSource": {
                             "nullable": true,
@@ -4417,8 +4368,7 @@
                                 "description": "The full GROQ query that selects the documents, exactly as saved."
                               }
                             },
-                            "required": ["sanityProjectId", "sanityDatasetId", "query"],
-                            "additionalProperties": false
+                            "required": ["sanityProjectId", "sanityDatasetId", "query"]
                           },
                           "createdBy": {
                             "nullable": true,
@@ -4436,8 +4386,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["id", "displayName"],
-                            "additionalProperties": false
+                            "required": ["id", "displayName"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -4473,7 +4422,6 @@
                           "createdAt",
                           "completedAt"
                         ],
-                        "additionalProperties": false,
                         "description": "Content added to a knowledge base: a file upload, website crawl, Sanity dataset, or inline text."
                       },
                       "description": "The items on this page."
@@ -4485,7 +4433,6 @@
                     }
                   },
                   "required": ["data", "nextCursor"],
-                  "additionalProperties": false,
                   "description": "A page of imports."
                 }
               }
@@ -4681,7 +4628,6 @@
                     }
                   },
                   "required": ["jobId"],
-                  "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
                 }
               }
@@ -4864,8 +4810,7 @@
                           "exclusiveMinimum": true,
                           "maximum": 5000
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "datasetSource": {
                       "nullable": true,
@@ -4885,8 +4830,7 @@
                           "description": "The full GROQ query that selects the documents, exactly as saved."
                         }
                       },
-                      "required": ["sanityProjectId", "sanityDatasetId", "query"],
-                      "additionalProperties": false
+                      "required": ["sanityProjectId", "sanityDatasetId", "query"]
                     },
                     "createdBy": {
                       "nullable": true,
@@ -4904,8 +4848,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName"],
-                      "additionalProperties": false
+                      "required": ["id", "displayName"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -4941,7 +4884,6 @@
                     "createdAt",
                     "completedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "Content added to a knowledge base: a file upload, website crawl, Sanity dataset, or inline text."
                 }
               }
@@ -5082,7 +5024,6 @@
                     }
                   },
                   "required": ["url", "expiresAt"],
-                  "additionalProperties": false,
                   "description": "A short-lived URL that downloads the import's original content."
                 }
               }
@@ -5181,7 +5122,6 @@
                     }
                   },
                   "required": ["importId", "uploadUrl"],
-                  "additionalProperties": false,
                   "description": "The new file import and the URL to upload the file to."
                 }
               }
@@ -5252,7 +5192,6 @@
                     }
                   },
                   "required": ["jobId"],
-                  "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
                 }
               }
@@ -5399,8 +5338,7 @@
                             "entryCount",
                             "issuesCreated",
                             "criticalIssueCount"
-                          ],
-                          "additionalProperties": false
+                          ]
                         }
                       },
                       "required": [
@@ -5410,8 +5348,7 @@
                         "startedAt",
                         "completedAt",
                         "kind"
-                      ],
-                      "additionalProperties": false
+                      ]
                     },
                     {
                       "type": "object",
@@ -5475,8 +5412,7 @@
                               "description": "How many entries were rewritten."
                             }
                           },
-                          "required": ["revisionId", "entriesRewritten"],
-                          "additionalProperties": false
+                          "required": ["revisionId", "entriesRewritten"]
                         }
                       },
                       "required": [
@@ -5486,8 +5422,7 @@
                         "startedAt",
                         "completedAt",
                         "kind"
-                      ],
-                      "additionalProperties": false
+                      ]
                     },
                     {
                       "type": "object",
@@ -5543,8 +5478,7 @@
                         "startedAt",
                         "completedAt",
                         "kind"
-                      ],
-                      "additionalProperties": false
+                      ]
                     }
                   ],
                   "description": "A background job, such as a build, an update or a sync, and its status. `kind` says which, and determines the shape of `result`."
@@ -5628,7 +5562,6 @@
                     }
                   },
                   "required": ["jobId"],
-                  "additionalProperties": false,
                   "description": "A queued job that you can poll for progress."
                 }
               }
@@ -5780,8 +5713,7 @@
                                         "description": "Last line of the range, inclusive."
                                       }
                                     },
-                                    "required": ["sourceId", "lineStart", "lineEnd"],
-                                    "additionalProperties": false
+                                    "required": ["sourceId", "lineStart", "lineEnd"]
                                   },
                                   "authority": {
                                     "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -5790,7 +5722,6 @@
                                   }
                                 },
                                 "required": ["claim"],
-                                "additionalProperties": false,
                                 "description": "One position in a conflict, and the entries and sources it comes from."
                               },
                               "description": "The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`."
@@ -5811,7 +5742,6 @@
                             "claimKey",
                             "sides"
                           ],
-                          "additionalProperties": false,
                           "description": "A conflict: two or more positions disagree on the same fact, and you choose which one is correct."
                         },
                         {
@@ -5866,7 +5796,6 @@
                             }
                           },
                           "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                          "additionalProperties": false,
                           "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
                         }
                       ],
@@ -5899,8 +5828,7 @@
                           "description": "`user` when a person made the decision. `robot` when a robot token did, such as an agent."
                         }
                       },
-                      "required": ["id", "kind"],
-                      "additionalProperties": false
+                      "required": ["id", "kind"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -5926,7 +5854,6 @@
                     "createdAt",
                     "resolvedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "An issue found in a knowledge base, and its triage status."
                 }
               }
@@ -6100,8 +6027,7 @@
                                             "description": "Last line of the range, inclusive."
                                           }
                                         },
-                                        "required": ["sourceId", "lineStart", "lineEnd"],
-                                        "additionalProperties": false
+                                        "required": ["sourceId", "lineStart", "lineEnd"]
                                       },
                                       "authority": {
                                         "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -6110,7 +6036,6 @@
                                       }
                                     },
                                     "required": ["claim"],
-                                    "additionalProperties": false,
                                     "description": "One position in a conflict, and the entries and sources it comes from."
                                   },
                                   "description": "The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`."
@@ -6131,7 +6056,6 @@
                                 "claimKey",
                                 "sides"
                               ],
-                              "additionalProperties": false,
                               "description": "A conflict: two or more positions disagree on the same fact, and you choose which one is correct."
                             },
                             {
@@ -6192,7 +6116,6 @@
                                 "suggestedFix",
                                 "kind"
                               ],
-                              "additionalProperties": false,
                               "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
                             }
                           ],
@@ -6225,8 +6148,7 @@
                               "description": "`user` when a person made the decision. `robot` when a robot token did, such as an agent."
                             }
                           },
-                          "required": ["id", "kind"],
-                          "additionalProperties": false
+                          "required": ["id", "kind"]
                         },
                         "createdAt": {
                           "type": "string",
@@ -6252,7 +6174,6 @@
                         "createdAt",
                         "resolvedAt"
                       ],
-                      "additionalProperties": false,
                       "description": "The resolved conflict issue, now `accepted`."
                     },
                     "jobId": {
@@ -6262,7 +6183,6 @@
                     }
                   },
                   "required": ["issue", "jobId"],
-                  "additionalProperties": false,
                   "description": "The resolved issue, plus the job that rewrites the entry when the decision changes it."
                 }
               }
@@ -6414,8 +6334,7 @@
                                         "description": "Last line of the range, inclusive."
                                       }
                                     },
-                                    "required": ["sourceId", "lineStart", "lineEnd"],
-                                    "additionalProperties": false
+                                    "required": ["sourceId", "lineStart", "lineEnd"]
                                   },
                                   "authority": {
                                     "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -6424,7 +6343,6 @@
                                   }
                                 },
                                 "required": ["claim"],
-                                "additionalProperties": false,
                                 "description": "One position in a conflict, and the entries and sources it comes from."
                               },
                               "description": "The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`."
@@ -6445,7 +6363,6 @@
                             "claimKey",
                             "sides"
                           ],
-                          "additionalProperties": false,
                           "description": "A conflict: two or more positions disagree on the same fact, and you choose which one is correct."
                         },
                         {
@@ -6500,7 +6417,6 @@
                             }
                           },
                           "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                          "additionalProperties": false,
                           "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
                         }
                       ],
@@ -6533,8 +6449,7 @@
                           "description": "`user` when a person made the decision. `robot` when a robot token did, such as an agent."
                         }
                       },
-                      "required": ["id", "kind"],
-                      "additionalProperties": false
+                      "required": ["id", "kind"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -6560,7 +6475,6 @@
                     "createdAt",
                     "resolvedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "An issue found in a knowledge base, and its triage status."
                 }
               }
@@ -6727,8 +6641,7 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "displayName"],
-                          "additionalProperties": false
+                          "required": ["id", "displayName"]
                         },
                         "updatedBy": {
                           "nullable": true,
@@ -6746,8 +6659,7 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "displayName"],
-                          "additionalProperties": false
+                          "required": ["id", "displayName"]
                         },
                         "createdAt": {
                           "type": "string",
@@ -6778,7 +6690,6 @@
                         "createdAt",
                         "updatedAt"
                       ],
-                      "additionalProperties": false,
                       "description": "The created instruction."
                     },
                     "rebuildJobId": {
@@ -6788,7 +6699,6 @@
                     }
                   },
                   "required": ["instruction", "rebuildJobId"],
-                  "additionalProperties": false,
                   "description": "The created instruction, and the rebuild it started."
                 }
               }
@@ -6947,8 +6857,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName"],
-                      "additionalProperties": false
+                      "required": ["id", "displayName"]
                     },
                     "updatedBy": {
                       "nullable": true,
@@ -6966,8 +6875,7 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "displayName"],
-                      "additionalProperties": false
+                      "required": ["id", "displayName"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -6998,7 +6906,6 @@
                     "createdAt",
                     "updatedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A standing instruction that shapes how entries that cite its sources are written."
                 }
               }
@@ -7077,7 +6984,6 @@
                     }
                   },
                   "required": ["rebuildJobId"],
-                  "additionalProperties": false,
                   "description": "The rebuild the delete started, if any."
                 }
               }
@@ -7096,7 +7002,533 @@
         }
       }
     },
+    "/{apiVersion}/context/organizations/{organizationId}/mcp": {
+      "post": {
+        "operationId": "createMcpEndpoint",
+        "summary": "Create an MCP endpoint",
+        "tags": ["mcp"],
+        "description": "Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the organization-wide `sanity.knowledge-base.create` grant, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.\n\nA taken name returns `409` with code `mcpEndpointNameConflict`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "The endpoint's display title, up to 100 characters."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "description": "The endpoint's name, used in its URL. Lowercase letters, digits and single hyphens, up to 64 characters, unique in the organization. It can't be changed after the endpoint is created. `by-name` and names shaped like an endpoint ID are reserved."
+                  },
+                  "sources": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["knowledge-base"],
+                              "description": "The source type. `knowledge-base` serves a whole knowledge base."
+                            },
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "The knowledge base ID (`kb…`)."
+                            }
+                          },
+                          "required": ["type", "id"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["dataset"],
+                              "description": "The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set."
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
+                              "description": "The dataset, as `<projectId>.<datasetName>`."
+                            }
+                          },
+                          "required": ["type", "id"]
+                        }
+                      ],
+                      "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
+                    },
+                    "description": "The content the endpoint serves: 1 to 100 sources, any number of knowledge bases and at most one dataset, served together. Order has no meaning."
+                  },
+                  "instructions": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000,
+                    "description": "Instructions for connecting agents, up to 10,000 characters."
+                  },
+                  "groqFilter": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000,
+                    "description": "A GROQ filter that limits which documents the endpoint's dataset source serves, such as `_type in [\"post\", \"author\"]`. Knowledge base sources aren't filtered. Kept only while the endpoint has a dataset source."
+                  }
+                },
+                "required": ["title", "name", "sources"],
+                "description": "CreateMcpEndpointInput"
+              }
+            }
+          },
+          "description": "CreateMcpEndpointInput"
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "McpEndpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The endpoint's ID (`mcp…`). Use it to update or delete the endpoint."
+                    },
+                    "organizationId": {
+                      "type": "string",
+                      "description": "The ID of the organization that owns the endpoint."
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "The endpoint's display title."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The endpoint's name, used in its URL. It can't be changed."
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["knowledge-base"],
+                                "description": "The source type. `knowledge-base` serves a whole knowledge base."
+                              },
+                              "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "description": "The knowledge base ID (`kb…`)."
+                              }
+                            },
+                            "required": ["type", "id"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["dataset"],
+                                "description": "The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set."
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
+                                "description": "The dataset, as `<projectId>.<datasetName>`."
+                              }
+                            },
+                            "required": ["type", "id"]
+                          }
+                        ],
+                        "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
+                      },
+                      "description": "The content the endpoint serves: any number of knowledge bases and at most one dataset, served together."
+                    },
+                    "instructions": {
+                      "nullable": true,
+                      "description": "Instructions for connecting agents, or `null` if none are set.",
+                      "type": "string"
+                    },
+                    "groqFilter": {
+                      "nullable": true,
+                      "description": "The GROQ filter that limits the endpoint's dataset source, or `null` if none is set or the endpoint has no dataset.",
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "The URL agents connect to."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "When the endpoint was created, as an ISO 8601 timestamp."
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "When the endpoint was last changed, as an ISO 8601 timestamp."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "organizationId",
+                    "title",
+                    "name",
+                    "sources",
+                    "instructions",
+                    "groqFilter",
+                    "url",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "description": "McpEndpoint"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}": {
+      "patch": {
+        "operationId": "updateMcpEndpoint",
+        "summary": "Update an MCP endpoint",
+        "tags": ["mcp"],
+        "description": "Updates the title, sources, instructions, or GROQ filter. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "The endpoint's display title, up to 100 characters."
+                  },
+                  "sources": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["knowledge-base"],
+                              "description": "The source type. `knowledge-base` serves a whole knowledge base."
+                            },
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "The knowledge base ID (`kb…`)."
+                            }
+                          },
+                          "required": ["type", "id"]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": ["dataset"],
+                              "description": "The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set."
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
+                              "description": "The dataset, as `<projectId>.<datasetName>`."
+                            }
+                          },
+                          "required": ["type", "id"]
+                        }
+                      ],
+                      "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
+                    },
+                    "description": "The content the endpoint serves: 1 to 100 sources, any number of knowledge bases and at most one dataset, served together. Order has no meaning."
+                  },
+                  "instructions": {
+                    "description": "Instructions for connecting agents, up to 10,000 characters. `null` removes them.",
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "groqFilter": {
+                    "description": "A GROQ filter that limits the endpoint's dataset source. `null` removes it.",
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  }
+                },
+                "description": "UpdateMcpEndpointInput"
+              }
+            }
+          },
+          "description": "UpdateMcpEndpointInput"
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpoint",
+            "required": true,
+            "description": "The MCP endpoint's ID (`mcp…`). Serving routes at the same path take its name instead."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "McpEndpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The endpoint's ID (`mcp…`). Use it to update or delete the endpoint."
+                    },
+                    "organizationId": {
+                      "type": "string",
+                      "description": "The ID of the organization that owns the endpoint."
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "The endpoint's display title."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The endpoint's name, used in its URL. It can't be changed."
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["knowledge-base"],
+                                "description": "The source type. `knowledge-base` serves a whole knowledge base."
+                              },
+                              "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "description": "The knowledge base ID (`kb…`)."
+                              }
+                            },
+                            "required": ["type", "id"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": ["dataset"],
+                                "description": "The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set."
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
+                                "description": "The dataset, as `<projectId>.<datasetName>`."
+                              }
+                            },
+                            "required": ["type", "id"]
+                          }
+                        ],
+                        "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
+                      },
+                      "description": "The content the endpoint serves: any number of knowledge bases and at most one dataset, served together."
+                    },
+                    "instructions": {
+                      "nullable": true,
+                      "description": "Instructions for connecting agents, or `null` if none are set.",
+                      "type": "string"
+                    },
+                    "groqFilter": {
+                      "nullable": true,
+                      "description": "The GROQ filter that limits the endpoint's dataset source, or `null` if none is set or the endpoint has no dataset.",
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "The URL agents connect to."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "When the endpoint was created, as an ISO 8601 timestamp."
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "description": "When the endpoint was last changed, as an ISO 8601 timestamp."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "organizationId",
+                    "title",
+                    "name",
+                    "sources",
+                    "instructions",
+                    "groqFilter",
+                    "url",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "description": "McpEndpoint"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMcpEndpoint",
+        "summary": "Delete an MCP endpoint",
+        "tags": ["mcp"],
+        "description": "Deletes the MCP endpoint. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpoint",
+            "required": true,
+            "description": "The MCP endpoint's ID (`mcp…`). Serving routes at the same path take its name instead."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [null]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "operationId": "serveMcpEndpoint",
         "summary": "Connect to an MCP endpoint",
@@ -7147,7 +7579,7 @@
             "in": "query",
             "name": "mode",
             "required": false,
-            "description": "The content source for this request, overriding the endpoint's mode: `knowledge_base` serves knowledge bases, and `groq` queries a dataset."
+            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused."
           },
           {
             "schema": {
@@ -7263,7 +7695,7 @@
             "in": "query",
             "name": "mode",
             "required": false,
-            "description": "The content source for this request, overriding the endpoint's mode: `knowledge_base` serves knowledge bases, and `groq` queries a dataset."
+            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused."
           },
           {
             "schema": {
@@ -7398,7 +7830,7 @@
             "in": "query",
             "name": "mode",
             "required": false,
-            "description": "The content source for this request, overriding the endpoint's mode: `knowledge_base` serves knowledge bases, and `groq` queries a dataset."
+            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused."
           },
           {
             "schema": {
@@ -7509,8 +7941,7 @@
                                         "description": "The workspace's title."
                                       }
                                     },
-                                    "required": ["name", "title"],
-                                    "additionalProperties": false
+                                    "required": ["name", "title"]
                                   },
                                   "description": "The deployed studio's workspaces for the endpoint's dataset."
                                 }
@@ -7521,8 +7952,7 @@
                                 "workspaceTitle",
                                 "workspaceAutoSelected",
                                 "availableWorkspaces"
-                              ],
-                              "additionalProperties": false
+                              ]
                             },
                             {
                               "type": "object",
@@ -7537,8 +7967,7 @@
                                   "description": "Why the check failed, written to show to users."
                                 }
                               },
-                              "required": ["ok", "error"],
-                              "additionalProperties": false
+                              "required": ["ok", "error"]
                             }
                           ]
                         },
@@ -7565,8 +7994,7 @@
                                   "type": "boolean"
                                 }
                               },
-                              "required": ["ok", "status", "withinUsageLimit"],
-                              "additionalProperties": false
+                              "required": ["ok", "status", "withinUsageLimit"]
                             },
                             {
                               "type": "object",
@@ -7581,8 +8009,7 @@
                                   "description": "Why the check failed, written to show to users."
                                 }
                               },
-                              "required": ["ok", "error"],
-                              "additionalProperties": false
+                              "required": ["ok", "error"]
                             }
                           ]
                         },
@@ -7605,8 +8032,7 @@
                                   "description": "The number of document types the agent can query, after the endpoint's GROQ filter."
                                 }
                               },
-                              "required": ["ok", "documentTypes"],
-                              "additionalProperties": false
+                              "required": ["ok", "documentTypes"]
                             },
                             {
                               "type": "object",
@@ -7621,8 +8047,7 @@
                                   "description": "Why the check failed, written to show to users."
                                 }
                               },
-                              "required": ["ok", "error"],
-                              "additionalProperties": false
+                              "required": ["ok", "error"]
                             }
                           ]
                         },
@@ -7646,8 +8071,7 @@
                                   "description": "The IDs of the knowledge bases the connection serves."
                                 }
                               },
-                              "required": ["ok", "resolved"],
-                              "additionalProperties": false
+                              "required": ["ok", "resolved"]
                             },
                             {
                               "type": "object",
@@ -7697,19 +8121,16 @@
                                 "denied",
                                 "unbuilt",
                                 "error"
-                              ],
-                              "additionalProperties": false
+                              ]
                             }
                           ]
                         }
                       },
                       "required": ["studio", "semanticSearch", "schema", "knowledgeBases"],
-                      "additionalProperties": false,
                       "description": "One result per check. A check is `null` when it doesn't apply to the connection."
                     }
                   },
-                  "required": ["requiredOk", "checks"],
-                  "additionalProperties": false
+                  "required": ["requiredOk", "checks"]
                 }
               }
             }
@@ -7769,7 +8190,7 @@
                           "description": "The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.",
                           "nullable": true,
                           "type": "string",
-                          "enum": ["call", "result"]
+                          "enum": ["call", "result", null]
                         },
                         "error": {
                           "default": null,
@@ -7965,7 +8386,7 @@
                             "description": "The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.",
                             "nullable": true,
                             "type": "string",
-                            "enum": ["call", "result"]
+                            "enum": ["call", "result", null]
                           },
                           "error": {
                             "default": null,
@@ -7991,7 +8412,6 @@
                           "error",
                           "timestamp"
                         ],
-                        "additionalProperties": false,
                         "description": "One message in a conversation transcript, with the time the API received it."
                       },
                       "description": "The conversation transcript, in order. Each save replaces it."
@@ -8023,8 +8443,7 @@
                           "description": "The total number of tokens.",
                           "type": "number"
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "coreMetrics": {
                       "nullable": true,
@@ -8047,8 +8466,7 @@
                             "type": "string"
                           }
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "classifiedAt": {
                       "nullable": true,
@@ -8080,8 +8498,7 @@
                           "type": "string",
                           "maxLength": 200
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -8113,7 +8530,6 @@
                     "createdAt",
                     "updatedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A recorded agent conversation: its transcript, metadata, token usage, and classification."
                 }
               }
@@ -8290,7 +8706,7 @@
                             "description": "The kind of `tool` message. `call` is the agent calling the tool, and `result` is what the tool returned. `null` on other messages.",
                             "nullable": true,
                             "type": "string",
-                            "enum": ["call", "result"]
+                            "enum": ["call", "result", null]
                           },
                           "error": {
                             "default": null,
@@ -8316,7 +8732,6 @@
                           "error",
                           "timestamp"
                         ],
-                        "additionalProperties": false,
                         "description": "One message in a conversation transcript, with the time the API received it."
                       },
                       "description": "The conversation transcript, in order. Each save replaces it."
@@ -8348,8 +8763,7 @@
                           "description": "The total number of tokens.",
                           "type": "number"
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "coreMetrics": {
                       "nullable": true,
@@ -8372,8 +8786,7 @@
                             "type": "string"
                           }
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "classifiedAt": {
                       "nullable": true,
@@ -8405,8 +8818,7 @@
                           "type": "string",
                           "maxLength": 200
                         }
-                      },
-                      "additionalProperties": false
+                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -8438,7 +8850,6 @@
                     "createdAt",
                     "updatedAt"
                   ],
-                  "additionalProperties": false,
                   "description": "A recorded agent conversation: its transcript, metadata, token usage, and classification."
                 }
               }

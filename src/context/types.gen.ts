@@ -506,6 +506,46 @@ export interface paths {
     patch: operations['classifyConversation']
     trace?: never
   }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get an MCP endpoint's initial context
+     * @description Returns the same text as the `initial_context` MCP tool, as plain text you can add to a system prompt. `heading_offset` shifts markdown headings down by that many levels. The default is `1`, so `#` becomes `##`.
+     */
+    get: operations['getMcpEndpointInitialContext']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Check an MCP endpoint
+     * @description Checks whether an agent can connect to the endpoint with your credentials. Accepts the same query parameters as connecting, so you can check a connection's overrides before using them. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.
+     */
+    get: operations['getMcpEndpointStatus']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -1342,7 +1382,7 @@ export interface components {
       title: string
       /** @description The MCP endpoint's name in its URL, in lowercase kebab case such as `my-endpoint`. It is unique within the organization and can't change after creation. */
       name: string
-      /** @description The content sources the MCP endpoint serves. Each source appears once, and the order has no meaning. */
+      /** @description The content sources the MCP endpoint serves, all at once. Each source appears once, there is at most one `dataset` source, and the order has no meaning. */
       sources: (
         | {
             /**
@@ -1365,7 +1405,7 @@ export interface components {
       )[]
       /** @description Prompt text the MCP endpoint serves to connecting agents. `null` when unset. */
       instructions: string | null
-      /** @description A GROQ filter that limits what the MCP endpoint's `dataset` sources serve. It has no effect on `knowledge-base` sources. `null` when unset. */
+      /** @description A GROQ filter that limits what the MCP endpoint's `dataset` source serves. It has no effect on `knowledge-base` sources. `null` when unset. The API clears it when the endpoint has no `dataset` source. */
       groqFilter: string | null
     }
   }
@@ -4412,6 +4452,231 @@ export interface operations {
              * @description When the conversation was last changed, as an ISO 8601 timestamp.
              */
             updatedAt: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getMcpEndpointInitialContext: {
+    parameters: {
+      query?: {
+        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        instructions?: string
+        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        perspective?: string
+        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        embeddings?: string
+        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        groqFilter?: string
+        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        mode?: 'knowledge_base' | 'groq'
+        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        knowledgeBases?: string
+        /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
+        linkResolver?: string
+        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        workspace?: string
+        /** @description How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#` becomes `##`. */
+        heading_offset?: string
+      }
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, set when the endpoint was created. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getMcpEndpointStatus: {
+    parameters: {
+      query?: {
+        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        instructions?: string
+        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        perspective?: string
+        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        embeddings?: string
+        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        groqFilter?: string
+        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        mode?: 'knowledge_base' | 'groq'
+        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        knowledgeBases?: string
+        /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
+        linkResolver?: string
+        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        workspace?: string
+      }
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, set when the endpoint was created. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials and query parameters can use the endpoint. */
+            requiredOk: boolean
+            /** @description One result per check. A check is `null` when it doesn't apply to the connection. */
+            checks: {
+              /** @description Whether a deployed studio serves the endpoint's dataset. Its schema tells the agent which document types exist. `null` when the connection doesn't query a dataset. */
+              studio:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The name of the studio workspace the connection uses. */
+                        workspace: string
+                        /** @description The workspace's title. */
+                        workspaceTitle: string
+                        /** @description Whether the workspace was picked automatically. It is `false` when the `workspace` query parameter chose it. */
+                        workspaceAutoSelected: boolean
+                        /** @description The deployed studio's workspaces for the endpoint's dataset. */
+                        availableWorkspaces: {
+                          /** @description The workspace's name. */
+                          name: string
+                          /** @description The workspace's title. */
+                          title: string
+                        }[]
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether semantic search is ready on the endpoint's dataset. `null` when semantic search isn't enabled or the connection doesn't query a dataset. It never affects `requiredOk`: without it, the agent searches with GROQ only. */
+              semanticSearch:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The dataset's embeddings index status, if known. */
+                        status: string | null
+                        /** @description Whether the project is within its embeddings usage limit, or `null` if it couldn't be checked. */
+                        withinUsageLimit: boolean | null
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether the studio's schema has document types the agent can query. `null` when the connection doesn't query a dataset. */
+              schema:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The number of document types the agent can query, after the endpoint's GROQ filter. */
+                        documentTypes: number
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether every knowledge base the connection serves exists, is readable with your credentials, and has been built. `null` when the connection doesn't serve knowledge bases. */
+              knowledgeBases:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The IDs of the knowledge bases the connection serves. */
+                        resolved: string[]
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description The IDs of the knowledge bases that exist and that you can read. */
+                        resolved: string[]
+                        /** @description The IDs of knowledge bases that don't exist in the organization. */
+                        missing: string[]
+                        /** @description The IDs of knowledge bases your credentials can't read. */
+                        denied: string[]
+                        /** @description The IDs of knowledge bases that haven't been built yet. Build them before connecting an agent. */
+                        unbuilt: string[]
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+            }
           }
         }
       }
