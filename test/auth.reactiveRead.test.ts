@@ -44,7 +44,8 @@ describe('auth: config().token under a reactive auth', () => {
   })
 
   test('static configs return their configured value without warning', () => {
-    const client = createClient({...baseConfig, token: 'static'})
+    // Opt out of the browser-token warning, which browser-like test environments trigger.
+    const client = createClient({...baseConfig, token: 'static', ignoreBrowserTokenWarning: true})
     expect(client.config().token).toBe('static')
     expect(warn).not.toHaveBeenCalled()
   })
