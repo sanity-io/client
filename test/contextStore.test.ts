@@ -126,6 +126,70 @@ describe('context GROQ reads', () => {
     )
   })
 
+  test('mcpEndpoints.create POSTs to the organization, edit PATCHes and delete DELETEs by name', async () => {
+    const endpoint = {
+      id: 'mcpabc12345',
+      organizationId,
+      title: 'Support agent',
+      name: 'support-agent',
+      sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+      instructions: null,
+      groqFilter: null,
+      url: `https://api.sanity.io/v1/context/organizations/${organizationId}/mcp/support-agent`,
+      createdAt: '2026-10-20T09:00:00.000Z',
+      updatedAt: '2026-10-20T09:00:00.000Z',
+    }
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('POST', `/v2026-08-25/context/organizations/${organizationId}/mcp`, {
+        body: {
+          title: 'Support agent',
+          name: 'support-agent',
+          sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+        },
+      })
+      .respond({status: 201, body: endpoint})
+    scope
+      .on('PATCH', `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent`, {
+        body: {title: 'Support', instructions: null},
+      })
+      .respond({status: 200, body: {...endpoint, title: 'Support'}})
+    scope
+      .on('DELETE', `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent`)
+      .respond({status: 204})
+
+    await expect(
+      getMockClient().context.mcpEndpoints.create({
+        title: 'Support agent',
+        name: 'support-agent',
+        sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+      }),
+    ).resolves.toEqual(endpoint)
+    await expect(
+      getMockClient().context.mcpEndpoints.edit({
+        name: 'support-agent',
+        title: 'Support',
+        instructions: null,
+      }),
+    ).resolves.toEqual({...endpoint, title: 'Support'})
+    await expect(
+      getMockClient().context.mcpEndpoints.delete({name: 'support-agent'}),
+    ).resolves.toBeUndefined()
+  })
+
+  test('mcpEndpoints management requires context.organizationId and a name', () => {
+    expect(() =>
+      getMockClient({context: undefined}).context.mcpEndpoints.create({
+        title: 'Support agent',
+        name: 'support-agent',
+        sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
+      }),
+    ).toThrow('`context.organizationId` must be configured to use MCP endpoints')
+    expect(() => getMockClient().context.mcpEndpoints.delete({name: ''})).toThrow(
+      '`name` must be provided',
+    )
+  })
+
   test('mcpEndpoints.status and initialContext read an endpoint by name with its runtime options', async () => {
     const status = {
       requiredOk: true,

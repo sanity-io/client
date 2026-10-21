@@ -45,7 +45,10 @@ import type {
   JobAccepted,
   KnowledgeBase,
   KnowledgeBasesResponse,
+  CreateMcpEndpointParams,
+  EditMcpEndpointParams,
   McpDoc,
+  McpEndpoint,
   McpEndpointInitialContextOptions,
   McpEndpointRuntimeOptions,
   McpEndpointStatus,
@@ -103,18 +106,24 @@ function _conversationUrl(client: Client, threadId: string): string {
   return `/context/organizations/${encodeURIComponent(organizationId)}/conversations/${encodeURIComponent(threadId)}`
 }
 
-function _mcpEndpointUrl(client: Client, name: string, suffix: string): string {
+function _mcpEndpointsUrl(client: Client): string {
   const organizationId = client.config().context?.organizationId
 
   if (!organizationId) {
     throw new Error('`context.organizationId` must be configured to use MCP endpoints')
   }
 
+  return `/context/organizations/${encodeURIComponent(organizationId)}/mcp`
+}
+
+function _mcpEndpointUrl(client: Client, name: string, suffix = ''): string {
+  const endpointsUrl = _mcpEndpointsUrl(client)
+
   if (!name) {
     throw new Error('`name` must be provided')
   }
 
-  return `/context/organizations/${encodeURIComponent(organizationId)}/mcp/${encodeURIComponent(name)}${suffix}`
+  return `${endpointsUrl}/${encodeURIComponent(name)}${suffix}`
 }
 
 /** Serialize defined values into query params, dropping the undefined ones. */
@@ -619,8 +628,9 @@ export class ContextClient {
   }
 
   /**
-   * MCP endpoint configurations, org-owned documents read with canned GROQ
-   * queries. Requires `context.organizationId` in the client configuration.
+   * MCP endpoints, owned by the organization and addressed by name. `list`
+   * and `get` run canned GROQ queries; the other methods call the Context
+   * API. Requires `context.organizationId` in the client configuration.
    */
   mcpEndpoints = {
     /**
@@ -643,6 +653,34 @@ export class ContextClient {
     get: (params: {name: string}, options?: ContextRequestOptions): Promise<McpDoc | null> =>
       _readMcpEndpoint(this.#client, this.#httpRequest, params.name, options),
     /**
+     * Create an MCP endpoint. The response includes the `url` agents
+     * connect to. The name is unique in the organization and can't change
+     * later.
+     */
+    create: (params: CreateMcpEndpointParams, options?: RequestOptions): Promise<McpEndpoint> =>
+      _request<McpEndpoint>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointsUrl(this.#client),
+        method: 'POST',
+        body: params,
+        ...options,
+      }),
+    /**
+     * Edit an MCP endpoint by its name. Set an optional field to `null` to
+     * clear it; sending the current values changes nothing.
+     */
+    edit: (
+      params: {name: string} & EditMcpEndpointParams,
+      options?: RequestOptions,
+    ): Promise<McpEndpoint> => {
+      const {name, ...body} = params
+      return _request<McpEndpoint>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, name),
+        method: 'PATCH',
+        body,
+        ...options,
+      })
+    },
+    /**
      * Check whether an agent connecting to the endpoint with this client's
      * credentials and the same runtime options can use it. Failed checks
      * resolve with `ok: false` rather than rejecting, so every problem shows
@@ -659,6 +697,16 @@ export class ContextClient {
         ...options,
       })
     },
+    /**
+     * Delete an MCP endpoint by its name. Agents connected through it lose
+     * access, and its name can be used again.
+     */
+    delete: (params: {name: string}, options?: RequestOptions): Promise<void> =>
+      _request<void>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, params.name),
+        method: 'DELETE',
+        ...options,
+      }),
     /**
      * The endpoint's initial context as plain text, the same text the
      * `initial_context` MCP tool returns, for adding to a system prompt.

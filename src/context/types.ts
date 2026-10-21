@@ -54,7 +54,8 @@ type KnowledgeBasesPath = '/{apiVersion}/context/knowledge-bases'
 type ConversationPath =
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}'
 type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
-type McpEndpointPath = '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}'
+type McpEndpointsPath = '/{apiVersion}/context/organizations/{organizationId}/mcp'
+type McpEndpointPath = `${McpEndpointsPath}/{mcpEndpoint}`
 type ImportsPath = `${KnowledgeBasePath}/imports`
 type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
 type UploadsPath = `${KnowledgeBasePath}/imports/uploads`
@@ -246,6 +247,19 @@ export type Entry = Pick<EntryDoc, '_id' | 'path' | 'title' | 'tldr' | 'status'>
  * @beta
  */
 export type ConversationDoc = components['schemas']['ConversationDoc']
+
+/**
+ * An MCP endpoint as the management methods return it, including the `url`
+ * agents connect to.
+ * @beta
+ */
+export type McpEndpoint = JsonResponse<paths[McpEndpointsPath]['post']['responses']['201']>
+
+/** @beta */
+export type CreateMcpEndpointParams = JsonBody<paths[McpEndpointsPath]['post']>
+
+/** @beta */
+export type EditMcpEndpointParams = JsonBody<paths[McpEndpointPath]['patch']>
 
 /**
  * Per-request overrides a connection to an MCP endpoint accepts, such as

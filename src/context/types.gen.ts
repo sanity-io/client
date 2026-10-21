@@ -506,6 +506,58 @@ export interface paths {
     patch: operations['classifyConversation']
     trace?: never
   }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create an MCP endpoint
+     * @description Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the organization-wide `sanity.knowledge-base.create` grant, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.
+     *
+     *     A taken name returns `409` with code `mcpEndpointNameConflict`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
+     */
+    post: operations['createMcpEndpoint']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Connect to an MCP endpoint
+     * @description Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Query parameters override the endpoint configuration for that request only. Errors are JSON-RPC error objects, not the standard error response.
+     */
+    post: operations['serveMcpEndpoint']
+    /**
+     * Delete an MCP endpoint
+     * @description Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.
+     */
+    delete: operations['deleteMcpEndpoint']
+    options?: never
+    head?: never
+    /**
+     * Update an MCP endpoint
+     * @description Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.
+     *
+     *     An unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
+     */
+    patch: operations['updateMcpEndpoint']
+    trace?: never
+  }
   '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context': {
     parameters: {
       query?: never
@@ -596,6 +648,7 @@ export interface components {
         | 'mcpEndpointNotServable'
         | 'conversationNotFound'
         | 'missingCredential'
+        | 'invalidCredential'
         | 'missingOrganization'
         | 'organizationAccessDenied'
         | 'knowledgeBaseAccessDenied'
@@ -4450,6 +4503,320 @@ export interface operations {
             /**
              * Format: date-time
              * @description When the conversation was last changed, as an ISO 8601 timestamp.
+             */
+            updatedAt: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  createMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    /** @description CreateMcpEndpointInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The endpoint's display title, up to 100 characters. */
+          title: string
+          /** @description The endpoint's name, used in its URL. Lowercase letters, digits and single hyphens, up to 64 characters, unique in the organization. It can't be changed after the endpoint is created. `by-name` and names shaped like an endpoint ID are reserved. */
+          name: string
+          /** @description The content the endpoint serves: 1 to 100 sources, any number of knowledge bases and at most one dataset, served together. Order has no meaning. */
+          sources: (
+            | {
+                /**
+                 * @description The source type. `knowledge-base` serves a whole knowledge base.
+                 * @enum {string}
+                 */
+                type: 'knowledge-base'
+                /** @description The knowledge base ID (`kb…`). */
+                id: string
+              }
+            | {
+                /**
+                 * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                 * @enum {string}
+                 */
+                type: 'dataset'
+                /** @description The dataset, as `<projectId>.<datasetName>`. */
+                id: string
+              }
+          )[]
+          /** @description Instructions for connecting agents, up to 10,000 characters. */
+          instructions?: string
+          /** @description A GROQ filter that limits which documents the endpoint's dataset source serves, such as `_type in ["post", "author"]`. Knowledge base sources aren't filtered. Kept only while the endpoint has a dataset source. */
+          groqFilter?: string
+        }
+      }
+    }
+    responses: {
+      /** @description McpEndpoint */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The endpoint's ID (`mcp…`). Update and delete accept it or the endpoint's name. */
+            id: string
+            /** @description The ID of the organization that owns the endpoint. */
+            organizationId: string
+            /** @description The endpoint's display title. */
+            title: string
+            /** @description The endpoint's name, used in its URL. It can't be changed. */
+            name: string
+            /** @description The content the endpoint serves: any number of knowledge bases and at most one dataset, served together. */
+            sources: (
+              | {
+                  /**
+                   * @description The source type. `knowledge-base` serves a whole knowledge base.
+                   * @enum {string}
+                   */
+                  type: 'knowledge-base'
+                  /** @description The knowledge base ID (`kb…`). */
+                  id: string
+                }
+              | {
+                  /**
+                   * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                   * @enum {string}
+                   */
+                  type: 'dataset'
+                  /** @description The dataset, as `<projectId>.<datasetName>`. */
+                  id: string
+                }
+            )[]
+            /** @description Instructions for connecting agents, or `null` if none are set. */
+            instructions: string | null
+            /** @description The GROQ filter that limits the endpoint's dataset source, or `null` if none is set or the endpoint has no dataset. */
+            groqFilter: string | null
+            /**
+             * Format: uri
+             * @description The URL agents connect to.
+             */
+            url: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was created, as an ISO 8601 timestamp.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was last changed, as an ISO 8601 timestamp.
+             */
+            updatedAt: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  serveMcpEndpoint: {
+    parameters: {
+      query?: {
+        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        instructions?: string
+        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        perspective?: string
+        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        embeddings?: string
+        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        groqFilter?: string
+        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        mode?: 'knowledge_base' | 'groq'
+        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        knowledgeBases?: string
+        /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
+        linkResolver?: string
+        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        workspace?: string
+      }
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, set when the endpoint was created. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  deleteMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, as in its URL, or its ID (`mcp…`). Names can't take the shape of an ID, so either one identifies the endpoint. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  updateMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, as in its URL, or its ID (`mcp…`). Names can't take the shape of an ID, so either one identifies the endpoint. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    /** @description UpdateMcpEndpointInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The endpoint's display title, up to 100 characters. */
+          title?: string
+          /** @description The content the endpoint serves: 1 to 100 sources, any number of knowledge bases and at most one dataset, served together. Order has no meaning. */
+          sources?: (
+            | {
+                /**
+                 * @description The source type. `knowledge-base` serves a whole knowledge base.
+                 * @enum {string}
+                 */
+                type: 'knowledge-base'
+                /** @description The knowledge base ID (`kb…`). */
+                id: string
+              }
+            | {
+                /**
+                 * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                 * @enum {string}
+                 */
+                type: 'dataset'
+                /** @description The dataset, as `<projectId>.<datasetName>`. */
+                id: string
+              }
+          )[]
+          /** @description Instructions for connecting agents, up to 10,000 characters. `null` removes them. */
+          instructions?: string | null
+          /** @description A GROQ filter that limits the endpoint's dataset source. `null` removes it. */
+          groqFilter?: string | null
+        }
+      }
+    }
+    responses: {
+      /** @description McpEndpoint */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The endpoint's ID (`mcp…`). Update and delete accept it or the endpoint's name. */
+            id: string
+            /** @description The ID of the organization that owns the endpoint. */
+            organizationId: string
+            /** @description The endpoint's display title. */
+            title: string
+            /** @description The endpoint's name, used in its URL. It can't be changed. */
+            name: string
+            /** @description The content the endpoint serves: any number of knowledge bases and at most one dataset, served together. */
+            sources: (
+              | {
+                  /**
+                   * @description The source type. `knowledge-base` serves a whole knowledge base.
+                   * @enum {string}
+                   */
+                  type: 'knowledge-base'
+                  /** @description The knowledge base ID (`kb…`). */
+                  id: string
+                }
+              | {
+                  /**
+                   * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                   * @enum {string}
+                   */
+                  type: 'dataset'
+                  /** @description The dataset, as `<projectId>.<datasetName>`. */
+                  id: string
+                }
+            )[]
+            /** @description Instructions for connecting agents, or `null` if none are set. */
+            instructions: string | null
+            /** @description The GROQ filter that limits the endpoint's dataset source, or `null` if none is set or the endpoint has no dataset. */
+            groqFilter: string | null
+            /**
+             * Format: uri
+             * @description The URL agents connect to.
+             */
+            url: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was created, as an ISO 8601 timestamp.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was last changed, as an ISO 8601 timestamp.
              */
             updatedAt: string
           }
