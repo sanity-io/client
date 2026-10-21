@@ -171,12 +171,19 @@ function _fetchBody(file: CreateFileImportParams['file']) {
  * @beta
  */
 export class ContextClient {
-  #client: SanityClient
+  #parent: SanityClient
+  #global?: SanityClient
   #httpRequest: HttpRequest
 
   constructor(client: SanityClient, httpRequest: HttpRequest) {
-    this.#client = client
+    this.#parent = client
     this.#httpRequest = httpRequest
+  }
+
+  /** Lazy so the `withConfig` clone can't recurse through the parent's constructor. */
+  get #client(): SanityClient {
+    this.#global ??= this.#parent.withConfig({useProjectHostname: false})
+    return this.#global
   }
 
   /** Request against the configured knowledge base. */
@@ -783,12 +790,19 @@ export class ContextClient {
  * @beta
  */
 export class ObservableContextClient {
-  #client: ObservableSanityClient
+  #parent: ObservableSanityClient
+  #global?: ObservableSanityClient
   #httpRequest: HttpRequest
 
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
-    this.#client = client
+    this.#parent = client
     this.#httpRequest = httpRequest
+  }
+
+  /** Lazy so the `withConfig` clone can't recurse through the parent's constructor. */
+  get #client(): ObservableSanityClient {
+    this.#global ??= this.#parent.withConfig({useProjectHostname: false})
+    return this.#global
   }
 
   /** The knowledge base collection: management addressed per call. */
