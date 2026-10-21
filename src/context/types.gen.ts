@@ -1417,10 +1417,10 @@ export interface operations {
             data: {
               /**
                * Format: uuid
-               * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+               * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
                */
               id: string
-              /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+              /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
               publicId: string
               /** @description The ID of the organization that owns the knowledge base. */
               organizationId: string
@@ -1444,7 +1444,7 @@ export interface operations {
                 /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
                 stages: {
                   /**
-                   * @description The stage's ID. The values are listed in the order stages run.
+                   * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                    * @enum {string}
                    */
                   id:
@@ -1614,10 +1614,10 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
              */
             id: string
-            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+            /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
             publicId: string
             /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
@@ -1641,7 +1641,7 @@ export interface operations {
               /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
                 /**
-                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                  * @enum {string}
                  */
                 id:
@@ -1778,7 +1778,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -1796,10 +1796,10 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
              */
             id: string
-            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+            /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
             publicId: string
             /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
@@ -1823,7 +1823,7 @@ export interface operations {
               /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
                 /**
-                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                  * @enum {string}
                  */
                 id:
@@ -1960,7 +1960,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -1994,7 +1994,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2028,10 +2028,10 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
              */
             id: string
-            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+            /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
             publicId: string
             /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
@@ -2055,7 +2055,7 @@ export interface operations {
               /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
                 /**
-                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                  * @enum {string}
                  */
                 id:
@@ -2195,7 +2195,7 @@ export interface operations {
         'Idempotency-Key'?: string
       }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2211,7 +2211,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
         }
@@ -2232,7 +2232,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2269,7 +2269,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded. */
         entryPath: string
@@ -2322,7 +2322,7 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2447,7 +2447,7 @@ export interface operations {
         'Idempotency-Key'?: string
       }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2525,7 +2525,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
         }
@@ -2549,7 +2549,7 @@ export interface operations {
         'Idempotency-Key'?: string
       }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2603,7 +2603,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
@@ -2621,7 +2621,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
         }
@@ -2642,7 +2642,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
@@ -2761,7 +2761,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
@@ -2797,7 +2797,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
@@ -2844,7 +2844,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -2878,7 +2878,7 @@ export interface operations {
             instruction: {
               /** @description The instruction's document ID. */
               id: string
-              /** @description ID of the knowledge base the instruction belongs to. */
+              /** @description The ID (`kb...`) of the knowledge base the instruction belongs to. */
               knowledgeBaseId: string
               /**
                * @description How the instruction was created. `human`: someone wrote it. `conflict`: it records the side chosen when a conflict issue was resolved. Both kinds work the same way in builds.
@@ -2952,7 +2952,7 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The instruction's ID. */
         instructionId: string
@@ -2991,7 +2991,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The instruction's ID. */
         instructionId: string
@@ -3021,7 +3021,7 @@ export interface operations {
           'application/json': {
             /** @description The instruction's document ID. */
             id: string
-            /** @description ID of the knowledge base the instruction belongs to. */
+            /** @description The ID (`kb...`) of the knowledge base the instruction belongs to. */
             knowledgeBaseId: string
             /**
              * @description How the instruction was created. `human`: someone wrote it. `conflict`: it records the side chosen when a conflict issue was resolved. Both kinds work the same way in builds.
@@ -3089,7 +3089,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -3112,7 +3112,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
         }
@@ -3133,7 +3133,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
@@ -3153,7 +3153,7 @@ export interface operations {
           'application/json': {
             /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
             id: string
-            /** @description ID of the knowledge base the issue belongs to. */
+            /** @description The ID (`kb...`) of the knowledge base the issue belongs to. */
             knowledgeBaseId: string
             /** @description What the issue found. The shape depends on `kind`. */
             content:
@@ -3280,7 +3280,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
@@ -3300,7 +3300,7 @@ export interface operations {
           'application/json': {
             /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
             id: string
-            /** @description ID of the knowledge base the issue belongs to. */
+            /** @description The ID (`kb...`) of the knowledge base the issue belongs to. */
             knowledgeBaseId: string
             /** @description What the issue found. The shape depends on `kind`. */
             content:
@@ -3427,7 +3427,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
@@ -3456,7 +3456,7 @@ export interface operations {
             issue: {
               /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
               id: string
-              /** @description ID of the knowledge base the issue belongs to. */
+              /** @description The ID (`kb...`) of the knowledge base the issue belongs to. */
               knowledgeBaseId: string
               /** @description What the issue found. The shape depends on `kind`. */
               content:
@@ -3586,7 +3586,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The job ID returned by the endpoint that started the work. */
         jobId: string
@@ -3597,35 +3597,111 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description A background job, such as a build, refresh, or import, and its status. */
+      /** @description A background job, such as a build, an update or a sync, and its status. `kind` says which, and determines the shape of `result`. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            /** @description The job's ID. */
-            id: string
-            /**
-             * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
-             * @enum {string}
-             */
-            status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-            /**
-             * Format: date-time
-             * @description When the job started.
-             */
-            startedAt: string | null
-            /**
-             * Format: date-time
-             * @description When the job finished. `null` while the job is queued or running.
-             */
-            completedAt: string | null
-            /** @description The job's output. Only present when `status` is `succeeded`. Its shape depends on the kind of job. */
-            result?: unknown
-            /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
-            error?: string | null
-          }
+          'application/json':
+            | {
+                /** @description The job's ID. Treat it as an opaque string. Its format can change. */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the job belongs to. */
+                knowledgeBaseId: string
+                /**
+                 * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+                 * @enum {string}
+                 */
+                status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+                /**
+                 * Format: date-time
+                 * @description When the job started.
+                 */
+                startedAt: string | null
+                /**
+                 * Format: date-time
+                 * @description When the job finished. `null` while the job is queued or running.
+                 */
+                completedAt: string | null
+                /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
+                error?: string | null
+                /** @enum {string} */
+                kind: 'build'
+                /** @description The job's output. Only present when `status` is `succeeded`. */
+                result?: {
+                  /** @description The revision the build produced. */
+                  revisionId: string
+                  /**
+                   * @description The knowledge base state after the build. `review`: the build filed critical issues that need triage.
+                   * @enum {string}
+                   */
+                  status: 'ready' | 'review'
+                  /** @description How many entries the built outline has. */
+                  entryCount: number
+                  /** @description How many issues the build filed. */
+                  issuesCreated: number
+                  /** @description How many of those issues are critical. */
+                  criticalIssueCount: number
+                }
+              }
+            | {
+                /** @description The job's ID. Treat it as an opaque string. Its format can change. */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the job belongs to. */
+                knowledgeBaseId: string
+                /**
+                 * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+                 * @enum {string}
+                 */
+                status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+                /**
+                 * Format: date-time
+                 * @description When the job started.
+                 */
+                startedAt: string | null
+                /**
+                 * Format: date-time
+                 * @description When the job finished. `null` while the job is queued or running.
+                 */
+                completedAt: string | null
+                /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
+                error?: string | null
+                /** @enum {string} */
+                kind: 'update'
+                /** @description The job's output. Only present when `status` is `succeeded`. */
+                result?: {
+                  /** @description The revision the update produced. `null` when no entry changed. */
+                  revisionId: string | null
+                  /** @description How many entries were rewritten. */
+                  entriesRewritten: number
+                }
+              }
+            | {
+                /** @description The job's ID. Treat it as an opaque string. Its format can change. */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the job belongs to. */
+                knowledgeBaseId: string
+                /**
+                 * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+                 * @enum {string}
+                 */
+                status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+                /**
+                 * Format: date-time
+                 * @description When the job started.
+                 */
+                startedAt: string | null
+                /**
+                 * Format: date-time
+                 * @description When the job finished. `null` while the job is queued or running.
+                 */
+                completedAt: string | null
+                /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
+                error?: string | null
+                /** @enum {string} */
+                kind: 'sync'
+              }
         }
       }
       /** @description Error */
@@ -3647,7 +3723,7 @@ export interface operations {
         'Idempotency-Key'?: string
       }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -3663,7 +3739,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
             /** @description Whether this request started a new refresh. `false` means a refresh was already running, and `jobId` is that refresh. */
             started: boolean
@@ -3697,7 +3773,7 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
@@ -3784,7 +3860,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
@@ -3868,7 +3944,7 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
@@ -3911,7 +3987,7 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string

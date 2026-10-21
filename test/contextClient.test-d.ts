@@ -21,6 +21,21 @@ describe('client.context return types', () => {
     ).toEqualTypeOf<Context.ConversationDoc | null>()
   })
 
+  test('jobs.get narrows its result on kind', async () => {
+    const job = await kb.jobs.get({jobId: 'job1'})
+    expectTypeOf(job.kind).toEqualTypeOf<'build' | 'update' | 'sync'>()
+    if (job.kind === 'build') {
+      expectTypeOf(job.result?.entryCount).toEqualTypeOf<number | undefined>()
+    }
+    if (job.kind === 'update') {
+      expectTypeOf(job.result?.revisionId).toEqualTypeOf<string | null | undefined>()
+    }
+    if (job.kind === 'sync') {
+      expectTypeOf(job.result).toEqualTypeOf<unknown>()
+    }
+    expectTypeOf(job.result).toEqualTypeOf<unknown>()
+  })
+
   test('conversations.delete resolves to void', async () => {
     expectTypeOf(await kb.conversations.delete({threadId: 't'})).toEqualTypeOf<void>()
   })

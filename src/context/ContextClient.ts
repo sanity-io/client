@@ -425,7 +425,7 @@ export class ContextClient {
     },
   }
 
-  /** Jobs: poll async work (builds, imports) to a terminal state. */
+  /** Jobs: poll async work (builds, updates and syncs) to a terminal state. */
   jobs = {
     get: (params: {jobId: string}, options?: RequestOptions) =>
       this.#request<Job>(`/jobs/${encodeURIComponent(params.jobId)}`, options),

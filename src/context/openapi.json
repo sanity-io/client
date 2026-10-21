@@ -1790,11 +1790,11 @@
                             "type": "string",
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                            "description": "The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected."
+                            "description": "An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead."
                           },
                           "publicId": {
                             "type": "string",
-                            "description": "The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string."
+                            "description": "The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string."
                           },
                           "organizationId": {
                             "type": "string",
@@ -1849,7 +1849,7 @@
                                         "review",
                                         "polish"
                                       ],
-                                      "description": "The stage's ID. The values are listed in the order stages run."
+                                      "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
                                     },
                                     "status": {
                                       "type": "string",
@@ -2196,11 +2196,11 @@
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                      "description": "The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected."
+                      "description": "An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead."
                     },
                     "publicId": {
                       "type": "string",
-                      "description": "The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string."
+                      "description": "The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string."
                     },
                     "organizationId": {
                       "type": "string",
@@ -2255,7 +2255,7 @@
                                   "review",
                                   "polish"
                                 ],
-                                "description": "The stage's ID. The values are listed in the order stages run."
+                                "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
                               },
                               "status": {
                                 "type": "string",
@@ -2539,7 +2539,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -2563,11 +2563,11 @@
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                      "description": "The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected."
+                      "description": "An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead."
                     },
                     "publicId": {
                       "type": "string",
-                      "description": "The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string."
+                      "description": "The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string."
                     },
                     "organizationId": {
                       "type": "string",
@@ -2622,7 +2622,7 @@
                                   "review",
                                   "polish"
                                 ],
-                                "description": "The stage's ID. The values are listed in the order stages run."
+                                "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
                               },
                               "status": {
                                 "type": "string",
@@ -2937,7 +2937,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -2961,11 +2961,11 @@
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                      "description": "The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected."
+                      "description": "An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead."
                     },
                     "publicId": {
                       "type": "string",
-                      "description": "The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string."
+                      "description": "The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string."
                     },
                     "organizationId": {
                       "type": "string",
@@ -3020,7 +3020,7 @@
                                   "review",
                                   "polish"
                                 ],
-                                "description": "The stage's ID. The values are listed in the order stages run."
+                                "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
                               },
                               "status": {
                                 "type": "string",
@@ -3302,7 +3302,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -3356,7 +3356,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -3387,7 +3387,7 @@
                   "properties": {
                     "jobId": {
                       "type": "string",
-                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`."
+                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change."
                     }
                   },
                   "required": ["jobId"],
@@ -3425,7 +3425,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -3485,7 +3485,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -3516,7 +3516,7 @@
                   "properties": {
                     "jobId": {
                       "type": "string",
-                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`."
+                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change."
                     },
                     "started": {
                       "type": "boolean",
@@ -3609,7 +3609,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -3771,7 +3771,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -3925,7 +3925,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -4022,7 +4022,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -4135,7 +4135,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -4250,7 +4250,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -4643,7 +4643,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -4674,7 +4674,7 @@
                   "properties": {
                     "jobId": {
                       "type": "string",
-                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`."
+                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change."
                     }
                   },
                   "required": ["jobId"],
@@ -4712,7 +4712,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -4970,7 +4970,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5035,7 +5035,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5136,7 +5136,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5212,7 +5212,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5245,7 +5245,7 @@
                   "properties": {
                     "jobId": {
                       "type": "string",
-                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`."
+                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change."
                     }
                   },
                   "required": ["jobId"],
@@ -5283,7 +5283,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5307,47 +5307,244 @@
         ],
         "responses": {
           "200": {
-            "description": "A background job, such as a build, refresh, or import, and its status.",
+            "description": "A background job, such as a build, an update or a sync, and its status. `kind` says which, and determines the shape of `result`.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "description": "The job's ID."
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "The job's ID. Treat it as an opaque string. Its format can change."
+                        },
+                        "knowledgeBaseId": {
+                          "type": "string",
+                          "description": "The ID (`kb…`) of the knowledge base the job belongs to."
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled"
+                          ],
+                          "description": "The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned."
+                        },
+                        "startedAt": {
+                          "nullable": true,
+                          "description": "When the job started.",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "completedAt": {
+                          "nullable": true,
+                          "description": "When the job finished. `null` while the job is queued or running.",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "error": {
+                          "description": "A readable reason the job failed or was cancelled. `null` for any other status.",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": ["build"]
+                        },
+                        "result": {
+                          "description": "The job's output. Only present when `status` is `succeeded`.",
+                          "type": "object",
+                          "properties": {
+                            "revisionId": {
+                              "type": "string",
+                              "description": "The revision the build produced."
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": ["ready", "review"],
+                              "description": "The knowledge base state after the build. `review`: the build filed critical issues that need triage."
+                            },
+                            "entryCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "How many entries the built outline has."
+                            },
+                            "issuesCreated": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "How many issues the build filed."
+                            },
+                            "criticalIssueCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "How many of those issues are critical."
+                            }
+                          },
+                          "required": [
+                            "revisionId",
+                            "status",
+                            "entryCount",
+                            "issuesCreated",
+                            "criticalIssueCount"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "knowledgeBaseId",
+                        "status",
+                        "startedAt",
+                        "completedAt",
+                        "kind"
+                      ],
+                      "additionalProperties": false
                     },
-                    "status": {
-                      "type": "string",
-                      "enum": ["pending", "queued", "running", "succeeded", "failed", "cancelled"],
-                      "description": "The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned."
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "The job's ID. Treat it as an opaque string. Its format can change."
+                        },
+                        "knowledgeBaseId": {
+                          "type": "string",
+                          "description": "The ID (`kb…`) of the knowledge base the job belongs to."
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled"
+                          ],
+                          "description": "The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned."
+                        },
+                        "startedAt": {
+                          "nullable": true,
+                          "description": "When the job started.",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "completedAt": {
+                          "nullable": true,
+                          "description": "When the job finished. `null` while the job is queued or running.",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "error": {
+                          "description": "A readable reason the job failed or was cancelled. `null` for any other status.",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": ["update"]
+                        },
+                        "result": {
+                          "description": "The job's output. Only present when `status` is `succeeded`.",
+                          "type": "object",
+                          "properties": {
+                            "revisionId": {
+                              "nullable": true,
+                              "description": "The revision the update produced. `null` when no entry changed.",
+                              "type": "string"
+                            },
+                            "entriesRewritten": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991,
+                              "description": "How many entries were rewritten."
+                            }
+                          },
+                          "required": ["revisionId", "entriesRewritten"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "knowledgeBaseId",
+                        "status",
+                        "startedAt",
+                        "completedAt",
+                        "kind"
+                      ],
+                      "additionalProperties": false
                     },
-                    "startedAt": {
-                      "nullable": true,
-                      "description": "When the job started.",
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    },
-                    "completedAt": {
-                      "nullable": true,
-                      "description": "When the job finished. `null` while the job is queued or running.",
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                    },
-                    "result": {
-                      "description": "The job's output. Only present when `status` is `succeeded`. Its shape depends on the kind of job."
-                    },
-                    "error": {
-                      "description": "A readable reason the job failed or was cancelled. `null` for any other status.",
-                      "nullable": true,
-                      "type": "string"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "The job's ID. Treat it as an opaque string. Its format can change."
+                        },
+                        "knowledgeBaseId": {
+                          "type": "string",
+                          "description": "The ID (`kb…`) of the knowledge base the job belongs to."
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "queued",
+                            "running",
+                            "succeeded",
+                            "failed",
+                            "cancelled"
+                          ],
+                          "description": "The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned."
+                        },
+                        "startedAt": {
+                          "nullable": true,
+                          "description": "When the job started.",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "completedAt": {
+                          "nullable": true,
+                          "description": "When the job finished. `null` while the job is queued or running.",
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        },
+                        "error": {
+                          "description": "A readable reason the job failed or was cancelled. `null` for any other status.",
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": ["sync"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "knowledgeBaseId",
+                        "status",
+                        "startedAt",
+                        "completedAt",
+                        "kind"
+                      ],
+                      "additionalProperties": false
                     }
-                  },
-                  "required": ["id", "status", "startedAt", "completedAt"],
-                  "additionalProperties": false,
-                  "description": "A background job, such as a build, refresh, or import, and its status."
+                  ],
+                  "description": "A background job, such as a build, an update or a sync, and its status. `kind` says which, and determines the shape of `result`."
                 }
               }
             }
@@ -5402,7 +5599,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5424,7 +5621,7 @@
                   "properties": {
                     "jobId": {
                       "type": "string",
-                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`."
+                      "description": "The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change."
                     }
                   },
                   "required": ["jobId"],
@@ -5462,7 +5659,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5498,7 +5695,7 @@
                     },
                     "knowledgeBaseId": {
                       "type": "string",
-                      "description": "ID of the knowledge base the issue belongs to."
+                      "description": "The ID (`kb...`) of the knowledge base the issue belongs to."
                     },
                     "content": {
                       "oneOf": [
@@ -5779,7 +5976,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -5818,7 +6015,7 @@
                         },
                         "knowledgeBaseId": {
                           "type": "string",
-                          "description": "ID of the knowledge base the issue belongs to."
+                          "description": "The ID (`kb...`) of the knowledge base the issue belongs to."
                         },
                         "content": {
                           "oneOf": [
@@ -6096,7 +6293,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -6132,7 +6329,7 @@
                     },
                     "knowledgeBaseId": {
                       "type": "string",
-                      "description": "ID of the knowledge base the issue belongs to."
+                      "description": "The ID (`kb...`) of the knowledge base the issue belongs to."
                     },
                     "content": {
                       "oneOf": [
@@ -6440,7 +6637,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -6469,7 +6666,7 @@
                         },
                         "knowledgeBaseId": {
                           "type": "string",
-                          "description": "ID of the knowledge base the instruction belongs to."
+                          "description": "The ID (`kb...`) of the knowledge base the instruction belongs to."
                         },
                         "origin": {
                           "type": "string",
@@ -6653,7 +6850,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -6689,7 +6886,7 @@
                     },
                     "knowledgeBaseId": {
                       "type": "string",
-                      "description": "ID of the knowledge base the instruction belongs to."
+                      "description": "The ID (`kb...`) of the knowledge base the instruction belongs to."
                     },
                     "origin": {
                       "type": "string",
@@ -6840,7 +7037,7 @@
             "in": "path",
             "name": "knowledgeBaseId",
             "required": true,
-            "description": "The knowledge base's public ID (`kb...`) or UUID."
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
           },
           {
             "schema": {
@@ -6896,12 +7093,12 @@
         }
       }
     },
-    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}": {
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}": {
       "post": {
         "operationId": "serveMcpEndpoint",
         "summary": "Connect to an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpointName` is the permanent URL name of the endpoint. Query parameters override the endpoint configuration for that request only. Errors are JSON-RPC error objects, not the standard error response.",
+        "description": "Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Query parameters override the endpoint configuration for that request only. Errors are JSON-RPC error objects, not the standard error response.",
         "parameters": [
           {
             "schema": {
@@ -6982,7 +7179,7 @@
               "minLength": 1
             },
             "in": "path",
-            "name": "mcpEndpointName",
+            "name": "mcpEndpoint",
             "required": true,
             "description": "The MCP endpoint's name, set when the endpoint was created."
           },
@@ -7012,7 +7209,7 @@
         }
       }
     },
-    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpointName}/initial-context": {
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context": {
       "get": {
         "operationId": "getMcpEndpointInitialContext",
         "summary": "Get an MCP endpoint's initial context",
@@ -7107,7 +7304,7 @@
               "minLength": 1
             },
             "in": "path",
-            "name": "mcpEndpointName",
+            "name": "mcpEndpoint",
             "required": true,
             "description": "The MCP endpoint's name, set when the endpoint was created."
           },
@@ -7133,6 +7330,386 @@
         "responses": {
           "200": {
             "description": "Default Response"
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/status": {
+      "get": {
+        "operationId": "getMcpEndpointStatus",
+        "summary": "Check an MCP endpoint",
+        "tags": ["mcp"],
+        "description": "Checks whether an agent can connect to the endpoint with your credentials. Accepts the same query parameters as connecting, so you can check a connection's overrides before using them. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "instructions",
+            "required": false,
+            "description": "Agent instructions that replace the endpoint's configured instructions for this request."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "perspective",
+            "required": false,
+            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "embeddings",
+            "required": false,
+            "description": "Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "groqFilter",
+            "required": false,
+            "description": "A GROQ filter that replaces the endpoint's configured content filter for this request."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["knowledge_base", "groq"]
+            },
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "description": "The content source for this request, overriding the endpoint's mode: `knowledge_base` serves knowledge bases, and `groq` queries a dataset."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "knowledgeBases",
+            "required": false,
+            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "linkResolver",
+            "required": false,
+            "description": "A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "workspace",
+            "required": false,
+            "description": "The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one."
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "mcpEndpoint",
+            "required": true,
+            "description": "The MCP endpoint's name, set when the endpoint was created."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "description": "The ID of the organization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requiredOk": {
+                      "type": "boolean",
+                      "description": "Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials and query parameters can use the endpoint."
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "studio": {
+                          "nullable": true,
+                          "description": "Whether a deployed studio serves the endpoint's dataset. Its schema tells the agent which document types exist. `null` when the connection doesn't query a dataset.",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true],
+                                  "description": "The check passed."
+                                },
+                                "workspace": {
+                                  "type": "string",
+                                  "description": "The name of the studio workspace the connection uses."
+                                },
+                                "workspaceTitle": {
+                                  "type": "string",
+                                  "description": "The workspace's title."
+                                },
+                                "workspaceAutoSelected": {
+                                  "type": "boolean",
+                                  "description": "Whether the workspace was picked automatically. It is `false` when the `workspace` query parameter chose it."
+                                },
+                                "availableWorkspaces": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string",
+                                        "description": "The workspace's name."
+                                      },
+                                      "title": {
+                                        "type": "string",
+                                        "description": "The workspace's title."
+                                      }
+                                    },
+                                    "required": ["name", "title"],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "The deployed studio's workspaces for the endpoint's dataset."
+                                }
+                              },
+                              "required": [
+                                "ok",
+                                "workspace",
+                                "workspaceTitle",
+                                "workspaceAutoSelected",
+                                "availableWorkspaces"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false],
+                                  "description": "The check failed."
+                                },
+                                "error": {
+                                  "type": "string",
+                                  "description": "Why the check failed, written to show to users."
+                                }
+                              },
+                              "required": ["ok", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "semanticSearch": {
+                          "nullable": true,
+                          "description": "Whether semantic search is ready on the endpoint's dataset. `null` when semantic search isn't enabled or the connection doesn't query a dataset. It never affects `requiredOk`: without it, the agent searches with GROQ only.",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true],
+                                  "description": "The check passed."
+                                },
+                                "status": {
+                                  "nullable": true,
+                                  "description": "The dataset's embeddings index status, if known.",
+                                  "type": "string"
+                                },
+                                "withinUsageLimit": {
+                                  "nullable": true,
+                                  "description": "Whether the project is within its embeddings usage limit, or `null` if it couldn't be checked.",
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": ["ok", "status", "withinUsageLimit"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false],
+                                  "description": "The check failed."
+                                },
+                                "error": {
+                                  "type": "string",
+                                  "description": "Why the check failed, written to show to users."
+                                }
+                              },
+                              "required": ["ok", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "schema": {
+                          "nullable": true,
+                          "description": "Whether the studio's schema has document types the agent can query. `null` when the connection doesn't query a dataset.",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true],
+                                  "description": "The check passed."
+                                },
+                                "documentTypes": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991,
+                                  "description": "The number of document types the agent can query, after the endpoint's GROQ filter."
+                                }
+                              },
+                              "required": ["ok", "documentTypes"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false],
+                                  "description": "The check failed."
+                                },
+                                "error": {
+                                  "type": "string",
+                                  "description": "Why the check failed, written to show to users."
+                                }
+                              },
+                              "required": ["ok", "error"],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "knowledgeBases": {
+                          "nullable": true,
+                          "description": "Whether every knowledge base the connection serves exists, is readable with your credentials, and has been built. `null` when the connection doesn't serve knowledge bases.",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true],
+                                  "description": "The check passed."
+                                },
+                                "resolved": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The IDs of the knowledge bases the connection serves."
+                                }
+                              },
+                              "required": ["ok", "resolved"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false],
+                                  "description": "The check failed."
+                                },
+                                "resolved": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The IDs of the knowledge bases that exist and that you can read."
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The IDs of knowledge bases that don't exist in the organization."
+                                },
+                                "denied": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The IDs of knowledge bases your credentials can't read."
+                                },
+                                "unbuilt": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The IDs of knowledge bases that haven't been built yet. Build them before connecting an agent."
+                                },
+                                "error": {
+                                  "type": "string",
+                                  "description": "Why the check failed, written to show to users."
+                                }
+                              },
+                              "required": [
+                                "ok",
+                                "resolved",
+                                "missing",
+                                "denied",
+                                "unbuilt",
+                                "error"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["studio", "semanticSearch", "schema", "knowledgeBases"],
+                      "additionalProperties": false,
+                      "description": "One result per check. A check is `null` when it doesn't apply to the connection."
+                    }
+                  },
+                  "required": ["requiredOk", "checks"],
+                  "additionalProperties": false
+                }
+              }
+            }
           },
           "default": {
             "description": "Error",
