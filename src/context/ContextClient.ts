@@ -172,7 +172,6 @@ function _fetchBody(file: CreateFileImportParams['file']) {
  */
 export class ContextClient {
   #parent: SanityClient
-  #global?: SanityClient
   #httpRequest: HttpRequest
 
   constructor(client: SanityClient, httpRequest: HttpRequest) {
@@ -180,10 +179,12 @@ export class ContextClient {
     this.#httpRequest = httpRequest
   }
 
-  /** Lazy so the `withConfig` clone can't recurse through the parent's constructor. */
+  /**
+   * Resolved per call so parent reconfiguration propagates, and lazily so the
+   * `withConfig` clone can't recurse through the parent's constructor.
+   */
   get #client(): SanityClient {
-    this.#global ??= this.#parent.withConfig({useProjectHostname: false})
-    return this.#global
+    return this.#parent.withConfig({useProjectHostname: false})
   }
 
   /** Request against the configured knowledge base. */
@@ -791,7 +792,6 @@ export class ContextClient {
  */
 export class ObservableContextClient {
   #parent: ObservableSanityClient
-  #global?: ObservableSanityClient
   #httpRequest: HttpRequest
 
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
@@ -799,10 +799,12 @@ export class ObservableContextClient {
     this.#httpRequest = httpRequest
   }
 
-  /** Lazy so the `withConfig` clone can't recurse through the parent's constructor. */
+  /**
+   * Resolved per call so parent reconfiguration propagates, and lazily so the
+   * `withConfig` clone can't recurse through the parent's constructor.
+   */
   get #client(): ObservableSanityClient {
-    this.#global ??= this.#parent.withConfig({useProjectHostname: false})
-    return this.#global
+    return this.#parent.withConfig({useProjectHostname: false})
   }
 
   /** The knowledge base collection: management addressed per call. */

@@ -113,6 +113,24 @@ describe('ContextClient', () => {
     )
   })
 
+  test('parent reconfiguration propagates to context requests', async () => {
+    httpRequest.mockResolvedValue({data: [], nextCursor: null})
+    const client = createClient({
+      projectId: 'proj123',
+      dataset: 'production',
+      apiVersion: '2026-05-26',
+      useCdn: false,
+    })
+    const context = new ContextClient(client, httpRequest)
+
+    await context.knowledgeBases.list({organizationId: TEST_ORG_ID})
+    client.config({token: 'rotated'})
+    await context.knowledgeBases.list({organizationId: TEST_ORG_ID})
+
+    expect(httpRequest.mock.calls[0][0].headers.Authorization).toBeUndefined()
+    expect(httpRequest.mock.calls[1][0].headers.Authorization).toBe('Bearer rotated')
+  })
+
   test('scoped methods address the configured knowledge-base resource', async () => {
     httpRequest
       .mockResolvedValueOnce({data: [], nextCursor: null}) // imports.list
