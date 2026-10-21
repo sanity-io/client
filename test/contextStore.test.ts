@@ -126,7 +126,7 @@ describe('context GROQ reads', () => {
     )
   })
 
-  test('mcpEndpoints.create POSTs to the organization, edit PATCHes and delete DELETEs by ID', async () => {
+  test('mcpEndpoints.create POSTs to the organization, edit PATCHes and delete DELETEs by name', async () => {
     const endpoint = {
       id: 'mcpabc12345',
       organizationId,
@@ -150,12 +150,12 @@ describe('context GROQ reads', () => {
       })
       .respond({status: 201, body: endpoint})
     scope
-      .on('PATCH', `/v2026-08-25/context/organizations/${organizationId}/mcp/mcpabc12345`, {
+      .on('PATCH', `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent`, {
         body: {title: 'Support', instructions: null},
       })
       .respond({status: 200, body: {...endpoint, title: 'Support'}})
     scope
-      .on('DELETE', `/v2026-08-25/context/organizations/${organizationId}/mcp/mcpabc12345`)
+      .on('DELETE', `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent`)
       .respond({status: 204})
 
     await expect(
@@ -167,17 +167,17 @@ describe('context GROQ reads', () => {
     ).resolves.toEqual(endpoint)
     await expect(
       getMockClient().context.mcpEndpoints.edit({
-        mcpEndpointId: 'mcpabc12345',
+        name: 'support-agent',
         title: 'Support',
         instructions: null,
       }),
     ).resolves.toEqual({...endpoint, title: 'Support'})
     await expect(
-      getMockClient().context.mcpEndpoints.delete({mcpEndpointId: 'mcpabc12345'}),
+      getMockClient().context.mcpEndpoints.delete({name: 'support-agent'}),
     ).resolves.toBeUndefined()
   })
 
-  test('mcpEndpoints management requires context.organizationId and an ID', () => {
+  test('mcpEndpoints management requires context.organizationId and a name', () => {
     expect(() =>
       getMockClient({context: undefined}).context.mcpEndpoints.create({
         title: 'Support agent',
@@ -185,8 +185,58 @@ describe('context GROQ reads', () => {
         sources: [{type: 'knowledge-base', id: 'kb3do82whm'}],
       }),
     ).toThrow('`context.organizationId` must be configured to use MCP endpoints')
-    expect(() => getMockClient().context.mcpEndpoints.delete({mcpEndpointId: ''})).toThrow(
-      '`mcpEndpointId` must be provided',
+    expect(() => getMockClient().context.mcpEndpoints.delete({name: ''})).toThrow(
+      '`name` must be provided',
+    )
+  })
+
+  test('mcpEndpoints.status and initialContext read an endpoint by name with its runtime options', async () => {
+    const status = {
+      requiredOk: true,
+      checks: {
+        studio: null,
+        semanticSearch: null,
+        schema: null,
+        knowledgeBases: {ok: true, resolved: ['kb3do82whm']},
+      },
+    }
+    const scope = getActiveMock().scope(apiHost)
+    scope
+      .on('GET', `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent/status`, {
+        query: {mode: 'knowledge_base'},
+      })
+      .respond({status: 200, body: status})
+    scope
+      .on(
+        'GET',
+        `/v2026-08-25/context/organizations/${organizationId}/mcp/support-agent/initial-context`,
+        {query: {heading_offset: '2'}},
+      )
+      .respond({
+        status: 200,
+        headers: {'content-type': 'text/plain; charset=utf-8'},
+        body: '### Support agent',
+      })
+
+    await expect(
+      getMockClient().context.mcpEndpoints.status({name: 'support-agent', mode: 'knowledge_base'}),
+    ).resolves.toEqual(status)
+    await expect(
+      getMockClient().context.mcpEndpoints.initialContext({
+        name: 'support-agent',
+        heading_offset: '2',
+      }),
+    ).resolves.toBe('### Support agent')
+  })
+
+  test('mcpEndpoints serving reads require context.organizationId and a name', () => {
+    const orgError = '`context.organizationId` must be configured to use MCP endpoints'
+
+    expect(() =>
+      getMockClient({context: undefined}).context.mcpEndpoints.status({name: 'support-agent'}),
+    ).toThrow(orgError)
+    expect(() => getMockClient().context.mcpEndpoints.initialContext({name: ''})).toThrow(
+      '`name` must be provided',
     )
   })
 

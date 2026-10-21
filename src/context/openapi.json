@@ -16,7 +16,7 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "sanitySession",
-        "description": "The Sanity session cookie, for requests from the browser."
+        "description": "The Sanity session cookie, for requests from the browser. Read only when no `Authorization` header is sent; any `Authorization` header must be a Bearer token."
       }
     },
     "schemas": {
@@ -1689,6 +1689,7 @@
               "mcpEndpointNotServable",
               "conversationNotFound",
               "missingCredential",
+              "invalidCredential",
               "missingOrganization",
               "organizationAccessDenied",
               "knowledgeBaseAccessDenied",
@@ -7121,7 +7122,7 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "description": "The endpoint's ID (`mcp…`). Use it to update or delete the endpoint."
+                      "description": "The endpoint's ID (`mcp…`). Update and delete accept it or the endpoint's name."
                     },
                     "organizationId": {
                       "type": "string",
@@ -7239,7 +7240,7 @@
         "operationId": "updateMcpEndpoint",
         "summary": "Update an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Updates the title, sources, instructions, or GROQ filter. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
+        "description": "Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7326,7 +7327,7 @@
             "in": "path",
             "name": "mcpEndpoint",
             "required": true,
-            "description": "The MCP endpoint's ID (`mcp…`). Serving routes at the same path take its name instead."
+            "description": "The MCP endpoint's name, as in its URL, or its ID (`mcp…`). Names can't take the shape of an ID, so either one identifies the endpoint."
           },
           {
             "schema": {
@@ -7357,7 +7358,7 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "description": "The endpoint's ID (`mcp…`). Use it to update or delete the endpoint."
+                      "description": "The endpoint's ID (`mcp…`). Update and delete accept it or the endpoint's name."
                     },
                     "organizationId": {
                       "type": "string",
@@ -7473,7 +7474,7 @@
         "operationId": "deleteMcpEndpoint",
         "summary": "Delete an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Deletes the MCP endpoint. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.",
+        "description": "Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.",
         "parameters": [
           {
             "schema": {
@@ -7483,7 +7484,7 @@
             "in": "path",
             "name": "mcpEndpoint",
             "required": true,
-            "description": "The MCP endpoint's ID (`mcp…`). Serving routes at the same path take its name instead."
+            "description": "The MCP endpoint's name, as in its URL, or its ID (`mcp…`). Names can't take the shape of an ID, so either one identifies the endpoint."
           },
           {
             "schema": {

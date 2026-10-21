@@ -25,6 +25,9 @@ const PATH_ALLOWLIST = [
   // MCP endpoint management: create, edit and delete. Reads go through GROQ.
   '/{apiVersion}/context/organizations/{organizationId}/mcp',
   '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}',
+  // MCP endpoint readiness and initial context, addressed by endpoint name.
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/status',
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context',
   `${KB}/build`,
   `${KB}/build/cancel`,
   `${KB}/entries/{entryPath}/rebuild`,

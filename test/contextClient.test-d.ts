@@ -45,9 +45,16 @@ describe('client.context return types', () => {
       }),
     ).toEqualTypeOf<Context.McpEndpoint>()
     expectTypeOf(
-      await kb.mcpEndpoints.edit({mcpEndpointId: 'mcp1', groqFilter: null}),
+      await kb.mcpEndpoints.edit({name: 'n', groqFilter: null}),
     ).toEqualTypeOf<Context.McpEndpoint>()
-    expectTypeOf(await kb.mcpEndpoints.delete({mcpEndpointId: 'mcp1'})).toEqualTypeOf<void>()
+    expectTypeOf(await kb.mcpEndpoints.delete({name: 'n'})).toEqualTypeOf<void>()
+  })
+
+  test('mcpEndpoints.status resolves to the status verdicts, initialContext to text', async () => {
+    const status = await kb.mcpEndpoints.status({name: 'n', mode: 'groq'})
+    expectTypeOf(status).toEqualTypeOf<Context.McpEndpointStatus>()
+    expectTypeOf(status.requiredOk).toEqualTypeOf<boolean>()
+    expectTypeOf(await kb.mcpEndpoints.initialContext({name: 'n'})).toEqualTypeOf<string>()
   })
 
   test('conversations.delete resolves to void', async () => {
