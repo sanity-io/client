@@ -56,6 +56,20 @@ declare global {
   }
 }
 
+// The brand `@sanity-labs/groq-content-mapper` puts on the default export of an imported `.groq`
+// file, declared here because the client reads it structurally and never imports that package.
+// This one reuses the registered query text with a different result, to show the brand is read
+// first.
+type GroqQuery<Query extends string, Result, Params> = Query & {
+  readonly __groqParams?: Params
+  readonly __groqResult?: Result
+}
+declare const brandedStegaPost: GroqQuery<
+  "*[_type == 'stegaPost'][0]",
+  ProjectQueryResult,
+  Record<string, never>
+>
+
 describe('StegaString', () => {
   test('comparing against a string literal is a type error', () => {
     const branded = stegaBrand({imageLocation: 'left' as ImageLocation}).imageLocation
@@ -359,6 +373,16 @@ describe('client.fetch with ClientReturnStega', () => {
     )
     expectTypeOf(resp).toExtend<RawQueryResponse<StegaBranded<PostQueryResult>>>()
     expectTypeOf(resp.result.title).toEqualTypeOf<StegaString<string>>()
+  })
+
+  test('a query branded with __groqResult, like an imported .groq file, is read before the registry', async () => {
+    expectTypeOf<ClientReturnStega<typeof brandedStegaPost>>().toEqualTypeOf<
+      StegaBranded<ProjectQueryResult>
+    >()
+    const resp = await client.fetch<ClientReturnStega<typeof brandedStegaPost>>(brandedStegaPost)
+    expectTypeOf(resp).toEqualTypeOf<StegaBranded<ProjectQueryResult>>()
+    expectTypeOf(resp.title).toEqualTypeOf<StegaString<string>>()
+    expectTypeOf(stegaClean(resp)).toEqualTypeOf<ProjectQueryResult>()
   })
 })
 
