@@ -1895,11 +1895,62 @@ declare global {
  */
 export interface SanityQueries extends globalThis.SanityQueries {}
 
-/** @public */
-export type ClientReturn<
-  GroqString extends string,
-  Fallback = Any,
-> = GroqString extends keyof SanityQueries ? SanityQueries[GroqString] : Fallback
+/**
+ * The result type `client.fetch(query)` resolves to for a query of type `GroqString`.
+ *
+ * A query carrying a `__groqResult` brand, such as the default export of a `.groq` file
+ * imported through `@sanity-labs/groq-content-mapper`, resolves to the branded result.
+ * Otherwise the query is looked up in {@link SanityQueries}, and when it is not registered
+ * there the result is `Fallback`, which defaults to `any`.
+ *
+ * @remarks
+ * Reading the brand is experimental and tracks the `.groq` file imports that
+ * `@sanity-labs/groq-content-mapper` is introducing; the registry lookup and the fallback are
+ * stable. The brand is read structurally, so this type never imports the package that produced
+ * the query and resolves the same across duplicated copies of `@sanity/client`. It is a phantom
+ * property: it exists in the type system only and is never present on the string at runtime.
+ *
+ * @experimental
+ * @public
+ */
+export type ClientReturn<GroqString extends string, Fallback = Any> = GroqString extends {
+  readonly __groqResult?: infer Result
+}
+  ? Result
+  : GroqString extends keyof SanityQueries
+    ? SanityQueries[GroqString]
+    : Fallback
+
+/**
+ * The params type `client.fetch(query, params)` accepts for a query of type `GroqString`.
+ *
+ * A query carrying a `__groqParams` brand, such as the default export of a `.groq` file
+ * imported through `@sanity-labs/groq-content-mapper`, resolves to the branded params, so that
+ * the params passed alongside it are checked. Any other query resolves to `Fallback`, which
+ * defaults to {@link QueryParams}.
+ *
+ * @remarks
+ * Reading the brand is experimental and tracks the `.groq` file imports that
+ * `@sanity-labs/groq-content-mapper` is introducing. Like {@link ClientReturn}, this reads the
+ * brand structurally and never imports the package that produced the query.
+ *
+ * Unlike `ClientReturn`, this type sits in a parameter position, so it has to stay relatable
+ * while `GroqString` is still a type parameter: code that is generic over the query string, like
+ * `function load<const Q extends string>(query: Q, params: QueryParams)`, must keep compiling.
+ * TypeScript never relates a value to a deferred conditional type that has an `infer` position,
+ * or that distributes over the type parameter it reads, which is why the brand is read through an
+ * indexed access and the check is written in the non-distributive tuple form. While deferred,
+ * TypeScript then checks the value against both branches, so the params are validated against
+ * `Fallback` exactly as they were before the brand existed.
+ *
+ * @experimental
+ * @public
+ */
+export type ClientParams<GroqString extends string, Fallback = QueryParams> = [GroqString] extends [
+  {readonly __groqParams?: unknown},
+]
+  ? NonNullable<(GroqString & {readonly __groqParams?: unknown})['__groqParams']>
+  : Fallback
 
 export type {
   AgentActionParam,
