@@ -15,6 +15,17 @@ describe('base client', () => {
     expect(client.config().projectId, 'constructor opts are set').toBe('abc123')
   })
 
+  test('getToken turns off withCredentials, like token does', () => {
+    const client = createClient({
+      projectId: 'abc123',
+      useCdn: false,
+      apiVersion: '1',
+      getToken: () => 'abc123',
+      withCredentials: true,
+    })
+    expect(client.config().withCredentials).toBe(false)
+  })
+
   test('using the new keyword trows an error', () => {
     const SanityClient = createClient
     // @ts-expect-error - we want to test that it throws an error

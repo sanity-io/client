@@ -226,6 +226,95 @@ describe('.live.events()', () => {
     expect(request.query).not.toHaveProperty('includeDrafts')
   })
 
+  test('includeDrafts authenticates with getToken', async () => {
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/get-token-drafts', {
+        headers: {Authorization: 'Bearer dynamic'},
+      })
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'get-token-drafts',
+      useCdn: false,
+      apiVersion: 'X',
+      getToken: async () => 'dynamic',
+    })
+
+    const event = await firstValueFrom(client.live.events({includeDrafts: true}))
+    expect(event).toMatchObject({type: 'welcome'})
+  })
+
+  test('does not call getToken unless includeDrafts is set', async () => {
+    getActiveMock()
+      .scope('https://abc123.api.sanity.io')
+      .on('GET', '/vX/data/live/events/get-token-published')
+      .respond({
+        status: 200,
+        body: encode({id: '123', event: 'welcome', data: '{}'}),
+        headers: {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'},
+      })
+
+    let calls = 0
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'get-token-published',
+      useCdn: false,
+      apiVersion: 'X',
+      getToken: async () => {
+        calls++
+        return 'dynamic'
+      },
+    })
+
+    await firstValueFrom(client.live.events())
+
+    const [request] = getActiveMock().getRequests()
+    expect(request).not.toHaveHeader('authorization')
+    expect(calls).toBe(0)
+  })
+
+  test('clients with different getToken functions do not share a drafts connection', async () => {
+    const scope = getActiveMock().scope('https://abc123.api.sanity.io')
+    const streamHeaders = {'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/event-stream'}
+    for (const token of ['alice', 'bob']) {
+      scope
+        .on('GET', '/vX/data/live/events/get-token-shared', {
+          headers: {Authorization: `Bearer ${token}`},
+        })
+        .respond({
+          status: 200,
+          body: encode({id: '1', event: 'welcome', data: '{}'}),
+          headers: streamHeaders,
+        })
+    }
+
+    const config: ClientConfig = {
+      projectId: 'abc123',
+      dataset: 'get-token-shared',
+      useCdn: false,
+      apiVersion: 'X',
+    }
+    const alice = createClient({...config, getToken: async () => 'alice'})
+    const bob = createClient({...config, getToken: async () => 'bob'})
+
+    await Promise.all([
+      firstValueFrom(alice.live.events({includeDrafts: true})),
+      firstValueFrom(bob.live.events({includeDrafts: true})),
+    ])
+
+    expect(getActiveMock()).toHaveReceivedRequestTimes(
+      'GET',
+      '/vX/data/live/events/get-token-shared',
+      2,
+    )
+  })
+
   test('sends cookies instead of a token when includeDrafts relies on withCredentials', async () => {
     expect.assertions(3)
 

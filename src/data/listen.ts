@@ -163,10 +163,10 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
   listenFor: string[],
 ): Observable<TEvent> {
   const config = client.config()
-  const {token, withCredentials, headers: configHeaders} = config
+  const {token, getToken, withCredentials, headers: configHeaders} = config
 
   const headers: Record<string, string> = {}
-  if (token) {
+  if (token && !getToken) {
     headers.Authorization = `Bearer ${token}`
   }
   if (configHeaders) {
@@ -178,6 +178,7 @@ export function _connectListenEventSource<TEvent extends {type: string}>(
       fetch: resolveEventSourceFetch(config, {
         headers: Object.keys(headers).length ? headers : undefined,
         withCredentials,
+        getToken,
       }),
     })
 
