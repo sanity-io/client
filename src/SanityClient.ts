@@ -30,6 +30,7 @@ import type {
   BaseActionOptions,
   BaseMutationOptions,
   ClientConfig,
+  ClientParams,
   ClientReturn,
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
@@ -254,7 +255,7 @@ export class ObservableSanityClient {
     const G extends string = string,
   >(
     query: G,
-    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : ClientParams<G, Q>,
     options?: FilteredResponseQueryOptions,
   ): Observable<ClientReturn<G, R>>
   /**
@@ -269,8 +270,8 @@ export class ObservableSanityClient {
     Q extends QueryWithoutParams | QueryParams = QueryParams,
     const G extends string = string,
   >(
-    query: string,
-    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    query: G,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : ClientParams<G, Q>,
     options: UnfilteredResponseQueryOptions,
   ): Observable<RawQueryResponse<ClientReturn<G, R>>>
   /**
@@ -286,7 +287,7 @@ export class ObservableSanityClient {
     const G extends string = string,
   >(
     query: G,
-    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : ClientParams<G, Q>,
     options: UnfilteredResponseWithoutQuery,
   ): Observable<RawQuerylessQueryResponse<ClientReturn<G, R>>>
   fetch<R, Q, const G extends string>(
@@ -1426,7 +1427,7 @@ export class SanityClient {
     const G extends string = string,
   >(
     query: G,
-    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : ClientParams<G, Q>,
     options?: FilteredResponseQueryOptions,
   ): Promise<ClientReturn<G, R>>
   /**
@@ -1442,7 +1443,7 @@ export class SanityClient {
     const G extends string = string,
   >(
     query: G,
-    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : ClientParams<G, Q>,
     options: UnfilteredResponseQueryOptions,
   ): Promise<RawQueryResponse<ClientReturn<G, R>>>
   /**
@@ -1458,7 +1459,7 @@ export class SanityClient {
     const G extends string = string,
   >(
     query: G,
-    params: Q extends QueryWithoutParams ? QueryWithoutParams : Q,
+    params: Q extends QueryWithoutParams ? QueryWithoutParams : ClientParams<G, Q>,
     options: UnfilteredResponseWithoutQuery,
   ): Promise<RawQuerylessQueryResponse<ClientReturn<G, R>>>
   fetch<R, Q, const G extends string>(
