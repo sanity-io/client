@@ -7,7 +7,7 @@ import {
   CollaborationCommentsClient,
   ObservableCollaborationCommentsClient,
 } from './collaboration/CollaborationCommentsClient'
-import {defaultConfig, initConfig} from './config'
+import {defaultConfig, exposeConfig, initConfig, mergeConfig} from './config'
 import {ContextClient, ObservableContextClient} from './context/ContextClient'
 import * as dataMethods from './data/dataMethods'
 import {_listen} from './data/listen'
@@ -21,6 +21,7 @@ import {
   ObservableMediaLibraryVideoClient,
 } from './mediaLibrary/MediaLibraryVideoClient'
 import {ObservableProjectsClient, ProjectsClient} from './projects/ProjectsClient'
+import {observeResolvedAuth, resolveCurrentAuth} from './reactiveAuth'
 import {ObservableReleasesClient, ReleasesClient} from './releases/ReleasesClient'
 import type {
   Action,
@@ -35,6 +36,7 @@ import type {
   FilteredResponseQueryOptions,
   FirstDocumentIdMutationOptions,
   FirstDocumentMutationOptions,
+  GetAuthOptions,
   HttpRequest,
   IdentifiedSanityDocumentStub,
   InitializedClientConfig,
@@ -50,6 +52,7 @@ import type {
   RawQuerylessQueryResponse,
   RawQueryResponse,
   RawRequestOptions,
+  ResolvedAuth,
   SanityDocument,
   SanityDocumentStub,
   SingleActionResult,
@@ -196,7 +199,7 @@ export class ObservableSanityClient {
   config(newConfig?: Partial<ClientConfig>): this
   config(newConfig?: Partial<ClientConfig>): ClientConfig | this {
     if (newConfig === undefined) {
-      return {...this.#clientConfig}
+      return exposeConfig(this.#clientConfig)
     }
 
     if (this.#clientConfig && this.#clientConfig.allowReconfigure === false) {
@@ -217,17 +220,39 @@ export class ObservableSanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): ObservableSanityClient {
-    const thisConfig = this.config()
-    return new ObservableSanityClient(this.#httpRequest, {
-      ...thisConfig,
-      ...newConfig,
-      stega: {
-        ...thisConfig.stega,
-        ...(typeof newConfig?.stega === 'boolean'
-          ? {enabled: newConfig.stega}
-          : newConfig?.stega || {}),
-      },
-    })
+    return new ObservableSanityClient(this.#httpRequest, mergeConfig(this.#clientConfig, newConfig))
+  }
+
+  /**
+   * The credential the client would attach to a request right now: `{token}`,
+   * `{withCredentials: true}` or `{}` for anonymous, so it can be destructured.
+   * Emits once and completes. Correct for a static configuration and for a
+   * reactive `auth` alike; under the latter it waits while a renewal is
+   * pending, so it never yields a credential the client itself would not
+   * send. The wait is cancelled by `options.signal` and bounded by the
+   * client's `timeout`. Use `observeAuth()` instead to follow changes.
+   *
+   * @category Configuration
+   */
+  getAuth(options: GetAuthOptions = {}): Observable<ResolvedAuth> {
+    return dataMethods._observe(options.signal, (signal) =>
+      resolveCurrentAuth(this.#clientConfig, {signal}),
+    )
+  }
+
+  /**
+   * Every credential the client would attach to its requests: the current one
+   * when subscribed, then each change, as `{token}`, `{withCredentials: true}`
+   * or `{}` for anonymous, like {@link ObservableSanityClient.getAuth}. Under
+   * a reactive `auth` it emits each credential once it settles, and nothing
+   * while a renewal is pending; a static configuration emits its credential
+   * and completes, so the same code can follow the credential whichever way
+   * the client is configured.
+   *
+   * @category Configuration
+   */
+  observeAuth(): Observable<ResolvedAuth> {
+    return observeResolvedAuth(this.#clientConfig)
   }
 
   /**
@@ -1364,7 +1389,7 @@ export class SanityClient {
   config(newConfig?: Partial<ClientConfig>): this
   config(newConfig?: Partial<ClientConfig>): ClientConfig | this {
     if (newConfig === undefined) {
-      return {...this.#clientConfig}
+      return exposeConfig(this.#clientConfig)
     }
 
     if (this.#clientConfig && this.#clientConfig.allowReconfigure === false) {
@@ -1389,17 +1414,37 @@ export class SanityClient {
    * @param newConfig - New client configuration properties, shallowly merged with existing configuration
    */
   withConfig(newConfig?: Partial<ClientConfig>): SanityClient {
-    const thisConfig = this.config()
-    return new SanityClient(this.#httpRequest, {
-      ...thisConfig,
-      ...newConfig,
-      stega: {
-        ...thisConfig.stega,
-        ...(typeof newConfig?.stega === 'boolean'
-          ? {enabled: newConfig.stega}
-          : newConfig?.stega || {}),
-      },
-    })
+    return new SanityClient(this.#httpRequest, mergeConfig(this.#clientConfig, newConfig))
+  }
+
+  /**
+   * The credential the client would attach to a request right now: `{token}`,
+   * `{withCredentials: true}` or `{}` for anonymous, so it can be destructured.
+   * Correct for a static configuration and for a reactive `auth` alike; under
+   * the latter it waits while a renewal is pending, so it never resolves to
+   * a credential the client itself would not send. The wait is
+   * cancelled by `options.signal` and bounded by the client's `timeout`.
+   * Use `observeAuth()` instead to follow changes.
+   *
+   * @category Configuration
+   */
+  getAuth(options: GetAuthOptions = {}): Promise<ResolvedAuth> {
+    return resolveCurrentAuth(this.#clientConfig, options)
+  }
+
+  /**
+   * Every credential the client would attach to its requests: the current one
+   * when subscribed, then each change, as `{token}`, `{withCredentials: true}`
+   * or `{}` for anonymous, like {@link SanityClient.getAuth}. Under
+   * a reactive `auth` it emits each credential once it settles, and nothing
+   * while a renewal is pending; a static configuration emits its credential
+   * and completes, so the same code can follow the credential whichever way
+   * the client is configured.
+   *
+   * @category Configuration
+   */
+  observeAuth(): Observable<ResolvedAuth> {
+    return observeResolvedAuth(this.#clientConfig)
   }
 
   /**

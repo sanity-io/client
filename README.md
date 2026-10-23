@@ -1064,6 +1064,52 @@ The method will emit different types of events:
 To listen to updates in draft content, set `includeDrafts` to `true`
 and configure the client with a token or `withCredentials: true`. The token should have the lowest possible access role.
 
+### Reactive authentication
+
+Pass an observable as `auth` instead of a static `token` when the credential changes while the client is alive, for example when an OAuth access token is refreshed or the user signs in and out. Each emission is a promise of the credential: an already settled one for a credential you hold, or the promise your refresh call returns while a renewal is in progress. Requests wait for the latest emission to settle, and open `listen()` and `live.events()` streams reconnect when a new credential settles, resuming from their last event ID.
+
+```ts
+import {createClient, type Auth} from '@sanity/client'
+import {BehaviorSubject} from 'rxjs'
+
+const auth = new BehaviorSubject(Promise.resolve<Auth>({token: initialAccessToken}))
+
+const client = createClient({
+  projectId: 'your-project-id',
+  dataset: 'your-dataset-name',
+  apiVersion: '2025-02-06',
+  useCdn: false,
+  auth,
+})
+
+// When a refresh starts, emit its promise. Requests and reconnects wait for it:
+auth.next(refreshAccessToken())
+// On sign-out:
+auth.next(Promise.resolve(undefined))
+```
+
+The settled credential is one of `{token: string}`, `{withCredentials: true}` (send the browser's cookies) or `undefined` (anonymous). If the observable can emit `{withCredentials: true}`, set `useCdn: false`, because cookies never reach the CDN. The observable must replay its latest emission to every new subscriber, emit every change after that, and never complete. A `BehaviorSubject` or `shareReplay(1)` does this.
+
+While the latest emission is pending, a request waits until it settles, the request's `signal` aborts, or the request's `timeout` elapses (five minutes by default). Stream reconnects wait as well, so a reconnect during a renewal never sends an expired token.
+
+A rejected promise means the credential failed. Every request and every open stream on the client then fails with that error, and later requests keep failing until you emit a new value. Open streams are closed rather than kept, because their connection was authenticated with the credential that failed. Retry a failed refresh inside the promise, and reject only when the session is over. If the observable itself errors, the same happens with its error.
+
+When the client has no request or stream in progress, nothing else handles the promise, so a rejection is unhandled. Node crashes the process on an unhandled rejection by default. Attach your own handler to the promise you emit. The client's requests and streams fail on their own, so the handler only needs to do your app's part:
+
+```ts
+const renewal = refreshAccessToken()
+renewal.catch(showLoginWindow)
+auth.next(renewal)
+```
+
+The client never refreshes a credential itself. When a stream gets a 401, it ends with a `ConnectionFailedError`, and your app decides what to do, for example resubscribe once a new credential is available.
+
+You can't combine `auth` with `token` or `withCredentials`. The static options are still the recommended form for scripts, servers and functions, where the credential does not change. A client derived with `withConfig()` shares its parent's `auth` unless it sets a credential of its own.
+
+To read the credential, call `client.getAuth()`. It resolves to the credential the client would send right now, and waits while a renewal is pending. An anonymous client resolves to an empty object, so `const {token, withCredentials} = await client.getAuth()` is safe. To follow changes, subscribe to `client.observeAuth()`. It emits the current credential in the same form, then each new one once it settles. Both methods work for static configurations too, where `observeAuth()` emits once and completes.
+
+`client.config()` returns what was configured. For a client configured with `auth`, that includes `auth`, and `config().token` and `config().withCredentials` are `undefined`. The first read of either prints a warning that points to `getAuth()`.
+
 ### Creating documents
 
 ```js

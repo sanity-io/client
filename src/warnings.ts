@@ -62,6 +62,11 @@ export const printDeprecatedUriOptionWarning = createWarningPrinter([
   'Please update your code to use `url` instead. Support for `uri` will be removed in a future version.',
 ])
 
+export const printConfigTokenUnderReactiveAuthWarning = createWarningPrinter([
+  'This client is configured with a reactive `auth`, so `client.config().token` and `client.config().withCredentials` are `undefined`.',
+  'Use `await client.getAuth()` to read the credential the client sends, or subscribe to `client.observeAuth()` to follow changes.',
+])
+
 export const printDeprecatedResourceConfigWarning = createWarningPrinter([
   'The `~experimental_resource` configuration property has been renamed to `resource`.',
   'Please update your client configuration to use `resource` instead. Support for `~experimental_resource` will be removed in a future version.',
