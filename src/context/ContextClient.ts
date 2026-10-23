@@ -28,6 +28,7 @@ import type {
   CreateImportParams,
   CreateInstructionParams,
   CreateInstructionResponse,
+  DeleteInstructionResponse,
   CreateKnowledgeBaseParams,
   DismissIssueResponse,
   EditInstructionParams,
@@ -44,7 +45,13 @@ import type {
   JobAccepted,
   KnowledgeBase,
   KnowledgeBasesResponse,
+  CreateMcpEndpointParams,
+  EditMcpEndpointParams,
   McpDoc,
+  McpEndpoint,
+  McpEndpointInitialContextOptions,
+  McpEndpointRuntimeOptions,
+  McpEndpointStatus,
   RebuildEntryResponse,
   ReopenIssueResponse,
   RequestOptions,
@@ -85,7 +92,6 @@ function _knowledgeBaseUrl(knowledgeBaseId: string, suffix = ''): string {
   return `${COLLECTION_URL}/${encodeURIComponent(knowledgeBaseId)}${suffix}`
 }
 
-/** Serialize defined values into query params, dropping the undefined ones. */
 function _conversationUrl(client: Client, threadId: string): string {
   const organizationId = client.config().context?.organizationId
 
@@ -100,6 +106,27 @@ function _conversationUrl(client: Client, threadId: string): string {
   return `/context/organizations/${encodeURIComponent(organizationId)}/conversations/${encodeURIComponent(threadId)}`
 }
 
+function _mcpEndpointsUrl(client: Client): string {
+  const organizationId = client.config().context?.organizationId
+
+  if (!organizationId) {
+    throw new Error('`context.organizationId` must be configured to use MCP endpoints')
+  }
+
+  return `/context/organizations/${encodeURIComponent(organizationId)}/mcp`
+}
+
+function _mcpEndpointUrl(client: Client, name: string, suffix = ''): string {
+  const endpointsUrl = _mcpEndpointsUrl(client)
+
+  if (!name) {
+    throw new Error('`name` must be provided')
+  }
+
+  return `${endpointsUrl}/${encodeURIComponent(name)}${suffix}`
+}
+
+/** Serialize defined values into query params, dropping the undefined ones. */
 function _query(entries: Record<string, string | number | undefined>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(entries).flatMap(([key, value]) =>
@@ -344,6 +371,16 @@ export class ContextClient {
       })
     },
     /**
+     * Delete one recorded conversation, transcript and classification
+     * included. Rejects with a 404 when the thread was never recorded.
+     */
+    delete: (params: {threadId: string}, options?: RequestOptions): Promise<void> =>
+      _request<void>(this.#client, this.#httpRequest, {
+        url: _conversationUrl(this.#client, params.threadId),
+        method: 'DELETE',
+        ...options,
+      }),
+    /**
      * One recorded conversation by its thread id, or `null` when the thread
      * was never recorded. Runs:
      *
@@ -414,7 +451,7 @@ export class ContextClient {
     },
   }
 
-  /** Jobs: poll async work (builds, imports) to a terminal state. */
+  /** Jobs: poll async work (builds, updates and syncs) to a terminal state. */
   jobs = {
     get: (params: {jobId: string}, options?: RequestOptions) =>
       this.#request<Job>(`/jobs/${encodeURIComponent(params.jobId)}`, options),
@@ -526,12 +563,22 @@ export class ContextClient {
         ...options,
       })
     },
-    delete: async (params: {instructionId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/instructions/${encodeURIComponent(params.instructionId)}`, {
-        method: 'DELETE',
-        ...options,
-      })
-    },
+    /**
+     * Delete an instruction. With `rebuild: true`, also rebuilds every entry
+     * citing the instruction's sources and resolves with that job's id.
+     */
+    delete: (
+      params: {instructionId: string; rebuild?: boolean},
+      options?: RequestOptions,
+    ): Promise<DeleteInstructionResponse> =>
+      this.#request<DeleteInstructionResponse>(
+        `/instructions/${encodeURIComponent(params.instructionId)}`,
+        {
+          method: 'DELETE',
+          query: _query({rebuild: params.rebuild ? 'true' : undefined}),
+          ...options,
+        },
+      ),
   }
 
   /**
@@ -581,8 +628,9 @@ export class ContextClient {
   }
 
   /**
-   * MCP endpoint configurations, org-owned documents read with canned GROQ
-   * queries. Requires `context.organizationId` in the client configuration.
+   * MCP endpoints, owned by the organization and addressed by name. `list`
+   * and `get` run canned GROQ queries; the other methods call the Context
+   * API. Requires `context.organizationId` in the client configuration.
    */
   mcpEndpoints = {
     /**
@@ -604,6 +652,78 @@ export class ContextClient {
      */
     get: (params: {name: string}, options?: ContextRequestOptions): Promise<McpDoc | null> =>
       _readMcpEndpoint(this.#client, this.#httpRequest, params.name, options),
+    /**
+     * Create an MCP endpoint. The response includes the `url` agents
+     * connect to. The name is unique in the organization and can't change
+     * later.
+     */
+    create: (params: CreateMcpEndpointParams, options?: RequestOptions): Promise<McpEndpoint> =>
+      _request<McpEndpoint>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointsUrl(this.#client),
+        method: 'POST',
+        body: params,
+        ...options,
+      }),
+    /**
+     * Edit an MCP endpoint by its name. Set an optional field to `null` to
+     * clear it; sending the current values changes nothing.
+     */
+    edit: (
+      params: {name: string} & EditMcpEndpointParams,
+      options?: RequestOptions,
+    ): Promise<McpEndpoint> => {
+      const {name, ...body} = params
+      return _request<McpEndpoint>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, name),
+        method: 'PATCH',
+        body,
+        ...options,
+      })
+    },
+    /**
+     * Check whether an agent connecting to the endpoint with this client's
+     * credentials and the same runtime options can use it. Failed checks
+     * resolve with `ok: false` rather than rejecting, so every problem shows
+     * at once; an unknown endpoint rejects with a 404.
+     */
+    status: (
+      params: {name: string} & McpEndpointRuntimeOptions,
+      options?: RequestOptions,
+    ): Promise<McpEndpointStatus> => {
+      const {name, ...query} = params
+      return _request<McpEndpointStatus>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, name, '/status'),
+        query: _query(query),
+        ...options,
+      })
+    },
+    /**
+     * Delete an MCP endpoint by its name. Agents connected through it lose
+     * access, and its name can be used again.
+     */
+    delete: (params: {name: string}, options?: RequestOptions): Promise<void> =>
+      _request<void>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, params.name),
+        method: 'DELETE',
+        ...options,
+      }),
+    /**
+     * The endpoint's initial context as plain text, the same text the
+     * `initial_context` MCP tool returns, for adding to a system prompt.
+     * `heading_offset` shifts markdown headings down that many levels
+     * (default `1`).
+     */
+    initialContext: (
+      params: {name: string} & McpEndpointInitialContextOptions,
+      options?: RequestOptions,
+    ): Promise<string> => {
+      const {name, ...query} = params
+      return _request<string>(this.#client, this.#httpRequest, {
+        url: _mcpEndpointUrl(this.#client, name, '/initial-context'),
+        query: _query(query),
+        ...options,
+      })
+    },
   }
 
   /** Sources: the distilled units builds cite. */
@@ -814,6 +934,19 @@ export class ObservableContextClient {
         }),
       )
     },
+    /**
+     * Delete one recorded conversation, transcript and classification
+     * included. Errors with a 404 when the thread was never recorded.
+     */
+    delete: (params: {threadId: string}, options?: RequestOptions): Observable<void> =>
+      _observe(options?.signal, (signal) =>
+        _request<void>(this.#client, this.#httpRequest, {
+          url: _conversationUrl(this.#client, params.threadId),
+          method: 'DELETE',
+          tag: options?.tag,
+          signal,
+        }),
+      ),
     /**
      * One recorded conversation by its thread id, or `null` when the thread
      * was never recorded. Runs:

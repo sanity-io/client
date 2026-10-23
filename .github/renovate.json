@@ -11,6 +11,12 @@
       "groupSlug": null
     },
     {
+      "description": "Update get-it without delay because we maintain it",
+      "matchPackageNames": ["get-it"],
+      "minimumReleaseAge": "0 days",
+      "schedule": ["at any time"]
+    },
+    {
       "matchPackageNames": ["vitest", "@vitest/**"],
       "groupName": "vitest"
     }

@@ -19,7 +19,7 @@ export interface paths {
     put?: never
     /**
      * Create a knowledge base
-     * @description Creates a knowledge base in your organization. To add content to it, create an import.
+     * @description Creates a knowledge base in your organization. To add content to it, create an import. If your organization's Context document store can't be used, the request returns `503` with code `contextStoreUnavailable` and you can retry.
      */
     post: operations['createKnowledgeBase']
     delete?: never
@@ -51,7 +51,7 @@ export interface paths {
     head?: never
     /**
      * Update a knowledge base
-     * @description Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Setting a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.
+     * @description Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Fields equal to their current value are ignored, so sending the current values changes nothing. Changing a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.
      */
     patch: operations['updateKnowledgeBase']
     trace?: never
@@ -107,7 +107,7 @@ export interface paths {
     put?: never
     /**
      * Rebuild an entry from its sources
-     * @description Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID immediately. The response also lists the other entries that cite any of the same sources. An instruction applies to every entry that cites its sources, so those entries can change too.
+     * @description Queues a rewrite of the entry at `entryPath` from its cited sources and the active instructions, and returns a job ID immediately. The response also lists the other entries built from any of the same sources. An instruction applies to every entry built from its sources, so those entries can change too. Returns `422` with code `entryDocumentInvalid` if the entry document was edited into a shape the API cannot read.
      */
     post: operations['rebuildEntry']
     delete?: never
@@ -269,7 +269,7 @@ export interface paths {
     post?: never
     /**
      * Delete an instruction
-     * @description Deletes the instruction. Builds stop applying it from the next run.
+     * @description Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text until they are rebuilt; pass `rebuild=true` to rebuild every entry that cites its sources right away.
      */
     delete: operations['deleteInstruction']
     options?: never
@@ -292,7 +292,7 @@ export interface paths {
     put?: never
     /**
      * Accept and apply issues
-     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped.
+     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), a `merge_entry`, or a `gap`, `update_required` or `split_entry` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.
      */
     post: operations['applyIssues']
     delete?: never
@@ -485,7 +485,13 @@ export interface paths {
      */
     put: operations['saveConversation']
     post?: never
-    delete?: never
+    /**
+     * Delete a conversation
+     * @description Deletes the recorded conversation for one thread, including its messages and classification. Requires the same access as recording a conversation.
+     *
+     *     Saving with the same `threadId` afterwards records a new conversation.
+     */
+    delete: operations['deleteConversation']
     options?: never
     head?: never
     /**
@@ -500,10 +506,176 @@ export interface paths {
     patch: operations['classifyConversation']
     trace?: never
   }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create an MCP endpoint
+     * @description Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the organization-wide `sanity.knowledge-base.create` grant, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.
+     *
+     *     A taken name returns `409` with code `mcpEndpointNameConflict`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
+     */
+    post: operations['createMcpEndpoint']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Connect to an MCP endpoint
+     * @description Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Query parameters override the endpoint configuration for that request only. Errors are JSON-RPC error objects, not the standard error response.
+     */
+    post: operations['serveMcpEndpoint']
+    /**
+     * Delete an MCP endpoint
+     * @description Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.
+     */
+    delete: operations['deleteMcpEndpoint']
+    options?: never
+    head?: never
+    /**
+     * Update an MCP endpoint
+     * @description Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.
+     *
+     *     An unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
+     */
+    patch: operations['updateMcpEndpoint']
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get an MCP endpoint's initial context
+     * @description Returns the same text as the `initial_context` MCP tool, as plain text you can add to a system prompt. `heading_offset` shifts markdown headings down by that many levels. The default is `1`, so `#` becomes `##`.
+     */
+    get: operations['getMcpEndpointInitialContext']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Check an MCP endpoint
+     * @description Checks whether an agent can connect to the endpoint with your credentials. Accepts the same query parameters as connecting, so you can check a connection's overrides before using them. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.
+     */
+    get: operations['getMcpEndpointStatus']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** @description The body of every error response. Branch on `code`, a stable identifier; `message` is human-readable and can change. */
+    ApiErrorBody: {
+      statusCode: number
+      error: string
+      /** @enum {string} */
+      code:
+        | 'knowledgeBaseNotFound'
+        | 'jobNotFound'
+        | 'importNotFound'
+        | 'sourceNotFound'
+        | 'entryNotFound'
+        | 'entryDocumentInvalid'
+        | 'revisionNotFound'
+        | 'revisionNotBrowsable'
+        | 'revisionNotRestorable'
+        | 'buildDecisionsNotFound'
+        | 'issueNotFound'
+        | 'instructionNotFound'
+        | 'webSourceRootNotFound'
+        | 'routeNotFound'
+        | 'buildInFlight'
+        | 'importInvalidState'
+        | 'sourceNotDistilled'
+        | 'webSourceRootConflict'
+        | 'webSourceRootLimitExceeded'
+        | 'uploadTooLarge'
+        | 'payloadTooLarge'
+        | 'validationError'
+        | 'unsupportedMediaType'
+        | 'issueNotResolvable'
+        | 'issueNotAutoApplicable'
+        | 'issueDocumentInvalid'
+        | 'issueTransitionConflict'
+        | 'refreshControlsUnavailable'
+        | 'datasetSourceTooLarge'
+        | 'datasetSourceEmpty'
+        | 'datasetAlreadyBound'
+        | 'datasetSourceNotBound'
+        | 'datasetReadAccessDenied'
+        | 'invalidGroqFilter'
+        | 'mcpEndpointNotFound'
+        | 'mcpEndpointNameConflict'
+        | 'mcpSourceKnowledgeBaseNotFound'
+        | 'mcpEndpointNotServable'
+        | 'conversationNotFound'
+        | 'missingCredential'
+        | 'invalidCredential'
+        | 'missingOrganization'
+        | 'organizationAccessDenied'
+        | 'knowledgeBaseAccessDenied'
+        | 'contextGrantRequired'
+        | 'knowledgeBaseCreateAccessDenied'
+        | 'mcpEndpointManageAccessDenied'
+        | 'insightsWriteAccessDenied'
+        | 'projectAdminRequired'
+        | 'accessCheckFailed'
+        | 'planLimitReached'
+        | 'featureNotInPlan'
+        | 'tooManyConnections'
+        | 'jobsUnavailable'
+        | 'contextStoreUnavailable'
+        | 'crawlingUnavailable'
+        | 'crawlPreviewUnavailable'
+        | 'instructionDraftFailed'
+        | 'instructionScopeVanished'
+        | 'idempotencyKeyReused'
+        | 'idempotencyRequestInFlight'
+        | 'idempotencyParamsMismatch'
+        | 'internal'
+      message: string
+      fields?: {
+        [key: string]: unknown
+      }
+    }
     /** @description A `sanity.context.conversation` document: one agent conversation and its classification, stored in your organization's document store. No endpoint returns this document. Use this schema to type GROQ query results. To record conversations, use the conversations endpoints. */
     ConversationDoc: {
       /** @description The document ID. */
@@ -651,7 +823,7 @@ export interface components {
        * @enum {string}
        */
       _type: 'sanity.context.entry'
-      /** @description The version of the document shape. Currently `1`. */
+      /** @description The version of the document shape. Currently `2`. */
       schemaVersion: number
       /** @description The ID of the build that last wrote this entry's content. An unchanged entry keeps its earlier value across builds. */
       revisionId: string
@@ -659,6 +831,8 @@ export interface components {
       path: string
       /** @description The entry title. */
       title: string
+      /** @description The titles of the sections above the entry, top level first, one for each `path` segment before the last. For `groq/functions/math` it holds the titles of `groq` and `groq/functions`. Absent when the entry was written before section titles were recorded. */
+      sectionTitles?: string[]
       /** @description A summary of the entry. `scope` is what the entry covers, and `excludes` is what it does not cover. `neighbors` lists the paths of related entries. `centrality` is how important the entry is: `core`, `standard`, or `peripheral`. */
       tldr?: {
         scope: string
@@ -667,48 +841,37 @@ export interface components {
         /** @enum {string} */
         centrality: 'core' | 'standard' | 'peripheral'
       }
-      /** @description The entry content in Markdown, with inline `[N]` citation markers. Absent when the entry has no content of its own, such as a `virtual` entry. */
+      /** @description The entry content in Markdown, with inline `[^key]` footnote markers. The text after `^` in each marker is the `_key` of one item in `citations`. Absent when the entry has no content of its own, such as a `virtual` entry. */
       body?: string
       /** @description The H2 and H3 heading titles in `body`. Absent when the entry has no `body`. */
       topicHeadings?: string[]
-      /** @description The sources that back this entry, one item per source. */
-      citations?: {
-        /** @description ID of the cited source. */
-        sourceId: string
-        /** @description Which facts in the entry body this source backs, in a short phrase. */
-        supports?: string
-        /** @description Line ranges in the source's distilled content that back those facts, with the quoted text. */
-        spans?: {
-          /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
-          sourceLineStart: number
-          /** @description Last line of the range, inclusive. */
-          sourceLineEnd: number
-          /** @description The exact text of the line range in the source. */
-          quote: string
-        }[]
-        /** @description The text in the entry body that this citation backs. */
-        claim?: {
-          /** @description The exact entry text the citation backs. */
-          exact: string
-          /** @description Text immediately before `exact`, to tell apart repeated phrases. */
-          prefix?: string
-          /** @description Text immediately after `exact`, to tell apart repeated phrases. */
-          suffix?: string
-        }
-        /** @enum {string} */
-        groundingState?: 'drifted'
-        /** @description A unique key for this item in the `citations` array. */
+      /** @description The passages that back this entry, one item per quoted passage, in the order the body first uses them. A source cited twice with different quotes has two items. Empty when the entry has no `body` or the body cites nothing. */
+      citations: {
+        /** @description Stable ID of this citation: 10 lowercase letters and digits. The entry body points to it with a `[^key]` marker. */
         _key: string
-        /**
-         * @description The citation type. Always `sanity.context.citation`.
-         * @enum {string}
-         */
+        /** @enum {string} */
         _type: 'sanity.context.citation'
-        /** @description A display name for the cited source. Builds currently set it to the `sourceId`. */
-        filename: string
-        mime?: string
-        excerpt?: string
+        /** @description ID of the source document the quote comes from. */
+        sourceId: string
+        /** @description The source's name when the entry was written. */
+        title: string
+        /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+        url?: string
+        /** @description The passage from the source that backs the claims, copied word for word. */
+        quote: string
+        /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+        prefix: string
+        /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+        suffix: string
+        /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
+        lineStart: number
+        /** @description Last line of the quote, inclusive. */
+        lineEnd: number
+        /** @description The statements in the entry body that this passage backs. */
+        claims: string[]
       }[]
+      /** @description The IDs of every source attached to this entry, cited or not, sorted. Every citation `sourceId` is in this list. */
+      sourceIds: string[]
       /**
        * @description The entry state. Builds currently write only two values: `virtual` for an entry that groups child entries and has no `body`, and `filled` for an entry with a written `body`. The other values are reserved.
        * @enum {string}
@@ -1272,7 +1435,7 @@ export interface components {
       title: string
       /** @description The MCP endpoint's name in its URL, in lowercase kebab case such as `my-endpoint`. It is unique within the organization and can't change after creation. */
       name: string
-      /** @description The content sources the MCP endpoint serves. Each source appears once, and the order has no meaning. */
+      /** @description The content sources the MCP endpoint serves, all at once. Each source appears once, there is at most one `dataset` source, and the order has no meaning. */
       sources: (
         | {
             /**
@@ -1295,7 +1458,7 @@ export interface components {
       )[]
       /** @description Prompt text the MCP endpoint serves to connecting agents. `null` when unset. */
       instructions: string | null
-      /** @description A GROQ filter that limits what the MCP endpoint's `dataset` sources serve. It has no effect on `knowledge-base` sources. `null` when unset. */
+      /** @description A GROQ filter that limits what the MCP endpoint's `dataset` source serves. It has no effect on `knowledge-base` sources. `null` when unset. The API clears it when the endpoint has no `dataset` source. */
       groqFilter: string | null
     }
   }
@@ -1319,6 +1482,7 @@ export interface operations {
       }
       header?: never
       path: {
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
       }
       cookie?: never
@@ -1336,10 +1500,10 @@ export interface operations {
             data: {
               /**
                * Format: uuid
-               * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+               * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
                */
               id: string
-              /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+              /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
               publicId: string
               /** @description The ID of the organization that owns the knowledge base. */
               organizationId: string
@@ -1363,7 +1527,7 @@ export interface operations {
                 /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
                 stages: {
                   /**
-                   * @description The stage's ID. The values are listed in the order stages run.
+                   * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                    * @enum {string}
                    */
                   id:
@@ -1405,9 +1569,9 @@ export interface operations {
                * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
                */
               lastChangedAt: string | null
-              /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+              /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
               hasPendingChanges: boolean
-              /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+              /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
               pendingChanges: {
                 /** @description Sources added since the last successful build, including sources no successful build has included yet. */
                 added: number
@@ -1487,13 +1651,26 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   createKnowledgeBase: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
         apiVersion: string
       }
       cookie?: never
@@ -1520,10 +1697,10 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
              */
             id: string
-            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+            /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
             publicId: string
             /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
@@ -1547,7 +1724,7 @@ export interface operations {
               /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
                 /**
-                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                  * @enum {string}
                  */
                 id:
@@ -1589,9 +1766,9 @@ export interface operations {
              * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
              */
             lastChangedAt: string | null
-            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+            /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
             hasPendingChanges: boolean
-            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+            /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
               /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
@@ -1668,6 +1845,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getKnowledgeBase: {
@@ -1675,8 +1861,10 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -1691,10 +1879,10 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
              */
             id: string
-            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+            /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
             publicId: string
             /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
@@ -1718,7 +1906,7 @@ export interface operations {
               /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
                 /**
-                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                  * @enum {string}
                  */
                 id:
@@ -1760,9 +1948,9 @@ export interface operations {
              * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
              */
             lastChangedAt: string | null
-            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+            /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
             hasPendingChanges: boolean
-            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+            /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
               /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
@@ -1839,6 +2027,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   deleteKnowledgeBase: {
@@ -1846,8 +2043,10 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -1862,6 +2061,15 @@ export interface operations {
           'application/json': null
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   updateKnowledgeBase: {
@@ -1869,8 +2077,10 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -1901,10 +2111,10 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The knowledge base's unique ID, a UUID. Accepted anywhere a `knowledgeBaseId` is expected.
+             * @description An internal UUID for the knowledge base, still accepted wherever a `knowledgeBaseId` is expected. Use `publicId` instead.
              */
             id: string
-            /** @description The knowledge base ID to show users, such as `kb3do82whm`. Accepted anywhere a `knowledgeBaseId` is expected. Treat it as an opaque string. */
+            /** @description The knowledge base's ID, such as `kb3do82whm`. Store this one, and pass it as `knowledgeBaseId` in paths and filters. Treat it as an opaque string. */
             publicId: string
             /** @description The ID of the organization that owns the knowledge base. */
             organizationId: string
@@ -1928,7 +2138,7 @@ export interface operations {
               /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
               stages: {
                 /**
-                 * @description The stage's ID. The values are listed in the order stages run.
+                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
                  * @enum {string}
                  */
                 id:
@@ -1970,9 +2180,9 @@ export interface operations {
              * @description When the content last changed: the time of the most recent successful build. `null` if the knowledge base has never built.
              */
             lastChangedAt: string | null
-            /** @description Whether sources were added, changed, or removed since the last successful build. Always `false` before the first build. */
+            /** @description Whether sources were added, changed, or removed since the last successful build. A change a check already reviewed without filing an issue, or that a dismissed issue covered, no longer counts. Always `false` before the first build. */
             hasPendingChanges: boolean
-            /** @description Counts of sources added, changed, and removed since the last successful build. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
+            /** @description Counts of sources added, changed, and removed since the last successful build, excluding changes a check already reviewed without filing an issue or that a dismissed issue covered. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it. `null` in list responses and before the first build. */
             pendingChanges: {
               /** @description Sources added since the last successful build, including sources no successful build has included yet. */
               added: number
@@ -2049,15 +2259,29 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   buildKnowledgeBase: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2070,9 +2294,18 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2082,8 +2315,10 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2101,6 +2336,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   rebuildEntry: {
@@ -2108,10 +2352,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The entry's slash-delimited path, such as `pricing/plans/free`, URL-encoded. */
         entryPath: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2126,7 +2372,7 @@ export interface operations {
           'application/json': {
             /** @description ID of the job that rebuilds the entry. Poll it with `GET .../jobs/{jobId}`. */
             jobId: string
-            /** @description Other entries that cite any of this entry's sources. An instruction applies to every entry that cites its sources, so these entries can change when they are next rebuilt. */
+            /** @description Other entries built from any of this entry's sources. An instruction applies to every entry built from its sources, so these entries can change when they are next rebuilt. */
             affectedEntries: {
               /** @description The entry's document ID. */
               id: string
@@ -2136,6 +2382,15 @@ export interface operations {
               title: string
             }[]
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2150,8 +2405,10 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2243,7 +2500,10 @@ export interface operations {
                * @description When the import was created.
                */
               createdAt: string
-              /** Format: date-time */
+              /**
+               * Format: date-time
+               * @description When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.
+               */
               completedAt: string | null
             }[]
             /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
@@ -2251,15 +2511,29 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   createImport: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2334,9 +2608,18 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2344,10 +2627,15 @@ export interface operations {
   startUpload: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2382,6 +2670,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   completeUpload: {
@@ -2389,10 +2686,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2405,9 +2704,18 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2417,10 +2725,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2510,9 +2820,21 @@ export interface operations {
              * @description When the import was created.
              */
             createdAt: string
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.
+             */
             completedAt: string | null
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2522,10 +2844,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2540,6 +2864,15 @@ export interface operations {
           'application/json': null
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   downloadImport: {
@@ -2547,10 +2880,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The import's ID. */
         importId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2576,6 +2911,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   createInstruction: {
@@ -2583,8 +2927,10 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2594,7 +2940,7 @@ export interface operations {
         'application/json': {
           /** @description The instruction in plain language. Builds follow it over what the sources say. */
           statement: string
-          /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
+          /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
           scopeSourceIds: string[]
           /** @description Paths of entries to rebuild under the new instruction right away. The response returns the rebuild job ID in `rebuildJobId`. */
           rebuildPaths?: string[]
@@ -2615,7 +2961,7 @@ export interface operations {
             instruction: {
               /** @description The instruction's document ID. */
               id: string
-              /** @description ID of the knowledge base the instruction belongs to. */
+              /** @description The ID (`kb...`) of the knowledge base the instruction belongs to. */
               knowledgeBaseId: string
               /**
                * @description How the instruction was created. `human`: someone wrote it. `conflict`: it records the side chosen when a conflict issue was resolved. Both kinds work the same way in builds.
@@ -2629,7 +2975,7 @@ export interface operations {
               status: 'active' | 'archived'
               /** @description The instruction in plain language. Builds follow it over what the sources say. */
               statement: string
-              /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. An empty array means all of its sources were removed, so it applies to no entries. */
+              /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. An empty array means all of its sources were removed, so it applies to no entries. */
               scopeSourceIds: string[]
               /**
                * Format: date-time
@@ -2670,29 +3016,55 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   deleteInstruction: {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Set to `true` to rebuild every entry that cites the instruction's sources once it is deleted, so pages written under the instruction reflect their sources again. The response returns the rebuild job ID in `rebuildJobId`. */
+        rebuild?: 'true' | 'false'
+      }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The instruction's ID. */
         instructionId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description The instruction was deleted. */
-      204: {
+      /** @description The rebuild the delete started, if any. */
+      200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': null
+          'application/json': {
+            /** @description ID of the job that rebuilds the entries citing the instruction's sources. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuild=true`, no entry cites those sources, or the rebuild could not start. The instruction is deleted either way. */
+            rebuildJobId: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2702,10 +3074,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The instruction's ID. */
         instructionId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2730,7 +3104,7 @@ export interface operations {
           'application/json': {
             /** @description The instruction's document ID. */
             id: string
-            /** @description ID of the knowledge base the instruction belongs to. */
+            /** @description The ID (`kb...`) of the knowledge base the instruction belongs to. */
             knowledgeBaseId: string
             /**
              * @description How the instruction was created. `human`: someone wrote it. `conflict`: it records the side chosen when a conflict issue was resolved. Both kinds work the same way in builds.
@@ -2744,7 +3118,7 @@ export interface operations {
             status: 'active' | 'archived'
             /** @description The instruction in plain language. Builds follow it over what the sources say. */
             statement: string
-            /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries that cite these sources. An empty array means all of its sources were removed, so it applies to no entries. */
+            /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. An empty array means all of its sources were removed, so it applies to no entries. */
             scopeSourceIds: string[]
             /**
              * Format: date-time
@@ -2782,6 +3156,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   applyIssues: {
@@ -2789,8 +3172,10 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2810,9 +3195,18 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2822,10 +3216,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2840,7 +3236,7 @@ export interface operations {
           'application/json': {
             /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
             id: string
-            /** @description ID of the knowledge base the issue belongs to. */
+            /** @description The ID (`kb...`) of the knowledge base the issue belongs to. */
             knowledgeBaseId: string
             /** @description What the issue found. The shape depends on `kind`. */
             content:
@@ -2949,6 +3345,15 @@ export interface operations {
              */
             resolvedAt: string | null
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -2958,10 +3363,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -2976,7 +3383,7 @@ export interface operations {
           'application/json': {
             /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
             id: string
-            /** @description ID of the knowledge base the issue belongs to. */
+            /** @description The ID (`kb...`) of the knowledge base the issue belongs to. */
             knowledgeBaseId: string
             /** @description What the issue found. The shape depends on `kind`. */
             content:
@@ -3087,6 +3494,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   resolveIssue: {
@@ -3094,10 +3510,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The issue's document ID. */
         issueId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3121,7 +3539,7 @@ export interface operations {
             issue: {
               /** @description The issue's document ID. A later build that finds the same issue in unchanged sources reuses this ID, so your triage decision is kept. */
               id: string
-              /** @description ID of the knowledge base the issue belongs to. */
+              /** @description The ID (`kb...`) of the knowledge base the issue belongs to. */
               knowledgeBaseId: string
               /** @description What the issue found. The shape depends on `kind`. */
               content:
@@ -3235,6 +3653,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getJob: {
@@ -3242,44 +3669,131 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The job ID returned by the endpoint that started the work. */
         jobId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description A background job, such as a build, refresh, or import, and its status. */
+      /** @description A background job, such as a build, an update or a sync, and its status. `kind` says which, and determines the shape of `result`. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            /** @description The job's ID. */
-            id: string
-            /**
-             * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
-             * @enum {string}
-             */
-            status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-            /**
-             * Format: date-time
-             * @description When the job started.
-             */
-            startedAt: string | null
-            /**
-             * Format: date-time
-             * @description When the job finished. `null` while the job is queued or running.
-             */
-            completedAt: string | null
-            /** @description The job's output. Only present when `status` is `succeeded`. Its shape depends on the kind of job. */
-            result?: unknown
-            /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
-            error?: string | null
-          }
+          'application/json':
+            | {
+                /** @description The job's ID. Treat it as an opaque string. Its format can change. */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the job belongs to. */
+                knowledgeBaseId: string
+                /**
+                 * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+                 * @enum {string}
+                 */
+                status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+                /**
+                 * Format: date-time
+                 * @description When the job started.
+                 */
+                startedAt: string | null
+                /**
+                 * Format: date-time
+                 * @description When the job finished. `null` while the job is queued or running.
+                 */
+                completedAt: string | null
+                /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
+                error?: string | null
+                /** @enum {string} */
+                kind: 'build'
+                /** @description The job's output. Only present when `status` is `succeeded`. */
+                result?: {
+                  /** @description The revision the build produced. */
+                  revisionId: string
+                  /**
+                   * @description The knowledge base state after the build. `review`: the build filed critical issues that need triage.
+                   * @enum {string}
+                   */
+                  status: 'ready' | 'review'
+                  /** @description How many entries the built outline has. */
+                  entryCount: number
+                  /** @description How many issues the build filed. */
+                  issuesCreated: number
+                  /** @description How many of those issues are critical. */
+                  criticalIssueCount: number
+                }
+              }
+            | {
+                /** @description The job's ID. Treat it as an opaque string. Its format can change. */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the job belongs to. */
+                knowledgeBaseId: string
+                /**
+                 * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+                 * @enum {string}
+                 */
+                status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+                /**
+                 * Format: date-time
+                 * @description When the job started.
+                 */
+                startedAt: string | null
+                /**
+                 * Format: date-time
+                 * @description When the job finished. `null` while the job is queued or running.
+                 */
+                completedAt: string | null
+                /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
+                error?: string | null
+                /** @enum {string} */
+                kind: 'update'
+                /** @description The job's output. Only present when `status` is `succeeded`. */
+                result?: {
+                  /** @description The revision the update produced. `null` when no entry changed. */
+                  revisionId: string | null
+                  /** @description How many entries were rewritten. */
+                  entriesRewritten: number
+                }
+              }
+            | {
+                /** @description The job's ID. Treat it as an opaque string. Its format can change. */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the job belongs to. */
+                knowledgeBaseId: string
+                /**
+                 * @description The job's status. `queued`: waiting for build capacity. `running`: in progress. `succeeded`: finished successfully. `failed`: stopped with an error. `cancelled`: stopped before it finished. `pending` isn't currently returned.
+                 * @enum {string}
+                 */
+                status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+                /**
+                 * Format: date-time
+                 * @description When the job started.
+                 */
+                startedAt: string | null
+                /**
+                 * Format: date-time
+                 * @description When the job finished. `null` while the job is queued or running.
+                 */
+                completedAt: string | null
+                /** @description A readable reason the job failed or was cancelled. `null` for any other status. */
+                error?: string | null
+                /** @enum {string} */
+                kind: 'sync'
+              }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -3287,10 +3801,15 @@ export interface operations {
   refreshKnowledgeBase: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3303,11 +3822,20 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. */
+            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
             jobId: string
             /** @description Whether this request started a new refresh. `false` means a refresh was already running, and `jobId` is that refresh. */
             started: boolean
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -3328,8 +3856,10 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3397,6 +3927,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   getSource: {
@@ -3404,10 +3943,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3470,6 +4011,15 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   deleteSource: {
@@ -3477,10 +4027,12 @@ export interface operations {
       query?: never
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3493,6 +4045,15 @@ export interface operations {
         }
         content: {
           'application/json': null
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }
@@ -3509,10 +4070,12 @@ export interface operations {
       }
       header?: never
       path: {
-        /** @description The knowledge base's public ID (`kb...`) or UUID. */
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
         knowledgeBaseId: string
         /** @description The source's ID. */
         sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
       }
       cookie?: never
     }
@@ -3546,6 +4109,15 @@ export interface operations {
           'text/plain': string
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   saveConversation: {
@@ -3555,6 +4127,10 @@ export interface operations {
       path: {
         /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
         threadId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
       }
       cookie?: never
     }
@@ -3735,6 +4311,51 @@ export interface operations {
           }
         }
       }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  deleteConversation: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
+        threadId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
     }
   }
   classifyConversation: {
@@ -3744,6 +4365,10 @@ export interface operations {
       path: {
         /** @description Your ID for the conversation thread, unique within your organization. Up to 200 characters. */
         threadId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
       }
       cookie?: never
     }
@@ -3881,6 +4506,554 @@ export interface operations {
              */
             updatedAt: string
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  createMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    /** @description CreateMcpEndpointInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The endpoint's display title, up to 100 characters. */
+          title: string
+          /** @description The endpoint's name, used in its URL. Lowercase letters, digits and single hyphens, up to 64 characters, unique in the organization. It can't be changed after the endpoint is created. `by-name` and names shaped like an endpoint ID are reserved. */
+          name: string
+          /** @description The content the endpoint serves: 1 to 100 sources, any number of knowledge bases and at most one dataset, served together. Order has no meaning. */
+          sources: (
+            | {
+                /**
+                 * @description The source type. `knowledge-base` serves a whole knowledge base.
+                 * @enum {string}
+                 */
+                type: 'knowledge-base'
+                /** @description The knowledge base ID (`kb…`). */
+                id: string
+              }
+            | {
+                /**
+                 * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                 * @enum {string}
+                 */
+                type: 'dataset'
+                /** @description The dataset, as `<projectId>.<datasetName>`. */
+                id: string
+              }
+          )[]
+          /** @description Instructions for connecting agents, up to 10,000 characters. */
+          instructions?: string
+          /** @description A GROQ filter that limits which documents the endpoint's dataset source serves, such as `_type in ["post", "author"]`. Knowledge base sources aren't filtered. Kept only while the endpoint has a dataset source. */
+          groqFilter?: string
+        }
+      }
+    }
+    responses: {
+      /** @description McpEndpoint */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The endpoint's ID (`mcp…`). Update and delete accept it or the endpoint's name. */
+            id: string
+            /** @description The ID of the organization that owns the endpoint. */
+            organizationId: string
+            /** @description The endpoint's display title. */
+            title: string
+            /** @description The endpoint's name, used in its URL. It can't be changed. */
+            name: string
+            /** @description The content the endpoint serves: any number of knowledge bases and at most one dataset, served together. */
+            sources: (
+              | {
+                  /**
+                   * @description The source type. `knowledge-base` serves a whole knowledge base.
+                   * @enum {string}
+                   */
+                  type: 'knowledge-base'
+                  /** @description The knowledge base ID (`kb…`). */
+                  id: string
+                }
+              | {
+                  /**
+                   * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                   * @enum {string}
+                   */
+                  type: 'dataset'
+                  /** @description The dataset, as `<projectId>.<datasetName>`. */
+                  id: string
+                }
+            )[]
+            /** @description Instructions for connecting agents, or `null` if none are set. */
+            instructions: string | null
+            /** @description The GROQ filter that limits the endpoint's dataset source, or `null` if none is set or the endpoint has no dataset. */
+            groqFilter: string | null
+            /**
+             * Format: uri
+             * @description The URL agents connect to.
+             */
+            url: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was created, as an ISO 8601 timestamp.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was last changed, as an ISO 8601 timestamp.
+             */
+            updatedAt: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  serveMcpEndpoint: {
+    parameters: {
+      query?: {
+        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        instructions?: string
+        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        perspective?: string
+        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        embeddings?: string
+        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        groqFilter?: string
+        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        mode?: 'knowledge_base' | 'groq'
+        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        knowledgeBases?: string
+        /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
+        linkResolver?: string
+        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        workspace?: string
+      }
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, set when the endpoint was created. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  deleteMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, as in its URL, or its ID (`mcp…`). Names can't take the shape of an ID, so either one identifies the endpoint. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  updateMcpEndpoint: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, as in its URL, or its ID (`mcp…`). Names can't take the shape of an ID, so either one identifies the endpoint. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    /** @description UpdateMcpEndpointInput */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The endpoint's display title, up to 100 characters. */
+          title?: string
+          /** @description The content the endpoint serves: 1 to 100 sources, any number of knowledge bases and at most one dataset, served together. Order has no meaning. */
+          sources?: (
+            | {
+                /**
+                 * @description The source type. `knowledge-base` serves a whole knowledge base.
+                 * @enum {string}
+                 */
+                type: 'knowledge-base'
+                /** @description The knowledge base ID (`kb…`). */
+                id: string
+              }
+            | {
+                /**
+                 * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                 * @enum {string}
+                 */
+                type: 'dataset'
+                /** @description The dataset, as `<projectId>.<datasetName>`. */
+                id: string
+              }
+          )[]
+          /** @description Instructions for connecting agents, up to 10,000 characters. `null` removes them. */
+          instructions?: string | null
+          /** @description A GROQ filter that limits the endpoint's dataset source. `null` removes it. */
+          groqFilter?: string | null
+        }
+      }
+    }
+    responses: {
+      /** @description McpEndpoint */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The endpoint's ID (`mcp…`). Update and delete accept it or the endpoint's name. */
+            id: string
+            /** @description The ID of the organization that owns the endpoint. */
+            organizationId: string
+            /** @description The endpoint's display title. */
+            title: string
+            /** @description The endpoint's name, used in its URL. It can't be changed. */
+            name: string
+            /** @description The content the endpoint serves: any number of knowledge bases and at most one dataset, served together. */
+            sources: (
+              | {
+                  /**
+                   * @description The source type. `knowledge-base` serves a whole knowledge base.
+                   * @enum {string}
+                   */
+                  type: 'knowledge-base'
+                  /** @description The knowledge base ID (`kb…`). */
+                  id: string
+                }
+              | {
+                  /**
+                   * @description The source type. `dataset` serves documents from a Sanity dataset, limited by the MCP endpoint's `groqFilter` when set.
+                   * @enum {string}
+                   */
+                  type: 'dataset'
+                  /** @description The dataset, as `<projectId>.<datasetName>`. */
+                  id: string
+                }
+            )[]
+            /** @description Instructions for connecting agents, or `null` if none are set. */
+            instructions: string | null
+            /** @description The GROQ filter that limits the endpoint's dataset source, or `null` if none is set or the endpoint has no dataset. */
+            groqFilter: string | null
+            /**
+             * Format: uri
+             * @description The URL agents connect to.
+             */
+            url: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was created, as an ISO 8601 timestamp.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the endpoint was last changed, as an ISO 8601 timestamp.
+             */
+            updatedAt: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getMcpEndpointInitialContext: {
+    parameters: {
+      query?: {
+        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        instructions?: string
+        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        perspective?: string
+        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        embeddings?: string
+        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        groqFilter?: string
+        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        mode?: 'knowledge_base' | 'groq'
+        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        knowledgeBases?: string
+        /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
+        linkResolver?: string
+        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        workspace?: string
+        /** @description How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#` becomes `##`. */
+        heading_offset?: string
+      }
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, set when the endpoint was created. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getMcpEndpointStatus: {
+    parameters: {
+      query?: {
+        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        instructions?: string
+        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        perspective?: string
+        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        embeddings?: string
+        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        groqFilter?: string
+        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        mode?: 'knowledge_base' | 'groq'
+        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        knowledgeBases?: string
+        /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
+        linkResolver?: string
+        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        workspace?: string
+      }
+      header?: never
+      path: {
+        /** @description The MCP endpoint's name, set when the endpoint was created. */
+        mcpEndpoint: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+        /** @description The ID of the organization. */
+        organizationId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Default Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials and query parameters can use the endpoint. */
+            requiredOk: boolean
+            /** @description One result per check. A check is `null` when it doesn't apply to the connection. */
+            checks: {
+              /** @description Whether a deployed studio serves the endpoint's dataset. Its schema tells the agent which document types exist. `null` when the connection doesn't query a dataset. */
+              studio:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The name of the studio workspace the connection uses. */
+                        workspace: string
+                        /** @description The workspace's title. */
+                        workspaceTitle: string
+                        /** @description Whether the workspace was picked automatically. It is `false` when the `workspace` query parameter chose it. */
+                        workspaceAutoSelected: boolean
+                        /** @description The deployed studio's workspaces for the endpoint's dataset. */
+                        availableWorkspaces: {
+                          /** @description The workspace's name. */
+                          name: string
+                          /** @description The workspace's title. */
+                          title: string
+                        }[]
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether semantic search is ready on the endpoint's dataset. `null` when semantic search isn't enabled or the connection doesn't query a dataset. It never affects `requiredOk`: without it, the agent searches with GROQ only. */
+              semanticSearch:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The dataset's embeddings index status, if known. */
+                        status: string | null
+                        /** @description Whether the project is within its embeddings usage limit, or `null` if it couldn't be checked. */
+                        withinUsageLimit: boolean | null
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether the studio's schema has document types the agent can query. `null` when the connection doesn't query a dataset. */
+              schema:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The number of document types the agent can query, after the endpoint's GROQ filter. */
+                        documentTypes: number
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether every knowledge base the connection serves exists, is readable with your credentials, and has been built. `null` when the connection doesn't serve knowledge bases. */
+              knowledgeBases:
+                | (
+                    | {
+                        /**
+                         * @description The check passed.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                        /** @description The IDs of the knowledge bases the connection serves. */
+                        resolved: string[]
+                      }
+                    | {
+                        /**
+                         * @description The check failed.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description The IDs of the knowledge bases that exist and that you can read. */
+                        resolved: string[]
+                        /** @description The IDs of knowledge bases that don't exist in the organization. */
+                        missing: string[]
+                        /** @description The IDs of knowledge bases your credentials can't read. */
+                        denied: string[]
+                        /** @description The IDs of knowledge bases that haven't been built yet. Build them before connecting an agent. */
+                        unbuilt: string[]
+                        /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+            }
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
         }
       }
     }

@@ -29,7 +29,7 @@ declare module 'vitest' {
 /**
  * Suite configuration read here, in the config, and handed to the tests over
  * vitest's `provide`/`inject` channel rather than read from `process.env` by
- * the tests themselves, because of workerd - `@cloudflare/vitest-pool-workers`
+ * the tests themselves, because of workerd - `@cloudflare/vitest-plugin`
  * has a permanently empty `process.env` inside the worker.
  *
  * Config files run in Node, where `process.env` works.

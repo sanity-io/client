@@ -18,10 +18,16 @@ const KB = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 const PATH_ALLOWLIST = [
   '/{apiVersion}/context/knowledge-bases',
   KB,
-  // Conversation ingest + classification: the API-owned writes. Reads go
-  // through the GROQ surface (context.fetch/listen), so the REST reads are
-  // deliberately not exposed here.
+  // Conversation ingest, classification, and deletion: the API-owned writes.
+  // Reads go through the GROQ surface (context.fetch/listen), so the REST
+  // reads are deliberately not exposed here.
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}',
+  // MCP endpoint management: create, edit and delete. Reads go through GROQ.
+  '/{apiVersion}/context/organizations/{organizationId}/mcp',
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}',
+  // MCP endpoint readiness and initial context, addressed by endpoint name.
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/status',
+  '/{apiVersion}/context/organizations/{organizationId}/mcp/{mcpEndpoint}/initial-context',
   `${KB}/build`,
   `${KB}/build/cancel`,
   `${KB}/entries/{entryPath}/rebuild`,

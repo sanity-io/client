@@ -42,7 +42,7 @@ exports[`GraphQL API > logger.table 1`] = `
 ]
 `;
 
-exports[`resolveEditUrl '/' > decode all 1`] = `
+exports[`resolveEditUrl / > decode all 1`] = `
 [
   "/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[_key=="d8fa6d59e49b"].children[_key=="6a057cf2fb310"].text",
   "/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt",
@@ -65,9 +65,9 @@ exports[`resolveEditUrl '/' > decode all 1`] = `
 ]
 `;
 
-exports[`resolveEditUrl '/' > logger.error 1`] = `[]`;
+exports[`resolveEditUrl / > logger.error 1`] = `[]`;
 
-exports[`resolveEditUrl '/' > logger.log 1`] = `
+exports[`resolveEditUrl / > logger.log 1`] = `
 [
   [
     "[@sanity/client]: Encoding source map into result",
@@ -94,7 +94,7 @@ exports[`resolveEditUrl '/' > logger.log 1`] = `
 ]
 `;
 
-exports[`resolveEditUrl '/' > logger.table 1`] = `
+exports[`resolveEditUrl / > logger.table 1`] = `
 [
   [
     [
@@ -193,7 +193,7 @@ exports[`resolveEditUrl '/' > logger.table 1`] = `
 ]
 `;
 
-exports[`resolveEditUrl 'https://test.sanity.studio' > decode all 1`] = `
+exports[`resolveEditUrl https://test.sanity.studio > decode all 1`] = `
 [
   "https://test.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=description[_key=="d8fa6d59e49b"].children[_key=="6a057cf2fb310"].text",
   "https://test.sanity.studio/intent/edit/mode=presentation;id=462efcc6-3c8b-47c6-8474-5544e1a4acde;type=product;path=media[_key=="cee5fbb69da2"].alt",
@@ -216,9 +216,9 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > decode all 1`] = `
 ]
 `;
 
-exports[`resolveEditUrl 'https://test.sanity.studio' > logger.error 1`] = `[]`;
+exports[`resolveEditUrl https://test.sanity.studio > logger.error 1`] = `[]`;
 
-exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
+exports[`resolveEditUrl https://test.sanity.studio > logger.log 1`] = `
 [
   [
     "[@sanity/client]: Encoding source map into result",
@@ -245,7 +245,7 @@ exports[`resolveEditUrl 'https://test.sanity.studio' > logger.log 1`] = `
 ]
 `;
 
-exports[`resolveEditUrl 'https://test.sanity.studio' > logger.table 1`] = `
+exports[`resolveEditUrl https://test.sanity.studio > logger.table 1`] = `
 [
   [
     [

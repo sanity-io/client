@@ -1,4 +1,4 @@
-import {cloudflareTest} from '@cloudflare/vitest-pool-workers'
+import {cloudflareTest} from '@cloudflare/vitest-plugin'
 import {defineConfig} from 'vitest/config'
 
 import {integrationProvide} from './vitest.integration.config'
@@ -15,6 +15,8 @@ export default defineConfig({
     }),
   ],
   test: {
+    // workerd cannot read Vitest's transformed modules from the host filesystem.
+    fsModuleCache: false,
     include: ['test/integration/**/*.test.ts'],
     reporters: process.env.GITHUB_ACTIONS ? ['default', 'github-actions'] : 'default',
     provide: integrationProvide,

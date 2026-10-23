@@ -54,6 +54,8 @@ type KnowledgeBasesPath = '/{apiVersion}/context/knowledge-bases'
 type ConversationPath =
   '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}'
 type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
+type McpEndpointsPath = '/{apiVersion}/context/organizations/{organizationId}/mcp'
+type McpEndpointPath = `${McpEndpointsPath}/{mcpEndpoint}`
 type ImportsPath = `${KnowledgeBasePath}/imports`
 type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
 type UploadsPath = `${KnowledgeBasePath}/imports/uploads`
@@ -70,6 +72,7 @@ type IssueReopenPath = `${KnowledgeBasePath}/issues/{issueId}/reopen`
 type InstructionsPath = `${KnowledgeBasePath}/instructions`
 
 type JsonResponse<T> = T extends {content: {'application/json': infer R}} ? R : never
+type QueryParams<T> = T extends {parameters: {query?: infer Q}} ? NonNullable<Q> : never
 type JsonBody<T> = T extends {
   requestBody: {content: {'application/json': infer R}}
 }
@@ -106,8 +109,18 @@ export type JobAccepted = JsonResponse<
   paths[`${KnowledgeBasePath}/build`]['post']['responses']['202']
 >
 
-/** @beta */
-export type Job = JsonResponse<paths[JobPath]['get']['responses']['200']>
+/**
+ * A background job: a `build`, an `update` (applied issues, rebuilt entries)
+ * or a `sync` (refreshes and imports). Narrow on `kind` to read `result`,
+ * which `build` and `update` jobs carry once they succeed.
+ * @beta
+ */
+export type Job = JsonResponse<paths[JobPath]['get']['responses']['200']> & {
+  // Every job carried `result?: unknown` before results were typed. Keeping it
+  // on each kind lets `job.result` compile without narrowing; `sync` jobs never
+  // send one.
+  result?: unknown
+}
 
 /**
  * Accepted entry rebuild: the job to poll plus every entry the rebuild
@@ -142,6 +155,14 @@ export type CreateInstructionResponse = JsonResponse<
 >
 /** @beta */
 export type EditInstructionParams = JsonBody<paths[InstructionPath]['patch']>
+/**
+ * The rebuild a delete started: `rebuildJobId` is `null` unless `rebuild: true`
+ * was passed and an entry cites the instruction's sources.
+ * @beta
+ */
+export type DeleteInstructionResponse = JsonResponse<
+  paths[InstructionPath]['delete']['responses']['200']
+>
 
 /** @beta */
 export type KnowledgeBasesResponse = JsonResponse<
@@ -226,3 +247,40 @@ export type Entry = Pick<EntryDoc, '_id' | 'path' | 'title' | 'tldr' | 'status'>
  * @beta
  */
 export type ConversationDoc = components['schemas']['ConversationDoc']
+
+/**
+ * An MCP endpoint as the management methods return it, including the `url`
+ * agents connect to.
+ * @beta
+ */
+export type McpEndpoint = JsonResponse<paths[McpEndpointsPath]['post']['responses']['201']>
+
+/** @beta */
+export type CreateMcpEndpointParams = JsonBody<paths[McpEndpointsPath]['post']>
+
+/** @beta */
+export type EditMcpEndpointParams = JsonBody<paths[McpEndpointPath]['patch']>
+
+/**
+ * Per-request overrides a connection to an MCP endpoint accepts, such as
+ * `mode` to serve one side of an endpoint with both knowledge bases and a
+ * dataset, or `knowledgeBases` to replace its knowledge base list.
+ * @beta
+ */
+export type McpEndpointRuntimeOptions = QueryParams<paths[`${McpEndpointPath}/status`]['get']>
+
+/**
+ * Whether an agent connecting to an MCP endpoint with your credentials and
+ * the same runtime options can use it. A check is `null` when it doesn't
+ * apply to the connection; `requiredOk` is true when every check that
+ * applies passed, except `semanticSearch`.
+ * @beta
+ */
+export type McpEndpointStatus = JsonResponse<
+  paths[`${McpEndpointPath}/status`]['get']['responses']['200']
+>
+
+/** Options for an MCP endpoint's initial context. @beta */
+export type McpEndpointInitialContextOptions = QueryParams<
+  paths[`${McpEndpointPath}/initial-context`]['get']
+>

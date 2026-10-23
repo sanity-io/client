@@ -20,5 +20,9 @@ allowBuilds:
 # pnpm holds back releases younger than its minimum release age. Entries here have been
 # reviewed and are allowed through.
 minimumReleaseAgeExclude:
-  - get-it@9.5.2 || 9.5.4 || 9.5.7
+  # We maintain get-it and allow Renovate to update it without delay.
+  - get-it
   - eventsource@5.1.2
+  - '@cloudflare/vitest-plugin@1.4.1'
+  - miniflare@5.20261006.2-beta
+  - wrangler@4.150.0

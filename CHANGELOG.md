@@ -1,5 +1,25 @@
 # @sanity/client
 
+## 8.10.1
+
+### Patch Changes
+
+- **deps:** update non-major ([#1328](https://github.com/sanity-io/client/pull/1328)) ([afebd83](https://github.com/sanity-io/client/commit/afebd83813e9ce1e6776e71c3c9ba580486dca54))
+- **deps:** update dependency get-it to ^9.6.2 ([#1369](https://github.com/sanity-io/client/pull/1369)) ([bd56d79](https://github.com/sanity-io/client/commit/bd56d7939097e569ee0788dcdd38d1caad3d8afe))
+
+## 8.10.0
+
+### Minor Changes
+
+- **context:** types include the Context API's error body and every path param ([#1360](https://github.com/sanity-io/client/pull/1360)) ([dd998bc](https://github.com/sanity-io/client/commit/dd998bc82fe47153526a7e271c34410e539b30d1))
+- **context:** instructions.delete can start a rebuild and returns its job ([#1361](https://github.com/sanity-io/client/pull/1361)) ([3fbbc47](https://github.com/sanity-io/client/commit/3fbbc4784c7c366c45a88a064d8ed02e33ddd40d))
+- **context:** add conversations.delete ([#1362](https://github.com/sanity-io/client/pull/1362)) ([f37c2c2](https://github.com/sanity-io/client/commit/f37c2c2c91f2f1ac04e02bc7c8d05a70c3a1470d))
+
+### Patch Changes
+
+- **stega:** add mux video machine fields to default filter denylist ([#1190](https://github.com/sanity-io/client/pull/1190)) ([91eb733](https://github.com/sanity-io/client/commit/91eb733206522c487f91d2368bc9a7838bd6bf4b))
+- **deps:** update dependency get-it to ^9.6.1 ([#1352](https://github.com/sanity-io/client/pull/1352)) ([95ccd24](https://github.com/sanity-io/client/commit/95ccd245c4f5050878fcf403237e55b164d57b9e))
+
 ## 8.9.0
 
 ### Minor Changes
