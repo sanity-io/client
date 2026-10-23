@@ -1,5 +1,13 @@
 # @sanity/client
 
+## 7.28.0
+
+### Minor Changes
+
+- **types:** infer fetch result and params from a branded GROQ query ([#1375](https://github.com/sanity-io/client/pull/1375)) ([b91149a](https://github.com/sanity-io/client/commit/b91149a2051bd939aa3b02a0665c6f8fed3272ce))
+
+  `client.fetch(query, params)` now infers its result and params types from a query branded with `__groqResult` and `__groqParams`, such as the default export of a `.groq` file imported through `@sanity-labs/groq-content-mapper`, with no generic argument and no `SanityQueries` entry. `ClientReturn` reads the result brand before the registry lookup, and the new `ClientParams` type reads the params brand; `listen` checks params the same way. Reading the brand is experimental. Plain strings, `defineQuery`, explicit generics and `SanityQueries` registrations resolve as before. This backports [#1373](https://github.com/sanity-io/client/pull/1373) from 8.11.0.
+
 ## 7.27.0
 
 ### Minor Changes
