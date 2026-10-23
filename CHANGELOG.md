@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.12.0
+
+### Minor Changes
+
+- add support for Durable function callbacks ([#1377](https://github.com/sanity-io/client/pull/1377)) ([53730c8](https://github.com/sanity-io/client/commit/53730c8b3681f472a5fac20aac4cd8d2a26eaa5a))
+
 ## 8.11.0
 
 ### Minor Changes
