@@ -2,15 +2,138 @@ import {lastValueFrom, type Observable} from 'rxjs'
 
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest} from '../types'
+import {
+  _callback,
+  _toCallbackFailure,
+  type DurableCallbackFailure,
+  type DurableCallbackRequestOptions,
+} from './durables'
 import {_invoke, type InvokeFunctionOptions, type InvokeFunctionRequest} from './invoke'
 
 /** @public */
-export class ObservableFunctionsClient {
+export class ObservableDurablesClient {
   #client: ObservableSanityClient
   #httpRequest: HttpRequest
   constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
     this.#client = client
     this.#httpRequest = httpRequest
+  }
+
+  /**
+   * Resume a durable function waiting on a callback, handing it a result.
+   *
+   * Emits `undefined` once the callback is accepted.
+   *
+   * @param callbackId - the id the function handed out from `step.waitForCallback`
+   * @param result - JSON-serializable value the waiting step resolves with
+   * @param options - request options
+   */
+  callbackSuccess(
+    callbackId: string,
+    result?: unknown,
+    options?: DurableCallbackRequestOptions,
+  ): Observable<void> {
+    return _callback(this.#client, this.#httpRequest, callbackId, 'success', result, options)
+  }
+
+  /**
+   * Resume a durable function waiting on a callback, failing the waiting step.
+   *
+   * Emits `undefined` once the callback is accepted.
+   *
+   * @param callbackId - the id the function handed out from `step.waitForCallback`
+   * @param failure - an `Error`, reported by its message and stack, or the failure fields
+   * @param options - request options
+   */
+  callbackFailure(
+    callbackId: string,
+    failure: Error | DurableCallbackFailure = {},
+    options?: DurableCallbackRequestOptions,
+  ): Observable<void> {
+    return _callback(
+      this.#client,
+      this.#httpRequest,
+      callbackId,
+      'failure',
+      _toCallbackFailure(failure),
+      options,
+    )
+  }
+}
+
+/** @public */
+export class DurablesClient {
+  #client: SanityClient
+  #httpRequest: HttpRequest
+  constructor(client: SanityClient, httpRequest: HttpRequest) {
+    this.#client = client
+    this.#httpRequest = httpRequest
+  }
+
+  /**
+   * Resume a durable function waiting on a callback, handing it a result.
+   *
+   * The waiting `step.waitForCallback` resolves with `result`, which must be
+   * JSON-serializable. Omitting it resolves the step with `null`. The callback
+   * id is the only credential the route needs.
+   *
+   * Resolves with `undefined` once the callback is accepted.
+   *
+   * @param callbackId - the id the function handed out from `step.waitForCallback`
+   * @param result - JSON-serializable value the waiting step resolves with
+   * @param options - request options
+   */
+  callbackSuccess(
+    callbackId: string,
+    result?: unknown,
+    options?: DurableCallbackRequestOptions,
+  ): Promise<void> {
+    return lastValueFrom(
+      _callback(this.#client, this.#httpRequest, callbackId, 'success', result, options),
+    )
+  }
+
+  /**
+   * Resume a durable function waiting on a callback, failing the waiting step.
+   *
+   * The waiting `step.waitForCallback` rejects. Pass an `Error` to report its
+   * message and stack, or the failure fields directly. `errorData` must be a
+   * string; serialize structured data before passing it.
+   *
+   * Resolves with `undefined` once the callback is accepted.
+   *
+   * @param callbackId - the id the function handed out from `step.waitForCallback`
+   * @param failure - an `Error`, reported by its message and stack, or the failure fields
+   * @param options - request options
+   */
+  callbackFailure(
+    callbackId: string,
+    failure: Error | DurableCallbackFailure = {},
+    options?: DurableCallbackRequestOptions,
+  ): Promise<void> {
+    return lastValueFrom(
+      _callback(
+        this.#client,
+        this.#httpRequest,
+        callbackId,
+        'failure',
+        _toCallbackFailure(failure),
+        options,
+      ),
+    )
+  }
+}
+
+/** @public */
+export class ObservableFunctionsClient {
+  #client: ObservableSanityClient
+  #httpRequest: HttpRequest
+  /** Report back to durable functions. */
+  durables: ObservableDurablesClient
+  constructor(client: ObservableSanityClient, httpRequest: HttpRequest) {
+    this.#client = client
+    this.#httpRequest = httpRequest
+    this.durables = new ObservableDurablesClient(client, httpRequest)
   }
 
   /**
@@ -54,9 +177,12 @@ export class ObservableFunctionsClient {
 export class FunctionsClient {
   #client: SanityClient
   #httpRequest: HttpRequest
+  /** Report back to durable functions. */
+  durables: DurablesClient
   constructor(client: SanityClient, httpRequest: HttpRequest) {
     this.#client = client
     this.#httpRequest = httpRequest
+    this.durables = new DurablesClient(client, httpRequest)
   }
 
   /**

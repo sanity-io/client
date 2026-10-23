@@ -2486,6 +2486,7 @@ export type {
   InvokeFunctionOptions,
   InvokeFunctionRequest,
 } from './functions/invoke'
+export type {DurableCallbackFailure, DurableCallbackRequestOptions} from './functions/durables'
 export type {
   CollaborationCommentCreate,
   CollaborationCommentDocument,
