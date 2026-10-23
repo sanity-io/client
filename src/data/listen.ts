@@ -4,12 +4,14 @@ import {filter, map} from 'rxjs/operators'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import {
   type Any,
+  type ClientParams,
   type ListenEvent,
   type ListenEventName,
   type ListenOptions,
   type ListenParams,
   type MutationEvent,
   type OpenEvent,
+  type QueryWithoutParams,
   type ReconnectEvent,
   type ResetEvent,
   type ResumableListenEventNames,
@@ -102,10 +104,13 @@ export type ListenEventFromOptions<
  * @param options - Optional listener options
  * @public
  */
-export function _listen<R extends Record<string, Any> = Record<string, Any>>(
+export function _listen<
+  R extends Record<string, Any> = Record<string, Any>,
+  const G extends string = string,
+>(
   this: SanityClient | ObservableSanityClient,
-  query: string,
-  params?: ListenParams,
+  query: G,
+  params?: ClientParams<G, ListenParams> | QueryWithoutParams,
 ): Observable<MutationEvent<R>>
 /**
  * Set up a listener that will be notified when mutations occur on documents matching the provided query/filter.
@@ -118,10 +123,11 @@ export function _listen<R extends Record<string, Any> = Record<string, Any>>(
 export function _listen<
   R extends Record<string, Any> = Record<string, Any>,
   Opts extends ListenOptions | ResumableListenOptions = ListenOptions | ResumableListenOptions,
+  const G extends string = string,
 >(
   this: SanityClient | ObservableSanityClient,
-  query: string,
-  params?: ListenParams,
+  query: G,
+  params?: ClientParams<G, ListenParams> | QueryWithoutParams,
   options?: Opts,
 ): Observable<ListenEventFromOptions<R, Opts>>
 /** @public */
