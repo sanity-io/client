@@ -28,6 +28,6 @@ describe('client.functions.durables', () => {
 
   test('errorData must already be a string', () => {
     // @ts-expect-error -- errorData is a string on the wire; structured data must be serialized
-    client.functions.durables.callbackFailure('id', {errorData: {reason: 'budget'}})
+    void client.functions.durables.callbackFailure('id', {errorData: {reason: 'budget'}})
   })
 })
