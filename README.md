@@ -2538,9 +2538,15 @@ Available resolutions depend on the source video but typically include `1080p`, 
 
 ### Invoking functions
 
-Call a Sanity Pubsub Function on demand. These APIs are available on the `client.functions` namespace.
+Call a Sanity Function on demand. These APIs are available on the `client.functions` namespace.
 
-Only `sanity.function.pubsub` functions can be invoked this way. Every other type is driven by its own trigger.
+Whether a function can be invoked on demand, and how, depends on its type:
+
+- PubSub functions (`sanity.function.pubsub`) can be invoked asynchronously or synchronously.
+- Durable functions (`sanity.function.durable`) without an `event`, meaning they aren't triggered by Content Lake events, can be invoked asynchronously only. Passing `{sync: true}` rejects.
+- Durable functions with an `event` can't be invoked on demand.
+
+Other function types are driven by their own triggers.
 
 Functions are addressed by the `name` they are declared with in your blueprint. Names are unique within a stack. The client needs a `stackId` in order to resolve. Configure it once on the client, or pass it per call.
 
@@ -2554,24 +2560,19 @@ const client = createClient({
   stackId: 'your-stack-id',
 })
 
-const result = await client.functions.invoke('my-function', {
+await client.functions.invoke('my-function', {
   event: {data: {hello: 'world'}},
 })
 ```
 
 The payload given as `event.data` is what the function receives as `event.data`. It defaults to `{}` when omitted.
 
+Invocation is asynchronous by default: the call resolves with `undefined` as soon as the invocation is accepted, without waiting for the function to run. Pass `{sync: true}` as the third argument to wait for the function's return value instead (see [Return values and timeouts](#return-values-and-timeouts)).
+
 Both Promise and Observable forms are available:
 
-- `client.functions.invoke(name, request)` resolves with the function's return value
-- `client.observable.functions.invoke(name, request)` emits it and completes
-
-```ts
-// The return value is typed through the generic; it is not validated at runtime
-const summary = await client.functions.invoke<{words: number}>('summarize', {
-  event: {data: {documentId: 'abc123'}},
-})
-```
+- `client.functions.invoke(name, request, options)` resolves once the invocation is accepted, or with the function's return value when `sync` is `true`
+- `client.observable.functions.invoke(name, request, options)` emits the same value and completes
 
 #### Choosing a stack
 
@@ -2583,7 +2584,7 @@ await client.functions.invoke('my-function', {stackId: 'another-stack-id'})
 
 Resolving the name takes one extra request per call: the client reads the stack to find the function, then invokes it. If neither the request nor the config supplies a `stackId`, the call rejects without touching the network.
 
-Invoking a name the stack doesn't declare or a non-pubsub function rejects.
+Invoking a name the stack doesn't declare rejects, as does invoking a function in a way its type doesn't support.
 
 #### Scoping to an organization
 
@@ -2611,18 +2612,66 @@ Scope has to match the token. A project-scoped token gets `403` on an organizati
 
 #### Return values and timeouts
 
-The request stays open until the function finishes, and resolves with whatever it returned. A function that returns nothing resolves to `undefined`.
+With `{sync: true}`, the request stays open until the function finishes, and resolves with whatever it returned. A function that returns nothing resolves to `undefined`. Only PubSub functions can be invoked synchronously.
 
-Requests time out after five minutes by default, so a longer-running function needs an explicit `timeout` (in milliseconds, `0` to disable it). A call can be aborted with an `AbortSignal` like any other request:
+```ts
+// The return value is typed through the generic; it is not validated at runtime
+const summary = await client.functions.invoke<{words: number}>(
+  'summarize',
+  {event: {data: {documentId: 'abc123'}}},
+  {sync: true},
+)
+```
+
+Requests time out after five minutes by default, so a longer-running synchronous function needs an explicit `timeout` (in milliseconds, `0` to disable it). A call can be aborted with an `AbortSignal` like any other request:
 
 ```js
 const controller = new AbortController()
 
-const result = await client.functions.invoke('slow-function', {
-  timeout: 0, // or e.g. 600000 for a ten minute deadline
-  signal: controller.signal,
+const result = await client.functions.invoke(
+  'slow-function',
+  {
+    timeout: 0, // or e.g. 600000 for a ten minute deadline
+    signal: controller.signal,
+  },
+  {sync: true},
+)
+```
+
+#### Completing durable function callbacks
+
+A durable function can pause on `step.waitForCallback` until an external system reports back. The function hands out a callback ID, and whoever holds that ID resumes the function through `client.functions.durables`:
+
+```js
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  useProjectHostname: false,
+  apiVersion: '2025-02-19',
+})
+
+// Resume the function: the waiting step resolves with this value
+await client.functions.durables.callbackSuccess(callbackId, {approved: true})
+
+// Or fail the waiting step
+await client.functions.durables.callbackFailure(callbackId, new Error('Rejected by reviewer'))
+```
+
+The callback ID is the only credential these calls need. No token, `projectId`, `stackId` or scope is required, so the client can be configured with `useProjectHostname: false` as above. Treat callback IDs as secrets. The client URL-encodes the ID for you; pass it exactly as the function handed it out.
+
+`callbackSuccess(callbackId, result)` sends `result` as JSON, so it must be JSON-serializable. Any JSON value works, including strings, numbers and booleans. Omitting it resolves the waiting step with `null`.
+
+`callbackFailure(callbackId, failure)` accepts either an `Error`, reported by its `message` and its `stack` split into lines, or the failure fields directly:
+
+```js
+await client.functions.durables.callbackFailure(callbackId, {
+  errorMessage: 'Budget exceeded',
+  errorData: JSON.stringify({limit: 1000, requested: 1500}), // must be a string
+  stackTrace: ['at approve (approvals.ts:12:3)'],
 })
 ```
+
+Both calls resolve with `undefined` once the callback is accepted, and reject with a `404` if the callback ID is unknown. Payloads are limited to 256 KB. Each accepts `{timeout, signal}` as a third argument, and both have Observable forms on `client.observable.functions.durables`.
 
 ### Collaboration Comments API
 
