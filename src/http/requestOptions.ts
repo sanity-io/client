@@ -120,6 +120,12 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     request.maxRetries = overrides.maxRetries
   }
 
+  // `rawBody` asks the transport for the response bytes instead of decoded
+  // text or JSON, for binary downloads.
+  if (overrides.rawBody === true) {
+    request.meta = {...request.meta, rawBody: true}
+  }
+
   // Lineage travels in `meta`; the Node middleware projects it onto the
   // `x-sanity-lineage` header (merged with the `X_SANITY_LINEAGE` env var).
   if (typeof config.lineage === 'string' && config.lineage) {
