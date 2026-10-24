@@ -36,17 +36,18 @@ export type ContextListenOptions =
   | Omit<ResumableListenOptions, 'includeAllVersions'>
 
 /**
- * A file import. The client stages the upload, PUTs the bytes straight to
- * storage with a signed URL, and confirms. The Context API never holds the
- * file content.
+ * A file for a `files` source. The client stages an upload, PUTs the bytes
+ * straight to storage with a signed URL, and starts the source's sync with
+ * it. The Context API never holds the file content.
  * @beta
  */
-export type CreateFileImportParams = {
-  type: 'file'
+export type SourceFileUpload = {
   /** Same shapes `assets.upload` accepts, minus node streams: the bytes go
-   * out through `fetch`, which has no portable stream support. */
+   * out through `fetch`, which has no portable stream support. A single
+   * document, or a zip, tar or gzip archive of them. */
   file: Exclude<UploadBody, NodeJS.ReadableStream>
   filename: string
+  /** When set, the bytes are PUT with this `Content-Type`. */
   contentType?: string
 }
 
@@ -56,13 +57,15 @@ type ConversationPath =
 type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 type McpEndpointsPath = '/{apiVersion}/context/organizations/{organizationId}/mcp'
 type McpEndpointPath = `${McpEndpointsPath}/{mcpEndpoint}`
-type ImportsPath = `${KnowledgeBasePath}/imports`
-type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
-type UploadsPath = `${KnowledgeBasePath}/imports/uploads`
 type EntryRebuildPath = `${KnowledgeBasePath}/entries/{entryPath}/rebuild`
 type SourcesPath = `${KnowledgeBasePath}/sources`
 type SourcePath = `${KnowledgeBasePath}/sources/{sourceId}`
-type SourceContentPath = `${KnowledgeBasePath}/sources/{sourceId}/content`
+type SyncsPath = `${SourcePath}/syncs`
+type SyncPath = `${SourcePath}/syncs/{syncId}`
+type UploadsPath = `${SourcePath}/uploads`
+type DocumentsPath = `${KnowledgeBasePath}/documents`
+type DocumentPath = `${KnowledgeBasePath}/documents/{documentId}`
+type DocumentContentPath = `${DocumentPath}/content`
 type IssuesApplyPath = `${KnowledgeBasePath}/issues/apply`
 type InstructionPath = `${KnowledgeBasePath}/instructions/{instructionId}`
 type JobPath = `${KnowledgeBasePath}/jobs/{jobId}`
@@ -94,13 +97,6 @@ export type CreateKnowledgeBaseParams = JsonBody<paths[KnowledgeBasesPath]['post
 export type EditKnowledgeBaseParams = JsonBody<paths[KnowledgeBasePath]['patch']>
 
 /**
- * Parameters for importing content. Discriminated on `type`:
- * inline text, a website crawl, or a Sanity dataset bind.
- * @beta
- */
-export type CreateImportParams = JsonBody<paths[ImportsPath]['post']>
-
-/**
  * Accepted async work. Poll the job with `jobs.get` until it reaches a
  * terminal state.
  * @beta
@@ -111,7 +107,7 @@ export type JobAccepted = JsonResponse<
 
 /**
  * A background job: a `build`, an `update` (applied issues, rebuilt entries)
- * or a `sync` (refreshes and imports). Narrow on `kind` to read `result`,
+ * or a `sync` (a `files` source reading its file). Narrow on `kind` to read `result`,
  * which `build` and `update` jobs carry once they succeed.
  * @beta
  */
@@ -170,34 +166,115 @@ export type KnowledgeBasesResponse = JsonResponse<
 >
 
 /** @beta */
-export type ImportsResponse = JsonResponse<paths[ImportsPath]['get']['responses']['200']>
+export type SourcesResponse = JsonResponse<paths[SourcesPath]['get']['responses']['200']>
+/**
+ * Something that yields documents for a knowledge base: a website (`web`),
+ * a Sanity dataset (`sanity-dataset`) or files (`files`). Narrow on `type`
+ * for the settings each kind carries.
+ * @beta
+ */
+export type Source = JsonResponse<paths[SourcePath]['get']['responses']['200']>
+
+type SourceBody = JsonBody<paths[SourcesPath]['post']>
+
+/**
+ * A `files` source that holds a file, uploaded as part of creating it.
+ * `sources.create` adds the source, uploads the file and starts its sync.
+ * @beta
+ */
+export type CreateFileSourceParams = {
+  type: 'files'
+  title: string
+  content?: never
+} & SourceFileUpload
+
+type WebSourceBody = Extract<SourceBody, {type: 'web'}>
+
+/**
+ * Parameters for adding a source. Discriminated on `type`: a `web` crawl, a
+ * `sanity-dataset` query, or a `files` source with inline `content`, an
+ * uploaded `file`, or neither (an empty source to upload to later).
+ * @beta
+ */
+export type CreateSourceParams =
+  | Omit<WebSourceBody, 'dryRun'>
+  | Exclude<SourceBody, {type: 'web' | 'files'}>
+  | (Extract<SourceBody, {type: 'files'}> & {file?: never})
+  | CreateFileSourceParams
+
+/**
+ * Parameters for previewing a website crawl without adding the source.
+ * @beta
+ */
+export type PreviewWebSourceParams = Omit<WebSourceBody, 'type' | 'dryRun'>
+
+/**
+ * The pages a `web` source's crawl would fetch, grouped by path.
+ * @beta
+ */
+export type CrawlPreview = JsonResponse<paths[SourcesPath]['post']['responses']['200']>
+
 /** @beta */
-export type Import = ImportsResponse['data'][number]
+export type EditSourceParams = JsonBody<paths[SourcePath]['patch']>
+
 /** @beta */
-export type ImportDetail = JsonResponse<paths[ImportPath]['get']['responses']['200']>
-/** @beta */
-export type ImportDownloadResponse = JsonResponse<
-  paths[`${ImportPath}/download`]['get']['responses']['200']
+export type SyncsResponse = JsonResponse<paths[SyncsPath]['get']['responses']['200']>
+/**
+ * One run of a source's connector. A `held` sync waits for `syncs.confirm`
+ * or `syncs.discard` before it deletes anything.
+ * @beta
+ */
+export type Sync = JsonResponse<paths[SyncPath]['get']['responses']['200']>
+/**
+ * A started or queued sync. `jobId` is set when a `files` source's sync
+ * starts at once; follow a website or dataset with its source's
+ * `latestSync`.
+ * @beta
+ */
+export type SyncAccepted = JsonResponse<paths[SyncsPath]['post']['responses']['202']>
+/** The syncs `context.sync()` queued, one per website and dataset source. @beta */
+export type SyncAllAccepted = JsonResponse<
+  paths[`${KnowledgeBasePath}/sync`]['post']['responses']['202']
 >
 
 /**
- * The staged half of a file upload: PUT the bytes to `uploadUrl`, then
- * confirm with the complete endpoint. `imports.create({type: 'file'})` does
- * all of this in one call.
+ * The staged half of a file upload: PUT the bytes to `uploadUrl`, then sync
+ * the source with `uploadId`. `sources.upload` does all of this in one call.
  * @beta
  */
 export type StagedUpload = JsonResponse<paths[UploadsPath]['post']['responses']['201']>
+/** @beta */
+export type CreateUploadParams = JsonBody<paths[UploadsPath]['post']>
 
 /** @beta */
-export type SourcesResponse = JsonResponse<paths[SourcesPath]['get']['responses']['200']>
+export type DocumentsResponse = JsonResponse<paths[DocumentsPath]['get']['responses']['200']>
+/**
+ * One page, dataset document or file that a source yields: what builds
+ * read and cite.
+ * @beta
+ */
+export type Document = DocumentsResponse['data'][number]
+/** A document with the chunks of its markdown, which entry citations point at. @beta */
+export type DocumentDetail = JsonResponse<paths[DocumentPath]['get']['responses']['200']>
 /** @beta */
-export type Source = SourcesResponse['data'][number]
+export type EditDocumentParams = JsonBody<paths[DocumentPath]['patch']>
 /** @beta */
-export type SourceDetail = JsonResponse<paths[SourcePath]['get']['responses']['200']>
-/** @beta */
-export type SourceContentResponse = JsonResponse<
-  paths[SourceContentPath]['get']['responses']['200']
+export type DocumentContentOptions = QueryParams<paths[DocumentContentPath]['get']>
+/** A document's markdown with its line numbers, or a range of its lines. @beta */
+export type DocumentContentResponse = JsonResponse<
+  paths[DocumentContentPath]['get']['responses']['200']
 >
+/**
+ * What `documents.content` resolves with for a `format`: the JSON view by
+ * default, the text alone for `markdown` and `plain`, and the bytes the
+ * source gave for `raw`.
+ * @beta
+ */
+export type DocumentContent<F extends DocumentContentOptions['format']> = F extends 'raw'
+  ? Uint8Array
+  : F extends 'markdown' | 'plain'
+    ? string
+    : DocumentContentResponse
 
 /**
  * A recorded conversation: one agent thread's transcript plus the

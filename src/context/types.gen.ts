@@ -19,7 +19,7 @@ export interface paths {
     put?: never
     /**
      * Create a knowledge base
-     * @description Creates a knowledge base in your organization. To add content to it, create an import. If your organization's Context document store can't be used, the request returns `503` with code `contextStoreUnavailable` and you can retry.
+     * @description Creates a knowledge base in your organization. To add content to it, add a source. If your organization's Context document store can't be used, the request returns `503` with code `contextStoreUnavailable` and you can retry.
      */
     post: operations['createKnowledgeBase']
     delete?: never
@@ -44,14 +44,14 @@ export interface paths {
     post?: never
     /**
      * Delete a knowledge base
-     * @description Deletes the knowledge base and everything it owns: its sources, imports, revisions, stored source files, and its documents in your organization's document store. While a build, refresh, apply, or import is running, the request returns `409` with code `buildInFlight`. Retry after that work finishes.
+     * @description Deletes the knowledge base and everything it owns: its sources, revisions, stored source files, and its documents in your organization's document store. While a build, refresh, apply, or sync is running, the request returns `409` with code `buildInFlight`. Retry after that work finishes.
      */
     delete: operations['deleteKnowledgeBase']
     options?: never
     head?: never
     /**
      * Update a knowledge base
-     * @description Updates the title, the description, or the recurring refresh settings (`refreshEnabled` and `refreshFrequency`). Fields equal to their current value are ignored, so sending the current values changes nothing. Changing a refresh field on a knowledge base with no website or dataset source returns `422` with code `refreshControlsUnavailable`. Setting `refreshEnabled` to `false` pauses the schedule, and you can still start a refresh manually.
+     * @description Updates the title or the description. Fields equal to their current value are ignored, so sending the current values changes nothing. How often a website or dataset syncs is set on the source, with `PATCH .../sources/{sourceId}`.
      */
     patch: operations['updateKnowledgeBase']
     trace?: never
@@ -96,6 +96,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/documents': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List documents
+     * @description Lists the documents in a knowledge base: the pages, dataset documents and files its sources yield, which builds read and cite. Results are cursor-paginated, and you can filter them by `source` and `state`.
+     */
+    get: operations['listDocuments']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/documents/{documentId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a document
+     * @description Returns a document with its conversion status and the chunks of its markdown. Entry citations point at a document's chunks.
+     */
+    get: operations['getDocument']
+    put?: never
+    post?: never
+    /**
+     * Delete a document
+     * @description Deletes a document from its source. A page that is still on the website comes back on the next sync of its source unless the crawl options exclude it. Entries that cite the document stay the same until the next build or refresh, which removes the citations.
+     */
+    delete: operations['deleteDocument']
+    options?: never
+    head?: never
+    /**
+     * Keep a missing document
+     * @description Keeps a `missing` web page in the knowledge base by setting its `state` back to `active`. A document that isn't `missing` returns `409` with code `documentInvalidState`.
+     */
+    patch: operations['updateDocument']
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/content': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a document's markdown
+     * @description Returns the markdown a document converted to: the text builds read, and the line numbers citations use. Set `chunk` or `lines` to get part of it, and `format` to `markdown` or `plain` to get the text alone instead of JSON. Until the document is converted, the request returns `409` with code `documentNotConverted`. With `format=raw` it returns the document as its source gave it, as an attachment, or `409` with code `documentNotStored` when the document was too large to keep.
+     */
+    get: operations['getDocumentContent']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/entries/{entryPath}/rebuild': {
     parameters: {
       query?: never
@@ -116,127 +184,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List imports
-     * @description Lists everything added to a knowledge base, one item per import: a file upload, website crawl, Sanity dataset, or inline text. Results are cursor-paginated. To list the sources each import produced, use `GET .../sources`.
-     */
-    get: operations['listImports']
-    put?: never
-    /**
-     * Create a text, crawl, or dataset import
-     * @description Adds content to a knowledge base. Set `type` to choose what to import:
-     *
-     *     - `text`: inline content
-     *     - `crawl`: a website
-     *     - `dataset`: documents from a Sanity dataset, selected by a GROQ filter
-     *
-     *     Each import queues processing and returns a job ID to poll. To import a file, use `POST .../imports/uploads` instead.
-     *
-     *     Adding a crawl URL that already exists returns `409` with code `webSourceRootConflict`. Adding more crawl URLs than your limit allows returns `409` with code `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
-     */
-    post: operations['createImport']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/uploads': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Start a file upload
-     * @description Creates a file import and returns a single-use signed upload URL that's valid for one hour. To finish the upload:
-     *
-     *     1. Send the file in a `PUT` request to the upload URL.
-     *     2. Call `POST .../imports/uploads/{importId}/complete` to start processing.
-     *
-     *     If you set `contentType`, the `PUT` request must send the same `Content-Type` header. If you omit it, the `PUT` request can send any `Content-Type` header or none. An import that isn't completed within 24 hours is deleted. Supports the `Idempotency-Key` header.
-     */
-    post: operations['startUpload']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/uploads/{importId}/complete': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Complete a file upload
-     * @description Starts processing a file after you upload it to the signed URL from `POST .../imports/uploads`. Returns a job ID to poll.
-     */
-    post: operations['completeUpload']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/{importId}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get an import
-     * @description Returns an import with its `sourceKind` and processing `status`.
-     */
-    get: operations['getImport']
-    put?: never
-    post?: never
-    /**
-     * Delete an import
-     * @description Deletes the import and every source it produced, and cancels its processing if it is still running. Use it to remove content you added by mistake.
-     */
-    delete: operations['deleteImport']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/imports/{importId}/download': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a download URL for an import
-     * @description Returns a short-lived signed URL that downloads the import's original content. Use the URL before `expiresAt`. Only file and text imports keep their original content. For crawl and dataset imports, the request returns `409` with code `importInvalidState`.
-     */
-    get: operations['downloadImport']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions': {
     parameters: {
       query?: never
@@ -248,7 +195,7 @@ export interface paths {
     put?: never
     /**
      * Create an instruction
-     * @description Creates a standing instruction for how entries that cite its sources are written. Every instruction applies to specific sources, set in `scopeSourceIds`. To rebuild entries under the new instruction right away, pass their paths in `rebuildPaths`. The response includes the rebuild job ID, or `null` if the rebuild could not start. The instruction is saved either way. After the instruction is saved, a background check files issues for entries that contradict it. If you already checked the instruction for contradictions, set `verified` to skip the background check. If the requested rebuild does not start, the background check runs even when `verified` is set.
+     * @description Creates a standing instruction for how entries built from its documents are written. Every instruction applies to specific documents, set in `scopeDocumentIds`. To rebuild entries under the new instruction right away, pass their paths in `rebuildPaths`. The response includes the rebuild job ID, or `null` if the rebuild could not start. The instruction is saved either way. After the instruction is saved, a background check files issues for entries that contradict it. If you already checked the instruction for contradictions, set `verified` to skip the background check. If the requested rebuild does not start, the background check runs even when `verified` is set.
      */
     post: operations['createInstruction']
     delete?: never
@@ -269,14 +216,14 @@ export interface paths {
     post?: never
     /**
      * Delete an instruction
-     * @description Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text until they are rebuilt; pass `rebuild=true` to rebuild every entry that cites its sources right away.
+     * @description Deletes the instruction. Builds stop applying it from the next run. Entries already written under it keep their text until they are rebuilt; pass `rebuild=true` to rebuild every entry built from its documents right away.
      */
     delete: operations['deleteInstruction']
     options?: never
     head?: never
     /**
      * Update an instruction
-     * @description Updates the instruction's statement or sources. The change applies from the next build. Any update also reactivates an archived instruction and ties it to the current content of its sources.
+     * @description Updates the instruction's statement or documents. The change applies from the next build. Any update also reactivates an archived instruction and ties it to the current content of its documents.
      */
     patch: operations['updateInstruction']
     trace?: never
@@ -292,7 +239,7 @@ export interface paths {
     put?: never
     /**
      * Accept and apply issues
-     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), a `merge_entry`, or a `gap`, `update_required` or `split_entry` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.
+     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), or a `gap` or `update_required` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.
      */
     post: operations['applyIssues']
     delete?: never
@@ -370,31 +317,11 @@ export interface paths {
     }
     /**
      * Get a job
-     * @description Returns the status of a background job, such as a build, import, or refresh. The endpoint that starts the work returns the job ID.
+     * @description Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID.
      */
     get: operations['getJob']
     put?: never
     post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/refresh': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Refresh a knowledge base
-     * @description Queues a refresh that recrawls website sources, re-syncs dataset sources, compares the result with the last build, and files issues for what changed. Returns a job ID. If a refresh is already running, the response has `started: false` and that refresh's job ID. Supports the `Idempotency-Key` header.
-     */
-    post: operations['refreshKnowledgeBase']
     delete?: never
     options?: never
     head?: never
@@ -410,11 +337,23 @@ export interface paths {
     }
     /**
      * List sources
-     * @description Lists the sources in a knowledge base: the pages, files, and documents that imports produce and builds cite. Sources are read-only. To add content, create an import. Results are cursor-paginated, and you can filter them by `status`.
+     * @description Lists the sources of a knowledge base: the websites, Sanity datasets and files its documents come from, each with its document counts and its latest sync. Results are cursor-paginated.
      */
     get: operations['listSources']
     put?: never
-    post?: never
+    /**
+     * Add a source
+     * @description Adds a source to a knowledge base. Set `type` to choose what it reads:
+     *
+     *     - `web`: a website, crawled from `url`
+     *     - `sanity-dataset`: the documents a GROQ query selects in a Sanity dataset
+     *     - `files`: files you upload with `POST .../sources/{sourceId}/uploads`, or text you send in `content`
+     *
+     *     A website or dataset starts its first sync right away. A `files` source syncs when you upload a file, or right away when you send `content`: one request stores the text, adds the source and starts its sync. For a website, set `dryRun` to `true` to preview the crawl without adding the source.
+     *
+     *     Adding a website that is already a source returns `409` with code `webSourceRootConflict`, and adding more websites than your limit allows returns `409` with code `webSourceRootLimitExceeded`. Supports the `Idempotency-Key` header.
+     */
+    post: operations['createSource']
     delete?: never
     options?: never
     head?: never
@@ -430,22 +369,28 @@ export interface paths {
     }
     /**
      * Get a source
-     * @description Returns a source with its metadata and processing status.
+     * @description Returns a source with its settings, document counts and latest sync.
      */
     get: operations['getSource']
     put?: never
     post?: never
     /**
      * Delete a source
-     * @description Deletes the source immediately. Entries that cite it stay the same until the next build or refresh, which removes the citations and proposes removing any entry left with no sources.
+     * @description Removes a source and its documents from the knowledge base, and starts a refresh that removes their citations from entries and deletes the entries left with none. A source no other knowledge base uses stops syncing and is deleted once that refresh has run.
      */
     delete: operations['deleteSource']
     options?: never
     head?: never
-    patch?: never
+    /**
+     * Update a source
+     * @description Changes a source's title, a website's crawl options, a dataset's query, or how often a website or dataset syncs on its own. New crawl options delete the documents whose path they leave out. When that would delete more than a fifth of the source's documents, or all of them, the request returns `409` with code `sourceDeletionsUnconfirmed` until you send it again with `confirmDeletions` set to `true`. A new query queues a sync, which removes the documents the query no longer selects.
+     *
+     *     Crawl options on a source that isn't a website, a query on one that isn't a dataset, or a sync frequency on a `files` source, return `422` with code `sourceTypeMismatch`. Setting a sync frequency on a plan without scheduled syncs returns `403` with code `featureNotInPlan`; setting it to `null` always works.
+     */
+    patch: operations['updateSource']
     trace?: never
   }
-  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/content': {
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs': {
     parameters: {
       query?: never
       header?: never
@@ -453,12 +398,125 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get a source's distilled content
-     * @description Returns the source's distilled content: the markdown extracted from the original page, file, or document, which is the text builds cite. Use it to check an issue's claims against the sources listed in its `citedSourceIds`. To fetch a range of lines, set `startLine` and `endLine` (1-indexed, inclusive). The response is JSON by default. Set `format` to `markdown` or `plain` to get the text alone. Until the source finishes processing, the request returns `409` with code `sourceNotDistilled`.
+     * List a source's syncs
+     * @description Lists the syncs of a source, newest first. Results are cursor-paginated.
      */
-    get: operations['getSourceContent']
+    get: operations['listSyncs']
+    put?: never
+    /**
+     * Sync a source
+     * @description Starts a sync of the source. A website or dataset is read again: its sync is queued, and starts once any sync of the source that is running ends, including the first one that started when it was added. Asking again while one waits queues nothing more. Follow it with the source's `latestSync`.
+     *
+     *     For a `files` source, set `uploadId` to the upload whose file the source should hold from now on; without it, the source reads its current file again. Its sync starts at once and returns a job ID to poll. While a sync of a `files` source is running, including the first one, the request returns `409` with code `syncInProgress` and leaves the upload for a later request. An `uploadId` whose file never arrived returns `404` with code `uploadNotFound`, and an `uploadId` on a source that isn't `files` returns `422` with code `sourceTypeMismatch`.
+     *
+     *     When the organization has used its plan's monthly processing allowance, any sync request returns `403` with code `planLimitReached` and starts nothing. Supports the `Idempotency-Key` header.
+     */
+    post: operations['startSync']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a sync
+     * @description Returns one sync of a source with its status and counts.
+     */
+    get: operations['getSync']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}/confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm a held sync's deletions
+     * @description Deletes the documents a `held` sync didn't find, unless a sync has found them since, completes the sync, and starts a refresh of each knowledge base that uses the source, which removes their citations from entries. A sync that isn't `held` returns `409` with code `syncNotHeld`.
+     */
+    post: operations['confirmSync']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs/{syncId}/discard': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Discard a held sync's deletions
+     * @description Completes a `held` sync without deleting anything: every document stays as it is. A sync that isn't `held` returns `409` with code `syncNotHeld`.
+     */
+    post: operations['discardSync']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/uploads': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Upload a file to a source
+     * @description Returns a single-use signed URL for one file of a `files` source, valid for one hour. To add the file:
+     *
+     *     1. Send the file in a `PUT` request to `uploadUrl`.
+     *     2. Call `POST .../sources/{sourceId}/syncs` with the `uploadId`.
+     *
+     *     The file can be a single document or a zip, tar or gzip archive of them. It replaces the source's current file when it syncs. An upload no sync takes within 24 hours is deleted. A source that isn't `files` returns `422` with code `sourceTypeMismatch`. Supports the `Idempotency-Key` header.
+     */
+    post: operations['startSourceUpload']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/sync': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Sync every source
+     * @description Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file. When the organization has used its plan's monthly processing allowance, returns `403` with code `planLimitReached` and queues nothing.
+     */
+    post: operations['syncAllSources']
     delete?: never
     options?: never
     head?: never
@@ -610,8 +668,11 @@ export interface components {
       code:
         | 'knowledgeBaseNotFound'
         | 'jobNotFound'
-        | 'importNotFound'
         | 'sourceNotFound'
+        | 'documentNotFound'
+        | 'syncNotFound'
+        | 'uploadNotFound'
+        | 'chunkNotFound'
         | 'entryNotFound'
         | 'entryDocumentInvalid'
         | 'revisionNotFound'
@@ -620,22 +681,25 @@ export interface components {
         | 'buildDecisionsNotFound'
         | 'issueNotFound'
         | 'instructionNotFound'
-        | 'webSourceRootNotFound'
         | 'routeNotFound'
         | 'buildInFlight'
-        | 'importInvalidState'
-        | 'sourceNotDistilled'
         | 'webSourceRootConflict'
         | 'webSourceRootLimitExceeded'
+        | 'syncInProgress'
+        | 'syncNotHeld'
+        | 'sourceDeletionsUnconfirmed'
+        | 'documentNotConverted'
+        | 'documentNotStored'
+        | 'documentInvalidState'
         | 'uploadTooLarge'
         | 'payloadTooLarge'
         | 'validationError'
         | 'unsupportedMediaType'
+        | 'sourceTypeMismatch'
         | 'issueNotResolvable'
         | 'issueNotAutoApplicable'
         | 'issueDocumentInvalid'
         | 'issueTransitionConflict'
-        | 'refreshControlsUnavailable'
         | 'datasetSourceTooLarge'
         | 'datasetSourceEmpty'
         | 'datasetAlreadyBound'
@@ -823,7 +887,7 @@ export interface components {
        * @enum {string}
        */
       _type: 'sanity.context.entry'
-      /** @description The version of the document shape. Currently `2`. */
+      /** @description The version of the document shape. Currently `3`. */
       schemaVersion: number
       /** @description The ID of the build that last wrote this entry's content. An unchanged entry keeps its earlier value across builds. */
       revisionId: string
@@ -845,33 +909,35 @@ export interface components {
       body?: string
       /** @description The H2 and H3 heading titles in `body`. Absent when the entry has no `body`. */
       topicHeadings?: string[]
-      /** @description The passages that back this entry, one item per quoted passage, in the order the body first uses them. A source cited twice with different quotes has two items. Empty when the entry has no `body` or the body cites nothing. */
+      /** @description The passages that back this entry, one item per quoted passage, in the order the body first uses them. A document cited twice with different quotes has two items. Empty when the entry has no `body` or the body cites nothing. */
       citations: {
         /** @description Stable ID of this citation: 10 lowercase letters and digits. The entry body points to it with a `[^key]` marker. */
         _key: string
         /** @enum {string} */
         _type: 'sanity.context.citation'
-        /** @description ID of the source document the quote comes from. */
-        sourceId: string
-        /** @description The source's name when the entry was written. */
+        /** @description ID of the document the quote comes from. Read it with `GET .../documents/{documentId}/content`. */
+        documentId: string
+        /** @description ID of the chunk of the document that holds the quote's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+        chunkId: string
+        /** @description The document's name when the entry was written. */
         title: string
-        /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+        /** @description Where the document lives on the web. Absent for uploaded files and datasets. */
         url?: string
-        /** @description The passage from the source that backs the claims, copied word for word. */
+        /** @description The passage from the document that backs the claims, copied word for word. */
         quote: string
-        /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+        /** @description Up to 32 characters of document text just before the quote, to tell repeats apart. */
         prefix: string
-        /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+        /** @description Up to 32 characters of document text just after the quote, to tell repeats apart. */
         suffix: string
-        /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
+        /** @description First line of the quote in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. A hint: the quote is the stable locator. */
         lineStart: number
         /** @description Last line of the quote, inclusive. */
         lineEnd: number
         /** @description The statements in the entry body that this passage backs. */
         claims: string[]
       }[]
-      /** @description The IDs of every source attached to this entry, cited or not, sorted. Every citation `sourceId` is in this list. */
-      sourceIds: string[]
+      /** @description The IDs of every document the entry was built from, cited or not, sorted. Every citation `documentId` is in this list. */
+      documentIds: string[]
       /**
        * @description The entry state. Builds currently write only two values: `virtual` for an entry that groups child entries and has no `body`, and `filled` for an entry with a written `body`. The other values are reserved.
        * @enum {string}
@@ -905,25 +971,25 @@ export interface components {
            */
           _type: 'sanity.context.instruction'
           /**
-           * @description The version of the document shape. Currently `1`. An instruction without the current version doesn't appear in lists and doesn't affect builds.
+           * @description The version of the document shape. Currently `2`. An instruction without the current version doesn't appear in lists and doesn't affect builds.
            * @enum {number}
            */
-          schemaVersion: 1
+          schemaVersion: 2
           /** @description The instruction, in plain language. Builds follow it over the raw sources. */
           statement: string
-          /** @description The sources the instruction is tied to. The instruction affects the entries that cite these sources. The API always sets at least one source. When `null`, the instruction isn't tied to any source and doesn't affect builds. */
-          scopeSources:
+          /** @description The documents the instruction is tied to. The instruction affects the entries built from these documents. The API always sets at least one document. When `null`, the instruction isn't tied to any document and doesn't affect builds. */
+          scopeDocuments:
             | {
-                /** @description A unique key for this item in the array. It matches `sourceId`. */
+                /** @description A unique key for this item in the array. It matches `documentId`. */
                 _key: string
-                /** @description The ID of the source the instruction is tied to. */
-                sourceId: string
-                /** @description The source's content hash when the instruction was last checked against it. When the source content changes, the instruction is checked again. */
+                /** @description The ID of the document the instruction is tied to. */
+                documentId: string
+                /** @description The document's content hash when the instruction was last checked against it. When the document's content changes, the instruction is checked again. */
                 contentHash: string
               }[]
             | null
           /**
-           * @description The instruction state. `active` instructions apply to every build. `archived` instructions don't apply: a source changed and no longer supports the instruction. Editing an archived instruction makes it `active` again.
+           * @description The instruction state. `active` instructions apply to every build. `archived` instructions don't apply: a document changed and no longer supports the instruction. Editing an archived instruction makes it `active` again.
            * @enum {string}
            */
           status: 'active' | 'archived'
@@ -962,25 +1028,25 @@ export interface components {
            */
           _type: 'sanity.context.instruction'
           /**
-           * @description The version of the document shape. Currently `1`. An instruction without the current version doesn't appear in lists and doesn't affect builds.
+           * @description The version of the document shape. Currently `2`. An instruction without the current version doesn't appear in lists and doesn't affect builds.
            * @enum {number}
            */
-          schemaVersion: 1
+          schemaVersion: 2
           /** @description The instruction, in plain language. Builds follow it over the raw sources. */
           statement: string
-          /** @description The sources the instruction is tied to. The instruction affects the entries that cite these sources. The API always sets at least one source. When `null`, the instruction isn't tied to any source and doesn't affect builds. */
-          scopeSources:
+          /** @description The documents the instruction is tied to. The instruction affects the entries built from these documents. The API always sets at least one document. When `null`, the instruction isn't tied to any document and doesn't affect builds. */
+          scopeDocuments:
             | {
-                /** @description A unique key for this item in the array. It matches `sourceId`. */
+                /** @description A unique key for this item in the array. It matches `documentId`. */
                 _key: string
-                /** @description The ID of the source the instruction is tied to. */
-                sourceId: string
-                /** @description The source's content hash when the instruction was last checked against it. When the source content changes, the instruction is checked again. */
+                /** @description The ID of the document the instruction is tied to. */
+                documentId: string
+                /** @description The document's content hash when the instruction was last checked against it. When the document's content changes, the instruction is checked again. */
                 contentHash: string
               }[]
             | null
           /**
-           * @description The instruction state. `active` instructions apply to every build. `archived` instructions don't apply: a source changed and no longer supports the instruction. Editing an archived instruction makes it `active` again.
+           * @description The instruction state. `active` instructions apply to every build. `archived` instructions don't apply: a document changed and no longer supports the instruction. Editing an archived instruction makes it `active` again.
            * @enum {string}
            */
           status: 'active' | 'archived'
@@ -1024,10 +1090,10 @@ export interface components {
            */
           _type: 'sanity.context.issue'
           /**
-           * @description The version of the document shape. Currently `1`.
+           * @description The version of the document shape. Currently `2`.
            * @enum {number}
            */
-          schemaVersion: 1
+          schemaVersion: 2
           /** @description What an issue found. The shape depends on `kind`. */
           content:
             | {
@@ -1049,6 +1115,8 @@ export interface components {
                 kind: 'conflict'
                 /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description One sentence that explains the question, when it needs one. */
+                context?: string
                 /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
                   /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -1057,13 +1125,17 @@ export interface components {
                   value?: string
                   /** @description Paths of the entries that state this position. */
                   entryPaths?: string[]
-                  /** @description IDs of the sources that directly back this position. */
-                  sourceIds?: string[]
-                  /** @description Where in a source this position was read. */
+                  /** @description IDs of the documents that directly back this position. */
+                  documentIds?: string[]
+                  /** @description The documents that state this value, by the names you know them by. */
+                  where?: string
+                  /** @description Where in a document this position was read. */
                   span?: {
-                    /** @description ID of the source the position was read from. */
-                    sourceId: string
-                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                    /** @description ID of the document the position was read from. */
+                    documentId: string
+                    /** @description ID of the chunk of the document that holds the range's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+                    chunkId: string
+                    /** @description First line of the range in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. */
                     lineStart: number
                     /** @description Last line of the range, inclusive. */
                     lineEnd: number
@@ -1090,18 +1162,12 @@ export interface components {
                 /** @description What to do to fix the issue. */
                 suggestedFix: string
                 /**
-                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: the topic of an entry no longer applies, so the entry should go.
                  * @enum {string}
                  */
-                kind:
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
-                citedSourceIds?: string[]
+                kind: 'gap' | 'update_required' | 'add_entry' | 'remove_entry'
+                /** @description IDs of the documents that led to the issue. For `add_entry`, the documents the new entry would cite. */
+                citedDocumentIds?: string[]
                 /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
                 /** @description Paths of the entries the issue involves, when it spans more than one entry. */
@@ -1109,7 +1175,7 @@ export interface components {
               }
           /** @description An identity for the finding that doesn't depend on its wording. It determines the issue's `_id`, so a reworded finding updates the same issue. */
           fingerprint: string
-          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a source leaves an entry without sources. */
+          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a document leaves an entry without documents. */
           revisionId: string | null
           /**
            * @description The issue status. `open` means it is waiting for triage.
@@ -1155,10 +1221,10 @@ export interface components {
            */
           _type: 'sanity.context.issue'
           /**
-           * @description The version of the document shape. Currently `1`.
+           * @description The version of the document shape. Currently `2`.
            * @enum {number}
            */
-          schemaVersion: 1
+          schemaVersion: 2
           /** @description What an issue found. The shape depends on `kind`. */
           content:
             | {
@@ -1180,6 +1246,8 @@ export interface components {
                 kind: 'conflict'
                 /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description One sentence that explains the question, when it needs one. */
+                context?: string
                 /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
                   /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -1188,13 +1256,17 @@ export interface components {
                   value?: string
                   /** @description Paths of the entries that state this position. */
                   entryPaths?: string[]
-                  /** @description IDs of the sources that directly back this position. */
-                  sourceIds?: string[]
-                  /** @description Where in a source this position was read. */
+                  /** @description IDs of the documents that directly back this position. */
+                  documentIds?: string[]
+                  /** @description The documents that state this value, by the names you know them by. */
+                  where?: string
+                  /** @description Where in a document this position was read. */
                   span?: {
-                    /** @description ID of the source the position was read from. */
-                    sourceId: string
-                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                    /** @description ID of the document the position was read from. */
+                    documentId: string
+                    /** @description ID of the chunk of the document that holds the range's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+                    chunkId: string
+                    /** @description First line of the range in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. */
                     lineStart: number
                     /** @description Last line of the range, inclusive. */
                     lineEnd: number
@@ -1221,18 +1293,12 @@ export interface components {
                 /** @description What to do to fix the issue. */
                 suggestedFix: string
                 /**
-                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: the topic of an entry no longer applies, so the entry should go.
                  * @enum {string}
                  */
-                kind:
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
-                citedSourceIds?: string[]
+                kind: 'gap' | 'update_required' | 'add_entry' | 'remove_entry'
+                /** @description IDs of the documents that led to the issue. For `add_entry`, the documents the new entry would cite. */
+                citedDocumentIds?: string[]
                 /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
                 /** @description Paths of the entries the issue involves, when it spans more than one entry. */
@@ -1240,7 +1306,7 @@ export interface components {
               }
           /** @description An identity for the finding that doesn't depend on its wording. It determines the issue's `_id`, so a reworded finding updates the same issue. */
           fingerprint: string
-          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a source leaves an entry without sources. */
+          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a document leaves an entry without documents. */
           revisionId: string | null
           /**
            * @description The issue status. `accepted` means the issue was resolved or its fix applied.
@@ -1288,10 +1354,10 @@ export interface components {
            */
           _type: 'sanity.context.issue'
           /**
-           * @description The version of the document shape. Currently `1`.
+           * @description The version of the document shape. Currently `2`.
            * @enum {number}
            */
-          schemaVersion: 1
+          schemaVersion: 2
           /** @description What an issue found. The shape depends on `kind`. */
           content:
             | {
@@ -1313,6 +1379,8 @@ export interface components {
                 kind: 'conflict'
                 /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description One sentence that explains the question, when it needs one. */
+                context?: string
                 /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
                   /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -1321,13 +1389,17 @@ export interface components {
                   value?: string
                   /** @description Paths of the entries that state this position. */
                   entryPaths?: string[]
-                  /** @description IDs of the sources that directly back this position. */
-                  sourceIds?: string[]
-                  /** @description Where in a source this position was read. */
+                  /** @description IDs of the documents that directly back this position. */
+                  documentIds?: string[]
+                  /** @description The documents that state this value, by the names you know them by. */
+                  where?: string
+                  /** @description Where in a document this position was read. */
                   span?: {
-                    /** @description ID of the source the position was read from. */
-                    sourceId: string
-                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                    /** @description ID of the document the position was read from. */
+                    documentId: string
+                    /** @description ID of the chunk of the document that holds the range's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+                    chunkId: string
+                    /** @description First line of the range in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. */
                     lineStart: number
                     /** @description Last line of the range, inclusive. */
                     lineEnd: number
@@ -1354,18 +1426,12 @@ export interface components {
                 /** @description What to do to fix the issue. */
                 suggestedFix: string
                 /**
-                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: the topic of an entry no longer applies, so the entry should go.
                  * @enum {string}
                  */
-                kind:
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
-                citedSourceIds?: string[]
+                kind: 'gap' | 'update_required' | 'add_entry' | 'remove_entry'
+                /** @description IDs of the documents that led to the issue. For `add_entry`, the documents the new entry would cite. */
+                citedDocumentIds?: string[]
                 /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
                 /** @description Paths of the entries the issue involves, when it spans more than one entry. */
@@ -1373,7 +1439,7 @@ export interface components {
               }
           /** @description An identity for the finding that doesn't depend on its wording. It determines the issue's `_id`, so a reworded finding updates the same issue. */
           fingerprint: string
-          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a source leaves an entry without sources. */
+          /** @description The ID of the build that filed this issue. `null` when the issue was filed outside a build, such as when removing a document leaves an entry without documents. */
           revisionId: string | null
           /**
            * @description The issue status. `rejected` means the issue was dismissed. Dismissal is final.
@@ -1610,18 +1676,6 @@ export interface operations {
                 /** @description A readable explanation that you can show to users. */
                 message: string
               } | null
-              /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
-              refreshEnabled: boolean
-              /**
-               * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
-               * @enum {string}
-               */
-              refreshFrequency: 'weekly' | 'monthly'
-              /**
-               * Format: date-time
-               * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
-               */
-              refreshNextRunAt: string | null
               /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
               refreshInFlight: boolean
               /** @description The number of open issues waiting for review. Always `0` before the first build. */
@@ -1807,18 +1861,6 @@ export interface operations {
               /** @description A readable explanation that you can show to users. */
               message: string
             } | null
-            /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
-            refreshEnabled: boolean
-            /**
-             * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
-             * @enum {string}
-             */
-            refreshFrequency: 'weekly' | 'monthly'
-            /**
-             * Format: date-time
-             * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
-             */
-            refreshNextRunAt: string | null
             /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
             refreshInFlight: boolean
             /** @description The number of open issues waiting for review. Always `0` before the first build. */
@@ -1989,18 +2031,6 @@ export interface operations {
               /** @description A readable explanation that you can show to users. */
               message: string
             } | null
-            /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
-            refreshEnabled: boolean
-            /**
-             * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
-             * @enum {string}
-             */
-            refreshFrequency: 'weekly' | 'monthly'
-            /**
-             * Format: date-time
-             * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
-             */
-            refreshNextRunAt: string | null
             /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
             refreshInFlight: boolean
             /** @description The number of open issues waiting for review. Always `0` before the first build. */
@@ -2091,13 +2121,6 @@ export interface operations {
           title?: string
           /** @description The knowledge base's new description. */
           description?: string
-          /** @description Whether scheduled refresh is on. Turning it off stops only scheduled refreshes, so you can still start a refresh yourself. Turning it on requires a plan that includes scheduled refresh. Requires a website or dataset source. */
-          refreshEnabled?: boolean
-          /**
-           * @description How often scheduled refresh runs: `weekly` or `monthly`. Requires a website or dataset source and a plan that includes scheduled refresh.
-           * @enum {string}
-           */
-          refreshFrequency?: 'weekly' | 'monthly'
         }
       }
     }
@@ -2221,18 +2244,6 @@ export interface operations {
               /** @description A readable explanation that you can show to users. */
               message: string
             } | null
-            /** @description Whether scheduled refresh is on. Only applies to knowledge bases with a website or dataset source. */
-            refreshEnabled: boolean
-            /**
-             * @description How often scheduled refresh runs: `weekly` (the default) or `monthly`.
-             * @enum {string}
-             */
-            refreshFrequency: 'weekly' | 'monthly'
-            /**
-             * Format: date-time
-             * @description When the next scheduled refresh runs. `null` when scheduled refresh is off or not scheduled yet. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `null`.
-             */
-            refreshNextRunAt: string | null
             /** @description Whether a refresh is running now. While it's `true`, a new refresh request doesn't start another one. Only `GET .../knowledge-bases/{knowledgeBaseId}` computes it, so list responses return `false`. */
             refreshInFlight: boolean
             /** @description The number of open issues waiting for review. Always `0` before the first build. */
@@ -2347,6 +2358,413 @@ export interface operations {
       }
     }
   }
+  listDocuments: {
+    parameters: {
+      query?: {
+        /** @description The `nextCursor` value from the previous page. Omit it to get the first page. */
+        cursor?: string
+        /** @description The maximum number of items to return. */
+        limit?: number
+        /** @description Return only the documents of this source. */
+        source?: string
+        /** @description Return only documents in this state. Without it, `deleted` documents are left out. */
+        state?: 'active' | 'missing' | 'deleted'
+        /** @description Comma-separated IDs of the documents to return, up to 200, in any state. Use it to look up the documents entry citations point at. */
+        ids?: string
+      }
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A page of documents. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The items on this page. */
+            data: {
+              /**
+               * Format: uuid
+               * @description The document's ID. Entry citations point at it.
+               */
+              id: string
+              /**
+               * Format: uuid
+               * @description The ID of the source the document comes from.
+               */
+              sourceId: string
+              /**
+               * @description The type of the source the document comes from.
+               * @enum {string}
+               */
+              sourceType: 'web' | 'sanity-dataset' | 'files'
+              /** @description The document's identity in its source: the page URL, the dataset document `_id`, or the file's path in the upload. */
+              externalId: string
+              /** @description The document's title, or its `externalId` when it has none. */
+              title: string
+              /** @description Where the document lives on the web. `null` for files and dataset documents. */
+              url: string | null
+              /**
+               * @description The document's state. `active`: in the knowledge base. `missing`: several crawls in a row didn't find the page, but it stays in the knowledge base until you delete or keep it. `deleted`: removed from the source, or by you.
+               * @enum {string}
+               */
+              state: 'active' | 'missing' | 'deleted'
+              /** @description The media type of the document as read. `null` before its content was read. */
+              mime: string | null
+              /** @description The size of the document as read, in bytes. `null` before its content was read. */
+              sizeBytes: number | null
+              /**
+               * @description How far the current content got through conversion to markdown, the text builds read and cite. `pending`: not converted yet. `converted`: ready. `unsupported`: the file type has no converter. `oversized`: too large to convert. `failed`: conversion failed, see `conversionError`.
+               * @enum {string}
+               */
+              conversion: 'pending' | 'converted' | 'unsupported' | 'oversized' | 'failed'
+              /** @description Why conversion failed. `null` unless `conversion` is `failed` or `oversized`. */
+              conversionError: string | null
+              /**
+               * Format: date-time
+               * @description When a sync last found the document in its source.
+               */
+              lastSeenAt: string
+              /**
+               * Format: date-time
+               * @description When the document was first read.
+               */
+              createdAt: string
+              /**
+               * Format: date-time
+               * @description When the document last changed.
+               */
+              updatedAt: string
+            }[]
+            /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
+            nextCursor: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getDocument: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The document's ID. */
+        documentId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A document with the chunks of its markdown. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The document's ID. Entry citations point at it.
+             */
+            id: string
+            /**
+             * Format: uuid
+             * @description The ID of the source the document comes from.
+             */
+            sourceId: string
+            /**
+             * @description The type of the source the document comes from.
+             * @enum {string}
+             */
+            sourceType: 'web' | 'sanity-dataset' | 'files'
+            /** @description The document's identity in its source: the page URL, the dataset document `_id`, or the file's path in the upload. */
+            externalId: string
+            /** @description The document's title, or its `externalId` when it has none. */
+            title: string
+            /** @description Where the document lives on the web. `null` for files and dataset documents. */
+            url: string | null
+            /**
+             * @description The document's state. `active`: in the knowledge base. `missing`: several crawls in a row didn't find the page, but it stays in the knowledge base until you delete or keep it. `deleted`: removed from the source, or by you.
+             * @enum {string}
+             */
+            state: 'active' | 'missing' | 'deleted'
+            /** @description The media type of the document as read. `null` before its content was read. */
+            mime: string | null
+            /** @description The size of the document as read, in bytes. `null` before its content was read. */
+            sizeBytes: number | null
+            /**
+             * @description How far the current content got through conversion to markdown, the text builds read and cite. `pending`: not converted yet. `converted`: ready. `unsupported`: the file type has no converter. `oversized`: too large to convert. `failed`: conversion failed, see `conversionError`.
+             * @enum {string}
+             */
+            conversion: 'pending' | 'converted' | 'unsupported' | 'oversized' | 'failed'
+            /** @description Why conversion failed. `null` unless `conversion` is `failed` or `oversized`. */
+            conversionError: string | null
+            /**
+             * Format: date-time
+             * @description When a sync last found the document in its source.
+             */
+            lastSeenAt: string
+            /**
+             * Format: date-time
+             * @description When the document was first read.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the document last changed.
+             */
+            updatedAt: string
+            /** @description The chunks of the document's current markdown, in order. Empty until `conversion` is `converted`. */
+            chunks: {
+              /**
+               * Format: uuid
+               * @description The chunk's ID. Entry citations point at it.
+               */
+              id: string
+              /** @description The headings above the chunk, outermost first. Empty before the first heading. */
+              headingPath: string[]
+              /** @description The chunk's first line in the markdown, from 1. */
+              lineStart: number
+              /** @description The chunk's last line in the markdown, inclusive. */
+              lineEnd: number
+            }[]
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  deleteDocument: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The document's ID. */
+        documentId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The document was deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': null
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  updateDocument: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The document's ID. */
+        documentId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description The changes to make to a document. */
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * @description Set to `active` to keep a `missing` page in the knowledge base. The count of crawls that missed it starts again.
+           * @enum {string}
+           */
+          state: 'active'
+        }
+      }
+    }
+    responses: {
+      /** @description One page, dataset document or file that a source yields. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The document's ID. Entry citations point at it.
+             */
+            id: string
+            /**
+             * Format: uuid
+             * @description The ID of the source the document comes from.
+             */
+            sourceId: string
+            /**
+             * @description The type of the source the document comes from.
+             * @enum {string}
+             */
+            sourceType: 'web' | 'sanity-dataset' | 'files'
+            /** @description The document's identity in its source: the page URL, the dataset document `_id`, or the file's path in the upload. */
+            externalId: string
+            /** @description The document's title, or its `externalId` when it has none. */
+            title: string
+            /** @description Where the document lives on the web. `null` for files and dataset documents. */
+            url: string | null
+            /**
+             * @description The document's state. `active`: in the knowledge base. `missing`: several crawls in a row didn't find the page, but it stays in the knowledge base until you delete or keep it. `deleted`: removed from the source, or by you.
+             * @enum {string}
+             */
+            state: 'active' | 'missing' | 'deleted'
+            /** @description The media type of the document as read. `null` before its content was read. */
+            mime: string | null
+            /** @description The size of the document as read, in bytes. `null` before its content was read. */
+            sizeBytes: number | null
+            /**
+             * @description How far the current content got through conversion to markdown, the text builds read and cite. `pending`: not converted yet. `converted`: ready. `unsupported`: the file type has no converter. `oversized`: too large to convert. `failed`: conversion failed, see `conversionError`.
+             * @enum {string}
+             */
+            conversion: 'pending' | 'converted' | 'unsupported' | 'oversized' | 'failed'
+            /** @description Why conversion failed. `null` unless `conversion` is `failed` or `oversized`. */
+            conversionError: string | null
+            /**
+             * Format: date-time
+             * @description When a sync last found the document in its source.
+             */
+            lastSeenAt: string
+            /**
+             * Format: date-time
+             * @description When the document was first read.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the document last changed.
+             */
+            updatedAt: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getDocumentContent: {
+    parameters: {
+      query?: {
+        /** @description Response format. `json` (default) returns the markdown with its line numbers. `markdown` and `plain` return the markdown alone, ready to pass to a model. `raw` returns the bytes the source gave, before conversion: the uploaded file, the crawled page, the dataset document as JSON. */
+        format?: 'json' | 'markdown' | 'plain' | 'raw'
+        /** @description Return only this chunk's lines. Citations name the chunk they quote. */
+        chunk?: string
+        /** @description Return only these lines, from 1 and inclusive: `10-20`, or `10` for line 10 to the end. A range past the end returns up to the last line. */
+        lines?: string
+      }
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The document's ID. */
+        documentId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A document's markdown, or a range of its lines. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The document's ID.
+             */
+            documentId: string
+            /**
+             * Format: uuid
+             * @description The chunk the content was limited to. `null` when no `chunk` was requested.
+             */
+            chunkId: string | null
+            /** @description The document's markdown, or the requested lines of it. */
+            content: string
+            /** @description The number of lines in the whole markdown. */
+            totalLines: number
+            /** @description The lines returned, from 1 and inclusive. Shorter than requested when the range runs past the end. Both are `0` when no lines are returned. */
+            slice: {
+              /** @description The first line returned. */
+              start: number
+              /** @description The last line returned. */
+              end: number
+            }
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
   rebuildEntry: {
     parameters: {
       query?: never
@@ -2395,533 +2813,6 @@ export interface operations {
       }
     }
   }
-  listImports: {
-    parameters: {
-      query?: {
-        /** @description The `nextCursor` value from the previous page. Omit it to get the first page. */
-        cursor?: string
-        /** @description The maximum number of items to return. */
-        limit?: number
-      }
-      header?: never
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description A page of imports. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description The items on this page. */
-            data: {
-              /**
-               * Format: uuid
-               * @description The import's ID.
-               */
-              id: string
-              /**
-               * Format: uuid
-               * @description The `id` of the knowledge base that the import belongs to.
-               */
-              knowledgeBaseId: string
-              /** @description A label for the import: the file name for an upload, the root URL for a crawl, a label for a dataset query, or the title for inline text. */
-              name: string | null
-              /** @description The size of the uploaded file or inline text, in bytes. `null` for crawl and dataset imports, and until a file upload completes. */
-              sizeBytes: number | null
-              /**
-               * @description The import's status. `uploading`: waiting for the file upload to complete. `processing`: content is being fetched and processed. `complete`: processing finished. `failed`: the import, or at least one of its sources, couldn't be processed. See `statusDetail` and `error` for details.
-               * @enum {string}
-               */
-              status: 'uploading' | 'processing' | 'complete' | 'failed'
-              /**
-               * @description The kind of sources the import produces. `file`: uploads and inline text. `web`: crawls. `dataset`: Sanity datasets.
-               * @enum {string}
-               */
-              sourceKind: 'web' | 'file' | 'dataset'
-              /**
-               * Format: date-time
-               * @description When the import's website or dataset was last checked, even if nothing changed. `null` for file and text imports, and before the first check.
-               */
-              lastCheckedAt: string | null
-              /** @description The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources. */
-              sourceCount: number
-              /** @description The number of sources expected to be distilled, including parts split from large sources. Excludes skipped sources. */
-              totalDistillableCount: number
-              /** @description The number of sources distilled so far. Compare it with `totalDistillableCount` to show progress. */
-              distilledCount: number
-              /** @description The number of sources skipped because their file type isn't supported, such as images. */
-              unsupportedCount: number
-              /** @description A note about the import's outcome, written to show to users. It explains a failure or a partial result, such as a crawl that stopped at the source limit. `null` when there's nothing to note. Prefer it over `error`. */
-              statusDetail: string | null
-              /** @description When `status` is `failed`, a readable reason from one failed source. `null` for any other status, or when no single source failed. */
-              error: string | null
-              /** @description The options the next crawl of this website uses. An empty object means the defaults. `null` for other import types, and for a crawl whose root URL was removed. */
-              crawlOptions: {
-                /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
-                includePaths?: string[]
-                /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
-                excludePaths?: string[]
-                /** @description How many levels deep the crawl goes from the root URL. */
-                maxDepth?: number
-                /** @description Whether to crawl only the pages listed in the site's sitemap. */
-                sitemapOnly?: boolean
-                /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
-                ignoreQueryParameters?: boolean
-                /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
-                pageLimit?: number
-              } | null
-              /** @description The Sanity project, dataset, and full query a dataset import reads from. `null` for other import types. */
-              datasetSource: {
-                /** @description The ID of the Sanity project the documents come from. */
-                sanityProjectId: string
-                /** @description The dataset the documents come from. */
-                sanityDatasetId: string
-                /** @description The full GROQ query that selects the documents, exactly as saved. */
-                query: string
-              } | null
-              /** @description Who added the import. `null` if unknown. */
-              createdBy: {
-                /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
-                id: string | null
-                /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
-                displayName: string | null
-              } | null
-              /**
-               * Format: date-time
-               * @description When the import was created.
-               */
-              createdAt: string
-              /**
-               * Format: date-time
-               * @description When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.
-               */
-              completedAt: string | null
-            }[]
-            /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
-            nextCursor: string | null
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
-  createImport: {
-    parameters: {
-      query?: never
-      header?: {
-        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
-        'Idempotency-Key'?: string
-      }
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    /** @description Content to add to a knowledge base. The `type` field sets the kind of import. */
-    requestBody: {
-      content: {
-        'application/json':
-          | {
-              /**
-               * @description The import type. `text` imports inline content.
-               * @enum {string}
-               */
-              type: 'text'
-              /** @description The import's title, shown in the list of imports. */
-              title: string
-              /** @description The text or markdown to import, up to 1,000,000 bytes of UTF-8. */
-              content: string
-              /**
-               * @description The format of `content`: `text/markdown` (the default) or `text/plain`.
-               * @default text/markdown
-               * @enum {string}
-               */
-              contentType?: 'text/markdown' | 'text/plain'
-            }
-          | {
-              /**
-               * Format: uri
-               * @description The URL to start crawling from. It must be a public `http` or `https` URL.
-               */
-              url: string
-              /** @description Options for the crawl. Options you omit use the defaults. */
-              options?: {
-                /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
-                includePaths?: string[]
-                /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
-                excludePaths?: string[]
-                /** @description How many levels deep the crawl goes from the root URL. */
-                maxDepth?: number
-                /** @description Whether to crawl only the pages listed in the site's sitemap. */
-                sitemapOnly?: boolean
-                /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
-                ignoreQueryParameters?: boolean
-                /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
-                pageLimit?: number
-              }
-              /**
-               * @description The import type. `crawl` imports a website.
-               * @enum {string}
-               */
-              type: 'crawl'
-            }
-          | {
-              /** @description The ID of the Sanity project to read documents from. You need full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. */
-              sanityProjectId: string
-              /** @description The dataset to read documents from, in the project set by `sanityProjectId`. */
-              sanityDatasetId: string
-              /** @description A GROQ query that selects the documents to import, with an optional projection. It can match up to 5,000 documents. Each refresh runs the query again. */
-              query: string
-              /**
-               * @description The import type. `dataset` imports documents from a Sanity dataset.
-               * @enum {string}
-               */
-              type: 'dataset'
-            }
-      }
-    }
-    responses: {
-      /** @description A queued job that you can poll for progress. */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
-            jobId: string
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
-  startUpload: {
-    parameters: {
-      query?: never
-      header?: {
-        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
-        'Idempotency-Key'?: string
-      }
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @description The file's name. */
-          filename: string
-          /** @description The file's MIME type. If you set it, the `PUT` upload must send the same `Content-Type` header. */
-          contentType?: string
-        }
-      }
-    }
-    responses: {
-      /** @description The new file import and the URL to upload the file to. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /**
-             * Format: uuid
-             * @description The ID of the new import. Use it to complete the upload and track the import.
-             */
-            importId: string
-            /**
-             * Format: uri
-             * @description A signed URL to send the file to in a single `PUT` request. It expires after one hour.
-             */
-            uploadUrl: string
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
-  completeUpload: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The import's ID. */
-        importId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description A queued job that you can poll for progress. */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
-            jobId: string
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
-  getImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The import's ID. */
-        importId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Content added to a knowledge base: a file upload, website crawl, Sanity dataset, or inline text. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /**
-             * Format: uuid
-             * @description The import's ID.
-             */
-            id: string
-            /**
-             * Format: uuid
-             * @description The `id` of the knowledge base that the import belongs to.
-             */
-            knowledgeBaseId: string
-            /** @description A label for the import: the file name for an upload, the root URL for a crawl, a label for a dataset query, or the title for inline text. */
-            name: string | null
-            /** @description The size of the uploaded file or inline text, in bytes. `null` for crawl and dataset imports, and until a file upload completes. */
-            sizeBytes: number | null
-            /**
-             * @description The import's status. `uploading`: waiting for the file upload to complete. `processing`: content is being fetched and processed. `complete`: processing finished. `failed`: the import, or at least one of its sources, couldn't be processed. See `statusDetail` and `error` for details.
-             * @enum {string}
-             */
-            status: 'uploading' | 'processing' | 'complete' | 'failed'
-            /**
-             * @description The kind of sources the import produces. `file`: uploads and inline text. `web`: crawls. `dataset`: Sanity datasets.
-             * @enum {string}
-             */
-            sourceKind: 'web' | 'file' | 'dataset'
-            /**
-             * Format: date-time
-             * @description When the import's website or dataset was last checked, even if nothing changed. `null` for file and text imports, and before the first check.
-             */
-            lastCheckedAt: string | null
-            /** @description The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources. */
-            sourceCount: number
-            /** @description The number of sources expected to be distilled, including parts split from large sources. Excludes skipped sources. */
-            totalDistillableCount: number
-            /** @description The number of sources distilled so far. Compare it with `totalDistillableCount` to show progress. */
-            distilledCount: number
-            /** @description The number of sources skipped because their file type isn't supported, such as images. */
-            unsupportedCount: number
-            /** @description A note about the import's outcome, written to show to users. It explains a failure or a partial result, such as a crawl that stopped at the source limit. `null` when there's nothing to note. Prefer it over `error`. */
-            statusDetail: string | null
-            /** @description When `status` is `failed`, a readable reason from one failed source. `null` for any other status, or when no single source failed. */
-            error: string | null
-            /** @description The options the next crawl of this website uses. An empty object means the defaults. `null` for other import types, and for a crawl whose root URL was removed. */
-            crawlOptions: {
-              /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
-              includePaths?: string[]
-              /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
-              excludePaths?: string[]
-              /** @description How many levels deep the crawl goes from the root URL. */
-              maxDepth?: number
-              /** @description Whether to crawl only the pages listed in the site's sitemap. */
-              sitemapOnly?: boolean
-              /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
-              ignoreQueryParameters?: boolean
-              /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
-              pageLimit?: number
-            } | null
-            /** @description The Sanity project, dataset, and full query a dataset import reads from. `null` for other import types. */
-            datasetSource: {
-              /** @description The ID of the Sanity project the documents come from. */
-              sanityProjectId: string
-              /** @description The dataset the documents come from. */
-              sanityDatasetId: string
-              /** @description The full GROQ query that selects the documents, exactly as saved. */
-              query: string
-            } | null
-            /** @description Who added the import. `null` if unknown. */
-            createdBy: {
-              /** @description The Sanity user ID, or `sanity-system` when Sanity Context made the change. `null` if unknown. */
-              id: string | null
-              /** @description The user's name when the action happened. `null` if unknown. For the current name, look up the user by `id`. */
-              displayName: string | null
-            } | null
-            /**
-             * Format: date-time
-             * @description When the import was created.
-             */
-            createdAt: string
-            /**
-             * Format: date-time
-             * @description When processing finished, whether it succeeded or failed. `null` while the import is uploading or processing.
-             */
-            completedAt: string | null
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
-  deleteImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The import's ID. */
-        importId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description The import and its sources were deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': null
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
-  downloadImport: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The import's ID. */
-        importId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description A short-lived URL that downloads the import's original content. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /**
-             * Format: uri
-             * @description A signed URL that downloads the import's original content as a file.
-             */
-            url: string
-            /**
-             * Format: date-time
-             * @description When `url` expires, 10 minutes after the request.
-             */
-            expiresAt: string
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
   createInstruction: {
     parameters: {
       query?: never
@@ -2940,8 +2831,8 @@ export interface operations {
         'application/json': {
           /** @description The instruction in plain language. Builds follow it over what the sources say. */
           statement: string
-          /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
-          scopeSourceIds: string[]
+          /** @description IDs of the documents the instruction applies to. Builds apply it when they write entries built from these documents. IDs of documents that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
+          scopeDocumentIds: string[]
           /** @description Paths of entries to rebuild under the new instruction right away. The response returns the rebuild job ID in `rebuildJobId`. */
           rebuildPaths?: string[]
           /** @description Whether you already checked the instruction for entries that contradict it. When `true`, the background check that files issues for those entries is skipped. It still runs if the rebuild you requested in `rebuildPaths` does not start. */
@@ -2969,14 +2860,14 @@ export interface operations {
                */
               origin: 'conflict' | 'human'
               /**
-               * @description Whether builds apply the instruction. `active`: builds apply it. `archived`: a refresh found that its sources no longer support it, so builds stop applying it. To reactivate an archived instruction, update it.
+               * @description Whether builds apply the instruction. `active`: builds apply it. `archived`: a refresh found that its documents no longer support it, so builds stop applying it. To reactivate an archived instruction, update it.
                * @enum {string}
                */
               status: 'active' | 'archived'
               /** @description The instruction in plain language. Builds follow it over what the sources say. */
               statement: string
-              /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. An empty array means all of its sources were removed, so it applies to no entries. */
-              scopeSourceIds: string[]
+              /** @description IDs of the documents the instruction applies to. Builds apply it when they write entries built from these documents. An empty array means all of its documents were removed, so it applies to no entries. */
+              scopeDocumentIds: string[]
               /**
                * Format: date-time
                * @description When a refresh archived the instruction. `null` while it is active.
@@ -3030,7 +2921,7 @@ export interface operations {
   deleteInstruction: {
     parameters: {
       query?: {
-        /** @description Set to `true` to rebuild every entry that cites the instruction's sources once it is deleted, so pages written under the instruction reflect their sources again. The response returns the rebuild job ID in `rebuildJobId`. */
+        /** @description Set to `true` to rebuild every entry built from the instruction's documents once it is deleted, so pages written under the instruction reflect their documents again. The response returns the rebuild job ID in `rebuildJobId`. */
         rebuild?: 'true' | 'false'
       }
       header?: never
@@ -3053,7 +2944,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description ID of the job that rebuilds the entries citing the instruction's sources. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuild=true`, no entry cites those sources, or the rebuild could not start. The instruction is deleted either way. */
+            /** @description ID of the job that rebuilds the entries built from the instruction's documents. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuild=true`, no entry is built from those documents, or the rebuild could not start. The instruction is deleted either way. */
             rebuildJobId: string | null
           }
         }
@@ -3083,19 +2974,19 @@ export interface operations {
       }
       cookie?: never
     }
-    /** @description The changes to make to an instruction. Set `statement`, `scopeSourceIds`, or both. Any update also reactivates an archived instruction. */
+    /** @description The changes to make to an instruction. Set `statement`, `scopeDocumentIds`, or both. Any update also reactivates an archived instruction. */
     requestBody: {
       content: {
         'application/json': {
           /** @description The new instruction text. Omit it to keep the current text. */
           statement?: string
-          /** @description IDs of the sources the instruction applies to. Replaces the current list. Omit it to keep the current sources. IDs of sources that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
-          scopeSourceIds?: string[]
+          /** @description IDs of the documents the instruction applies to. Replaces the current list. Omit it to keep the current documents. IDs of documents that no longer exist are dropped. If none exist, the request returns `422` with code `instructionScopeVanished`. */
+          scopeDocumentIds?: string[]
         }
       }
     }
     responses: {
-      /** @description A standing instruction that shapes how entries that cite its sources are written. */
+      /** @description A standing instruction that shapes how entries built from its documents are written. */
       200: {
         headers: {
           [name: string]: unknown
@@ -3112,14 +3003,14 @@ export interface operations {
              */
             origin: 'conflict' | 'human'
             /**
-             * @description Whether builds apply the instruction. `active`: builds apply it. `archived`: a refresh found that its sources no longer support it, so builds stop applying it. To reactivate an archived instruction, update it.
+             * @description Whether builds apply the instruction. `active`: builds apply it. `archived`: a refresh found that its documents no longer support it, so builds stop applying it. To reactivate an archived instruction, update it.
              * @enum {string}
              */
             status: 'active' | 'archived'
             /** @description The instruction in plain language. Builds follow it over what the sources say. */
             statement: string
-            /** @description IDs of the sources the instruction applies to. Builds apply it when they write entries built from these sources. An empty array means all of its sources were removed, so it applies to no entries. */
-            scopeSourceIds: string[]
+            /** @description IDs of the documents the instruction applies to. Builds apply it when they write entries built from these documents. An empty array means all of its documents were removed, so it applies to no entries. */
+            scopeDocumentIds: string[]
             /**
              * Format: date-time
              * @description When a refresh archived the instruction. `null` while it is active.
@@ -3259,6 +3150,8 @@ export interface operations {
                   kind: 'conflict'
                   /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                   claimKey: string
+                  /** @description One sentence that explains the question, when it needs one. */
+                  context?: string
                   /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                   sides: {
                     /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -3267,13 +3160,17 @@ export interface operations {
                     value?: string
                     /** @description Paths of the entries that state this position. */
                     entryPaths?: string[]
-                    /** @description IDs of the sources that directly back this position. */
-                    sourceIds?: string[]
-                    /** @description Where in a source this position was read. */
+                    /** @description IDs of the documents that directly back this position. */
+                    documentIds?: string[]
+                    /** @description The documents that state this value, by the names you know them by. */
+                    where?: string
+                    /** @description Where in a document this position was read. */
                     span?: {
-                      /** @description ID of the source the position was read from. */
-                      sourceId: string
-                      /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                      /** @description ID of the document the position was read from. */
+                      documentId: string
+                      /** @description ID of the chunk of the document that holds the range's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+                      chunkId: string
+                      /** @description First line of the range in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. */
                       lineStart: number
                       /** @description Last line of the range, inclusive. */
                       lineEnd: number
@@ -3300,18 +3197,12 @@ export interface operations {
                   /** @description What to do to fix the issue. */
                   suggestedFix: string
                   /**
-                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: the topic of an entry no longer applies, so the entry should go.
                    * @enum {string}
                    */
-                  kind:
-                    | 'gap'
-                    | 'update_required'
-                    | 'add_entry'
-                    | 'remove_entry'
-                    | 'split_entry'
-                    | 'merge_entry'
-                  /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
-                  citedSourceIds?: string[]
+                  kind: 'gap' | 'update_required' | 'add_entry' | 'remove_entry'
+                  /** @description IDs of the documents that led to the issue. For `add_entry`, the documents the new entry would cite. */
+                  citedDocumentIds?: string[]
                   /** @description A key naming the specific finding, when the check that found it sets one. */
                   claimKey?: string
                   /** @description Paths of the entries the issue involves, when it spans more than one entry. */
@@ -3406,6 +3297,8 @@ export interface operations {
                   kind: 'conflict'
                   /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                   claimKey: string
+                  /** @description One sentence that explains the question, when it needs one. */
+                  context?: string
                   /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                   sides: {
                     /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -3414,13 +3307,17 @@ export interface operations {
                     value?: string
                     /** @description Paths of the entries that state this position. */
                     entryPaths?: string[]
-                    /** @description IDs of the sources that directly back this position. */
-                    sourceIds?: string[]
-                    /** @description Where in a source this position was read. */
+                    /** @description IDs of the documents that directly back this position. */
+                    documentIds?: string[]
+                    /** @description The documents that state this value, by the names you know them by. */
+                    where?: string
+                    /** @description Where in a document this position was read. */
                     span?: {
-                      /** @description ID of the source the position was read from. */
-                      sourceId: string
-                      /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                      /** @description ID of the document the position was read from. */
+                      documentId: string
+                      /** @description ID of the chunk of the document that holds the range's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+                      chunkId: string
+                      /** @description First line of the range in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. */
                       lineStart: number
                       /** @description Last line of the range, inclusive. */
                       lineEnd: number
@@ -3447,18 +3344,12 @@ export interface operations {
                   /** @description What to do to fix the issue. */
                   suggestedFix: string
                   /**
-                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: the topic of an entry no longer applies, so the entry should go.
                    * @enum {string}
                    */
-                  kind:
-                    | 'gap'
-                    | 'update_required'
-                    | 'add_entry'
-                    | 'remove_entry'
-                    | 'split_entry'
-                    | 'merge_entry'
-                  /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
-                  citedSourceIds?: string[]
+                  kind: 'gap' | 'update_required' | 'add_entry' | 'remove_entry'
+                  /** @description IDs of the documents that led to the issue. For `add_entry`, the documents the new entry would cite. */
+                  citedDocumentIds?: string[]
                   /** @description A key naming the specific finding, when the check that found it sets one. */
                   claimKey?: string
                   /** @description Paths of the entries the issue involves, when it spans more than one entry. */
@@ -3562,6 +3453,8 @@ export interface operations {
                     kind: 'conflict'
                     /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                     claimKey: string
+                    /** @description One sentence that explains the question, when it needs one. */
+                    context?: string
                     /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                     sides: {
                       /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -3570,13 +3463,17 @@ export interface operations {
                       value?: string
                       /** @description Paths of the entries that state this position. */
                       entryPaths?: string[]
-                      /** @description IDs of the sources that directly back this position. */
-                      sourceIds?: string[]
-                      /** @description Where in a source this position was read. */
+                      /** @description IDs of the documents that directly back this position. */
+                      documentIds?: string[]
+                      /** @description The documents that state this value, by the names you know them by. */
+                      where?: string
+                      /** @description Where in a document this position was read. */
                       span?: {
-                        /** @description ID of the source the position was read from. */
-                        sourceId: string
-                        /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                        /** @description ID of the document the position was read from. */
+                        documentId: string
+                        /** @description ID of the chunk of the document that holds the range's first line. A chunk is the text under one heading, and keeps its ID across versions of the document while its headings stay the same. */
+                        chunkId: string
+                        /** @description First line of the range in the document, counting from 1. Line numbers match `GET .../documents/{documentId}/content`. */
                         lineStart: number
                         /** @description Last line of the range, inclusive. */
                         lineEnd: number
@@ -3603,18 +3500,12 @@ export interface operations {
                     /** @description What to do to fix the issue. */
                     suggestedFix: string
                     /**
-                     * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                     * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: the topic of an entry no longer applies, so the entry should go.
                      * @enum {string}
                      */
-                    kind:
-                      | 'gap'
-                      | 'update_required'
-                      | 'add_entry'
-                      | 'remove_entry'
-                      | 'split_entry'
-                      | 'merge_entry'
-                    /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
-                    citedSourceIds?: string[]
+                    kind: 'gap' | 'update_required' | 'add_entry' | 'remove_entry'
+                    /** @description IDs of the documents that led to the issue. For `add_entry`, the documents the new entry would cite. */
+                    citedDocumentIds?: string[]
                     /** @description A key naming the specific finding, when the check that found it sets one. */
                     claimKey?: string
                     /** @description Paths of the entries the issue involves, when it spans more than one entry. */
@@ -3798,48 +3689,6 @@ export interface operations {
       }
     }
   }
-  refreshKnowledgeBase: {
-    parameters: {
-      query?: never
-      header?: {
-        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
-        'Idempotency-Key'?: string
-      }
-      path: {
-        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
-        knowledgeBaseId: string
-        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
-        apiVersion: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description A queued refresh job that you can poll for progress. */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @description The queued job's ID. Check its progress with `GET .../jobs/{jobId}`. Treat it as an opaque string. Its format can change. */
-            jobId: string
-            /** @description Whether this request started a new refresh. `false` means a refresh was already running, and `jobId` is that refresh. */
-            started: boolean
-          }
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ApiErrorBody']
-        }
-      }
-    }
-  }
   listSources: {
     parameters: {
       query?: {
@@ -3847,12 +3696,6 @@ export interface operations {
         cursor?: string
         /** @description The maximum number of items to return. */
         limit?: number
-        /** @description Return only sources with this status. */
-        status?: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
-        /** @description Return only the sources that this import produced. */
-        importId?: string
-        /** @description Comma-separated IDs of the sources to return, up to 200. Includes the parts of large sources that were split, which the default list leaves out. When set, `status` and `cursor` are ignored and every matching source is returned in one page. */
-        ids?: string
       }
       header?: never
       path: {
@@ -3873,58 +3716,796 @@ export interface operations {
         content: {
           'application/json': {
             /** @description The items on this page. */
-            data: {
-              /**
-               * Format: uuid
-               * @description The source's ID.
-               */
-              id: string
-              /**
-               * Format: uuid
-               * @description The `id` of the knowledge base that the source belongs to.
-               */
-              knowledgeBaseId: string
-              /** @description The source's name: the file name for an upload, the page title for a web page, or the document title for a dataset document. */
-              filename: string
-              /**
-               * @description Where the source came from. `web`: a crawled web page. `file`: an uploaded file or inline text. `dataset`: a document from a Sanity dataset.
-               * @enum {string}
-               */
-              kind: 'web' | 'file' | 'dataset'
-              /** @description The source's size in bytes. */
-              sizeBytes: number
-              /**
-               * @description The source's processing status. `pending`: waiting to be processed. `processing`: distilled and being summarized. `ready`: processed and available to builds. `failed`: couldn't be processed. `skipped`: not processed, because its file type isn't supported, it's too large, or it was split into smaller sources.
-               * @enum {string}
-               */
-              status: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
-              /** @description A short summary of the source. `null` until the source is summarized. */
-              tldr: string | null
-              /** @description Topics the source covers. `null` until the source is summarized. */
-              topics: string[] | null
-              /** @description The page URL of a `web` source. `null` for other kinds. */
-              canonicalUrl: string | null
-              /** @description The `_id` of the Sanity document a `dataset` source came from. Use it to find the document in your studio. `null` for other kinds. */
-              externalId: string | null
-              /**
-               * Format: date-time
-               * @description When the source's content was last fetched.
-               */
-              fetchedAt: string | null
-              /**
-               * Format: date-time
-               * @description When the source's content was last distilled into markdown. `null` until it's distilled.
-               */
-              distilledAt: string | null
-              /**
-               * Format: date-time
-               * @description When the source was added.
-               */
-              createdAt: string
-            }[]
+            data: (
+              | {
+                  /**
+                   * Format: uuid
+                   * @description The source's ID.
+                   */
+                  id: string
+                  /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                  knowledgeBaseId: string
+                  /** @description The source's title. */
+                  title: string
+                  /** @description The number of `active` and `missing` documents. */
+                  documentCount: number
+                  /** @description How many of those documents are converted to markdown, ready for builds. */
+                  convertedDocumentCount: number
+                  /** @description How many of those documents have a file type that can't be converted. */
+                  skippedDocumentCount: number
+                  /** @description How many of those documents failed to convert or were too large to. */
+                  failedDocumentCount: number
+                  /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                  chunkCount: number
+                  /**
+                   * Format: date-time
+                   * @description When a sync of the source last finished. `null` before the first one.
+                   */
+                  lastSyncedAt: string | null
+                  /** @description The most recent sync, running or finished. `null` before the first one. */
+                  latestSync: {
+                    /**
+                     * Format: uuid
+                     * @description The sync's ID.
+                     */
+                    id: string
+                    /**
+                     * Format: uuid
+                     * @description The ID of the source the sync read.
+                     */
+                    sourceId: string
+                    /**
+                     * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                     * @enum {string}
+                     */
+                    mode: 'full' | 'incremental'
+                    /**
+                     * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                     * @enum {string}
+                     */
+                    trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                    /**
+                     * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                     * @enum {string}
+                     */
+                    status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                    /** @description The number of documents the sync read. */
+                    documentsSeen: number
+                    /** @description The number of documents the sync added or changed. */
+                    documentsUpserted: number
+                    /** @description The number of documents the sync read that had not changed. */
+                    documentsUnchanged: number
+                    /** @description The number of documents the sync deleted. */
+                    documentsDeleted: number
+                    /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                    documentsMissing: number
+                    /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                    heldDeletions: number | null
+                    /**
+                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                     * @enum {string|null}
+                     */
+                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                    /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                    error: string | null
+                    /**
+                     * Format: date-time
+                     * @description When the sync started.
+                     */
+                    createdAt: string
+                    /**
+                     * Format: date-time
+                     * @description When the sync finished. `null` while it is `running` or `held`.
+                     */
+                    finishedAt: string | null
+                  } | null
+                  /**
+                   * Format: date-time
+                   * @description When the source was added.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the source last changed.
+                   */
+                  updatedAt: string
+                  /**
+                   * @description The source type. `web` is a crawled website.
+                   * @enum {string}
+                   */
+                  type: 'web'
+                  /** @description The URL the crawl starts from. */
+                  url: string
+                  /** @description Options that control how a website is crawled. */
+                  crawlOptions: {
+                    /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
+                    includePaths?: string[]
+                    /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
+                    excludePaths?: string[]
+                    /** @description How many levels deep the crawl goes from the root URL. */
+                    maxDepth?: number
+                    /** @description Whether to crawl only the pages listed in the site's sitemap. */
+                    sitemapOnly?: boolean
+                    /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
+                    ignoreQueryParameters?: boolean
+                    /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
+                    pageLimit?: number
+                  }
+                  /**
+                   * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                   * @enum {string|null}
+                   */
+                  syncFrequency: 'weekly' | 'monthly' | null
+                }
+              | {
+                  /**
+                   * Format: uuid
+                   * @description The source's ID.
+                   */
+                  id: string
+                  /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                  knowledgeBaseId: string
+                  /** @description The source's title. */
+                  title: string
+                  /** @description The number of `active` and `missing` documents. */
+                  documentCount: number
+                  /** @description How many of those documents are converted to markdown, ready for builds. */
+                  convertedDocumentCount: number
+                  /** @description How many of those documents have a file type that can't be converted. */
+                  skippedDocumentCount: number
+                  /** @description How many of those documents failed to convert or were too large to. */
+                  failedDocumentCount: number
+                  /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                  chunkCount: number
+                  /**
+                   * Format: date-time
+                   * @description When a sync of the source last finished. `null` before the first one.
+                   */
+                  lastSyncedAt: string | null
+                  /** @description The most recent sync, running or finished. `null` before the first one. */
+                  latestSync: {
+                    /**
+                     * Format: uuid
+                     * @description The sync's ID.
+                     */
+                    id: string
+                    /**
+                     * Format: uuid
+                     * @description The ID of the source the sync read.
+                     */
+                    sourceId: string
+                    /**
+                     * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                     * @enum {string}
+                     */
+                    mode: 'full' | 'incremental'
+                    /**
+                     * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                     * @enum {string}
+                     */
+                    trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                    /**
+                     * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                     * @enum {string}
+                     */
+                    status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                    /** @description The number of documents the sync read. */
+                    documentsSeen: number
+                    /** @description The number of documents the sync added or changed. */
+                    documentsUpserted: number
+                    /** @description The number of documents the sync read that had not changed. */
+                    documentsUnchanged: number
+                    /** @description The number of documents the sync deleted. */
+                    documentsDeleted: number
+                    /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                    documentsMissing: number
+                    /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                    heldDeletions: number | null
+                    /**
+                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                     * @enum {string|null}
+                     */
+                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                    /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                    error: string | null
+                    /**
+                     * Format: date-time
+                     * @description When the sync started.
+                     */
+                    createdAt: string
+                    /**
+                     * Format: date-time
+                     * @description When the sync finished. `null` while it is `running` or `held`.
+                     */
+                    finishedAt: string | null
+                  } | null
+                  /**
+                   * Format: date-time
+                   * @description When the source was added.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the source last changed.
+                   */
+                  updatedAt: string
+                  /**
+                   * @description The source type. `sanity-dataset` is a GROQ query over a Sanity dataset.
+                   * @enum {string}
+                   */
+                  type: 'sanity-dataset'
+                  /** @description The ID of the Sanity project the documents come from. */
+                  sanityProjectId: string
+                  /** @description The dataset the documents come from. */
+                  sanityDatasetId: string
+                  /** @description The GROQ query that selects the documents. */
+                  query: string
+                  /**
+                   * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                   * @enum {string|null}
+                   */
+                  syncFrequency: 'weekly' | 'monthly' | null
+                }
+              | {
+                  /**
+                   * Format: uuid
+                   * @description The source's ID.
+                   */
+                  id: string
+                  /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                  knowledgeBaseId: string
+                  /** @description The source's title. */
+                  title: string
+                  /** @description The number of `active` and `missing` documents. */
+                  documentCount: number
+                  /** @description How many of those documents are converted to markdown, ready for builds. */
+                  convertedDocumentCount: number
+                  /** @description How many of those documents have a file type that can't be converted. */
+                  skippedDocumentCount: number
+                  /** @description How many of those documents failed to convert or were too large to. */
+                  failedDocumentCount: number
+                  /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                  chunkCount: number
+                  /**
+                   * Format: date-time
+                   * @description When a sync of the source last finished. `null` before the first one.
+                   */
+                  lastSyncedAt: string | null
+                  /** @description The most recent sync, running or finished. `null` before the first one. */
+                  latestSync: {
+                    /**
+                     * Format: uuid
+                     * @description The sync's ID.
+                     */
+                    id: string
+                    /**
+                     * Format: uuid
+                     * @description The ID of the source the sync read.
+                     */
+                    sourceId: string
+                    /**
+                     * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                     * @enum {string}
+                     */
+                    mode: 'full' | 'incremental'
+                    /**
+                     * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                     * @enum {string}
+                     */
+                    trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                    /**
+                     * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                     * @enum {string}
+                     */
+                    status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                    /** @description The number of documents the sync read. */
+                    documentsSeen: number
+                    /** @description The number of documents the sync added or changed. */
+                    documentsUpserted: number
+                    /** @description The number of documents the sync read that had not changed. */
+                    documentsUnchanged: number
+                    /** @description The number of documents the sync deleted. */
+                    documentsDeleted: number
+                    /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                    documentsMissing: number
+                    /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                    heldDeletions: number | null
+                    /**
+                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                     * @enum {string|null}
+                     */
+                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                    /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                    error: string | null
+                    /**
+                     * Format: date-time
+                     * @description When the sync started.
+                     */
+                    createdAt: string
+                    /**
+                     * Format: date-time
+                     * @description When the sync finished. `null` while it is `running` or `held`.
+                     */
+                    finishedAt: string | null
+                  } | null
+                  /**
+                   * Format: date-time
+                   * @description When the source was added.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the source last changed.
+                   */
+                  updatedAt: string
+                  /**
+                   * @description The source type. `files` is an uploaded file or archive of files.
+                   * @enum {string}
+                   */
+                  type: 'files'
+                  /** @description The name of the file last synced. `null` before the first upload. */
+                  filename: string | null
+                  /** @description The size of the file last synced, in bytes. `null` before the first upload. */
+                  sizeBytes: number | null
+                }
+            )[]
             /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
             nextCursor: string | null
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  createSource: {
+    parameters: {
+      query?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description The source to add. The `type` field sets its kind. */
+    requestBody: {
+      content: {
+        'application/json':
+          | {
+              /**
+               * @description The source type. `web` crawls a website.
+               * @enum {string}
+               */
+              type: 'web'
+              /**
+               * Format: uri
+               * @description The URL to start crawling from. It must be a public `http` or `https` URL.
+               */
+              url: string
+              /** @description Options for the crawl. Options you omit use the defaults. */
+              crawlOptions?: {
+                /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
+                includePaths?: string[]
+                /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
+                excludePaths?: string[]
+                /** @description How many levels deep the crawl goes from the root URL. */
+                maxDepth?: number
+                /** @description Whether to crawl only the pages listed in the site's sitemap. */
+                sitemapOnly?: boolean
+                /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
+                ignoreQueryParameters?: boolean
+                /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
+                pageLimit?: number
+              }
+              /** @description Set to `true` to estimate what a crawl would fetch without adding the source. The response is then `200` with a preview of the pages the site has, grouped by path. */
+              dryRun?: boolean
+            }
+          | {
+              /**
+               * @description The source type. `sanity-dataset` reads documents from a Sanity dataset.
+               * @enum {string}
+               */
+              type: 'sanity-dataset'
+              /** @description The ID of the Sanity project to read documents from. You need full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. */
+              sanityProjectId: string
+              /** @description The dataset to read documents from. */
+              sanityDatasetId: string
+              /** @description A GROQ query that selects the documents, with an optional projection. It can match up to 5,000 documents. Each sync runs it again. */
+              query: string
+            }
+          | {
+              /**
+               * @description The source type. `files` holds an uploaded file, or text sent with `content`.
+               * @enum {string}
+               */
+              type: 'files'
+              /** @description The source's title. */
+              title: string
+              /** @description Text or markdown for the source to hold, up to 1,000,000 bytes of UTF-8. The source syncs it at once, with no upload. Larger content goes through `POST .../sources/{sourceId}/uploads`. */
+              content?: string
+              /**
+               * @description The format of `content`: `text/markdown` (the default) or `text/plain`. Only with `content`.
+               * @enum {string}
+               */
+              contentType?: 'text/markdown' | 'text/plain'
+            }
+      }
+    }
+    responses: {
+      /** @description The preview of a crawl, when `dryRun` is `true`. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description How many pages the crawl would fetch, roughly. */
+            totalPages: number
+            /** @description Whether the site has more pages than the preview counted. */
+            truncated: boolean
+            /** @description The largest groups of pages by path, largest first. */
+            groups: {
+              /** @description The path the pages in the group share, such as `/docs/`. */
+              prefix: string
+              /** @description How many pages the group has. */
+              count: number
+            }[]
+            /** @description How many pages are outside `groups`. */
+            otherCount: number
+          }
+        }
+      }
+      /** @description Something that yields documents for a knowledge base: a website, a dataset or files. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `web` is a crawled website.
+                 * @enum {string}
+                 */
+                type: 'web'
+                /** @description The URL the crawl starts from. */
+                url: string
+                /** @description Options that control how a website is crawled. */
+                crawlOptions: {
+                  /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
+                  includePaths?: string[]
+                  /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
+                  excludePaths?: string[]
+                  /** @description How many levels deep the crawl goes from the root URL. */
+                  maxDepth?: number
+                  /** @description Whether to crawl only the pages listed in the site's sitemap. */
+                  sitemapOnly?: boolean
+                  /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
+                  ignoreQueryParameters?: boolean
+                  /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
+                  pageLimit?: number
+                }
+                /**
+                 * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                 * @enum {string|null}
+                 */
+                syncFrequency: 'weekly' | 'monthly' | null
+              }
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `sanity-dataset` is a GROQ query over a Sanity dataset.
+                 * @enum {string}
+                 */
+                type: 'sanity-dataset'
+                /** @description The ID of the Sanity project the documents come from. */
+                sanityProjectId: string
+                /** @description The dataset the documents come from. */
+                sanityDatasetId: string
+                /** @description The GROQ query that selects the documents. */
+                query: string
+                /**
+                 * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                 * @enum {string|null}
+                 */
+                syncFrequency: 'weekly' | 'monthly' | null
+              }
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `files` is an uploaded file or archive of files.
+                 * @enum {string}
+                 */
+                type: 'files'
+                /** @description The name of the file last synced. `null` before the first upload. */
+                filename: string | null
+                /** @description The size of the file last synced, in bytes. `null` before the first upload. */
+                sizeBytes: number | null
+              }
         }
       }
       /** @description Error */
@@ -3954,61 +4535,344 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description A page, file, or document that an import produced and that builds cite. */
+      /** @description Something that yields documents for a knowledge base: a website, a dataset or files. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            /**
-             * Format: uuid
-             * @description The source's ID.
-             */
-            id: string
-            /**
-             * Format: uuid
-             * @description The `id` of the knowledge base that the source belongs to.
-             */
-            knowledgeBaseId: string
-            /** @description The source's name: the file name for an upload, the page title for a web page, or the document title for a dataset document. */
-            filename: string
-            /**
-             * @description Where the source came from. `web`: a crawled web page. `file`: an uploaded file or inline text. `dataset`: a document from a Sanity dataset.
-             * @enum {string}
-             */
-            kind: 'web' | 'file' | 'dataset'
-            /** @description The source's size in bytes. */
-            sizeBytes: number
-            /**
-             * @description The source's processing status. `pending`: waiting to be processed. `processing`: distilled and being summarized. `ready`: processed and available to builds. `failed`: couldn't be processed. `skipped`: not processed, because its file type isn't supported, it's too large, or it was split into smaller sources.
-             * @enum {string}
-             */
-            status: 'pending' | 'processing' | 'ready' | 'failed' | 'skipped'
-            /** @description A short summary of the source. `null` until the source is summarized. */
-            tldr: string | null
-            /** @description Topics the source covers. `null` until the source is summarized. */
-            topics: string[] | null
-            /** @description The page URL of a `web` source. `null` for other kinds. */
-            canonicalUrl: string | null
-            /** @description The `_id` of the Sanity document a `dataset` source came from. Use it to find the document in your studio. `null` for other kinds. */
-            externalId: string | null
-            /**
-             * Format: date-time
-             * @description When the source's content was last fetched.
-             */
-            fetchedAt: string | null
-            /**
-             * Format: date-time
-             * @description When the source's content was last distilled into markdown. `null` until it's distilled.
-             */
-            distilledAt: string | null
-            /**
-             * Format: date-time
-             * @description When the source was added.
-             */
-            createdAt: string
-          }
+          'application/json':
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `web` is a crawled website.
+                 * @enum {string}
+                 */
+                type: 'web'
+                /** @description The URL the crawl starts from. */
+                url: string
+                /** @description Options that control how a website is crawled. */
+                crawlOptions: {
+                  /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
+                  includePaths?: string[]
+                  /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
+                  excludePaths?: string[]
+                  /** @description How many levels deep the crawl goes from the root URL. */
+                  maxDepth?: number
+                  /** @description Whether to crawl only the pages listed in the site's sitemap. */
+                  sitemapOnly?: boolean
+                  /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
+                  ignoreQueryParameters?: boolean
+                  /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
+                  pageLimit?: number
+                }
+                /**
+                 * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                 * @enum {string|null}
+                 */
+                syncFrequency: 'weekly' | 'monthly' | null
+              }
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `sanity-dataset` is a GROQ query over a Sanity dataset.
+                 * @enum {string}
+                 */
+                type: 'sanity-dataset'
+                /** @description The ID of the Sanity project the documents come from. */
+                sanityProjectId: string
+                /** @description The dataset the documents come from. */
+                sanityDatasetId: string
+                /** @description The GROQ query that selects the documents. */
+                query: string
+                /**
+                 * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                 * @enum {string|null}
+                 */
+                syncFrequency: 'weekly' | 'monthly' | null
+              }
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `files` is an uploaded file or archive of files.
+                 * @enum {string}
+                 */
+                type: 'files'
+                /** @description The name of the file last synced. `null` before the first upload. */
+                filename: string | null
+                /** @description The size of the file last synced, in bytes. `null` before the first upload. */
+                sizeBytes: number | null
+              }
         }
       }
       /** @description Error */
@@ -4058,15 +4922,412 @@ export interface operations {
       }
     }
   }
-  getSourceContent: {
+  updateSource: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The source's ID. */
+        sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description The changes to make to a source. */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The source's title. */
+          title?: string
+          /** @description For a `web` source, the crawl options, replacing the stored ones. Documents whose path the new include and exclude paths leave out are deleted. */
+          crawlOptions?: {
+            /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
+            includePaths?: string[]
+            /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
+            excludePaths?: string[]
+            /** @description How many levels deep the crawl goes from the root URL. */
+            maxDepth?: number
+            /** @description Whether to crawl only the pages listed in the site's sitemap. */
+            sitemapOnly?: boolean
+            /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
+            ignoreQueryParameters?: boolean
+            /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
+            pageLimit?: number
+          }
+          /** @description For a `sanity-dataset` source, the GROQ query, replacing the stored one. A sync is queued, and removes the documents the query no longer returns. */
+          query?: string
+          /**
+           * @description For a `web` or `sanity-dataset` source, how often it syncs on its own: `weekly` or `monthly`. `null` stops scheduled syncs, and you can still start a sync yourself. Setting a frequency requires a plan that includes scheduled syncs; without one, the request returns `403` with code `featureNotInPlan`.
+           * @enum {string|null}
+           */
+          syncFrequency?: 'weekly' | 'monthly' | null
+          /** @description Set to `true` to apply new crawl options that delete many documents. Without it, a change that would delete more than a fifth of the documents, or all of them, returns `409` with code `sourceDeletionsUnconfirmed`. */
+          confirmDeletions?: boolean
+        }
+      }
+    }
+    responses: {
+      /** @description Something that yields documents for a knowledge base: a website, a dataset or files. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `web` is a crawled website.
+                 * @enum {string}
+                 */
+                type: 'web'
+                /** @description The URL the crawl starts from. */
+                url: string
+                /** @description Options that control how a website is crawled. */
+                crawlOptions: {
+                  /** @description Regular expressions for URL paths to crawl. When set, the crawl only includes pages whose path matches one of them. */
+                  includePaths?: string[]
+                  /** @description Regular expressions for URL paths to skip. Pages whose path matches one of them aren't crawled. */
+                  excludePaths?: string[]
+                  /** @description How many levels deep the crawl goes from the root URL. */
+                  maxDepth?: number
+                  /** @description Whether to crawl only the pages listed in the site's sitemap. */
+                  sitemapOnly?: boolean
+                  /** @description Whether to treat URLs that differ only by query string as one page. New crawls set it to `true` unless you set it. Set it to `false` when the query string selects different content, such as pagination. */
+                  ignoreQueryParameters?: boolean
+                  /** @description The maximum number of pages to crawl. The crawl can stop sooner when the knowledge base reaches its source limit. */
+                  pageLimit?: number
+                }
+                /**
+                 * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                 * @enum {string|null}
+                 */
+                syncFrequency: 'weekly' | 'monthly' | null
+              }
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `sanity-dataset` is a GROQ query over a Sanity dataset.
+                 * @enum {string}
+                 */
+                type: 'sanity-dataset'
+                /** @description The ID of the Sanity project the documents come from. */
+                sanityProjectId: string
+                /** @description The dataset the documents come from. */
+                sanityDatasetId: string
+                /** @description The GROQ query that selects the documents. */
+                query: string
+                /**
+                 * @description How often the source syncs on its own: `weekly` or `monthly`. `null` when it syncs only when asked to.
+                 * @enum {string|null}
+                 */
+                syncFrequency: 'weekly' | 'monthly' | null
+              }
+            | {
+                /**
+                 * Format: uuid
+                 * @description The source's ID.
+                 */
+                id: string
+                /** @description The ID (`kb…`) of the knowledge base the source belongs to. */
+                knowledgeBaseId: string
+                /** @description The source's title. */
+                title: string
+                /** @description The number of `active` and `missing` documents. */
+                documentCount: number
+                /** @description How many of those documents are converted to markdown, ready for builds. */
+                convertedDocumentCount: number
+                /** @description How many of those documents have a file type that can't be converted. */
+                skippedDocumentCount: number
+                /** @description How many of those documents failed to convert or were too large to. */
+                failedDocumentCount: number
+                /** @description The number of chunks in its documents' markdown, the unit usage is counted in. */
+                chunkCount: number
+                /**
+                 * Format: date-time
+                 * @description When a sync of the source last finished. `null` before the first one.
+                 */
+                lastSyncedAt: string | null
+                /** @description The most recent sync, running or finished. `null` before the first one. */
+                latestSync: {
+                  /**
+                   * Format: uuid
+                   * @description The sync's ID.
+                   */
+                  id: string
+                  /**
+                   * Format: uuid
+                   * @description The ID of the source the sync read.
+                   */
+                  sourceId: string
+                  /**
+                   * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+                   * @enum {string}
+                   */
+                  mode: 'full' | 'incremental'
+                  /**
+                   * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+                   * @enum {string}
+                   */
+                  trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+                  /**
+                   * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+                   * @enum {string}
+                   */
+                  status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+                  /** @description The number of documents the sync read. */
+                  documentsSeen: number
+                  /** @description The number of documents the sync added or changed. */
+                  documentsUpserted: number
+                  /** @description The number of documents the sync read that had not changed. */
+                  documentsUnchanged: number
+                  /** @description The number of documents the sync deleted. */
+                  documentsDeleted: number
+                  /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+                  documentsMissing: number
+                  /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+                  heldDeletions: number | null
+                  /**
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @enum {string|null}
+                   */
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+                  error: string | null
+                  /**
+                   * Format: date-time
+                   * @description When the sync started.
+                   */
+                  createdAt: string
+                  /**
+                   * Format: date-time
+                   * @description When the sync finished. `null` while it is `running` or `held`.
+                   */
+                  finishedAt: string | null
+                } | null
+                /**
+                 * Format: date-time
+                 * @description When the source was added.
+                 */
+                createdAt: string
+                /**
+                 * Format: date-time
+                 * @description When the source last changed.
+                 */
+                updatedAt: string
+                /**
+                 * @description The source type. `files` is an uploaded file or archive of files.
+                 * @enum {string}
+                 */
+                type: 'files'
+                /** @description The name of the file last synced. `null` before the first upload. */
+                filename: string | null
+                /** @description The size of the file last synced, in bytes. `null` before the first upload. */
+                sizeBytes: number | null
+              }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  listSyncs: {
     parameters: {
       query?: {
-        /** @description Response format. `json` (default) returns the structured resource. `markdown` and `plain` return the content as rendered text, ready to pass to a model. */
-        format?: 'json' | 'markdown' | 'plain'
-        /** @description The first line to return, starting at 1. Omit `startLine` and `endLine` to get the whole content. */
-        startLine?: number
-        /** @description The last line to return, inclusive. A value past the end returns everything up to the last line. */
-        endLine?: number
+        /** @description The `nextCursor` value from the previous page. Omit it to get the first page. */
+        cursor?: string
+        /** @description The maximum number of items to return. */
+        limit?: number
       }
       header?: never
       path: {
@@ -4081,7 +5342,163 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description A source's distilled markdown, or a range of its lines. */
+      /** @description A page of syncs. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The items on this page. */
+            data: {
+              /**
+               * Format: uuid
+               * @description The sync's ID.
+               */
+              id: string
+              /**
+               * Format: uuid
+               * @description The ID of the source the sync read.
+               */
+              sourceId: string
+              /**
+               * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+               * @enum {string}
+               */
+              mode: 'full' | 'incremental'
+              /**
+               * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+               * @enum {string}
+               */
+              trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+              /**
+               * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+               * @enum {string}
+               */
+              status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+              /** @description The number of documents the sync read. */
+              documentsSeen: number
+              /** @description The number of documents the sync added or changed. */
+              documentsUpserted: number
+              /** @description The number of documents the sync read that had not changed. */
+              documentsUnchanged: number
+              /** @description The number of documents the sync deleted. */
+              documentsDeleted: number
+              /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+              documentsMissing: number
+              /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+              heldDeletions: number | null
+              /**
+               * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+               * @enum {string|null}
+               */
+              partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+              /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+              error: string | null
+              /**
+               * Format: date-time
+               * @description When the sync started.
+               */
+              createdAt: string
+              /**
+               * Format: date-time
+               * @description When the sync finished. `null` while it is `running` or `held`.
+               */
+              finishedAt: string | null
+            }[]
+            /** @description The cursor for the next page. Pass it as `cursor` to get more results. `null` when there are no more pages. */
+            nextCursor: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  startSync: {
+    parameters: {
+      query?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The source's ID. */
+        sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description What a new sync reads. */
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * Format: uuid
+           * @description For a `files` source, the `uploadId` of the file to sync, from `POST .../sources/{sourceId}/uploads`. Required for `files` sources and not allowed for other types.
+           */
+          uploadId?: string
+        } | null
+      }
+    }
+    responses: {
+      /** @description The sync that was started or queued. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The ID of the source that will sync.
+             */
+            sourceId: string
+            /** @description For a `files` source, the ID of the sync's job. Check its progress with `GET .../jobs/{jobId}`. `null` for a website or dataset, whose sync is queued on the source: follow it with the source's `latestSync`. */
+            jobId: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  getSync: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The source's ID. */
+        sourceId: string
+        /** @description The sync's ID. */
+        syncId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description One run of a source's connector. */
       200: {
         headers: {
           [name: string]: unknown
@@ -4090,23 +5507,342 @@ export interface operations {
           'application/json': {
             /**
              * Format: uuid
-             * @description The source's ID.
+             * @description The sync's ID.
+             */
+            id: string
+            /**
+             * Format: uuid
+             * @description The ID of the source the sync read.
              */
             sourceId: string
-            /** @description The distilled markdown, or the requested lines of it. */
-            content: string
-            /** @description The number of lines in the full distilled content. */
-            totalLines: number
-            /** @description The range of lines returned, 1-indexed and inclusive. It can be shorter than requested when the range runs past the end. Both values are `0` when no lines are returned. */
-            slice: {
-              /** @description The first line returned. */
-              start: number
-              /** @description The last line returned. */
-              end: number
-            }
+            /**
+             * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+             * @enum {string}
+             */
+            mode: 'full' | 'incremental'
+            /**
+             * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+             * @enum {string}
+             */
+            trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+            /**
+             * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+             * @enum {string}
+             */
+            status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+            /** @description The number of documents the sync read. */
+            documentsSeen: number
+            /** @description The number of documents the sync added or changed. */
+            documentsUpserted: number
+            /** @description The number of documents the sync read that had not changed. */
+            documentsUnchanged: number
+            /** @description The number of documents the sync deleted. */
+            documentsDeleted: number
+            /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+            documentsMissing: number
+            /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+            heldDeletions: number | null
+            /**
+             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+             * @enum {string|null}
+             */
+            partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+            /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+            error: string | null
+            /**
+             * Format: date-time
+             * @description When the sync started.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the sync finished. `null` while it is `running` or `held`.
+             */
+            finishedAt: string | null
           }
-          'text/markdown': string
-          'text/plain': string
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  confirmSync: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The source's ID. */
+        sourceId: string
+        /** @description The sync's ID. */
+        syncId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description One run of a source's connector. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The sync's ID.
+             */
+            id: string
+            /**
+             * Format: uuid
+             * @description The ID of the source the sync read.
+             */
+            sourceId: string
+            /**
+             * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+             * @enum {string}
+             */
+            mode: 'full' | 'incremental'
+            /**
+             * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+             * @enum {string}
+             */
+            trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+            /**
+             * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+             * @enum {string}
+             */
+            status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+            /** @description The number of documents the sync read. */
+            documentsSeen: number
+            /** @description The number of documents the sync added or changed. */
+            documentsUpserted: number
+            /** @description The number of documents the sync read that had not changed. */
+            documentsUnchanged: number
+            /** @description The number of documents the sync deleted. */
+            documentsDeleted: number
+            /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+            documentsMissing: number
+            /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+            heldDeletions: number | null
+            /**
+             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+             * @enum {string|null}
+             */
+            partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+            /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+            error: string | null
+            /**
+             * Format: date-time
+             * @description When the sync started.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the sync finished. `null` while it is `running` or `held`.
+             */
+            finishedAt: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  discardSync: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The source's ID. */
+        sourceId: string
+        /** @description The sync's ID. */
+        syncId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description One run of a source's connector. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The sync's ID.
+             */
+            id: string
+            /**
+             * Format: uuid
+             * @description The ID of the source the sync read.
+             */
+            sourceId: string
+            /**
+             * @description `full` reads the whole source and removes what it no longer finds. `incremental` reads only what changed since the last sync.
+             * @enum {string}
+             */
+            mode: 'full' | 'incremental'
+            /**
+             * @description What started the sync: `schedule`, `manual` (an API call or the dashboard), `upload` (a new file), `event` or `push`.
+             * @enum {string}
+             */
+            trigger: 'schedule' | 'manual' | 'upload' | 'event' | 'push'
+            /**
+             * @description The sync's status. `running`: still reading or converting. `held`: the sync would delete many documents and waits for you to confirm or discard the deletion; the next sync of the source cancels it and holds again if the deletion still stands. `completed`, `failed` and `cancelled` are final.
+             * @enum {string}
+             */
+            status: 'running' | 'held' | 'completed' | 'failed' | 'cancelled'
+            /** @description The number of documents the sync read. */
+            documentsSeen: number
+            /** @description The number of documents the sync added or changed. */
+            documentsUpserted: number
+            /** @description The number of documents the sync read that had not changed. */
+            documentsUnchanged: number
+            /** @description The number of documents the sync deleted. */
+            documentsDeleted: number
+            /** @description The number of web pages the sync marked `missing` because several crawls in a row didn't find them. */
+            documentsMissing: number
+            /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
+            heldDeletions: number | null
+            /**
+             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+             * @enum {string|null}
+             */
+            partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+            /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
+            error: string | null
+            /**
+             * Format: date-time
+             * @description When the sync started.
+             */
+            createdAt: string
+            /**
+             * Format: date-time
+             * @description When the sync finished. `null` while it is `running` or `held`.
+             */
+            finishedAt: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  startSourceUpload: {
+    parameters: {
+      query?: never
+      header?: {
+        /** @description A unique value, such as a UUID, that makes retries safe. A retry with the same key and body returns the first response instead of repeating the work. */
+        'Idempotency-Key'?: string
+      }
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The source's ID. */
+        sourceId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description The file to upload. */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The file's name. */
+          filename: string
+          /** @description The media type of the file. When set, the `PUT` request must send the same `Content-Type` header. */
+          contentType?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Where to upload the file. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description The ID of the upload. Pass it to `POST .../syncs` once the file is uploaded.
+             */
+            uploadId: string
+            /**
+             * Format: uri
+             * @description A signed URL to send the file to in one `PUT` request. It expires after one hour.
+             */
+            uploadUrl: string
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  syncAllSources: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The syncs that were queued. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The IDs of the sources that will sync. Follow each with the source's `latestSync`. `files` sources aren't included: they sync when you upload a file. */
+            sourceIds: string[]
+          }
         }
       }
       /** @description Error */

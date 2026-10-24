@@ -24,8 +24,7 @@ import type {
   ContextRequestOptions,
   Conversation,
   ConversationDoc,
-  CreateFileImportParams,
-  CreateImportParams,
+  CreateFileSourceParams,
   CreateInstructionParams,
   CreateInstructionResponse,
   DeleteInstructionResponse,
@@ -33,13 +32,21 @@ import type {
   DismissIssueResponse,
   EditInstructionParams,
   EditKnowledgeBaseParams,
+  CrawlPreview,
+  CreateSourceParams,
+  CreateUploadParams,
+  Document as ContextDocument,
+  DocumentContent,
+  DocumentContentOptions,
+  DocumentDetail,
+  DocumentsResponse,
+  EditDocumentParams,
+  EditSourceParams,
   Entry,
   EntryDoc,
-  ImportDetail,
-  ImportDownloadResponse,
-  ImportsResponse,
   Instruction,
   InstructionDoc,
+  PreviewWebSourceParams,
   IssueDoc,
   Job,
   JobAccepted,
@@ -59,10 +66,13 @@ import type {
   ResolveIssueResponse,
   SaveConversationParams,
   Source,
-  SourceContentResponse,
-  SourceDetail,
+  SourceFileUpload,
   SourcesResponse,
   StagedUpload,
+  Sync,
+  SyncAccepted,
+  SyncAllAccepted,
+  SyncsResponse,
 } from './types'
 
 type ListOptions = RequestOptions & {cursor?: string; limit?: number}
@@ -135,7 +145,23 @@ function _query(entries: Record<string, string | number | undefined>): Record<st
   )
 }
 
-function _fetchBody(file: CreateFileImportParams['file']) {
+function _isFileSource(params: CreateSourceParams): params is CreateFileSourceParams {
+  return params.type === 'files' && 'file' in params && params.file !== undefined
+}
+
+function _sourcePath(sourceId: string, suffix = ''): string {
+  return `/sources/${encodeURIComponent(sourceId)}${suffix}`
+}
+
+function _syncPath(params: {sourceId: string; syncId: string}, suffix = ''): string {
+  return _sourcePath(params.sourceId, `/syncs/${encodeURIComponent(params.syncId)}${suffix}`)
+}
+
+function _documentPath(documentId: string, suffix = ''): string {
+  return `/documents/${encodeURIComponent(documentId)}${suffix}`
+}
+
+function _fetchBody(file: SourceFileUpload['file']) {
   if (!ArrayBuffer.isView(file)) return file
   return file.buffer instanceof ArrayBuffer
     ? new Uint8Array(file.buffer, file.byteOffset, file.byteLength)
@@ -147,7 +173,7 @@ function _fetchBody(file: CreateFileImportParams['file']) {
  *
  * Collection-level management (create, list, get, edit, delete) addresses
  * knowledge bases per call, like `client.projects`. Everything scoped to one
- * knowledge base (imports, builds, issues, entries, ...) operates on the
+ * knowledge base (sources, documents, builds, issues, ...) operates on the
  * client's configured `resource`, like media libraries:
  *
  * @example Full lifecycle
@@ -164,7 +190,7 @@ function _fetchBody(file: CreateFileImportParams['file']) {
  *   resource: {type: 'knowledge-base', id: created.publicId},
  * })
  *
- * await kb.context.imports.create({type: 'text', title: 'Refund policy', content: refundMd})
+ * await kb.context.sources.create({type: 'files', title: 'Refund policy', content: refundMd})
  * const {jobId} = await kb.context.build()
  * ```
  *
@@ -186,6 +212,7 @@ export class ContextClient {
       method?: string
       body?: unknown
       query?: Record<string, string>
+      rawBody?: boolean
     } & RequestOptions = {},
   ): Promise<R> {
     return _request<R>(this.#client, this.#httpRequest, {
@@ -211,11 +238,15 @@ export class ContextClient {
     })
   }
 
+  /**
+   * Stage an upload, PUT the bytes to the signed storage URL, and start the
+   * source's sync with it.
+   */
   async #uploadFile(
-    params: CreateFileImportParams,
+    params: {sourceId: string} & SourceFileUpload,
     options?: RequestOptions,
-  ): Promise<JobAccepted> {
-    const staged = await this.#request<StagedUpload>('/imports/uploads', {
+  ): Promise<SyncAccepted> {
+    const staged = await this.#request<StagedUpload>(_sourcePath(params.sourceId, '/uploads'), {
       method: 'POST',
       body: {
         filename: params.filename,
@@ -239,14 +270,11 @@ export class ContextClient {
     if (!putResponse.ok) {
       throw new Error(`File upload failed: ${putResponse.status} ${putResponse.statusText}`)
     }
-    return this.#request<JobAccepted>(
-      `/imports/uploads/${encodeURIComponent(staged.importId)}/complete`,
-      {
-        method: 'POST',
-        body: {},
-        ...options,
-      },
-    )
+    return this.#request<SyncAccepted>(_sourcePath(params.sourceId, '/syncs'), {
+      method: 'POST',
+      body: {uploadId: staged.uploadId},
+      ...options,
+    })
   }
 
   /** The knowledge base collection: management addressed per call. */
@@ -396,9 +424,8 @@ export class ContextClient {
   }
 
   /**
-   * Build the configured knowledge base. The server waits for pending import
-   * processing before assembling, so importing and building back to back is
-   * safe. Track the returned job with {@link jobs}.
+   * Build the configured knowledge base from its sources' converted
+   * documents. Track the returned job with {@link jobs}.
    */
   build(options?: RequestOptions): Promise<JobAccepted> {
     return this.#request('/build', {method: 'POST', ...options})
@@ -409,49 +436,16 @@ export class ContextClient {
     return this.#request('/build/cancel', {method: 'POST', ...options})
   }
 
-  /** Run an incremental refresh: re-check sources and apply what changed. */
-  refresh(options?: RequestOptions): Promise<{jobId: string; started: boolean}> {
-    return this.#request('/refresh', {method: 'POST', ...options})
+  /**
+   * Queue a sync of every website and dataset source. Each starts once any
+   * running sync of its source ends; `files` sources sync when you upload a
+   * file.
+   */
+  sync(options?: RequestOptions): Promise<SyncAllAccepted> {
+    return this.#request('/sync', {method: 'POST', ...options})
   }
 
-  /** Imports: feed content into the configured knowledge base. */
-  imports = {
-    /**
-     * Import content. One entry point, discriminated on `type`: inline
-     * `text`, a website `crawl`, a Sanity `dataset` bind, or a `file`
-     * upload. Processing queues automatically. The file variant stages the
-     * upload, PUTs the bytes to a signed storage URL, and confirms; the
-     * bytes never pass through the Context API.
-     */
-    create: (
-      params: CreateImportParams | CreateFileImportParams,
-      options?: RequestOptions,
-    ): Promise<JobAccepted> =>
-      params.type === 'file'
-        ? this.#uploadFile(params, options)
-        : this.#request('/imports', {
-            method: 'POST',
-            body: params,
-            ...options,
-          }),
-    list: (params?: ListOptions) => this.#list<ImportsResponse>('/imports', params),
-    get: (params: {importId: string}, options?: RequestOptions) =>
-      this.#request<ImportDetail>(`/imports/${encodeURIComponent(params.importId)}`, options),
-    /** A short-lived signed URL for the original uploaded bytes. */
-    download: (params: {importId: string}, options?: RequestOptions) =>
-      this.#request<ImportDownloadResponse>(
-        `/imports/${encodeURIComponent(params.importId)}/download`,
-        options,
-      ),
-    delete: async (params: {importId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/imports/${encodeURIComponent(params.importId)}`, {
-        method: 'DELETE',
-        ...options,
-      })
-    },
-  }
-
-  /** Jobs: poll async work (builds, updates and syncs) to a terminal state. */
+  /** Jobs: poll async work (builds, updates and `files` syncs) to a terminal state. */
   jobs = {
     get: (params: {jobId: string}, options?: RequestOptions) =>
       this.#request<Job>(`/jobs/${encodeURIComponent(params.jobId)}`, options),
@@ -726,47 +720,178 @@ export class ContextClient {
     },
   }
 
-  /** Sources: the distilled units builds cite. */
+  /**
+   * Sources: the websites, Sanity datasets and files a knowledge base's
+   * documents come from. Each source syncs to read its documents again.
+   */
   sources = {
     /**
-     * List sources, optionally filtered by `status` or the `importId` they
-     * came from. `ids` is a lookup mode: it resolves those exact sources
-     * (e.g. from an entry's citations) and overrides `status` and `cursor`.
+     * Add a source, discriminated on `type`:
+     *
+     * - `web` crawls `url` and starts its first sync. {@link sources.preview}
+     *   estimates the crawl without adding anything.
+     * - `sanity-dataset` reads the documents `query` selects and starts its
+     *   first sync.
+     * - `files` holds text sent as `content` (synced at once), a `file`, or
+     *   neither, for a file to come later through {@link sources.upload}.
+     *   With a `file`, the client adds the source, uploads the bytes to a
+     *   signed storage URL, starts its sync, and resolves with the source
+     *   read again, so `latestSync` is that sync.
+     *
+     * Follow the first sync with the source's `latestSync`.
+     */
+    create: async (params: CreateSourceParams, options?: RequestOptions): Promise<Source> => {
+      if (!_isFileSource(params)) {
+        return this.#request<Source>('/sources', {method: 'POST', body: params, ...options})
+      }
+      const {file, filename, contentType, ...body} = params
+      const source = await this.#request<Source>('/sources', {method: 'POST', body, ...options})
+      await this.#uploadFile({sourceId: source.id, file, filename, contentType}, options)
+      return this.#request<Source>(_sourcePath(source.id), options)
+    },
+    /**
+     * Estimate what a crawl of a website would fetch, grouped by path,
+     * without adding it as a source.
+     */
+    preview: (params: PreviewWebSourceParams, options?: RequestOptions) =>
+      this.#request<CrawlPreview>('/sources', {
+        method: 'POST',
+        body: {type: 'web', ...params, dryRun: true},
+        ...options,
+      }),
+    list: (params?: ListOptions) => this.#list<SourcesResponse>('/sources', params),
+    get: (params: {sourceId: string}, options?: RequestOptions) =>
+      this.#request<Source>(_sourcePath(params.sourceId), options),
+    /**
+     * Change a source's title, a website's crawl options, a dataset's query,
+     * or how often a website or dataset syncs on its own. New crawl options
+     * delete the documents they leave out; when that is more than a fifth
+     * of them, the request is rejected until `confirmDeletions: true` is
+     * sent.
+     */
+    edit: (params: {sourceId: string} & EditSourceParams, options?: RequestOptions) => {
+      const {sourceId, ...body} = params
+      return this.#request<Source>(_sourcePath(sourceId), {
+        method: 'PATCH',
+        body,
+        ...options,
+      })
+    },
+    /**
+     * Remove a source and its documents from the knowledge base. Starts a
+     * refresh that removes their citations from entries.
+     */
+    delete: async (params: {sourceId: string}, options?: RequestOptions) => {
+      await this.#request<void>(_sourcePath(params.sourceId), {
+        method: 'DELETE',
+        ...options,
+      })
+    },
+    /**
+     * Upload a file to a `files` source and sync it, replacing the file it
+     * holds. Stages the upload, PUTs the bytes to a signed storage URL, and
+     * starts the sync; the bytes never pass through the Context API.
+     */
+    upload: (params: {sourceId: string} & SourceFileUpload, options?: RequestOptions) =>
+      this.#uploadFile(params, options),
+    /**
+     * The staged half of an upload, for callers that PUT the bytes
+     * themselves: a single-use signed URL valid for one hour. Sync the
+     * source with the `uploadId` once the bytes are there.
+     */
+    uploads: {
+      create: (params: {sourceId: string} & CreateUploadParams, options?: RequestOptions) => {
+        const {sourceId, ...body} = params
+        return this.#request<StagedUpload>(_sourcePath(sourceId, '/uploads'), {
+          method: 'POST',
+          body,
+          ...options,
+        })
+      },
+    },
+    /** Syncs: each run of a source's connector, newest first. */
+    syncs: {
+      /**
+       * Sync a source. A website or dataset is read again once any running
+       * sync of it ends. A `files` source syncs at once, with the file of
+       * `uploadId` or, without one, its current file.
+       */
+      create: (params: {sourceId: string; uploadId?: string}, options?: RequestOptions) =>
+        this.#request<SyncAccepted>(_sourcePath(params.sourceId, '/syncs'), {
+          method: 'POST',
+          body: params.uploadId ? {uploadId: params.uploadId} : {},
+          ...options,
+        }),
+      list: (params: {sourceId: string} & ListOptions) =>
+        this.#list<SyncsResponse>(_sourcePath(params.sourceId, '/syncs'), params),
+      get: (params: {sourceId: string; syncId: string}, options?: RequestOptions) =>
+        this.#request<Sync>(_syncPath(params), options),
+      /** Delete the documents a `held` sync didn't find, and complete it. */
+      confirm: (params: {sourceId: string; syncId: string}, options?: RequestOptions) =>
+        this.#request<Sync>(_syncPath(params, '/confirm'), {method: 'POST', ...options}),
+      /** Complete a `held` sync without deleting anything. */
+      discard: (params: {sourceId: string; syncId: string}, options?: RequestOptions) =>
+        this.#request<Sync>(_syncPath(params, '/discard'), {method: 'POST', ...options}),
+    },
+  }
+
+  /**
+   * Documents: the pages, dataset documents and files sources yield, which
+   * builds read and cite.
+   */
+  documents = {
+    /**
+     * List documents, optionally only those of one `source` or in one
+     * `state` (without it, `deleted` documents are left out). `ids` is a
+     * lookup mode: it resolves those exact documents in any state, such as
+     * the ones entry citations point at.
      */
     list: (
       params?: {
-        status?: Source['status']
-        importId?: string
+        source?: string
+        state?: DocumentsResponse['data'][number]['state']
         ids?: string[]
       } & ListOptions,
     ) =>
-      this.#list<SourcesResponse>('/sources', params, {
-        status: params?.status,
-        importId: params?.importId,
+      this.#list<DocumentsResponse>('/documents', params, {
+        source: params?.source,
+        state: params?.state,
         ids: params?.ids?.join(','),
       }),
-    get: (params: {sourceId: string}, options?: RequestOptions) =>
-      this.#request<SourceDetail>(`/sources/${encodeURIComponent(params.sourceId)}`, options),
+    /** A document with its conversion status and the chunks of its markdown. */
+    get: (params: {documentId: string}, options?: RequestOptions) =>
+      this.#request<DocumentDetail>(_documentPath(params.documentId), options),
+    /** Keep a `missing` web page in the knowledge base by setting its `state` back to `active`. */
+    edit: (params: {documentId: string} & EditDocumentParams, options?: RequestOptions) => {
+      const {documentId, ...body} = params
+      return this.#request<ContextDocument>(_documentPath(documentId), {
+        method: 'PATCH',
+        body,
+        ...options,
+      })
+    },
     /**
-     * Distilled source content, optionally a line range: the evidence behind
-     * a citation or an issue.
+     * The markdown a document converted to, with the line numbers citations
+     * use. `chunk` or `lines` (`10-20`, or `10` for line 10 to the end)
+     * narrows it. `format: 'markdown'` or `'plain'` resolves with the text
+     * alone, and `format: 'raw'` with the bytes the source gave, before
+     * conversion.
      */
-    content: (
-      params: {sourceId: string; startLine?: number; endLine?: number},
+    content: <F extends DocumentContentOptions['format'] = undefined>(
+      params: {documentId: string; format?: F} & Omit<DocumentContentOptions, 'format'>,
       options?: RequestOptions,
-    ) =>
-      this.#request<SourceContentResponse>(
-        `/sources/${encodeURIComponent(params.sourceId)}/content`,
-        {
-          query: _query({
-            startLine: params.startLine,
-            endLine: params.endLine,
-          }),
-          ...options,
-        },
-      ),
-    delete: async (params: {sourceId: string}, options?: RequestOptions) => {
-      await this.#request<void>(`/sources/${encodeURIComponent(params.sourceId)}`, {
+    ): Promise<DocumentContent<F>> =>
+      this.#request<DocumentContent<F>>(_documentPath(params.documentId, '/content'), {
+        query: _query({format: params.format, chunk: params.chunk, lines: params.lines}),
+        ...(params.format === 'raw' && {rawBody: true}),
+        ...options,
+      }),
+    /**
+     * Delete a document from its source. A page still on the website comes
+     * back on the next sync unless the crawl options exclude it.
+     */
+    delete: async (params: {documentId: string}, options?: RequestOptions) => {
+      await this.#request<void>(_documentPath(params.documentId), {
         method: 'DELETE',
         ...options,
       })

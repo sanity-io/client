@@ -71,15 +71,47 @@ describe('client.context return types', () => {
     ).toEqualTypeOf<Context.DeleteInstructionResponse>()
   })
 
-  test('imports.delete resolves to void', async () => {
-    expectTypeOf(await kb.imports.delete({importId: 'imp1'})).toEqualTypeOf<void>()
+  test('sources.create resolves with the source, preview with the crawl preview', async () => {
+    expectTypeOf(
+      await kb.sources.create({type: 'web', url: 'https://example.com'}),
+    ).toEqualTypeOf<Context.Source>()
+    expectTypeOf(
+      await kb.sources.create({type: 'files', title: 't', file: new Blob(['x']), filename: 'x'}),
+    ).toEqualTypeOf<Context.Source>()
+    expectTypeOf(
+      await kb.sources.preview({url: 'https://example.com'}),
+    ).toEqualTypeOf<Context.CrawlPreview>()
+    // @ts-expect-error -- should fail: a dry run goes through sources.preview
+    void kb.sources.create({type: 'web', url: 'https://example.com', dryRun: true})
   })
 
-  test('the file import variant is only valid with file fields', async () => {
-    // @ts-expect-error -- should fail: file imports require a filename
-    void kb.imports.create({type: 'file', file: new Blob(['x'])})
-    // @ts-expect-error -- should fail: text imports carry content, not a file
-    void kb.imports.create({type: 'text', title: 't', file: new Blob(['x'])})
+  test('the file variant of sources.create is only valid with file fields', async () => {
+    const blob = new Blob(['x'])
+    // @ts-expect-error -- should fail: a file needs a filename
+    void kb.sources.create({type: 'files', title: 't', file: blob})
+    // @ts-expect-error -- should fail: a files source holds inline content or a file, not both
+    void kb.sources.create({type: 'files', title: 't', content: 'x', file: blob, filename: 'x'})
+    // @ts-expect-error -- should fail: only files sources take a file
+    void kb.sources.create({type: 'web', url: 'https://x.dev', file: blob, filename: 'x'})
+  })
+
+  test('documents.content resolves per format', async () => {
+    expectTypeOf(
+      await kb.documents.content({documentId: 'd'}),
+    ).toEqualTypeOf<Context.DocumentContentResponse>()
+    expectTypeOf(
+      await kb.documents.content({documentId: 'd', format: 'json'}),
+    ).toEqualTypeOf<Context.DocumentContentResponse>()
+    expectTypeOf(
+      await kb.documents.content({documentId: 'd', format: 'plain'}),
+    ).toEqualTypeOf<string>()
+    expectTypeOf(
+      await kb.documents.content({documentId: 'd', format: 'raw'}),
+    ).toEqualTypeOf<Uint8Array>()
+  })
+
+  test('documents.delete resolves to void', async () => {
+    expectTypeOf(await kb.documents.delete({documentId: 'd'})).toEqualTypeOf<void>()
   })
 
   test('context.listen emits mutation events by default', () => {
