@@ -128,7 +128,7 @@ export class ObservableSanityClient {
     action: ObservableAgentsActionClient
   }
   collaboration: {
-    /** @alpha */
+    /** @beta */
     comments: ObservableCollaborationCommentsClient
   }
   functions: ObservableFunctionsClient
@@ -1287,7 +1287,7 @@ export class SanityClient {
     action: AgentActionsClient
   }
   collaboration: {
-    /** @alpha */
+    /** @beta */
     comments: CollaborationCommentsClient
   }
   functions: FunctionsClient

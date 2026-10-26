@@ -2677,7 +2677,7 @@ Both calls resolve with `undefined` once the callback is accepted, and reject wi
 
 Read and write comments on documents in an organization resource. Available on `client.collaboration.comments`, with Observable equivalents on `client.observable.collaboration.comments`.
 
-> **Note:** This API is currently in alpha and may change in future releases.
+> **Note:** This API is currently in beta and may change in future releases.
 
 #### Configuration
 

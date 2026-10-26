@@ -34,7 +34,7 @@ import type {
  *
  * Requires `collaboration.organizationId`, plus either `resource` or `projectId` and `dataset`.
  *
- * @alpha
+ * @beta
  */
 export class ObservableCollaborationCommentsClient {
   #client: ObservableSanityClient
@@ -214,7 +214,7 @@ export class ObservableCollaborationCommentsClient {
  *
  * Requires `collaboration.organizationId`, plus either `resource` or `projectId` and `dataset`.
  *
- * @alpha
+ * @beta
  */
 export class CollaborationCommentsClient {
   #client: SanityClient

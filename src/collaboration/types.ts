@@ -12,7 +12,7 @@ export const possibleRequestOptions = ['headers', 'signal', 'tag', 'timeout', 't
 /**
  * Request options honored by the collaboration comments methods.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentsRequestOptions = Pick<
   RequestOptions,
@@ -22,7 +22,7 @@ export type CollaborationCommentsRequestOptions = Pick<
 /**
  * Options for collaboration comments write methods.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentsWriteOptions = CollaborationCommentsRequestOptions & {
   /** Transaction ID to associate the write with */
@@ -35,7 +35,7 @@ export type CollaborationCommentsWriteOptions = CollaborationCommentsRequestOpti
  * `includeAllVersions` is left out: comments are stored as `sanity.comment`
  * documents with no drafts or versions, so it would never make a difference.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentsListenOptions =
   | Omit<ListenOptions, 'includeAllVersions'>
@@ -44,14 +44,14 @@ export type CollaborationCommentsListenOptions =
 /**
  * Status of a comment thread. Replies always share the status of their parent comment.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentStatus = 'open' | 'resolved'
 
 /**
  * Emoji short names that can be used as comment reactions.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentReactionShortName =
   | ':-1:'
@@ -64,7 +64,7 @@ export type CollaborationCommentReactionShortName =
 /**
  * A single Portable Text block, as used in comment messages and content snapshots.
  *
- * @alpha
+ * @beta
  */
 export interface CollaborationCommentPortableTextBlock {
   _type: string
@@ -75,7 +75,7 @@ export interface CollaborationCommentPortableTextBlock {
 /**
  * Comment message, as an array of Portable Text blocks.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentMessage = CollaborationCommentPortableTextBlock[]
 
@@ -87,7 +87,7 @@ export type CollaborationCommentMessage = CollaborationCommentPortableTextBlock[
  * block it came from. `text` is the plain text of that block with the selected
  * part wrapped in the marker characters `\uF000` (start) and `\uF001` (end).
  *
- * @alpha
+ * @beta
  */
 export interface CollaborationCommentSelection {
   type: 'text'
@@ -97,7 +97,7 @@ export interface CollaborationCommentSelection {
 /**
  * A comment document, as stored by the Comments API.
  *
- * @alpha
+ * @beta
  */
 export interface CollaborationCommentDocument extends SanityDocument {
   _type: 'sanity.comment'
@@ -155,7 +155,7 @@ export interface CollaborationCommentDocument extends SanityDocument {
  * offset into that block's plain text.
  *
  * @deprecated Use {@link CollaborationCommentAnchor}.
- * @alpha
+ * @beta
  */
 export interface CollaborationCommentRange {
   start: {_key: string; offset: number}
@@ -166,7 +166,7 @@ export interface CollaborationCommentRange {
  * Portable Text covering an inline comment anchor. Callers can send just the
  * blocks from the anchor start `_key` through end `_key`, or the full field.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentFieldValue = Array<{
   _type: string
@@ -182,7 +182,7 @@ export type CollaborationCommentFieldValue = Array<{
  * `fieldValue` is Portable Text covering the anchor. When set, the selection
  * is resolved from those blocks instead of from the live document.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentAnchor = {
   type: 'portable-text'
@@ -202,7 +202,7 @@ export type CollaborationCommentAnchor = {
  * Deprecated `range` + top-level `fieldValue` are still accepted and converted
  * to a `portable-text` `anchor` before the request is sent.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentTarget = {
   documentId: string
@@ -295,7 +295,7 @@ export type CollaborationCommentTarget = {
  * })
  * ```
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentCreate = {
   /** Provide to control the ID of the created comment document */
@@ -326,7 +326,7 @@ export type CollaborationCommentCreate = {
  * Deprecated `range` + top-level `fieldValue` (and `range: null`) are still
  * accepted and converted to `anchor` before the request is sent.
  *
- * @alpha
+ * @beta
  */
 export type CollaborationCommentUpdate = {
   /** Replaces the current message */
