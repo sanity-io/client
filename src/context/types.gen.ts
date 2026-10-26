@@ -292,7 +292,7 @@ export interface paths {
     put?: never
     /**
      * Accept and apply issues
-     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), a `merge_entry`, or a `gap`, `update_required` or `split_entry` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.
+     * @description Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), or an `update_required` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.
      */
     post: operations['applyIssues']
     delete?: never
@@ -437,7 +437,7 @@ export interface paths {
     post?: never
     /**
      * Delete a source
-     * @description Deletes the source immediately. Entries that cite it stay the same until the next build or refresh, which removes the citations and proposes removing any entry left with no sources.
+     * @description Deletes the source immediately. Entries that cite it stay the same until the next build or refresh, which removes the citations and deletes any entry left with no sources.
      */
     delete: operations['deleteSource']
     options?: never
@@ -1036,7 +1036,7 @@ export interface components {
                  * @enum {string}
                  */
                 severity: 'critical' | 'suggestion'
-                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                 scopePath: string
                 /** @description What the problem is, in one or two sentences. */
                 issue: string
@@ -1049,6 +1049,8 @@ export interface components {
                 kind: 'conflict'
                 /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description One sentence that explains the question, when it needs one. */
+                context?: string
                 /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
                   /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -1059,6 +1061,8 @@ export interface components {
                   entryPaths?: string[]
                   /** @description IDs of the sources that directly back this position. */
                   sourceIds?: string[]
+                  /** @description The documents that state this value, by the names you know them by. */
+                  where?: string
                   /** @description Where in a source this position was read. */
                   span?: {
                     /** @description ID of the source the position was read from. */
@@ -1083,24 +1087,18 @@ export interface components {
                  * @enum {string}
                  */
                 severity: 'critical' | 'suggestion'
-                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                 scopePath: string
                 /** @description What the problem is, in one or two sentences. */
                 issue: string
                 /** @description What to do to fix the issue. */
                 suggestedFix: string
                 /**
-                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @description The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite.
                  * @enum {string}
                  */
-                kind:
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
+                kind: 'update_required'
+                /** @description IDs of the sources that led to the issue. */
                 citedSourceIds?: string[]
                 /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
@@ -1167,7 +1165,7 @@ export interface components {
                  * @enum {string}
                  */
                 severity: 'critical' | 'suggestion'
-                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                 scopePath: string
                 /** @description What the problem is, in one or two sentences. */
                 issue: string
@@ -1180,6 +1178,8 @@ export interface components {
                 kind: 'conflict'
                 /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description One sentence that explains the question, when it needs one. */
+                context?: string
                 /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
                   /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -1190,6 +1190,8 @@ export interface components {
                   entryPaths?: string[]
                   /** @description IDs of the sources that directly back this position. */
                   sourceIds?: string[]
+                  /** @description The documents that state this value, by the names you know them by. */
+                  where?: string
                   /** @description Where in a source this position was read. */
                   span?: {
                     /** @description ID of the source the position was read from. */
@@ -1214,24 +1216,18 @@ export interface components {
                  * @enum {string}
                  */
                 severity: 'critical' | 'suggestion'
-                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                 scopePath: string
                 /** @description What the problem is, in one or two sentences. */
                 issue: string
                 /** @description What to do to fix the issue. */
                 suggestedFix: string
                 /**
-                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @description The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite.
                  * @enum {string}
                  */
-                kind:
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
+                kind: 'update_required'
+                /** @description IDs of the sources that led to the issue. */
                 citedSourceIds?: string[]
                 /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
@@ -1300,7 +1296,7 @@ export interface components {
                  * @enum {string}
                  */
                 severity: 'critical' | 'suggestion'
-                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                 scopePath: string
                 /** @description What the problem is, in one or two sentences. */
                 issue: string
@@ -1313,6 +1309,8 @@ export interface components {
                 kind: 'conflict'
                 /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                 claimKey: string
+                /** @description One sentence that explains the question, when it needs one. */
+                context?: string
                 /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                 sides: {
                   /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -1323,6 +1321,8 @@ export interface components {
                   entryPaths?: string[]
                   /** @description IDs of the sources that directly back this position. */
                   sourceIds?: string[]
+                  /** @description The documents that state this value, by the names you know them by. */
+                  where?: string
                   /** @description Where in a source this position was read. */
                   span?: {
                     /** @description ID of the source the position was read from. */
@@ -1347,24 +1347,18 @@ export interface components {
                  * @enum {string}
                  */
                 severity: 'critical' | 'suggestion'
-                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                 scopePath: string
                 /** @description What the problem is, in one or two sentences. */
                 issue: string
                 /** @description What to do to fix the issue. */
                 suggestedFix: string
                 /**
-                 * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                 * @description The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite.
                  * @enum {string}
                  */
-                kind:
-                  | 'gap'
-                  | 'update_required'
-                  | 'add_entry'
-                  | 'remove_entry'
-                  | 'split_entry'
-                  | 'merge_entry'
-                /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
+                kind: 'update_required'
+                /** @description IDs of the sources that led to the issue. */
                 citedSourceIds?: string[]
                 /** @description A key naming the specific finding, when the check that found it sets one. */
                 claimKey?: string
@@ -1582,7 +1576,7 @@ export interface operations {
               } | null
               /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
               pipelineOutdated: boolean
-              /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
+              /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
               rebuildRecommended: {
                 /** @description Why a rebuild is recommended, written to show to users. */
                 reason: string
@@ -1779,7 +1773,7 @@ export interface operations {
             } | null
             /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
             pipelineOutdated: boolean
-            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
+            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
             rebuildRecommended: {
               /** @description Why a rebuild is recommended, written to show to users. */
               reason: string
@@ -1961,7 +1955,7 @@ export interface operations {
             } | null
             /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
             pipelineOutdated: boolean
-            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
+            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
             rebuildRecommended: {
               /** @description Why a rebuild is recommended, written to show to users. */
               reason: string
@@ -2193,7 +2187,7 @@ export interface operations {
             } | null
             /** @description Whether Sanity Context has improved how it builds knowledge bases since the last successful build. Rebuild to apply the improvements. Always `false` before the first build. */
             pipelineOutdated: boolean
-            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
+            /** @description A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it. */
             rebuildRecommended: {
               /** @description Why a rebuild is recommended, written to show to users. */
               reason: string
@@ -3246,7 +3240,7 @@ export interface operations {
                    * @enum {string}
                    */
                   severity: 'critical' | 'suggestion'
-                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                   scopePath: string
                   /** @description What the problem is, in one or two sentences. */
                   issue: string
@@ -3259,6 +3253,8 @@ export interface operations {
                   kind: 'conflict'
                   /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                   claimKey: string
+                  /** @description One sentence that explains the question, when it needs one. */
+                  context?: string
                   /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                   sides: {
                     /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -3269,6 +3265,8 @@ export interface operations {
                     entryPaths?: string[]
                     /** @description IDs of the sources that directly back this position. */
                     sourceIds?: string[]
+                    /** @description The documents that state this value, by the names you know them by. */
+                    where?: string
                     /** @description Where in a source this position was read. */
                     span?: {
                       /** @description ID of the source the position was read from. */
@@ -3293,24 +3291,18 @@ export interface operations {
                    * @enum {string}
                    */
                   severity: 'critical' | 'suggestion'
-                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                   scopePath: string
                   /** @description What the problem is, in one or two sentences. */
                   issue: string
                   /** @description What to do to fix the issue. */
                   suggestedFix: string
                   /**
-                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                   * @description The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite.
                    * @enum {string}
                    */
-                  kind:
-                    | 'gap'
-                    | 'update_required'
-                    | 'add_entry'
-                    | 'remove_entry'
-                    | 'split_entry'
-                    | 'merge_entry'
-                  /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
+                  kind: 'update_required'
+                  /** @description IDs of the sources that led to the issue. */
                   citedSourceIds?: string[]
                   /** @description A key naming the specific finding, when the check that found it sets one. */
                   claimKey?: string
@@ -3393,7 +3385,7 @@ export interface operations {
                    * @enum {string}
                    */
                   severity: 'critical' | 'suggestion'
-                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                   scopePath: string
                   /** @description What the problem is, in one or two sentences. */
                   issue: string
@@ -3406,6 +3398,8 @@ export interface operations {
                   kind: 'conflict'
                   /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                   claimKey: string
+                  /** @description One sentence that explains the question, when it needs one. */
+                  context?: string
                   /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                   sides: {
                     /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -3416,6 +3410,8 @@ export interface operations {
                     entryPaths?: string[]
                     /** @description IDs of the sources that directly back this position. */
                     sourceIds?: string[]
+                    /** @description The documents that state this value, by the names you know them by. */
+                    where?: string
                     /** @description Where in a source this position was read. */
                     span?: {
                       /** @description ID of the source the position was read from. */
@@ -3440,24 +3436,18 @@ export interface operations {
                    * @enum {string}
                    */
                   severity: 'critical' | 'suggestion'
-                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                  /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                   scopePath: string
                   /** @description What the problem is, in one or two sentences. */
                   issue: string
                   /** @description What to do to fix the issue. */
                   suggestedFix: string
                   /**
-                   * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                   * @description The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite.
                    * @enum {string}
                    */
-                  kind:
-                    | 'gap'
-                    | 'update_required'
-                    | 'add_entry'
-                    | 'remove_entry'
-                    | 'split_entry'
-                    | 'merge_entry'
-                  /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
+                  kind: 'update_required'
+                  /** @description IDs of the sources that led to the issue. */
                   citedSourceIds?: string[]
                   /** @description A key naming the specific finding, when the check that found it sets one. */
                   claimKey?: string
@@ -3549,7 +3539,7 @@ export interface operations {
                      * @enum {string}
                      */
                     severity: 'critical' | 'suggestion'
-                    /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                    /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                     scopePath: string
                     /** @description What the problem is, in one or two sentences. */
                     issue: string
@@ -3562,6 +3552,8 @@ export interface operations {
                     kind: 'conflict'
                     /** @description A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it. */
                     claimKey: string
+                    /** @description One sentence that explains the question, when it needs one. */
+                    context?: string
                     /** @description The conflicting positions, at least two. To resolve the conflict, pass the index of one side as `resolution`. */
                     sides: {
                       /** @description The position as a self-contained sentence. This is the option you choose from. */
@@ -3572,6 +3564,8 @@ export interface operations {
                       entryPaths?: string[]
                       /** @description IDs of the sources that directly back this position. */
                       sourceIds?: string[]
+                      /** @description The documents that state this value, by the names you know them by. */
+                      where?: string
                       /** @description Where in a source this position was read. */
                       span?: {
                         /** @description ID of the source the position was read from. */
@@ -3596,24 +3590,18 @@ export interface operations {
                      * @enum {string}
                      */
                     severity: 'critical' | 'suggestion'
-                    /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry. */
+                    /** @description Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. */
                     scopePath: string
                     /** @description What the problem is, in one or two sentences. */
                     issue: string
                     /** @description What to do to fix the issue. */
                     suggestedFix: string
                     /**
-                     * @description The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is.
+                     * @description The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite.
                      * @enum {string}
                      */
-                    kind:
-                      | 'gap'
-                      | 'update_required'
-                      | 'add_entry'
-                      | 'remove_entry'
-                      | 'split_entry'
-                      | 'merge_entry'
-                    /** @description IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite. */
+                    kind: 'update_required'
+                    /** @description IDs of the sources that led to the issue. */
                     citedSourceIds?: string[]
                     /** @description A key naming the specific finding, when the check that found it sets one. */
                     claimKey?: string
@@ -3913,6 +3901,11 @@ export interface operations {
               fetchedAt: string | null
               /**
                * Format: date-time
+               * @description When the document itself was last updated, as it says: a page's meta tags, a dataset document's `_updatedAt`, or the metadata in a PDF, Office or markdown file. A section of a document has its document's date. `null` when the document doesn't say. When an uploaded file disagrees with a document more than a year newer, builds use the newer document's value and ask nobody. A page or dataset document is never replaced this way: the disagreement is asked.
+               */
+              documentUpdatedAt: string | null
+              /**
+               * Format: date-time
                * @description When the source's content was last distilled into markdown. `null` until it's distilled.
                */
               distilledAt: string | null
@@ -3998,6 +3991,11 @@ export interface operations {
              * @description When the source's content was last fetched.
              */
             fetchedAt: string | null
+            /**
+             * Format: date-time
+             * @description When the document itself was last updated, as it says: a page's meta tags, a dataset document's `_updatedAt`, or the metadata in a PDF, Office or markdown file. A section of a document has its document's date. `null` when the document doesn't say. When an uploaded file disagrees with a document more than a year newer, builds use the newer document's value and ask nobody. A page or dataset document is never replaced this way: the disagreement is asked.
+             */
+            documentUpdatedAt: string | null
             /**
              * Format: date-time
              * @description When the source's content was last distilled into markdown. `null` until it's distilled.

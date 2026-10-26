@@ -11,12 +11,6 @@
         "type": "http",
         "scheme": "bearer",
         "description": "A Sanity API token or a user token."
-      },
-      "sessionCookie": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "sanitySession",
-        "description": "The Sanity session cookie, for requests from the browser. Read only when no `Authorization` header is sent; any `Authorization` header must be a Bearer token."
       }
     },
     "schemas": {
@@ -516,7 +510,7 @@
                       },
                       "scopePath": {
                         "type": "string",
-                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                       },
                       "issue": {
                         "type": "string",
@@ -534,6 +528,10 @@
                       "claimKey": {
                         "type": "string",
                         "description": "A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it."
+                      },
+                      "context": {
+                        "description": "One sentence that explains the question, when it needs one.",
+                        "type": "string"
                       },
                       "sides": {
                         "minItems": 2,
@@ -562,6 +560,10 @@
                               "items": {
                                 "type": "string"
                               }
+                            },
+                            "where": {
+                              "description": "The documents that state this value, by the names you know them by.",
+                              "type": "string"
                             },
                             "span": {
                               "description": "Where in a source this position was read.",
@@ -625,7 +627,7 @@
                       },
                       "scopePath": {
                         "type": "string",
-                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                       },
                       "issue": {
                         "type": "string",
@@ -637,18 +639,11 @@
                       },
                       "kind": {
                         "type": "string",
-                        "enum": [
-                          "gap",
-                          "update_required",
-                          "add_entry",
-                          "remove_entry",
-                          "split_entry",
-                          "merge_entry"
-                        ],
-                        "description": "The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is."
+                        "enum": ["update_required"],
+                        "description": "The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite."
                       },
                       "citedSourceIds": {
-                        "description": "IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite.",
+                        "description": "IDs of the sources that led to the issue.",
                         "type": "array",
                         "items": {
                           "type": "string"
@@ -667,7 +662,7 @@
                       }
                     },
                     "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                    "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
+                    "description": "An entry that needs a rewrite: it is out of date with its sources or contradicts an instruction."
                   }
                 ],
                 "description": "What an issue found. The shape depends on `kind`."
@@ -776,7 +771,7 @@
                       },
                       "scopePath": {
                         "type": "string",
-                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                       },
                       "issue": {
                         "type": "string",
@@ -794,6 +789,10 @@
                       "claimKey": {
                         "type": "string",
                         "description": "A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it."
+                      },
+                      "context": {
+                        "description": "One sentence that explains the question, when it needs one.",
+                        "type": "string"
                       },
                       "sides": {
                         "minItems": 2,
@@ -822,6 +821,10 @@
                               "items": {
                                 "type": "string"
                               }
+                            },
+                            "where": {
+                              "description": "The documents that state this value, by the names you know them by.",
+                              "type": "string"
                             },
                             "span": {
                               "description": "Where in a source this position was read.",
@@ -885,7 +888,7 @@
                       },
                       "scopePath": {
                         "type": "string",
-                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                       },
                       "issue": {
                         "type": "string",
@@ -897,18 +900,11 @@
                       },
                       "kind": {
                         "type": "string",
-                        "enum": [
-                          "gap",
-                          "update_required",
-                          "add_entry",
-                          "remove_entry",
-                          "split_entry",
-                          "merge_entry"
-                        ],
-                        "description": "The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is."
+                        "enum": ["update_required"],
+                        "description": "The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite."
                       },
                       "citedSourceIds": {
-                        "description": "IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite.",
+                        "description": "IDs of the sources that led to the issue.",
                         "type": "array",
                         "items": {
                           "type": "string"
@@ -927,7 +923,7 @@
                       }
                     },
                     "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                    "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
+                    "description": "An entry that needs a rewrite: it is out of date with its sources or contradicts an instruction."
                   }
                 ],
                 "description": "What an issue found. The shape depends on `kind`."
@@ -1049,7 +1045,7 @@
                       },
                       "scopePath": {
                         "type": "string",
-                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                       },
                       "issue": {
                         "type": "string",
@@ -1067,6 +1063,10 @@
                       "claimKey": {
                         "type": "string",
                         "description": "A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it."
+                      },
+                      "context": {
+                        "description": "One sentence that explains the question, when it needs one.",
+                        "type": "string"
                       },
                       "sides": {
                         "minItems": 2,
@@ -1095,6 +1095,10 @@
                               "items": {
                                 "type": "string"
                               }
+                            },
+                            "where": {
+                              "description": "The documents that state this value, by the names you know them by.",
+                              "type": "string"
                             },
                             "span": {
                               "description": "Where in a source this position was read.",
@@ -1158,7 +1162,7 @@
                       },
                       "scopePath": {
                         "type": "string",
-                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                        "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                       },
                       "issue": {
                         "type": "string",
@@ -1170,18 +1174,11 @@
                       },
                       "kind": {
                         "type": "string",
-                        "enum": [
-                          "gap",
-                          "update_required",
-                          "add_entry",
-                          "remove_entry",
-                          "split_entry",
-                          "merge_entry"
-                        ],
-                        "description": "The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is."
+                        "enum": ["update_required"],
+                        "description": "The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite."
                       },
                       "citedSourceIds": {
-                        "description": "IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite.",
+                        "description": "IDs of the sources that led to the issue.",
                         "type": "array",
                         "items": {
                           "type": "string"
@@ -1200,7 +1197,7 @@
                       }
                     },
                     "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                    "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
+                    "description": "An entry that needs a rewrite: it is out of date with its sources or contradicts an instruction."
                   }
                 ],
                 "description": "What an issue found. The shape depends on `kind`."
@@ -1941,7 +1938,7 @@
                           },
                           "rebuildRecommended": {
                             "nullable": true,
-                            "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
+                            "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
                             "type": "object",
                             "properties": {
                               "reason": {
@@ -2337,7 +2334,7 @@
                     },
                     "rebuildRecommended": {
                       "nullable": true,
-                      "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
+                      "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
                       "type": "object",
                       "properties": {
                         "reason": {
@@ -2695,7 +2692,7 @@
                     },
                     "rebuildRecommended": {
                       "nullable": true,
-                      "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
+                      "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
                       "type": "object",
                       "properties": {
                         "reason": {
@@ -3084,7 +3081,7 @@
                     },
                     "rebuildRecommended": {
                       "nullable": true,
-                      "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
+                      "description": "A recommendation to rebuild, because new or changed content doesn't fit the current outline, or pages are out of date with changed sources and only a build updates them. `null` when there's no recommendation. A refresh where the content fits again, a successful build, or adding or removing sources clears it.",
                       "type": "object",
                       "properties": {
                         "reason": {
@@ -3659,6 +3656,13 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                           },
+                          "documentUpdatedAt": {
+                            "nullable": true,
+                            "description": "When the document itself was last updated, as it says: a page's meta tags, a dataset document's `_updatedAt`, or the metadata in a PDF, Office or markdown file. A section of a document has its document's date. `null` when the document doesn't say. When an uploaded file disagrees with a document more than a year newer, builds use the newer document's value and ask nobody. A page or dataset document is never replaced this way: the disagreement is asked.",
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
                           "distilledAt": {
                             "nullable": true,
                             "description": "When the source's content was last distilled into markdown. `null` until it's distilled.",
@@ -3685,6 +3689,7 @@
                           "canonicalUrl",
                           "externalId",
                           "fetchedAt",
+                          "documentUpdatedAt",
                           "distilledAt",
                           "createdAt"
                         ],
@@ -3825,6 +3830,13 @@
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                     },
+                    "documentUpdatedAt": {
+                      "nullable": true,
+                      "description": "When the document itself was last updated, as it says: a page's meta tags, a dataset document's `_updatedAt`, or the metadata in a PDF, Office or markdown file. A section of a document has its document's date. `null` when the document doesn't say. When an uploaded file disagrees with a document more than a year newer, builds use the newer document's value and ask nobody. A page or dataset document is never replaced this way: the disagreement is asked.",
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    },
                     "distilledAt": {
                       "nullable": true,
                       "description": "When the source's content was last distilled into markdown. `null` until it's distilled.",
@@ -3851,6 +3863,7 @@
                     "canonicalUrl",
                     "externalId",
                     "fetchedAt",
+                    "documentUpdatedAt",
                     "distilledAt",
                     "createdAt"
                   ],
@@ -3875,7 +3888,7 @@
         "operationId": "deleteSource",
         "summary": "Delete a source",
         "tags": ["sources"],
-        "description": "Deletes the source immediately. Entries that cite it stay the same until the next build or refresh, which removes the citations and proposes removing any entry left with no sources.",
+        "description": "Deletes the source immediately. Entries that cite it stay the same until the next build or refresh, which removes the citations and deletes any entry left with no sources.",
         "parameters": [
           {
             "schema": {
@@ -5505,7 +5518,7 @@
         "operationId": "applyIssues",
         "summary": "Accept and apply issues",
         "tags": ["issues"],
-        "description": "Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), a `merge_entry`, or a `gap`, `update_required` or `split_entry` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.",
+        "description": "Accepts the issues in `issueIds`, then queues a job that applies them, rewrites the affected entries, and saves a new revision. Returns a job ID. IDs of issues that no longer exist are skipped. Returns `409` with code `issueNotAutoApplicable`, and accepts none of the issues, if any of them cannot be applied: a `conflict` (resolve it with `POST .../issues/{issueId}/resolve`), or an `update_required` issue whose `scopePath` is `*` or names an entry that no longer exists. Dismiss those instead.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5646,7 +5659,7 @@
                             },
                             "scopePath": {
                               "type": "string",
-                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                             },
                             "issue": {
                               "type": "string",
@@ -5664,6 +5677,10 @@
                             "claimKey": {
                               "type": "string",
                               "description": "A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it."
+                            },
+                            "context": {
+                              "description": "One sentence that explains the question, when it needs one.",
+                              "type": "string"
                             },
                             "sides": {
                               "minItems": 2,
@@ -5692,6 +5709,10 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "where": {
+                                    "description": "The documents that state this value, by the names you know them by.",
+                                    "type": "string"
                                   },
                                   "span": {
                                     "description": "Where in a source this position was read.",
@@ -5755,7 +5776,7 @@
                             },
                             "scopePath": {
                               "type": "string",
-                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                             },
                             "issue": {
                               "type": "string",
@@ -5767,18 +5788,11 @@
                             },
                             "kind": {
                               "type": "string",
-                              "enum": [
-                                "gap",
-                                "update_required",
-                                "add_entry",
-                                "remove_entry",
-                                "split_entry",
-                                "merge_entry"
-                              ],
-                              "description": "The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is."
+                              "enum": ["update_required"],
+                              "description": "The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite."
                             },
                             "citedSourceIds": {
-                              "description": "IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite.",
+                              "description": "IDs of the sources that led to the issue.",
                               "type": "array",
                               "items": {
                                 "type": "string"
@@ -5797,7 +5811,7 @@
                             }
                           },
                           "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                          "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
+                          "description": "An entry that needs a rewrite: it is out of date with its sources or contradicts an instruction."
                         }
                       ],
                       "description": "What the issue found. The shape depends on `kind`."
@@ -5960,7 +5974,7 @@
                                 },
                                 "scopePath": {
                                   "type": "string",
-                                  "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                                  "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                                 },
                                 "issue": {
                                   "type": "string",
@@ -5978,6 +5992,10 @@
                                 "claimKey": {
                                   "type": "string",
                                   "description": "A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it."
+                                },
+                                "context": {
+                                  "description": "One sentence that explains the question, when it needs one.",
+                                  "type": "string"
                                 },
                                 "sides": {
                                   "minItems": 2,
@@ -6006,6 +6024,10 @@
                                         "items": {
                                           "type": "string"
                                         }
+                                      },
+                                      "where": {
+                                        "description": "The documents that state this value, by the names you know them by.",
+                                        "type": "string"
                                       },
                                       "span": {
                                         "description": "Where in a source this position was read.",
@@ -6069,7 +6091,7 @@
                                 },
                                 "scopePath": {
                                   "type": "string",
-                                  "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                                  "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                                 },
                                 "issue": {
                                   "type": "string",
@@ -6081,18 +6103,11 @@
                                 },
                                 "kind": {
                                   "type": "string",
-                                  "enum": [
-                                    "gap",
-                                    "update_required",
-                                    "add_entry",
-                                    "remove_entry",
-                                    "split_entry",
-                                    "merge_entry"
-                                  ],
-                                  "description": "The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is."
+                                  "enum": ["update_required"],
+                                  "description": "The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite."
                                 },
                                 "citedSourceIds": {
-                                  "description": "IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite.",
+                                  "description": "IDs of the sources that led to the issue.",
                                   "type": "array",
                                   "items": {
                                     "type": "string"
@@ -6117,7 +6132,7 @@
                                 "suggestedFix",
                                 "kind"
                               ],
-                              "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
+                              "description": "An entry that needs a rewrite: it is out of date with its sources or contradicts an instruction."
                             }
                           ],
                           "description": "What the issue found. The shape depends on `kind`."
@@ -6267,7 +6282,7 @@
                             },
                             "scopePath": {
                               "type": "string",
-                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                             },
                             "issue": {
                               "type": "string",
@@ -6285,6 +6300,10 @@
                             "claimKey": {
                               "type": "string",
                               "description": "A key naming the disputed fact, such as `free_tier.request_limit`. It never includes the disputed value, so every side shares it."
+                            },
+                            "context": {
+                              "description": "One sentence that explains the question, when it needs one.",
+                              "type": "string"
                             },
                             "sides": {
                               "minItems": 2,
@@ -6313,6 +6332,10 @@
                                     "items": {
                                       "type": "string"
                                     }
+                                  },
+                                  "where": {
+                                    "description": "The documents that state this value, by the names you know them by.",
+                                    "type": "string"
                                   },
                                   "span": {
                                     "description": "Where in a source this position was read.",
@@ -6376,7 +6399,7 @@
                             },
                             "scopePath": {
                               "type": "string",
-                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base. For `add_entry`, the path of the proposed entry."
+                              "description": "Path of the entry the issue is about, or `*` when it applies to the whole knowledge base."
                             },
                             "issue": {
                               "type": "string",
@@ -6388,18 +6411,11 @@
                             },
                             "kind": {
                               "type": "string",
-                              "enum": [
-                                "gap",
-                                "update_required",
-                                "add_entry",
-                                "remove_entry",
-                                "split_entry",
-                                "merge_entry"
-                              ],
-                              "description": "The issue type. `gap`: your sources cover material that entries leave out. `update_required`: an entry is out of date with its sources or contradicts an instruction, and needs a rewrite. `add_entry`: your sources cover a topic that no entry covers. `remove_entry`: an entry has lost its sources or its topic no longer applies. `split_entry`: an entry covers several distinct topics and should become child entries. `merge_entry`: an entry has too few sources to stand alone, so merge it into a nearby entry or keep it as it is."
+                              "enum": ["update_required"],
+                              "description": "The issue type. `update_required` means an entry is out of date with its sources or contradicts an instruction, and needs a rewrite."
                             },
                             "citedSourceIds": {
-                              "description": "IDs of the sources that led to the issue. For `add_entry`, the sources the new entry would cite.",
+                              "description": "IDs of the sources that led to the issue.",
                               "type": "array",
                               "items": {
                                 "type": "string"
@@ -6418,7 +6434,7 @@
                             }
                           },
                           "required": ["severity", "scopePath", "issue", "suggestedFix", "kind"],
-                          "description": "Any issue that is not a conflict: missing or outdated content, or a suggested change to the outline."
+                          "description": "An entry that needs a rewrite: it is out of date with its sources or contradicts an instruction."
                         }
                       ],
                       "description": "What the issue found. The shape depends on `kind`."
@@ -8940,9 +8956,6 @@
   "security": [
     {
       "bearerAuth": []
-    },
-    {
-      "sessionCookie": []
     }
   ],
   "tags": [
