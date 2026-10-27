@@ -1,9 +1,6 @@
 # @sanity/client
 
-[![npm stat](https://img.shields.io/npm/dm/@sanity/client.svg?style=flat-square)](https://npm-stat.com/charts.html?package=@sanity/client)
-[![npm version](https://img.shields.io/npm/v/@sanity/client.svg?style=flat-square)](https://www.npmjs.com/package/@sanity/client)
-[![gzip size][gzip-badge]][bundlephobia]
-[![size][size-badge]][bundlephobia]
+[![npm version](https://npmx.dev/api/registry/badge/version/@sanity/client?color=69E3EE)](https://npmx.dev/package/@sanity/client) [![num dependendencies](https://npmx.dev/api/registry/badge/dependencies/@sanity/client)](https://npmx.dev/package/@sanity/client) [![npm monthly downloads](https://npmx.dev/api/registry/badge/downloads-month/@sanity/client)](https://npmx.dev/package/@sanity/client)
 
 JavaScript client for Sanity. Works in modern browsers, as well as runtimes like [Node.js], [Bun], [Deno], and [Edge Runtime]
 
