@@ -82,6 +82,22 @@ export class MessageParseError extends Error {
 }
 
 /**
+ * Whether `err` was raised by the EventSource connection (one of the error
+ * classes above), as opposed to the code around it.
+ *
+ * @internal
+ */
+export function isEventSourceError(err: unknown): boolean {
+  return (
+    err instanceof ConnectionFailedError ||
+    err instanceof ChannelError ||
+    err instanceof DisconnectError ||
+    err instanceof MessageError ||
+    err instanceof MessageParseError
+  )
+}
+
+/**
  * @public
  */
 export interface ServerSentEvent<Name extends string> {

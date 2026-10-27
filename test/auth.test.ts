@@ -863,6 +863,19 @@ describe('auth: live.events()', () => {
     expect(getActiveMock()).toHaveReceivedRequestTimes('GET', livePath, 2)
   })
 
+  test('a failed credential ends the stream with its own error, without a CORS probe', async () => {
+    const sessionOver = new Error('session is over')
+    const rejected = Promise.reject<Auth>(sessionOver)
+    rejected.catch(() => {})
+    const client = createClient({...liveConfig, auth: new BehaviorSubject(rejected)})
+
+    const error = await firstValueFrom(
+      client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+    )
+    expect(error).toBe(sessionOver)
+    expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/vX/check/cors', 0)
+  })
+
   test('the CORS probe knows a reactive cookie-mode connection sent credentials', async () => {
     // An origin allow-listed without credentials answers `allowed: true,
     // withCredentials: false`. That is only a rejection when the connection

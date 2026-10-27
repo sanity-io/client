@@ -20,6 +20,7 @@ import {isRecord} from '../util/isRecord'
 import {shareReplayLatest} from '../util/shareReplayLatest'
 import {connectAuthenticatedEventSource} from './authenticatedEventSource'
 import {_getDataUrl} from './dataMethods'
+import {isEventSourceError} from './eventsource'
 import {pickBaseFetch} from './resolveEventSourceFetch'
 
 const requiredApiVersion = '2021-03-25'
@@ -144,10 +145,10 @@ export class LiveClient {
           return of(event)
         }),
         catchError((err) => {
-          // If a prior `reconnect` already ran the CORS probe and produced a
-          // `CorsOriginError`, just rethrow it instead of calling `/check/cors`
-          // a second time only to get the same answer.
-          if (err instanceof CorsOriginError) {
+          // Probe for CORS only on errors from the connection itself. Anything
+          // else ends the stream as is: an error from the `auth` source, or a
+          // `CorsOriginError` a prior `reconnect` probe already produced.
+          if (!isEventSourceError(err)) {
             return throwError(() => err)
           }
           return checkCors.pipe(
