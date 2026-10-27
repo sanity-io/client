@@ -21,7 +21,7 @@ import {
   throwError,
   toArray,
 } from 'rxjs'
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 
 import {getActiveMock, streamBody, streamStall, testResolveFetch} from './helpers/mockFetch'
 
@@ -314,6 +314,20 @@ describe('auth: requests', () => {
       auth: of(Promise.resolve<Auth>({token: 'reactive'})),
       headers,
     }).fetch('*')
+  })
+})
+
+describe('auth: uploads', () => {
+  test('unsubscribing while the credential is pending releases the source', async () => {
+    // A renewal that never settles: the upload waits for it.
+    const auth = new BehaviorSubject<Promise<Auth>>(new Promise<Auth>(() => {}))
+    const client = createClient({...baseConfig, auth})
+
+    const subscription = client.observable.assets.upload('file', new Blob(['body'])).subscribe()
+    await vi.waitFor(() => expect(auth.observed, 'the upload waits on the source').toBe(true))
+
+    subscription.unsubscribe()
+    expect(auth.observed, 'no wait outlives the upload').toBe(false)
   })
 })
 

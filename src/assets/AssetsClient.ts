@@ -1,7 +1,7 @@
 import {defer, lastValueFrom, type Observable} from 'rxjs'
-import {filter, map, mergeAll} from 'rxjs/operators'
+import {filter, map, mergeMap} from 'rxjs/operators'
 
-import {_prepareAuthenticatedRequest, _uploadObservable} from '../data/dataMethods'
+import {_prepareAuthenticatedRequestObservable, _uploadObservable} from '../data/dataMethods'
 import type {FetchRequest} from '../http/requestOptions'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {
@@ -255,25 +255,30 @@ function _upload<
   // to the regular fetch-based path which only emits the terminal `response`
   // event.
   if (typeof XMLHttpRequest !== 'undefined') {
-    return defer(async () => {
-      const {uploadWithProgress} = await import('../http/browserUpload')
-      // Build the request the same way the fetch path does, so the request
-      // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
-      // credentials and timeout are identical across both upload transports.
-      // The XHR API needs the query baked into the URL, though.
-      const req = await _prepareAuthenticatedRequest(client, {...baseRequest})
-      return uploadWithProgress<T>({
-        url: appendQuery(req.url, req.query),
-        method: req.method ?? 'POST',
-        headers: req.headers,
-        body,
-        withCredentials: req.credentials === 'include',
-        // XHR only has a single total-deadline timer, so a structured
-        // get-it timeout collapses to its `total` component here.
-        timeout: typeof req.timeout === 'object' ? req.timeout.total : req.timeout,
-        signal: req.signal,
-      })
-    }).pipe(mergeAll())
+    return defer(() => import('../http/browserUpload')).pipe(
+      mergeMap(({uploadWithProgress}) =>
+        // Build the request the same way the fetch path does, so the request
+        // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
+        // credentials and timeout are identical across both upload transports.
+        // Unsubscribing while a reactive credential is pending cancels the wait.
+        // The XHR API needs the query baked into the URL, though.
+        _prepareAuthenticatedRequestObservable(client, {...baseRequest}).pipe(
+          mergeMap((req) =>
+            uploadWithProgress<T>({
+              url: appendQuery(req.url, req.query),
+              method: req.method ?? 'POST',
+              headers: req.headers,
+              body,
+              withCredentials: req.credentials === 'include',
+              // XHR only has a single total-deadline timer, so a structured
+              // get-it timeout collapses to its `total` component here.
+              timeout: typeof req.timeout === 'object' ? req.timeout.total : req.timeout,
+              signal: req.signal,
+            }),
+          ),
+        ),
+      ),
+    )
   }
 
   return _uploadObservable<T>(client, baseRequest)

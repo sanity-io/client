@@ -1,6 +1,6 @@
 import {getDraftId, getVersionFromId, getVersionId, isDraftId} from '@sanity/client/csm'
 import {anySignal} from 'get-it/any-signal'
-import {defer, Observable, of} from 'rxjs'
+import {Observable} from 'rxjs'
 import {filter, map, mergeMap} from 'rxjs/operators'
 
 import {applyAuth, getStaticAuth, hasRequestAuth} from '../auth'
@@ -1164,6 +1164,50 @@ export function _prepareAuthenticatedRequest(
   )
 }
 
+/**
+ * {@link _prepareAuthenticatedRequest} as an observable that emits the prepared
+ * request once and completes. Unsubscribing while a reactive credential is
+ * still pending cancels the wait, so nothing (such as an upload body) is held
+ * until the renewal settles. A static credential is prepared in the same tick,
+ * exactly as before.
+ *
+ * @internal
+ */
+export function _prepareAuthenticatedRequestObservable(
+  client: Client,
+  options: RequestObservableOptions,
+): Observable<FetchRequest> {
+  return new Observable<FetchRequest>((subscriber) => {
+    // Only a reactive credential is awaited, so only then does the wait need a
+    // signal of its own: this subscription's, combined with the caller's.
+    const controller = new AbortController()
+    const waits = getStaticAuth(client.config()) === undefined
+    const signal = options.signal
+      ? anySignal([options.signal, controller.signal])
+      : controller.signal
+    let settled = false
+    const emit = (request: FetchRequest) => {
+      settled = true
+      subscriber.next(request)
+      subscriber.complete()
+    }
+    const prepared = _prepareAuthenticatedRequest(client, waits ? {...options, signal} : options)
+    if (prepared instanceof Promise) {
+      prepared.then(emit, (err: unknown) => {
+        settled = true
+        subscriber.error(err)
+      })
+    } else {
+      emit(prepared)
+    }
+    // Abort only a wait that is still pending: once prepared, the request
+    // carries the signal, and aborting it then would cancel the request.
+    return () => {
+      if (!settled) controller.abort()
+    }
+  })
+}
+
 /** The request with its `timeout` reduced to what is left of the deadline. */
 function withRemainingTimeout(request: FetchRequest, remainingMs: number): FetchRequest {
   const {timeout} = request
@@ -1266,10 +1310,7 @@ export function _uploadObservable<T>(
   options: RequestObservableOptions,
 ): Observable<UploadEvent<T>> {
   const requester = client.config().requester
-  const request = defer(() => {
-    const prepared = _prepareAuthenticatedRequest(client, options)
-    return prepared instanceof Promise ? prepared : of(prepared)
-  }).pipe(
+  const request = _prepareAuthenticatedRequestObservable(client, options).pipe(
     mergeMap((reqOptions): Observable<Any> => requester(reqOptions)),
     filter((event: Any) => event?.type === 'progress' || event?.type === 'response'),
     map((event: Any): UploadEvent<T> =>
