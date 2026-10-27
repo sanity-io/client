@@ -41,6 +41,82 @@ export function validateApiPerspective(
   }
 }
 
+/**
+ * Whether `key` is an own, enumerable property of `obj`. Enumerable only, so the
+ * non-enumerable `token` / `withCredentials` getters `exposeConfig` adds under a
+ * reactive `auth` do not count as a static credential when a `client.config()`
+ * result is passed back in without being spread.
+ */
+const hasOwn = (obj: object, key: string) => Object.prototype.propertyIsEnumerable.call(obj, key)
+
+/** Whether `config` sets a reactive `auth` observable of its own. */
+const hasOwnReactiveAuth = (config: Partial<ClientConfig>) =>
+  hasOwn(config, 'auth') && config.auth !== undefined
+
+/** Whether `config` sets (or clears, with `undefined`) a static credential of its own. */
+const hasOwnStaticAuth = (config: Partial<ClientConfig>) =>
+  hasOwn(config, 'token') || hasOwn(config, 'withCredentials')
+
+/**
+ * Merge a partial configuration onto an existing one for `withConfig()`.
+ *
+ * Plain spread semantics for everything, with one rule for the credential: a
+ * credential the new configuration sets itself replaces the inherited one. An
+ * `auth` of its own drops the inherited `token` / `withCredentials`, and a
+ * `token` / `withCredentials` of its own (an own property, even with the value
+ * `undefined`) drops an inherited `auth`. Setting both forms at once is left
+ * for `initConfig` to reject.
+ *
+ * @internal
+ */
+export function mergeConfig(
+  prev: InitializedClientConfig,
+  next: Partial<ClientConfig> = {},
+): ClientConfig {
+  const merged: ClientConfig = {
+    ...prev,
+    ...next,
+    stega: {
+      ...prev.stega,
+      ...(typeof next.stega === 'boolean' ? {enabled: next.stega} : next.stega || {}),
+    },
+  }
+  const nextHasReactiveAuth = hasOwnReactiveAuth(next)
+  const nextHasStaticAuth = hasOwnStaticAuth(next)
+  if (nextHasReactiveAuth && !nextHasStaticAuth) {
+    delete merged.token
+    delete merged.withCredentials
+  } else if (nextHasStaticAuth && !nextHasReactiveAuth) {
+    delete merged.auth
+  }
+  return merged
+}
+
+/**
+ * The configuration as `client.config()` returns it: a copy, so callers cannot
+ * mutate the client's own config. It describes what was configured. Under a
+ * reactive `auth` observable that is `auth`, so `token` and `withCredentials`
+ * are `undefined`; they are non-enumerable getters that say so once, to help
+ * code that still reads them move to `client.getAuth()`.
+ *
+ * @internal
+ */
+export function exposeConfig(config: InitializedClientConfig): InitializedClientConfig {
+  const copy = {...config}
+  if (!config.auth) return copy
+  for (const key of ['token', 'withCredentials']) {
+    Object.defineProperty(copy, key, {
+      enumerable: false,
+      configurable: true,
+      get: () => {
+        warnings.printConfigTokenUnderReactiveAuthWarning()
+        return undefined
+      },
+    })
+  }
+  return copy
+}
+
 export const initConfig = (
   config: Partial<ClientConfig>,
   prevConfig: Partial<ClientConfig>,
@@ -119,6 +195,26 @@ export const initConfig = (
 
   const isBrowser = typeof window !== 'undefined' && window.location && window.location.hostname
   const isLocalhost = isBrowser && isLocal(window.location.hostname)
+
+  // The credential is either the static `token` / `withCredentials` options or
+  // a reactive `auth` observable, never both. One the new configuration sets
+  // itself replaces the one inherited from `prevConfig`.
+  const ownReactiveAuth = hasOwnReactiveAuth(config)
+  const ownStaticAuth = hasOwnStaticAuth(config)
+  if (ownReactiveAuth && ownStaticAuth && (config.token || config.withCredentials)) {
+    throw new Error(
+      '`auth` cannot be combined with `token` or `withCredentials`. ' +
+        'Pass the credential through `auth` alone, or use the static options without `auth`. ' +
+        'A client configured with `auth` includes it in `client.config()`, so to replace its credential, ' +
+        'use `client.withConfig({token})` rather than spreading its config into `createClient()`.',
+    )
+  }
+  if (ownReactiveAuth) {
+    delete newConfig.token
+    delete newConfig.withCredentials
+  } else if (ownStaticAuth || !newConfig.auth) {
+    delete newConfig.auth
+  }
 
   const hasToken = Boolean(newConfig.token)
   if (newConfig.withCredentials && hasToken) {

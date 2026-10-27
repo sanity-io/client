@@ -1,5 +1,5 @@
-import {ClientError, createClient, ServerError} from '@sanity/client'
-import {lastValueFrom, toArray} from 'rxjs'
+import {type Auth, ClientError, createClient, ServerError} from '@sanity/client'
+import {BehaviorSubject, lastValueFrom, toArray} from 'rxjs'
 import {describe, expect, inject, test, vi} from 'vitest'
 
 import {uploadWithProgress} from '../src/http/browserUpload'
@@ -240,5 +240,28 @@ describe('assets.upload() through the XHR path', () => {
     const diagnostics = await fetchDiagnostics(`studio.${tag}`)
     expect(diagnostics.path).toBe('/v1/assets/images/foo')
     expect(diagnostics.query.tag).toBe(`studio.${tag}`)
+  })
+
+  test('unsubscribing while the credential is pending releases the source and sends nothing', async () => {
+    // A renewal that never settles: the upload waits for it.
+    const auth = new BehaviorSubject<Promise<Auth>>(new Promise<Auth>(() => {}))
+    const client = createClient({
+      projectId: 'abc123',
+      dataset: 'prod',
+      apiVersion: '1',
+      useCdn: false,
+      useProjectHostname: false,
+      apiHost: getApiHost(),
+      auth,
+    })
+
+    const tag = `pending-auth-${crypto.randomUUID()}`
+    const subscription = client.observable.assets.upload('image', smallBody(), {tag}).subscribe()
+    await vi.waitFor(() => expect(auth.observed, 'the upload waits on the source').toBe(true))
+
+    subscription.unsubscribe()
+    expect(auth.observed, 'no wait outlives the upload').toBe(false)
+    const diagnostics = await fetchDiagnostics(tag)
+    expect(diagnostics.received, 'the upload must never be sent').toBe(false)
   })
 })

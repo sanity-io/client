@@ -126,12 +126,79 @@ type ClientConfigResource =
       id: string
     }
 
+/**
+ * The credential the client sends: a bearer token, the browser's cookies for
+ * the API origin, or nothing (`undefined`) for anonymous access. Token mode and
+ * cookie mode are mutually exclusive.
+ *
+ * @public
+ */
+export type Auth = {token: string} | {withCredentials: true} | undefined
+
+/**
+ * What `client.getAuth()` resolves to: the current {@link Auth} as an
+ * object, so it can be destructured. Anonymous access is `{}`; the two
+ * credential forms are the same objects the `auth` observable emits.
+ *
+ * @public
+ */
+export type ResolvedAuth =
+  | {token: string; withCredentials?: undefined}
+  | {withCredentials: true; token?: undefined}
+  | {token?: undefined; withCredentials?: undefined}
+
+/**
+ * Options for `client.getAuth()`.
+ *
+ * @public
+ */
+export interface GetAuthOptions {
+  /** Cancels the wait for a reactive `auth` that is withholding its value. */
+  signal?: AbortSignal
+}
+
 /** @public */
 export interface ClientConfig {
   projectId?: string
   dataset?: string
   /** @defaultValue true */
   useCdn?: boolean
+  /**
+   * The current credential, for apps whose access token changes during the
+   * client's lifetime (an OAuth session that refreshes, a user who signs in
+   * or out). Each emission is a promise of the credential: an already
+   * settled one (`Promise.resolve({token})`) for a credential you hold, or a
+   * pending one (the refresh call itself) while a renewal is in progress.
+   * Every request waits for the latest emission to settle; every open
+   * `listen()` / `live.events()` stream reconnects when a new credential
+   * settles, resuming from its last event id, and reconnect attempts made
+   * while a renewal is pending wait for it, so they never send an expired
+   * token. Rejecting the promise means the credential failed: every request
+   * and every open stream on the client ends with that error, and later
+   * requests keep failing until a new value is emitted. Retry a refresh
+   * inside the promise; reject only when the session is over. Attach a
+   * rejection handler to the promise you emit (`renewal.catch(() => {})`)
+   * if the client may be idle when it rejects, since an unobserved
+   * rejection crashes a Node process.
+   *
+   * The observable must replay its latest emission to every new subscriber
+   * (a `BehaviorSubject` or `shareReplay(1)` does), then emit every change,
+   * and never complete. A wait is cancelled by the request's `signal` and
+   * bounded by its `timeout`. The client never refreshes a credential
+   * itself, and a 401 on a stream ends it with a `ConnectionFailedError`.
+   *
+   * Cannot be combined with `token` or `withCredentials`, which are the
+   * static forms of the same setting. The credential is unknown at
+   * configuration time, so the browser-token and cookie-mode checks those
+   * options trigger are skipped: set `useCdn: false` yourself when the observable
+   * may emit `{withCredentials: true}`, since cookies never reach the CDN.
+   */
+  auth?: Observable<Promise<Auth>>
+  /**
+   * A static bearer token, sent as `Authorization: Bearer <token>` on every
+   * request. The recommended form for scripts, servers and functions, where
+   * the token does not change. Use `auth` instead when it does.
+   */
   token?: string
 
   /**
@@ -234,6 +301,10 @@ export interface ClientConfig {
    * ```
    */
   ignoreWarnings?: string | RegExp | Array<string | RegExp>
+  /**
+   * Send the browser's cookies for the API origin with every request instead
+   * of a token. Disables `useCdn`, since cookies never reach the CDN.
+   */
   withCredentials?: boolean
   allowReconfigure?: boolean
   timeout?: number
@@ -369,6 +440,18 @@ export interface InitializedClientConfig extends ClientConfig {
    * @remarks request-specific headers will override any default headers with the same name.
    */
   headers?: Record<string, string>
+  /**
+   * The configured static token. `undefined` for a client configured with a
+   * reactive `auth`, where `client.getAuth()` reads the credential the client
+   * sends (a warning says so on first read).
+   */
+  token?: string
+  /**
+   * The configured static cookie mode. `undefined` for a client configured
+   * with a reactive `auth`, where `client.getAuth()` reads the credential the
+   * client sends (a warning says so on first read).
+   */
+  withCredentials?: boolean
 }
 
 /** @public */
@@ -581,6 +664,8 @@ export type RequestObservableOptions = RequestUrlOptions &
   Omit<RequestOptions, 'url'> & {
     canUseCdn?: boolean
     useCdn?: boolean
+    /** Per-request cookie override; see {@link RawRequestOptions.withCredentials}. */
+    withCredentials?: boolean
     tag?: string
     returnQuery?: boolean
     resultSourceMap?: boolean | 'withKeyArraySelector'
