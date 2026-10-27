@@ -1182,16 +1182,18 @@ export function _prepareAuthenticatedRequestObservable(
     // signal of its own: this subscription's, combined with the caller's.
     const controller = new AbortController()
     const waits = getStaticAuth(client.config()) === undefined
-    const signal = options.signal
-      ? anySignal([options.signal, controller.signal])
-      : controller.signal
+    const signal = !waits
+      ? undefined
+      : options.signal
+        ? anySignal([options.signal, controller.signal])
+        : controller.signal
     let settled = false
     const emit = (request: FetchRequest) => {
       settled = true
       subscriber.next(request)
       subscriber.complete()
     }
-    const prepared = _prepareAuthenticatedRequest(client, waits ? {...options, signal} : options)
+    const prepared = _prepareAuthenticatedRequest(client, signal ? {...options, signal} : options)
     if (prepared instanceof Promise) {
       prepared.then(emit, (err: unknown) => {
         settled = true

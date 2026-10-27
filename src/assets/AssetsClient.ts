@@ -260,8 +260,8 @@ function _upload<
         // Build the request the same way the fetch path does, so the request
         // tag (incl. `requestTagPrefix` and validation), auth/custom headers,
         // credentials and timeout are identical across both upload transports.
-        // Unsubscribing while a reactive credential is pending cancels the wait.
-        // The XHR API needs the query baked into the URL, though.
+        // The XHR API needs the query baked into the URL, though. Unsubscribing
+        // while a reactive credential is pending cancels the wait.
         _prepareAuthenticatedRequestObservable(client, {...baseRequest}).pipe(
           mergeMap((req) =>
             uploadWithProgress<T>({

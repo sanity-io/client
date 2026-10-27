@@ -10,6 +10,7 @@ import {
   BehaviorSubject,
   catchError,
   EMPTY,
+  filter,
   firstValueFrom,
   lastValueFrom,
   Observable,
@@ -885,6 +886,36 @@ describe('auth: live.events()', () => {
 
     const error = await firstValueFrom(
       client.live.events({includeDrafts: true}).pipe(catchError((err) => of(err))),
+    )
+    expect(error).toBe(sessionOver)
+    expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/vX/check/cors', 0)
+  })
+
+  test('a credential that fails after connecting ends the stream with its own error, without a CORS probe', async () => {
+    const auth = new BehaviorSubject<Promise<Auth>>(Promise.resolve<Auth>({token: 'first'}))
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', livePath)
+      .respond({
+        status: 200,
+        headers: liveHeaders,
+        body: streamBody(encode({id: 'w1', event: 'welcome', data: '{}'}), streamStall()),
+      })
+    const sessionOver = new Error('session is over')
+    const client = createClient({...liveConfig, auth})
+
+    const error = await firstValueFrom(
+      client.live.events({includeDrafts: true}).pipe(
+        tap((event) => {
+          if (event.type === 'welcome') {
+            const rejected = Promise.reject<Auth>(sessionOver)
+            rejected.catch(() => {})
+            queueMicrotask(() => auth.next(rejected))
+          }
+        }),
+        catchError((err) => of(err)),
+        filter((value) => value instanceof Error),
+      ),
     )
     expect(error).toBe(sessionOver)
     expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/vX/check/cors', 0)

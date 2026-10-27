@@ -87,7 +87,14 @@ export class MessageParseError extends Error {
  *
  * @internal
  */
-export function isEventSourceError(err: unknown): boolean {
+export function isEventSourceError(
+  err: unknown,
+): err is
+  | ConnectionFailedError
+  | ChannelError
+  | DisconnectError
+  | MessageError
+  | MessageParseError {
   return (
     err instanceof ConnectionFailedError ||
     err instanceof ChannelError ||
