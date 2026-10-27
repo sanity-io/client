@@ -1,5 +1,19 @@
 # @sanity/client
 
+## 8.12.0
+
+### Minor Changes
+
+- add support for Durable function callbacks ([#1377](https://github.com/sanity-io/client/pull/1377)) ([53730c8](https://github.com/sanity-io/client/commit/53730c8b3681f472a5fac20aac4cd8d2a26eaa5a))
+- **context:** issues only have the conflict and update_required kinds ([#1382](https://github.com/sanity-io/client/pull/1382)) ([6e5f35d](https://github.com/sanity-io/client/commit/6e5f35d37dcecfc45e5dfa6231b59e38f8b52415))
+- add a reactive `auth` config option for credentials that change during the client's lifetime ([#1355](https://github.com/sanity-io/client/pull/1355)) ([d7f43fe](https://github.com/sanity-io/client/commit/d7f43fe1058ae20ddda9ebc6863e331109d51bc7))
+
+  `createClient({auth})` accepts an observable of promises of the current credential (`{token}`, `{withCredentials: true}` or `undefined`), for apps where the access token is refreshed or the user signs in and out while the client is alive. While a renewal is in progress, emit the promise the refresh returns. Requests and reconnects wait for it, so an expired token is never sent, and open `listen()` / `live.events()` streams reconnect once the new credential settles. See the "Reactive authentication" section of the README for the contract.
+
+  Also adds `client.getAuth()`, which resolves to the credential the client would send right now, and `client.observeAuth()`, which emits it and every change. Both work the same whether the client is configured with `auth` or with static options. Static `token` / `withCredentials` configuration is unchanged.
+
+  Under a reactive `auth`, `client.config().token` and `client.config().withCredentials` are `undefined`, since `config()` describes what was configured; use `client.getAuth()` to read the credential the client sends.
+
 ## 8.11.0
 
 ### Minor Changes
