@@ -129,7 +129,7 @@ export class BasePatch {
    *
    * @param selector - Attribute or JSONPath expression for array
    * @param start - Index at which to start changing the array (with origin 0). If greater than the length of the array, actual starting index will be set to the length of the array. If negative, will begin that many elements from the end of the array (with origin -1) and will be set to 0 if absolute value is greater than the length of the array.x
-   * @param deleteCount - An integer indicating the number of old array elements to remove.
+   * @param deleteCount - An integer indicating the number of old array elements to remove. Zero or a negative value other than -1 inserts without removing elements. Omitting it or passing -1 removes the remaining elements.
    * @param items - The elements to add to the array, beginning at the start index. If you don't specify any elements, splice() will only remove elements from the array.
    */
   splice(selector: string, start: number, deleteCount?: number, items?: Any[]): this {
@@ -141,7 +141,8 @@ export class BasePatch {
     const delAll = typeof deleteCount === 'undefined' || deleteCount === -1
     const startIndex = start < 0 ? start - 1 : start
     const delCount = delAll ? -1 : Math.max(0, start + deleteCount)
-    const delRange = startIndex < 0 && delCount >= 0 ? '' : delCount
+    const delRange =
+      !delAll && deleteCount <= 0 ? startIndex : startIndex < 0 && delCount >= 0 ? '' : delCount
     const rangeSelector = `${selector}[${startIndex}:${delRange}]`
     return this.insert('replace', rangeSelector, items || [])
   }
