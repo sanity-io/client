@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.13.0
+
+### Minor Changes
+
+- **context:** MCP endpoint dataset sources carry workspace, perspective and semanticSearch ([#1384](https://github.com/sanity-io/client/pull/1384)) ([2a9f9b1](https://github.com/sanity-io/client/commit/2a9f9b15eccab677890c1a768d717dfbc6646fc5))
+
 ## 8.12.0
 
 ### Minor Changes
