@@ -50,6 +50,26 @@ describe('client.context return types', () => {
     expectTypeOf(await kb.mcpEndpoints.delete({name: 'n'})).toEqualTypeOf<void>()
   })
 
+  test('mcpEndpoints dataset sources carry their serving settings', async () => {
+    const endpoint = await kb.mcpEndpoints.edit({
+      name: 'n',
+      sources: [
+        {
+          type: 'dataset',
+          id: 'proj.production',
+          workspace: 'marketing',
+          perspective: 'drafts',
+          semanticSearch: false,
+        },
+      ],
+    })
+    const source = endpoint.sources[0]
+    if (source?.type === 'dataset') {
+      expectTypeOf(source.perspective).toEqualTypeOf<'published' | 'drafts' | 'raw' | null>()
+      expectTypeOf(source.semanticSearch).toEqualTypeOf<boolean | null>()
+    }
+  })
+
   test('mcpEndpoints.status resolves to the status verdicts, initialContext to text', async () => {
     const status = await kb.mcpEndpoints.status({name: 'n', mode: 'groq'})
     expectTypeOf(status).toEqualTypeOf<Context.McpEndpointStatus>()

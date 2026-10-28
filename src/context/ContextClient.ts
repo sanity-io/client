@@ -684,7 +684,8 @@ export class ContextClient {
      * Check whether an agent connecting to the endpoint with this client's
      * credentials and the same runtime options can use it. Failed checks
      * resolve with `ok: false` rather than rejecting, so every problem shows
-     * at once; an unknown endpoint rejects with a 404.
+     * at once; an unknown endpoint rejects with a 404. Runtime options other
+     * than `linkResolver` are refused from API version `2026-11-10`.
      */
     status: (
       params: {name: string} & McpEndpointRuntimeOptions,
