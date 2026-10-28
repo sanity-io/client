@@ -13,7 +13,7 @@ export interface paths {
     }
     /**
      * List knowledge bases
-     * @description Returns the knowledge bases you can access in the organization set by `organizationId`. Results are cursor-paginated.
+     * @description Returns the knowledge bases you can access in the organization set by `organizationId`. Results are cursor-paginated, newest first.
      */
     get: operations['listKnowledgeBases']
     put?: never
@@ -517,7 +517,7 @@ export interface paths {
     put?: never
     /**
      * Create an MCP endpoint
-     * @description Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the organization-wide `sanity.knowledge-base.create` grant, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.
+     * @description Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the `sanity.context.mcp.create` grant on the organization, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.
      *
      *     A taken name returns `409` with code `mcpEndpointNameConflict`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
      */
@@ -539,19 +539,19 @@ export interface paths {
     put?: never
     /**
      * Connect to an MCP endpoint
-     * @description Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Query parameters override the endpoint configuration for that request only. Errors are JSON-RPC error objects, not the standard error response.
+     * @description Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Errors are JSON-RPC error objects, not the standard error response.
      */
     post: operations['serveMcpEndpoint']
     /**
      * Delete an MCP endpoint
-     * @description Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.
+     * @description Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the `sanity.context.mcp.delete` grant on the organization. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.
      */
     delete: operations['deleteMcpEndpoint']
     options?: never
     head?: never
     /**
      * Update an MCP endpoint
-     * @description Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.
+     * @description Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the `sanity.context.mcp.update` grant on the organization. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.
      *
      *     An unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
      */
@@ -587,7 +587,7 @@ export interface paths {
     }
     /**
      * Check an MCP endpoint
-     * @description Checks whether an agent can connect to the endpoint with your credentials. Accepts the same query parameters as connecting, so you can check a connection's overrides before using them. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.
+     * @description Checks whether an agent can connect to the endpoint with your credentials. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.
      */
     get: operations['getMcpEndpointStatus']
     put?: never
@@ -660,6 +660,7 @@ export interface components {
         | 'accessCheckFailed'
         | 'planLimitReached'
         | 'featureNotInPlan'
+        | 'buildCapReached'
         | 'tooManyConnections'
         | 'jobsUnavailable'
         | 'contextStoreUnavailable'
@@ -1448,6 +1449,22 @@ export interface components {
             type: 'dataset'
             /** @description The dataset, as `<projectId>.<datasetName>`. */
             id: string
+            /**
+             * @description The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.
+             * @default null
+             */
+            workspace: string | null
+            /**
+             * @description The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.
+             * @default null
+             * @enum {string|null}
+             */
+            perspective: 'published' | 'drafts' | 'raw' | null
+            /**
+             * @description Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.
+             * @default null
+             */
+            semanticSearch: boolean | null
           }
       )[]
       /** @description Prompt text the MCP endpoint serves to connecting agents. `null` when unset. */
@@ -4556,6 +4573,22 @@ export interface operations {
                 type: 'dataset'
                 /** @description The dataset, as `<projectId>.<datasetName>`. */
                 id: string
+                /**
+                 * @description The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.
+                 * @default null
+                 */
+                workspace?: string | null
+                /**
+                 * @description The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.
+                 * @default null
+                 * @enum {string|null}
+                 */
+                perspective?: 'published' | 'drafts' | 'raw' | null
+                /**
+                 * @description Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.
+                 * @default null
+                 */
+                semanticSearch?: boolean | null
               }
           )[]
           /** @description Instructions for connecting agents, up to 10,000 characters. */
@@ -4600,6 +4633,22 @@ export interface operations {
                   type: 'dataset'
                   /** @description The dataset, as `<projectId>.<datasetName>`. */
                   id: string
+                  /**
+                   * @description The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.
+                   * @default null
+                   */
+                  workspace: string | null
+                  /**
+                   * @description The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.
+                   * @default null
+                   * @enum {string|null}
+                   */
+                  perspective: 'published' | 'drafts' | 'raw' | null
+                  /**
+                   * @description Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.
+                   * @default null
+                   */
+                  semanticSearch: boolean | null
                 }
             )[]
             /** @description Instructions for connecting agents, or `null` if none are set. */
@@ -4638,21 +4687,42 @@ export interface operations {
   serveMcpEndpoint: {
     parameters: {
       query?: {
-        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        /**
+         * @deprecated
+         * @description Agent instructions that replace the endpoint's configured instructions for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         instructions?: string
-        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        /**
+         * @deprecated
+         * @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         perspective?: string
-        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        /**
+         * @deprecated
+         * @description Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         embeddings?: string
-        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        /**
+         * @deprecated
+         * @description A GROQ filter that narrows the endpoint's configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         groqFilter?: string
-        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        /**
+         * @deprecated
+         * @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         mode?: 'knowledge_base' | 'groq'
-        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        /**
+         * @deprecated
+         * @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         knowledgeBases?: string
         /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
         linkResolver?: string
-        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        /**
+         * @deprecated
+         * @description The studio workspace to use. Replaces the dataset source's workspace for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         workspace?: string
       }
       header?: never
@@ -4752,6 +4822,22 @@ export interface operations {
                 type: 'dataset'
                 /** @description The dataset, as `<projectId>.<datasetName>`. */
                 id: string
+                /**
+                 * @description The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.
+                 * @default null
+                 */
+                workspace?: string | null
+                /**
+                 * @description The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.
+                 * @default null
+                 * @enum {string|null}
+                 */
+                perspective?: 'published' | 'drafts' | 'raw' | null
+                /**
+                 * @description Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.
+                 * @default null
+                 */
+                semanticSearch?: boolean | null
               }
           )[]
           /** @description Instructions for connecting agents, up to 10,000 characters. `null` removes them. */
@@ -4796,6 +4882,22 @@ export interface operations {
                   type: 'dataset'
                   /** @description The dataset, as `<projectId>.<datasetName>`. */
                   id: string
+                  /**
+                   * @description The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.
+                   * @default null
+                   */
+                  workspace: string | null
+                  /**
+                   * @description The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.
+                   * @default null
+                   * @enum {string|null}
+                   */
+                  perspective: 'published' | 'drafts' | 'raw' | null
+                  /**
+                   * @description Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.
+                   * @default null
+                   */
+                  semanticSearch: boolean | null
                 }
             )[]
             /** @description Instructions for connecting agents, or `null` if none are set. */
@@ -4834,21 +4936,42 @@ export interface operations {
   getMcpEndpointInitialContext: {
     parameters: {
       query?: {
-        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        /**
+         * @deprecated
+         * @description Agent instructions that replace the endpoint's configured instructions for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         instructions?: string
-        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        /**
+         * @deprecated
+         * @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         perspective?: string
-        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        /**
+         * @deprecated
+         * @description Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         embeddings?: string
-        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        /**
+         * @deprecated
+         * @description A GROQ filter that narrows the endpoint's configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         groqFilter?: string
-        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        /**
+         * @deprecated
+         * @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         mode?: 'knowledge_base' | 'groq'
-        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        /**
+         * @deprecated
+         * @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         knowledgeBases?: string
         /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
         linkResolver?: string
-        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        /**
+         * @deprecated
+         * @description The studio workspace to use. Replaces the dataset source's workspace for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         workspace?: string
         /** @description How many levels to shift markdown headings down, from `0` to `6`. Defaults to `1`, so `#` becomes `##`. */
         heading_offset?: string
@@ -4887,21 +5010,42 @@ export interface operations {
   getMcpEndpointStatus: {
     parameters: {
       query?: {
-        /** @description Agent instructions that replace the endpoint's configured instructions for this request. */
+        /**
+         * @deprecated
+         * @description Agent instructions that replace the endpoint's configured instructions for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         instructions?: string
-        /** @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. */
+        /**
+         * @deprecated
+         * @description The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         perspective?: string
-        /** @description Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically. */
+        /**
+         * @deprecated
+         * @description Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         embeddings?: string
-        /** @description A GROQ filter that replaces the endpoint's configured content filter for this request. */
+        /**
+         * @deprecated
+         * @description A GROQ filter that narrows the endpoint's configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         groqFilter?: string
-        /** @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. */
+        /**
+         * @deprecated
+         * @description Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         mode?: 'knowledge_base' | 'groq'
-        /** @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. */
+        /**
+         * @deprecated
+         * @description Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         knowledgeBases?: string
         /** @description A JSON array that adds `_url` fields to query results. Each item has `types` (document types), `baseUrl`, and an optional `slugExpression`, a GROQ expression that defaults to `slug.current`. Invalid JSON is ignored. */
         linkResolver?: string
-        /** @description The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one. */
+        /**
+         * @deprecated
+         * @description The studio workspace to use. Replaces the dataset source's workspace for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.
+         */
         workspace?: string
       }
       header?: never
@@ -4924,7 +5068,7 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials and query parameters can use the endpoint. */
+            /** @description Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials can use the endpoint. */
             requiredOk: boolean
             /** @description One result per check. A check is `null` when it doesn't apply to the connection. */
             checks: {
@@ -4941,7 +5085,7 @@ export interface operations {
                         workspace: string
                         /** @description The workspace's title. */
                         workspaceTitle: string
-                        /** @description Whether the workspace was picked automatically. It is `false` when the `workspace` query parameter chose it. */
+                        /** @description Whether the workspace was picked automatically because none was set. It is `false` when the dataset source's `workspace` chose it, or a `workspace` query parameter on versions before `v2026-11-10`. */
                         workspaceAutoSelected: boolean
                         /** @description The deployed studio's workspaces for the endpoint's dataset. */
                         availableWorkspaces: {
@@ -4962,7 +5106,7 @@ export interface operations {
                       }
                   )
                 | null
-              /** @description Whether semantic search is ready on the endpoint's dataset. `null` when semantic search isn't enabled or the connection doesn't query a dataset. It never affects `requiredOk`: without it, the agent searches with GROQ only. */
+              /** @description Whether semantic search works on the endpoint's dataset. `null` when the connection doesn't query a dataset, or when semantic search is on but the dataset doesn't have embeddings enabled. It never affects `requiredOk`: without it, the agent searches with GROQ only. */
               semanticSearch:
                 | (
                     | {
@@ -4975,6 +5119,17 @@ export interface operations {
                         status: string | null
                         /** @description Whether the project is within its embeddings usage limit, or `null` if it couldn't be checked. */
                         withinUsageLimit: boolean | null
+                        /** @description Whether agents connecting now can use semantic search. On versions before `v2026-11-10`, `?embeddings=true` forces the tool on for agents even when this is `false`. */
+                        active: boolean
+                        /**
+                         * @description Why semantic search isn't active: `turnedOff` when the dataset source has it off, `datasetEmbeddingsNotReady` while the dataset's embeddings are still being prepared, and `usageLimitReached` when the organization has no embeddings usage left. `null` when it is active.
+                         * @enum {string|null}
+                         */
+                        inactiveReason:
+                          | 'turnedOff'
+                          | 'datasetEmbeddingsNotReady'
+                          | 'usageLimitReached'
+                          | null
                       }
                     | {
                         /**
@@ -4998,6 +5153,8 @@ export interface operations {
                         ok: true
                         /** @description The number of document types the agent can query, after the endpoint's GROQ filter. */
                         documentTypes: number
+                        /** @description The perspective agents query the dataset with, such as `published` or `drafts`. */
+                        perspective: string
                       }
                     | {
                         /**

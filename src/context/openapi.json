@@ -1595,9 +1595,29 @@
                       "type": "string",
                       "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
                       "description": "The dataset, as `<projectId>.<datasetName>`."
+                    },
+                    "workspace": {
+                      "default": null,
+                      "description": "The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.",
+                      "nullable": true,
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "perspective": {
+                      "default": null,
+                      "description": "The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.",
+                      "nullable": true,
+                      "type": "string",
+                      "enum": ["published", "drafts", "raw", null]
+                    },
+                    "semanticSearch": {
+                      "default": null,
+                      "description": "Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.",
+                      "nullable": true,
+                      "type": "boolean"
                     }
                   },
-                  "required": ["type", "id"]
+                  "required": ["type", "id", "workspace", "perspective", "semanticSearch"]
                 }
               ],
               "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
@@ -1698,6 +1718,7 @@
               "accessCheckFailed",
               "planLimitReached",
               "featureNotInPlan",
+              "buildCapReached",
               "tooManyConnections",
               "jobsUnavailable",
               "contextStoreUnavailable",
@@ -1730,7 +1751,7 @@
         "operationId": "listKnowledgeBases",
         "summary": "List knowledge bases",
         "tags": ["knowledge-bases"],
-        "description": "Returns the knowledge bases you can access in the organization set by `organizationId`. Results are cursor-paginated.",
+        "description": "Returns the knowledge bases you can access in the organization set by `organizationId`. Results are cursor-paginated, newest first.",
         "parameters": [
           {
             "schema": {
@@ -7024,7 +7045,7 @@
         "operationId": "createMcpEndpoint",
         "summary": "Create an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the organization-wide `sanity.knowledge-base.create` grant, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.\n\nA taken name returns `409` with code `mcpEndpointNameConflict`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
+        "description": "Creates an MCP endpoint with a title, a name, and at least one source. A source is a knowledge base, identified by its ID (`kb…`), or a dataset, identified as `<projectId>.<datasetName>`. An endpoint can serve any number of knowledge bases and at most one dataset, all at once. A GROQ filter is only kept when the endpoint has a dataset. The name must be unique in your organization, and you can't change it later. Duplicate sources with the same `type` and `id` are combined. The response includes the `url` agents connect to. To list or inspect endpoints, query `sanity.context.mcp` documents with GROQ from your organization's document store. Requires the `sanity.context.mcp.create` grant on the organization, which the Administrator and Developer roles have. Adding a dataset also requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets.\n\nA taken name returns `409` with code `mcpEndpointNameConflict`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7079,6 +7100,26 @@
                               "type": "string",
                               "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
                               "description": "The dataset, as `<projectId>.<datasetName>`."
+                            },
+                            "workspace": {
+                              "default": null,
+                              "description": "The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.",
+                              "nullable": true,
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "perspective": {
+                              "default": null,
+                              "description": "The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.",
+                              "nullable": true,
+                              "type": "string",
+                              "enum": ["published", "drafts", "raw", null]
+                            },
+                            "semanticSearch": {
+                              "default": null,
+                              "description": "Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.",
+                              "nullable": true,
+                              "type": "boolean"
                             }
                           },
                           "required": ["type", "id"]
@@ -7184,9 +7225,29 @@
                                 "type": "string",
                                 "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
                                 "description": "The dataset, as `<projectId>.<datasetName>`."
+                              },
+                              "workspace": {
+                                "default": null,
+                                "description": "The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.",
+                                "nullable": true,
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "perspective": {
+                                "default": null,
+                                "description": "The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.",
+                                "nullable": true,
+                                "type": "string",
+                                "enum": ["published", "drafts", "raw", null]
+                              },
+                              "semanticSearch": {
+                                "default": null,
+                                "description": "Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.",
+                                "nullable": true,
+                                "type": "boolean"
                               }
                             },
-                            "required": ["type", "id"]
+                            "required": ["type", "id", "workspace", "perspective", "semanticSearch"]
                           }
                         ],
                         "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
@@ -7256,7 +7317,7 @@
         "operationId": "updateMcpEndpoint",
         "summary": "Update an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the same organization-wide grant as creating an endpoint. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
+        "description": "Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the `sanity.context.mcp.update` grant on the organization. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7304,6 +7365,26 @@
                               "type": "string",
                               "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
                               "description": "The dataset, as `<projectId>.<datasetName>`."
+                            },
+                            "workspace": {
+                              "default": null,
+                              "description": "The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.",
+                              "nullable": true,
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "perspective": {
+                              "default": null,
+                              "description": "The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.",
+                              "nullable": true,
+                              "type": "string",
+                              "enum": ["published", "drafts", "raw", null]
+                            },
+                            "semanticSearch": {
+                              "default": null,
+                              "description": "Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.",
+                              "nullable": true,
+                              "type": "boolean"
                             }
                           },
                           "required": ["type", "id"]
@@ -7420,9 +7501,29 @@
                                 "type": "string",
                                 "pattern": "^[a-z0-9]+\\.[a-z0-9][a-z0-9_-]*$",
                                 "description": "The dataset, as `<projectId>.<datasetName>`."
+                              },
+                              "workspace": {
+                                "default": null,
+                                "description": "The studio workspace whose schema agents use, by name. `null` uses the studio's first workspace.",
+                                "nullable": true,
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "perspective": {
+                                "default": null,
+                                "description": "The perspective agents query the dataset with: `published`, `drafts`, or `raw`. `null` uses `published`.",
+                                "nullable": true,
+                                "type": "string",
+                                "enum": ["published", "drafts", "raw", null]
+                              },
+                              "semanticSearch": {
+                                "default": null,
+                                "description": "Whether agents can use semantic search on the dataset. `false` turns it off. `true` or `null` use it while the dataset has embeddings enabled and the organization has embeddings usage left.",
+                                "nullable": true,
+                                "type": "boolean"
                               }
                             },
-                            "required": ["type", "id"]
+                            "required": ["type", "id", "workspace", "perspective", "semanticSearch"]
                           }
                         ],
                         "description": "A content source that an MCP endpoint serves: a knowledge base or a Sanity dataset."
@@ -7490,7 +7591,7 @@
         "operationId": "deleteMcpEndpoint",
         "summary": "Delete an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the same organization-wide grant as creating an endpoint. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.",
+        "description": "Deletes the MCP endpoint with that name or ID. Agents connected through it lose access, and its name can be used again. Requires the `sanity.context.mcp.delete` grant on the organization. An unknown endpoint returns `404` with code `mcpEndpointNotFound`.",
         "parameters": [
           {
             "schema": {
@@ -7550,7 +7651,7 @@
         "operationId": "serveMcpEndpoint",
         "summary": "Connect to an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Query parameters override the endpoint configuration for that request only. Errors are JSON-RPC error objects, not the standard error response.",
+        "description": "Receives Model Context Protocol (MCP) messages from agents over streamable HTTP (JSON-RPC 2.0). Agents send MCP messages in `POST` requests to this URL. `mcpEndpoint` is the permanent URL name of the endpoint. Errors are JSON-RPC error objects, not the standard error response.",
         "parameters": [
           {
             "schema": {
@@ -7559,7 +7660,8 @@
             "in": "query",
             "name": "instructions",
             "required": false,
-            "description": "Agent instructions that replace the endpoint's configured instructions for this request."
+            "description": "Agent instructions that replace the endpoint's configured instructions for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7568,7 +7670,8 @@
             "in": "query",
             "name": "perspective",
             "required": false,
-            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release."
+            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7577,7 +7680,8 @@
             "in": "query",
             "name": "embeddings",
             "required": false,
-            "description": "Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically."
+            "description": "Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7586,7 +7690,8 @@
             "in": "query",
             "name": "groqFilter",
             "required": false,
-            "description": "A GROQ filter that replaces the endpoint's configured content filter for this request."
+            "description": "A GROQ filter that narrows the endpoint's configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7596,7 +7701,8 @@
             "in": "query",
             "name": "mode",
             "required": false,
-            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused."
+            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7605,7 +7711,8 @@
             "in": "query",
             "name": "knowledgeBases",
             "required": false,
-            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request."
+            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7623,7 +7730,8 @@
             "in": "query",
             "name": "workspace",
             "required": false,
-            "description": "The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one."
+            "description": "The studio workspace to use. Replaces the dataset source's workspace for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7675,7 +7783,8 @@
             "in": "query",
             "name": "instructions",
             "required": false,
-            "description": "Agent instructions that replace the endpoint's configured instructions for this request."
+            "description": "Agent instructions that replace the endpoint's configured instructions for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7684,7 +7793,8 @@
             "in": "query",
             "name": "perspective",
             "required": false,
-            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release."
+            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7693,7 +7803,8 @@
             "in": "query",
             "name": "embeddings",
             "required": false,
-            "description": "Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically."
+            "description": "Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7702,7 +7813,8 @@
             "in": "query",
             "name": "groqFilter",
             "required": false,
-            "description": "A GROQ filter that replaces the endpoint's configured content filter for this request."
+            "description": "A GROQ filter that narrows the endpoint's configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7712,7 +7824,8 @@
             "in": "query",
             "name": "mode",
             "required": false,
-            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused."
+            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7721,7 +7834,8 @@
             "in": "query",
             "name": "knowledgeBases",
             "required": false,
-            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request."
+            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7739,7 +7853,8 @@
             "in": "query",
             "name": "workspace",
             "required": false,
-            "description": "The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one."
+            "description": "The studio workspace to use. Replaces the dataset source's workspace for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7801,7 +7916,7 @@
         "operationId": "getMcpEndpointStatus",
         "summary": "Check an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Checks whether an agent can connect to the endpoint with your credentials. Accepts the same query parameters as connecting, so you can check a connection's overrides before using them. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.",
+        "description": "Checks whether an agent can connect to the endpoint with your credentials. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.",
         "parameters": [
           {
             "schema": {
@@ -7810,7 +7925,8 @@
             "in": "query",
             "name": "instructions",
             "required": false,
-            "description": "Agent instructions that replace the endpoint's configured instructions for this request."
+            "description": "Agent instructions that replace the endpoint's configured instructions for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7819,7 +7935,8 @@
             "in": "query",
             "name": "perspective",
             "required": false,
-            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release."
+            "description": "The perspective for GROQ queries: `published` (default), `previewDrafts`, `raw`, or a release. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7828,7 +7945,8 @@
             "in": "query",
             "name": "embeddings",
             "required": false,
-            "description": "Set to `true` or `false` to turn semantic search instructions on or off. Omit it to detect semantic search automatically."
+            "description": "Set to `true` or `false` to turn semantic search on or off. Omit it to use the dataset source setting. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7837,7 +7955,8 @@
             "in": "query",
             "name": "groqFilter",
             "required": false,
-            "description": "A GROQ filter that replaces the endpoint's configured content filter for this request."
+            "description": "A GROQ filter that narrows the endpoint's configured content filter for this request. Documents must match both. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7847,7 +7966,8 @@
             "in": "query",
             "name": "mode",
             "required": false,
-            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused."
+            "description": "Serves only one side of the endpoint for this request: `knowledge_base` serves its knowledge bases and `groq` serves its dataset. Omit it to serve every source the endpoint has. A request whose chosen side the endpoint doesn't have is refused. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7856,7 +7976,8 @@
             "in": "query",
             "name": "knowledgeBases",
             "required": false,
-            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request."
+            "description": "Comma-separated knowledge base public IDs (`kb...`) that replace the endpoint's knowledge base sources for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7874,7 +7995,8 @@
             "in": "query",
             "name": "workspace",
             "required": false,
-            "description": "The studio workspace to use. If you omit it, the first workspace is used, so set it when your studio has more than one."
+            "description": "The studio workspace to use. Replaces the dataset source's workspace for this request. Deprecated: refused from API version `v2026-11-10`. Configure it on the MCP endpoint instead.",
+            "deprecated": true
           },
           {
             "schema": {
@@ -7915,7 +8037,7 @@
                   "properties": {
                     "requiredOk": {
                       "type": "boolean",
-                      "description": "Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials and query parameters can use the endpoint."
+                      "description": "Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials can use the endpoint."
                     },
                     "checks": {
                       "type": "object",
@@ -7942,7 +8064,7 @@
                                 },
                                 "workspaceAutoSelected": {
                                   "type": "boolean",
-                                  "description": "Whether the workspace was picked automatically. It is `false` when the `workspace` query parameter chose it."
+                                  "description": "Whether the workspace was picked automatically because none was set. It is `false` when the dataset source's `workspace` chose it, or a `workspace` query parameter on versions before `v2026-11-10`."
                                 },
                                 "availableWorkspaces": {
                                   "type": "array",
@@ -7990,7 +8112,7 @@
                         },
                         "semanticSearch": {
                           "nullable": true,
-                          "description": "Whether semantic search is ready on the endpoint's dataset. `null` when semantic search isn't enabled or the connection doesn't query a dataset. It never affects `requiredOk`: without it, the agent searches with GROQ only.",
+                          "description": "Whether semantic search works on the endpoint's dataset. `null` when the connection doesn't query a dataset, or when semantic search is on but the dataset doesn't have embeddings enabled. It never affects `requiredOk`: without it, the agent searches with GROQ only.",
                           "anyOf": [
                             {
                               "type": "object",
@@ -8009,9 +8131,30 @@
                                   "nullable": true,
                                   "description": "Whether the project is within its embeddings usage limit, or `null` if it couldn't be checked.",
                                   "type": "boolean"
+                                },
+                                "active": {
+                                  "type": "boolean",
+                                  "description": "Whether agents connecting now can use semantic search. On versions before `v2026-11-10`, `?embeddings=true` forces the tool on for agents even when this is `false`."
+                                },
+                                "inactiveReason": {
+                                  "nullable": true,
+                                  "description": "Why semantic search isn't active: `turnedOff` when the dataset source has it off, `datasetEmbeddingsNotReady` while the dataset's embeddings are still being prepared, and `usageLimitReached` when the organization has no embeddings usage left. `null` when it is active.",
+                                  "type": "string",
+                                  "enum": [
+                                    "turnedOff",
+                                    "datasetEmbeddingsNotReady",
+                                    "usageLimitReached",
+                                    null
+                                  ]
                                 }
                               },
-                              "required": ["ok", "status", "withinUsageLimit"]
+                              "required": [
+                                "ok",
+                                "status",
+                                "withinUsageLimit",
+                                "active",
+                                "inactiveReason"
+                              ]
                             },
                             {
                               "type": "object",
@@ -8047,9 +8190,13 @@
                                   "minimum": 0,
                                   "maximum": 9007199254740991,
                                   "description": "The number of document types the agent can query, after the endpoint's GROQ filter."
+                                },
+                                "perspective": {
+                                  "type": "string",
+                                  "description": "The perspective agents query the dataset with, such as `published` or `drafts`."
                                 }
                               },
-                              "required": ["ok", "documentTypes"]
+                              "required": ["ok", "documentTypes", "perspective"]
                             },
                             {
                               "type": "object",

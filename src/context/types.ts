@@ -262,9 +262,10 @@ export type CreateMcpEndpointParams = JsonBody<paths[McpEndpointsPath]['post']>
 export type EditMcpEndpointParams = JsonBody<paths[McpEndpointPath]['patch']>
 
 /**
- * Per-request overrides a connection to an MCP endpoint accepts, such as
- * `mode` to serve one side of an endpoint with both knowledge bases and a
- * dataset, or `knowledgeBases` to replace its knowledge base list.
+ * Per-request options a connection to an MCP endpoint accepts. Everything
+ * except `linkResolver` is deprecated and refused from API version
+ * `2026-11-10`: set `instructions`, `groqFilter` and the dataset source's
+ * `workspace`, `perspective` and `semanticSearch` on the endpoint instead.
  * @beta
  */
 export type McpEndpointRuntimeOptions = QueryParams<paths[`${McpEndpointPath}/status`]['get']>
