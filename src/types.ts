@@ -384,7 +384,7 @@ export interface ClientConfig {
    *
    * Currently this is used by `collaboration.comments` methods.
    *
-   * @alpha
+   * @beta
    */
   collaboration?: {
     organizationId?: string

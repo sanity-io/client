@@ -31,7 +31,7 @@ export type CommentResource = NonNullable<ClientConfig['resource']>
  * @param resource - The resource the comments are stored against, as `ClientConfig['resource']` takes it
  * @param documentId - Document ID, in published, draft or version form
  * @returns Global document reference, of the form `resourceType:resourceId:documentId`
- * @alpha
+ * @beta
  */
 export function getCommentTargetDocumentRef(
   resource: CommentResource,
