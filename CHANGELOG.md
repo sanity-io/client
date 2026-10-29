@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.14.1
+
+### Patch Changes
+
+- **deps:** update non-major ([#1390](https://github.com/sanity-io/client/pull/1390)) ([767bf42](https://github.com/sanity-io/client/commit/767bf422da6f24593ff3be9f7398877242c7b210))
+
 ## 8.14.0
 
 ### Minor Changes
