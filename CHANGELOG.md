@@ -1,5 +1,12 @@
 # @sanity/client
 
+## 8.14.0
+
+### Minor Changes
+
+- **collaboration:** promote comments API to beta ([#1381](https://github.com/sanity-io/client/pull/1381)) ([9ca48cc](https://github.com/sanity-io/client/commit/9ca48ccd13fc4e3be81b1d47de190cf9e8e7f3e9))
+- **context:** knowledge bases, imports and sources report their source chunks ([#1387](https://github.com/sanity-io/client/pull/1387)) ([125afd8](https://github.com/sanity-io/client/commit/125afd8139bca2ed49f6999372483915e58469c8))
+
 ## 8.13.0
 
 ### Minor Changes
