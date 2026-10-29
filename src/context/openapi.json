@@ -114,7 +114,7 @@
                 "_key": {
                   "type": "string",
                   "pattern": "^[a-z2-7]{10}$",
-                  "description": "Stable ID of this citation: 10 lowercase letters and digits. The entry body points to it with a `[^key]` marker."
+                  "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
                 },
                 "_type": {
                   "type": "string",
@@ -126,7 +126,7 @@
                 },
                 "title": {
                   "type": "string",
-                  "description": "The source's name when the entry was written."
+                  "description": "The source's name when it was quoted."
                 },
                 "url": {
                   "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
@@ -565,28 +565,74 @@
                               "description": "The documents that state this value, by the names you know them by.",
                               "type": "string"
                             },
-                            "span": {
-                              "description": "Where in a source this position was read.",
-                              "type": "object",
-                              "properties": {
-                                "sourceId": {
-                                  "type": "string",
-                                  "description": "ID of the source the position was read from."
+                            "citations": {
+                              "description": "Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none.",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "_key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z2-7]{10}$",
+                                    "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
+                                  },
+                                  "_type": {
+                                    "type": "string",
+                                    "enum": ["sanity.context.citation"]
+                                  },
+                                  "sourceId": {
+                                    "type": "string",
+                                    "description": "ID of the source document the quote comes from."
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "description": "The source's name when it was quoted."
+                                  },
+                                  "url": {
+                                    "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                                    "type": "string"
+                                  },
+                                  "quote": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 300,
+                                    "description": "The passage from the source that backs the claims, copied word for word."
+                                  },
+                                  "prefix": {
+                                    "type": "string",
+                                    "maxLength": 32,
+                                    "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
+                                  },
+                                  "suffix": {
+                                    "type": "string",
+                                    "maxLength": 32,
+                                    "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
+                                  },
+                                  "lineStart": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
+                                  },
+                                  "lineEnd": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "Last line of the quote, inclusive."
+                                  }
                                 },
-                                "lineStart": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 9007199254740991,
-                                  "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
-                                },
-                                "lineEnd": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 9007199254740991,
-                                  "description": "Last line of the range, inclusive."
-                                }
-                              },
-                              "required": ["sourceId", "lineStart", "lineEnd"]
+                                "required": [
+                                  "_key",
+                                  "_type",
+                                  "sourceId",
+                                  "title",
+                                  "quote",
+                                  "prefix",
+                                  "suffix",
+                                  "lineStart",
+                                  "lineEnd"
+                                ]
+                              }
                             },
                             "authority": {
                               "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -826,28 +872,74 @@
                               "description": "The documents that state this value, by the names you know them by.",
                               "type": "string"
                             },
-                            "span": {
-                              "description": "Where in a source this position was read.",
-                              "type": "object",
-                              "properties": {
-                                "sourceId": {
-                                  "type": "string",
-                                  "description": "ID of the source the position was read from."
+                            "citations": {
+                              "description": "Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none.",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "_key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z2-7]{10}$",
+                                    "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
+                                  },
+                                  "_type": {
+                                    "type": "string",
+                                    "enum": ["sanity.context.citation"]
+                                  },
+                                  "sourceId": {
+                                    "type": "string",
+                                    "description": "ID of the source document the quote comes from."
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "description": "The source's name when it was quoted."
+                                  },
+                                  "url": {
+                                    "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                                    "type": "string"
+                                  },
+                                  "quote": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 300,
+                                    "description": "The passage from the source that backs the claims, copied word for word."
+                                  },
+                                  "prefix": {
+                                    "type": "string",
+                                    "maxLength": 32,
+                                    "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
+                                  },
+                                  "suffix": {
+                                    "type": "string",
+                                    "maxLength": 32,
+                                    "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
+                                  },
+                                  "lineStart": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
+                                  },
+                                  "lineEnd": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "Last line of the quote, inclusive."
+                                  }
                                 },
-                                "lineStart": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 9007199254740991,
-                                  "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
-                                },
-                                "lineEnd": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 9007199254740991,
-                                  "description": "Last line of the range, inclusive."
-                                }
-                              },
-                              "required": ["sourceId", "lineStart", "lineEnd"]
+                                "required": [
+                                  "_key",
+                                  "_type",
+                                  "sourceId",
+                                  "title",
+                                  "quote",
+                                  "prefix",
+                                  "suffix",
+                                  "lineStart",
+                                  "lineEnd"
+                                ]
+                              }
                             },
                             "authority": {
                               "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -1100,28 +1192,74 @@
                               "description": "The documents that state this value, by the names you know them by.",
                               "type": "string"
                             },
-                            "span": {
-                              "description": "Where in a source this position was read.",
-                              "type": "object",
-                              "properties": {
-                                "sourceId": {
-                                  "type": "string",
-                                  "description": "ID of the source the position was read from."
+                            "citations": {
+                              "description": "Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none.",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "_key": {
+                                    "type": "string",
+                                    "pattern": "^[a-z2-7]{10}$",
+                                    "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
+                                  },
+                                  "_type": {
+                                    "type": "string",
+                                    "enum": ["sanity.context.citation"]
+                                  },
+                                  "sourceId": {
+                                    "type": "string",
+                                    "description": "ID of the source document the quote comes from."
+                                  },
+                                  "title": {
+                                    "type": "string",
+                                    "description": "The source's name when it was quoted."
+                                  },
+                                  "url": {
+                                    "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                                    "type": "string"
+                                  },
+                                  "quote": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 300,
+                                    "description": "The passage from the source that backs the claims, copied word for word."
+                                  },
+                                  "prefix": {
+                                    "type": "string",
+                                    "maxLength": 32,
+                                    "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
+                                  },
+                                  "suffix": {
+                                    "type": "string",
+                                    "maxLength": 32,
+                                    "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
+                                  },
+                                  "lineStart": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
+                                  },
+                                  "lineEnd": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991,
+                                    "description": "Last line of the quote, inclusive."
+                                  }
                                 },
-                                "lineStart": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 9007199254740991,
-                                  "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
-                                },
-                                "lineEnd": {
-                                  "type": "integer",
-                                  "minimum": 1,
-                                  "maximum": 9007199254740991,
-                                  "description": "Last line of the range, inclusive."
-                                }
-                              },
-                              "required": ["sourceId", "lineStart", "lineEnd"]
+                                "required": [
+                                  "_key",
+                                  "_type",
+                                  "sourceId",
+                                  "title",
+                                  "quote",
+                                  "prefix",
+                                  "suffix",
+                                  "lineStart",
+                                  "lineEnd"
+                                ]
+                              }
                             },
                             "authority": {
                               "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -2003,6 +2141,12 @@
                             },
                             "required": ["used", "limit"]
                           },
+                          "sourceChunks": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted."
+                          },
                           "buildRestriction": {
                             "nullable": true,
                             "description": "Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`.",
@@ -2101,6 +2245,7 @@
                           "hasWebSource",
                           "hasDatasetSource",
                           "sourceUsage",
+                          "sourceChunks",
                           "buildRestriction",
                           "refreshEnabled",
                           "refreshFrequency",
@@ -2399,6 +2544,12 @@
                       },
                       "required": ["used", "limit"]
                     },
+                    "sourceChunks": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted."
+                    },
                     "buildRestriction": {
                       "nullable": true,
                       "description": "Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`.",
@@ -2497,6 +2648,7 @@
                     "hasWebSource",
                     "hasDatasetSource",
                     "sourceUsage",
+                    "sourceChunks",
                     "buildRestriction",
                     "refreshEnabled",
                     "refreshFrequency",
@@ -2757,6 +2909,12 @@
                       },
                       "required": ["used", "limit"]
                     },
+                    "sourceChunks": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted."
+                    },
                     "buildRestriction": {
                       "nullable": true,
                       "description": "Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`.",
@@ -2855,6 +3013,7 @@
                     "hasWebSource",
                     "hasDatasetSource",
                     "sourceUsage",
+                    "sourceChunks",
                     "buildRestriction",
                     "refreshEnabled",
                     "refreshFrequency",
@@ -3146,6 +3305,12 @@
                       },
                       "required": ["used", "limit"]
                     },
+                    "sourceChunks": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted."
+                    },
                     "buildRestriction": {
                       "nullable": true,
                       "description": "Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`.",
@@ -3244,6 +3409,7 @@
                     "hasWebSource",
                     "hasDatasetSource",
                     "sourceUsage",
+                    "sourceChunks",
                     "buildRestriction",
                     "refreshEnabled",
                     "refreshFrequency",
@@ -3642,6 +3808,13 @@
                             "maximum": 9007199254740991,
                             "description": "The source's size in bytes."
                           },
+                          "chunks": {
+                            "nullable": true,
+                            "description": "The number of source chunks the source counts toward usage. A source split into parts reports its parts' total. `null` until the source is converted, and for a source that failed or whose file type or size was skipped.",
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
                           "status": {
                             "type": "string",
                             "enum": ["pending", "processing", "ready", "failed", "skipped"],
@@ -3704,6 +3877,7 @@
                           "filename",
                           "kind",
                           "sizeBytes",
+                          "chunks",
                           "status",
                           "tldr",
                           "topics",
@@ -3816,6 +3990,13 @@
                       "maximum": 9007199254740991,
                       "description": "The source's size in bytes."
                     },
+                    "chunks": {
+                      "nullable": true,
+                      "description": "The number of source chunks the source counts toward usage. A source split into parts reports its parts' total. `null` until the source is converted, and for a source that failed or whose file type or size was skipped.",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "status": {
                       "type": "string",
                       "enum": ["pending", "processing", "ready", "failed", "skipped"],
@@ -3878,6 +4059,7 @@
                     "filename",
                     "kind",
                     "sizeBytes",
+                    "chunks",
                     "status",
                     "tldr",
                     "topics",
@@ -4312,6 +4494,12 @@
                             "maximum": 9007199254740991,
                             "description": "The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources."
                           },
+                          "sourceChunks": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "The number of source chunks in the import's sources, including parts split from large sources. Sources still being processed add theirs once converted."
+                          },
                           "totalDistillableCount": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -4446,6 +4634,7 @@
                           "sourceKind",
                           "lastCheckedAt",
                           "sourceCount",
+                          "sourceChunks",
                           "totalDistillableCount",
                           "distilledCount",
                           "unsupportedCount",
@@ -4774,6 +4963,12 @@
                       "maximum": 9007199254740991,
                       "description": "The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources."
                     },
+                    "sourceChunks": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "The number of source chunks in the import's sources, including parts split from large sources. Sources still being processed add theirs once converted."
+                    },
                     "totalDistillableCount": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -4908,6 +5103,7 @@
                     "sourceKind",
                     "lastCheckedAt",
                     "sourceCount",
+                    "sourceChunks",
                     "totalDistillableCount",
                     "distilledCount",
                     "unsupportedCount",
@@ -5735,28 +5931,74 @@
                                     "description": "The documents that state this value, by the names you know them by.",
                                     "type": "string"
                                   },
-                                  "span": {
-                                    "description": "Where in a source this position was read.",
-                                    "type": "object",
-                                    "properties": {
-                                      "sourceId": {
-                                        "type": "string",
-                                        "description": "ID of the source the position was read from."
+                                  "citations": {
+                                    "description": "Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "_key": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{10}$",
+                                          "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
+                                        },
+                                        "_type": {
+                                          "type": "string",
+                                          "enum": ["sanity.context.citation"]
+                                        },
+                                        "sourceId": {
+                                          "type": "string",
+                                          "description": "ID of the source document the quote comes from."
+                                        },
+                                        "title": {
+                                          "type": "string",
+                                          "description": "The source's name when it was quoted."
+                                        },
+                                        "url": {
+                                          "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                                          "type": "string"
+                                        },
+                                        "quote": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300,
+                                          "description": "The passage from the source that backs the claims, copied word for word."
+                                        },
+                                        "prefix": {
+                                          "type": "string",
+                                          "maxLength": 32,
+                                          "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
+                                        },
+                                        "suffix": {
+                                          "type": "string",
+                                          "maxLength": 32,
+                                          "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
+                                        },
+                                        "lineStart": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991,
+                                          "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
+                                        },
+                                        "lineEnd": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991,
+                                          "description": "Last line of the quote, inclusive."
+                                        }
                                       },
-                                      "lineStart": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 9007199254740991,
-                                        "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
-                                      },
-                                      "lineEnd": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 9007199254740991,
-                                        "description": "Last line of the range, inclusive."
-                                      }
-                                    },
-                                    "required": ["sourceId", "lineStart", "lineEnd"]
+                                      "required": [
+                                        "_key",
+                                        "_type",
+                                        "sourceId",
+                                        "title",
+                                        "quote",
+                                        "prefix",
+                                        "suffix",
+                                        "lineStart",
+                                        "lineEnd"
+                                      ]
+                                    }
                                   },
                                   "authority": {
                                     "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -6050,28 +6292,74 @@
                                         "description": "The documents that state this value, by the names you know them by.",
                                         "type": "string"
                                       },
-                                      "span": {
-                                        "description": "Where in a source this position was read.",
-                                        "type": "object",
-                                        "properties": {
-                                          "sourceId": {
-                                            "type": "string",
-                                            "description": "ID of the source the position was read from."
+                                      "citations": {
+                                        "description": "Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "_key": {
+                                              "type": "string",
+                                              "pattern": "^[a-z2-7]{10}$",
+                                              "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
+                                            },
+                                            "_type": {
+                                              "type": "string",
+                                              "enum": ["sanity.context.citation"]
+                                            },
+                                            "sourceId": {
+                                              "type": "string",
+                                              "description": "ID of the source document the quote comes from."
+                                            },
+                                            "title": {
+                                              "type": "string",
+                                              "description": "The source's name when it was quoted."
+                                            },
+                                            "url": {
+                                              "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                                              "type": "string"
+                                            },
+                                            "quote": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 300,
+                                              "description": "The passage from the source that backs the claims, copied word for word."
+                                            },
+                                            "prefix": {
+                                              "type": "string",
+                                              "maxLength": 32,
+                                              "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
+                                            },
+                                            "suffix": {
+                                              "type": "string",
+                                              "maxLength": 32,
+                                              "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
+                                            },
+                                            "lineStart": {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 9007199254740991,
+                                              "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
+                                            },
+                                            "lineEnd": {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 9007199254740991,
+                                              "description": "Last line of the quote, inclusive."
+                                            }
                                           },
-                                          "lineStart": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991,
-                                            "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
-                                          },
-                                          "lineEnd": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991,
-                                            "description": "Last line of the range, inclusive."
-                                          }
-                                        },
-                                        "required": ["sourceId", "lineStart", "lineEnd"]
+                                          "required": [
+                                            "_key",
+                                            "_type",
+                                            "sourceId",
+                                            "title",
+                                            "quote",
+                                            "prefix",
+                                            "suffix",
+                                            "lineStart",
+                                            "lineEnd"
+                                          ]
+                                        }
                                       },
                                       "authority": {
                                         "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",
@@ -6358,28 +6646,74 @@
                                     "description": "The documents that state this value, by the names you know them by.",
                                     "type": "string"
                                   },
-                                  "span": {
-                                    "description": "Where in a source this position was read.",
-                                    "type": "object",
-                                    "properties": {
-                                      "sourceId": {
-                                        "type": "string",
-                                        "description": "ID of the source the position was read from."
+                                  "citations": {
+                                    "description": "Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "_key": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{10}$",
+                                          "description": "Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker."
+                                        },
+                                        "_type": {
+                                          "type": "string",
+                                          "enum": ["sanity.context.citation"]
+                                        },
+                                        "sourceId": {
+                                          "type": "string",
+                                          "description": "ID of the source document the quote comes from."
+                                        },
+                                        "title": {
+                                          "type": "string",
+                                          "description": "The source's name when it was quoted."
+                                        },
+                                        "url": {
+                                          "description": "Where the source lives on the web. Absent for uploaded files and datasets.",
+                                          "type": "string"
+                                        },
+                                        "quote": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 300,
+                                          "description": "The passage from the source that backs the claims, copied word for word."
+                                        },
+                                        "prefix": {
+                                          "type": "string",
+                                          "maxLength": 32,
+                                          "description": "Up to 32 characters of source text just before the quote, to tell repeats apart."
+                                        },
+                                        "suffix": {
+                                          "type": "string",
+                                          "maxLength": 32,
+                                          "description": "Up to 32 characters of source text just after the quote, to tell repeats apart."
+                                        },
+                                        "lineStart": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991,
+                                          "description": "First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator."
+                                        },
+                                        "lineEnd": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 9007199254740991,
+                                          "description": "Last line of the quote, inclusive."
+                                        }
                                       },
-                                      "lineStart": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 9007199254740991,
-                                        "description": "First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`."
-                                      },
-                                      "lineEnd": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 9007199254740991,
-                                        "description": "Last line of the range, inclusive."
-                                      }
-                                    },
-                                    "required": ["sourceId", "lineStart", "lineEnd"]
+                                      "required": [
+                                        "_key",
+                                        "_type",
+                                        "sourceId",
+                                        "title",
+                                        "quote",
+                                        "prefix",
+                                        "suffix",
+                                        "lineStart",
+                                        "lineEnd"
+                                      ]
+                                    }
                                   },
                                   "authority": {
                                     "description": "How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.",

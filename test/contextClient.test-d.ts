@@ -70,6 +70,12 @@ describe('client.context return types', () => {
     }
   })
 
+  test('knowledge bases, imports and sources report their source chunks', () => {
+    expectTypeOf<Context.KnowledgeBase['sourceChunks']>().toEqualTypeOf<number>()
+    expectTypeOf<Context.Import['sourceChunks']>().toEqualTypeOf<number>()
+    expectTypeOf<Context.Source['chunks']>().toEqualTypeOf<number | null>()
+  })
+
   test('mcpEndpoints.status resolves to the status verdicts, initialContext to text', async () => {
     const status = await kb.mcpEndpoints.status({name: 'n', mode: 'groq'})
     expectTypeOf(status).toEqualTypeOf<Context.McpEndpointStatus>()
