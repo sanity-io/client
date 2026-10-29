@@ -848,13 +848,13 @@ export interface components {
       topicHeadings?: string[]
       /** @description The passages that back this entry, one item per quoted passage, in the order the body first uses them. A source cited twice with different quotes has two items. Empty when the entry has no `body` or the body cites nothing. */
       citations: {
-        /** @description Stable ID of this citation: 10 lowercase letters and digits. The entry body points to it with a `[^key]` marker. */
+        /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
         _key: string
         /** @enum {string} */
         _type: 'sanity.context.citation'
         /** @description ID of the source document the quote comes from. */
         sourceId: string
-        /** @description The source's name when the entry was written. */
+        /** @description The source's name when it was quoted. */
         title: string
         /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
         url?: string
@@ -1064,15 +1064,29 @@ export interface components {
                   sourceIds?: string[]
                   /** @description The documents that state this value, by the names you know them by. */
                   where?: string
-                  /** @description Where in a source this position was read. */
-                  span?: {
-                    /** @description ID of the source the position was read from. */
+                  /** @description Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none. */
+                  citations?: {
+                    /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
+                    _key: string
+                    /** @enum {string} */
+                    _type: 'sanity.context.citation'
+                    /** @description ID of the source document the quote comes from. */
                     sourceId: string
-                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                    /** @description The source's name when it was quoted. */
+                    title: string
+                    /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+                    url?: string
+                    /** @description The passage from the source that backs the claims, copied word for word. */
+                    quote: string
+                    /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+                    prefix: string
+                    /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+                    suffix: string
+                    /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
                     lineStart: number
-                    /** @description Last line of the range, inclusive. */
+                    /** @description Last line of the quote, inclusive. */
                     lineEnd: number
-                  }
+                  }[]
                   /**
                    * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
                    * @enum {string}
@@ -1193,15 +1207,29 @@ export interface components {
                   sourceIds?: string[]
                   /** @description The documents that state this value, by the names you know them by. */
                   where?: string
-                  /** @description Where in a source this position was read. */
-                  span?: {
-                    /** @description ID of the source the position was read from. */
+                  /** @description Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none. */
+                  citations?: {
+                    /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
+                    _key: string
+                    /** @enum {string} */
+                    _type: 'sanity.context.citation'
+                    /** @description ID of the source document the quote comes from. */
                     sourceId: string
-                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                    /** @description The source's name when it was quoted. */
+                    title: string
+                    /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+                    url?: string
+                    /** @description The passage from the source that backs the claims, copied word for word. */
+                    quote: string
+                    /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+                    prefix: string
+                    /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+                    suffix: string
+                    /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
                     lineStart: number
-                    /** @description Last line of the range, inclusive. */
+                    /** @description Last line of the quote, inclusive. */
                     lineEnd: number
-                  }
+                  }[]
                   /**
                    * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
                    * @enum {string}
@@ -1324,15 +1352,29 @@ export interface components {
                   sourceIds?: string[]
                   /** @description The documents that state this value, by the names you know them by. */
                   where?: string
-                  /** @description Where in a source this position was read. */
-                  span?: {
-                    /** @description ID of the source the position was read from. */
+                  /** @description Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none. */
+                  citations?: {
+                    /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
+                    _key: string
+                    /** @enum {string} */
+                    _type: 'sanity.context.citation'
+                    /** @description ID of the source document the quote comes from. */
                     sourceId: string
-                    /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                    /** @description The source's name when it was quoted. */
+                    title: string
+                    /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+                    url?: string
+                    /** @description The passage from the source that backs the claims, copied word for word. */
+                    quote: string
+                    /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+                    prefix: string
+                    /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+                    suffix: string
+                    /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
                     lineStart: number
-                    /** @description Last line of the range, inclusive. */
+                    /** @description Last line of the quote, inclusive. */
                     lineEnd: number
-                  }
+                  }[]
                   /**
                    * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
                    * @enum {string}
@@ -1614,6 +1656,8 @@ export interface operations {
                 /** @description The maximum number of sources the knowledge base can have. */
                 limit: number
               } | null
+              /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
+              sourceChunks: number
               /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
               buildRestriction: {
                 /** @description A stable code for the restriction, such as `planLimitReached`. */
@@ -1811,6 +1855,8 @@ export interface operations {
               /** @description The maximum number of sources the knowledge base can have. */
               limit: number
             } | null
+            /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
+            sourceChunks: number
             /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
             buildRestriction: {
               /** @description A stable code for the restriction, such as `planLimitReached`. */
@@ -1993,6 +2039,8 @@ export interface operations {
               /** @description The maximum number of sources the knowledge base can have. */
               limit: number
             } | null
+            /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
+            sourceChunks: number
             /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
             buildRestriction: {
               /** @description A stable code for the restriction, such as `planLimitReached`. */
@@ -2225,6 +2273,8 @@ export interface operations {
               /** @description The maximum number of sources the knowledge base can have. */
               limit: number
             } | null
+            /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
+            sourceChunks: number
             /** @description Why a build request would be denied right now, or `null` if you can build. Only `GET .../knowledge-bases/{knowledgeBaseId}` checks it. List and create responses always return `null`. */
             buildRestriction: {
               /** @description A stable code for the restriction, such as `planLimitReached`. */
@@ -2465,6 +2515,8 @@ export interface operations {
               lastCheckedAt: string | null
               /** @description The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources. */
               sourceCount: number
+              /** @description The number of source chunks in the import's sources, including parts split from large sources. Sources still being processed add theirs once converted. */
+              sourceChunks: number
               /** @description The number of sources expected to be distilled, including parts split from large sources. Excludes skipped sources. */
               totalDistillableCount: number
               /** @description The number of sources distilled so far. Compare it with `totalDistillableCount` to show progress. */
@@ -2785,6 +2837,8 @@ export interface operations {
             lastCheckedAt: string | null
             /** @description The number of sources the import produced, such as crawled pages or files in an archive. Doesn't count parts split from large sources. */
             sourceCount: number
+            /** @description The number of source chunks in the import's sources, including parts split from large sources. Sources still being processed add theirs once converted. */
+            sourceChunks: number
             /** @description The number of sources expected to be distilled, including parts split from large sources. Excludes skipped sources. */
             totalDistillableCount: number
             /** @description The number of sources distilled so far. Compare it with `totalDistillableCount` to show progress. */
@@ -3284,15 +3338,29 @@ export interface operations {
                     sourceIds?: string[]
                     /** @description The documents that state this value, by the names you know them by. */
                     where?: string
-                    /** @description Where in a source this position was read. */
-                    span?: {
-                      /** @description ID of the source the position was read from. */
+                    /** @description Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none. */
+                    citations?: {
+                      /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
+                      _key: string
+                      /** @enum {string} */
+                      _type: 'sanity.context.citation'
+                      /** @description ID of the source document the quote comes from. */
                       sourceId: string
-                      /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                      /** @description The source's name when it was quoted. */
+                      title: string
+                      /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+                      url?: string
+                      /** @description The passage from the source that backs the claims, copied word for word. */
+                      quote: string
+                      /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+                      prefix: string
+                      /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+                      suffix: string
+                      /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
                       lineStart: number
-                      /** @description Last line of the range, inclusive. */
+                      /** @description Last line of the quote, inclusive. */
                       lineEnd: number
-                    }
+                    }[]
                     /**
                      * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
                      * @enum {string}
@@ -3429,15 +3497,29 @@ export interface operations {
                     sourceIds?: string[]
                     /** @description The documents that state this value, by the names you know them by. */
                     where?: string
-                    /** @description Where in a source this position was read. */
-                    span?: {
-                      /** @description ID of the source the position was read from. */
+                    /** @description Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none. */
+                    citations?: {
+                      /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
+                      _key: string
+                      /** @enum {string} */
+                      _type: 'sanity.context.citation'
+                      /** @description ID of the source document the quote comes from. */
                       sourceId: string
-                      /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                      /** @description The source's name when it was quoted. */
+                      title: string
+                      /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+                      url?: string
+                      /** @description The passage from the source that backs the claims, copied word for word. */
+                      quote: string
+                      /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+                      prefix: string
+                      /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+                      suffix: string
+                      /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
                       lineStart: number
-                      /** @description Last line of the range, inclusive. */
+                      /** @description Last line of the quote, inclusive. */
                       lineEnd: number
-                    }
+                    }[]
                     /**
                      * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
                      * @enum {string}
@@ -3583,15 +3665,29 @@ export interface operations {
                       sourceIds?: string[]
                       /** @description The documents that state this value, by the names you know them by. */
                       where?: string
-                      /** @description Where in a source this position was read. */
-                      span?: {
-                        /** @description ID of the source the position was read from. */
+                      /** @description Quotes from the documents that state this value, copied word for word and checked against each document. A document whose wording could not be checked has none. */
+                      citations?: {
+                        /** @description Stable ID of this citation: 10 lowercase letters and digits. An entry body points to it with a `[^key]` marker. */
+                        _key: string
+                        /** @enum {string} */
+                        _type: 'sanity.context.citation'
+                        /** @description ID of the source document the quote comes from. */
                         sourceId: string
-                        /** @description First line of the range, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. */
+                        /** @description The source's name when it was quoted. */
+                        title: string
+                        /** @description Where the source lives on the web. Absent for uploaded files and datasets. */
+                        url?: string
+                        /** @description The passage from the source that backs the claims, copied word for word. */
+                        quote: string
+                        /** @description Up to 32 characters of source text just before the quote, to tell repeats apart. */
+                        prefix: string
+                        /** @description Up to 32 characters of source text just after the quote, to tell repeats apart. */
+                        suffix: string
+                        /** @description First line of the quote, counting from 1. Line numbers match `GET .../sources/{sourceId}/content`. A hint: the quote is the stable locator. */
                         lineStart: number
-                        /** @description Last line of the range, inclusive. */
+                        /** @description Last line of the quote, inclusive. */
                         lineEnd: number
-                      }
+                      }[]
                       /**
                        * @description How much weight the sources behind this position carry. `primary`: your own content, such as uploaded files and pages on your own site. `secondary`: other sources. `community`: forums and Q&A sites.
                        * @enum {string}
@@ -3898,6 +3994,8 @@ export interface operations {
               kind: 'web' | 'file' | 'dataset'
               /** @description The source's size in bytes. */
               sizeBytes: number
+              /** @description The number of source chunks the source counts toward usage. A source split into parts reports its parts' total. `null` until the source is converted, and for a source that failed or whose file type or size was skipped. */
+              chunks: number | null
               /**
                * @description The source's processing status. `pending`: waiting to be processed. `processing`: distilled and being summarized. `ready`: processed and available to builds. `failed`: couldn't be processed. `skipped`: not processed, because its file type isn't supported, it's too large, or it was split into smaller sources.
                * @enum {string}
@@ -3990,6 +4088,8 @@ export interface operations {
             kind: 'web' | 'file' | 'dataset'
             /** @description The source's size in bytes. */
             sizeBytes: number
+            /** @description The number of source chunks the source counts toward usage. A source split into parts reports its parts' total. `null` until the source is converted, and for a source that failed or whose file type or size was skipped. */
+            chunks: number | null
             /**
              * @description The source's processing status. `pending`: waiting to be processed. `processing`: distilled and being summarized. `ready`: processed and available to builds. `failed`: couldn't be processed. `skipped`: not processed, because its file type isn't supported, it's too large, or it was split into smaller sources.
              * @enum {string}
