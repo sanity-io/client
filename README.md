@@ -2702,7 +2702,7 @@ await client.functions.durables.callbackFailure(callbackId, new Error('Rejected 
 
 The callback ID is the only credential these calls need. No token, `projectId`, `stackId` or scope is required, so the client can be configured with `useProjectHostname: false` as above. Treat callback IDs as secrets. The client URL-encodes the ID for you; pass it exactly as the function handed it out.
 
-`callbackSuccess(callbackId, result)` sends `result` as JSON, so it must be JSON-serializable. Any JSON value works, including strings, numbers and booleans. Omitting it resolves the waiting step with `null`.
+`callbackSuccess(callbackId, result)` sends `result` as JSON.
 
 `callbackFailure(callbackId, failure)` accepts either an `Error`, reported by its `message` and its `stack` split into lines, or the failure fields directly:
 
