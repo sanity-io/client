@@ -76,10 +76,16 @@ describe('client.context return types', () => {
     expectTypeOf<Context.Source['chunks']>().toEqualTypeOf<number | null>()
   })
 
+  test('build stages carry an open id and their share of the build', () => {
+    type Stage = NonNullable<Context.KnowledgeBase['buildStageState']>['stages'][number]
+    expectTypeOf<Stage['id']>().toEqualTypeOf<string>()
+    expectTypeOf<Stage['weight']>().toEqualTypeOf<number>()
+  })
+
   test('mcpEndpoints.status resolves to the status verdicts, initialContext to text', async () => {
     const status = await kb.mcpEndpoints.status({name: 'n', mode: 'groq'})
     expectTypeOf(status).toEqualTypeOf<Context.McpEndpointStatus>()
-    expectTypeOf(status.requiredOk).toEqualTypeOf<boolean>()
+    expectTypeOf(status.ready).toEqualTypeOf<boolean>()
     expectTypeOf(await kb.mcpEndpoints.initialContext({name: 'n'})).toEqualTypeOf<string>()
   })
 
