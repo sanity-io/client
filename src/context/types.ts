@@ -273,8 +273,8 @@ export type McpEndpointRuntimeOptions = QueryParams<paths[`${McpEndpointPath}/st
 /**
  * Whether an agent connecting to an MCP endpoint with your credentials and
  * the same runtime options can use it. A check is `null` when it doesn't
- * apply to the connection; `requiredOk` is true when every check that
- * applies passed, except `semanticSearch`.
+ * apply to the connection; `ready` is true when every check that applies
+ * passed, except `semanticSearch` and `access`.
  * @beta
  */
 export type McpEndpointStatus = JsonResponse<

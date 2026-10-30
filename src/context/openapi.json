@@ -1771,6 +1771,19 @@
             "nullable": true,
             "description": "A GROQ filter that limits what the MCP endpoint's `dataset` source serves. It has no effect on `knowledge-base` sources. `null` when unset. The API clears it when the endpoint has no `dataset` source.",
             "type": "string"
+          },
+          "updatedAt": {
+            "description": "When the MCP endpoint was last created or edited through the API, as an ISO 8601 timestamp. Agent use never changes it, unlike `_updatedAt`.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "lastUsedAt": {
+            "description": "When an agent last used the MCP endpoint, as an ISO 8601 timestamp. Recorded at most once per UTC day. `null` when it has not been used since usage tracking started.",
+            "nullable": true,
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
           }
         },
         "required": [
@@ -1840,6 +1853,7 @@
               "invalidGroqFilter",
               "mcpEndpointNotFound",
               "mcpEndpointNameConflict",
+              "mcpEndpointEditConflict",
               "mcpSourceKnowledgeBaseNotFound",
               "mcpEndpointNotServable",
               "conversationNotFound",
@@ -1997,18 +2011,14 @@
                                   "properties": {
                                     "id": {
                                       "type": "string",
-                                      "enum": [
-                                        "tldr",
-                                        "map",
-                                        "triage",
-                                        "plan",
-                                        "organize",
-                                        "arrange",
-                                        "write",
-                                        "review",
-                                        "polish"
-                                      ],
-                                      "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
+                                      "minLength": 1,
+                                      "description": "The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize."
+                                    },
+                                    "weight": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "description": "The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1."
                                     },
                                     "status": {
                                       "type": "string",
@@ -2040,9 +2050,9 @@
                                       "required": ["unit", "done"]
                                     }
                                   },
-                                  "required": ["id", "status"]
+                                  "required": ["id", "weight", "status"]
                                 },
-                                "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
+                                "description": "Every stage this build runs, in the order it runs them, with each stage's progress."
                               }
                             },
                             "required": ["jobId", "stages"]
@@ -2400,18 +2410,14 @@
                             "properties": {
                               "id": {
                                 "type": "string",
-                                "enum": [
-                                  "tldr",
-                                  "map",
-                                  "triage",
-                                  "plan",
-                                  "organize",
-                                  "arrange",
-                                  "write",
-                                  "review",
-                                  "polish"
-                                ],
-                                "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
+                                "minLength": 1,
+                                "description": "The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize."
+                              },
+                              "weight": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1."
                               },
                               "status": {
                                 "type": "string",
@@ -2443,9 +2449,9 @@
                                 "required": ["unit", "done"]
                               }
                             },
-                            "required": ["id", "status"]
+                            "required": ["id", "weight", "status"]
                           },
-                          "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
+                          "description": "Every stage this build runs, in the order it runs them, with each stage's progress."
                         }
                       },
                       "required": ["jobId", "stages"]
@@ -2765,18 +2771,14 @@
                             "properties": {
                               "id": {
                                 "type": "string",
-                                "enum": [
-                                  "tldr",
-                                  "map",
-                                  "triage",
-                                  "plan",
-                                  "organize",
-                                  "arrange",
-                                  "write",
-                                  "review",
-                                  "polish"
-                                ],
-                                "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
+                                "minLength": 1,
+                                "description": "The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize."
+                              },
+                              "weight": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1."
                               },
                               "status": {
                                 "type": "string",
@@ -2808,9 +2810,9 @@
                                 "required": ["unit", "done"]
                               }
                             },
-                            "required": ["id", "status"]
+                            "required": ["id", "weight", "status"]
                           },
-                          "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
+                          "description": "Every stage this build runs, in the order it runs them, with each stage's progress."
                         }
                       },
                       "required": ["jobId", "stages"]
@@ -3161,18 +3163,14 @@
                             "properties": {
                               "id": {
                                 "type": "string",
-                                "enum": [
-                                  "tldr",
-                                  "map",
-                                  "triage",
-                                  "plan",
-                                  "organize",
-                                  "arrange",
-                                  "write",
-                                  "review",
-                                  "polish"
-                                ],
-                                "description": "The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize."
+                                "minLength": 1,
+                                "description": "The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize."
+                              },
+                              "weight": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1."
                               },
                               "status": {
                                 "type": "string",
@@ -3204,9 +3202,9 @@
                                 "required": ["unit", "done"]
                               }
                             },
-                            "required": ["id", "status"]
+                            "required": ["id", "weight", "status"]
                           },
-                          "description": "The build's stages and their progress. Stages that haven't reported yet can be missing."
+                          "description": "Every stage this build runs, in the order it runs them, with each stage's progress."
                         }
                       },
                       "required": ["jobId", "stages"]
@@ -7613,7 +7611,14 @@
                       "type": "string",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "description": "When the endpoint was last changed, as an ISO 8601 timestamp."
+                      "description": "When the endpoint was last edited, as an ISO 8601 timestamp. Agents using the endpoint don't change it."
+                    },
+                    "lastUsedAt": {
+                      "nullable": true,
+                      "description": "When an agent last used the endpoint, as an ISO 8601 timestamp. It's recorded at most once a day, so it can be up to a day behind. `null` if the endpoint hasn't been used since usage tracking started.",
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                     }
                   },
                   "required": [
@@ -7626,7 +7631,8 @@
                     "groqFilter",
                     "url",
                     "createdAt",
-                    "updatedAt"
+                    "updatedAt",
+                    "lastUsedAt"
                   ],
                   "description": "McpEndpoint"
                 }
@@ -7651,7 +7657,7 @@
         "operationId": "updateMcpEndpoint",
         "summary": "Update an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the `sanity.context.mcp.update` grant on the organization. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.",
+        "description": "Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the `sanity.context.mcp.update` grant on the organization. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.\n\nAn unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`. If the endpoint changed while the update was in progress, the update returns `409` with code `mcpEndpointEditConflict` and changes nothing. You can safely retry it.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7889,7 +7895,14 @@
                       "type": "string",
                       "format": "date-time",
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
-                      "description": "When the endpoint was last changed, as an ISO 8601 timestamp."
+                      "description": "When the endpoint was last edited, as an ISO 8601 timestamp. Agents using the endpoint don't change it."
+                    },
+                    "lastUsedAt": {
+                      "nullable": true,
+                      "description": "When an agent last used the endpoint, as an ISO 8601 timestamp. It's recorded at most once a day, so it can be up to a day behind. `null` if the endpoint hasn't been used since usage tracking started.",
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                     }
                   },
                   "required": [
@@ -7902,7 +7915,8 @@
                     "groqFilter",
                     "url",
                     "createdAt",
-                    "updatedAt"
+                    "updatedAt",
+                    "lastUsedAt"
                   ],
                   "description": "McpEndpoint"
                 }
@@ -8250,7 +8264,7 @@
         "operationId": "getMcpEndpointStatus",
         "summary": "Check an MCP endpoint",
         "tags": ["mcp"],
-        "description": "Checks whether an agent can connect to the endpoint with your credentials. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.",
+        "description": "Checks whether the endpoint is ready for agents, and whether your credentials can read what it serves. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `ready` summarizes the result. Returns `404` if the endpoint doesn't exist.",
         "parameters": [
           {
             "schema": {
@@ -8369,9 +8383,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "ready": {
+                      "type": "boolean",
+                      "description": "Whether every check that applies to the connection passed, except `semanticSearch` and `access`. When `true`, the endpoint is ready for an agent whose credentials can read what it serves."
+                    },
                     "requiredOk": {
                       "type": "boolean",
-                      "description": "Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials can use the endpoint."
+                      "deprecated": true,
+                      "description": "Deprecated: use `ready`, which always has the same value."
                     },
                     "checks": {
                       "type": "object",
@@ -8446,7 +8465,7 @@
                         },
                         "semanticSearch": {
                           "nullable": true,
-                          "description": "Whether semantic search works on the endpoint's dataset. `null` when the connection doesn't query a dataset, or when semantic search is on but the dataset doesn't have embeddings enabled. It never affects `requiredOk`: without it, the agent searches with GROQ only.",
+                          "description": "Whether semantic search works on the endpoint's dataset. `null` when the connection doesn't query a dataset, or when semantic search is on but the dataset doesn't have embeddings enabled. It never affects `ready`: without it, the agent searches with GROQ only.",
                           "anyOf": [
                             {
                               "type": "object",
@@ -8551,7 +8570,7 @@
                         },
                         "knowledgeBases": {
                           "nullable": true,
-                          "description": "Whether every knowledge base the connection serves exists, is readable with your credentials, and has been built. `null` when the connection doesn't serve knowledge bases.",
+                          "description": "Whether every knowledge base the connection serves exists and has been built. `null` when the connection doesn't serve knowledge bases.",
                           "anyOf": [
                             {
                               "type": "object",
@@ -8584,7 +8603,7 @@
                                   "items": {
                                     "type": "string"
                                   },
-                                  "description": "The IDs of the knowledge bases that exist and that you can read."
+                                  "description": "The IDs of the knowledge bases that exist."
                                 },
                                 "missing": {
                                   "type": "array",
@@ -8592,13 +8611,6 @@
                                     "type": "string"
                                   },
                                   "description": "The IDs of knowledge bases that don't exist in the organization."
-                                },
-                                "denied": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  },
-                                  "description": "The IDs of knowledge bases your credentials can't read."
                                 },
                                 "unbuilt": {
                                   "type": "array",
@@ -8612,23 +8624,61 @@
                                   "description": "Why the check failed, written to show to users."
                                 }
                               },
-                              "required": [
-                                "ok",
-                                "resolved",
-                                "missing",
-                                "denied",
-                                "unbuilt",
-                                "error"
-                              ]
+                              "required": ["ok", "resolved", "missing", "unbuilt", "error"]
+                            }
+                          ]
+                        },
+                        "access": {
+                          "nullable": true,
+                          "description": "Whether your credentials can read the knowledge bases the connection serves. It never affects `ready`: agents connect with their own credentials, so check with the agent's token to know whether that agent can connect. `null` when the connection serves no knowledge bases that exist.",
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [true],
+                                  "description": "You can read every knowledge base."
+                                }
+                              },
+                              "required": ["ok"]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "ok": {
+                                  "type": "boolean",
+                                  "enum": [false],
+                                  "description": "You can't read some of the knowledge bases."
+                                },
+                                "denied": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The IDs of knowledge bases your credentials can't read."
+                                },
+                                "error": {
+                                  "type": "string",
+                                  "description": "What you lack, written to show to users."
+                                }
+                              },
+                              "required": ["ok", "denied", "error"]
                             }
                           ]
                         }
                       },
-                      "required": ["studio", "semanticSearch", "schema", "knowledgeBases"],
+                      "required": [
+                        "studio",
+                        "semanticSearch",
+                        "schema",
+                        "knowledgeBases",
+                        "access"
+                      ],
                       "description": "One result per check. A check is `null` when it doesn't apply to the connection."
                     }
                   },
-                  "required": ["requiredOk", "checks"]
+                  "required": ["ready", "requiredOk", "checks"]
                 }
               }
             }

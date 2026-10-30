@@ -553,7 +553,7 @@ export interface paths {
      * Update an MCP endpoint
      * @description Updates the title, sources, instructions, or GROQ filter of the endpoint with that name or ID. To clear an optional field, set it to `null`. An endpoint can have at most one dataset source, and removing it clears the GROQ filter. You can't change the name, so the endpoint URL stays the same. Requires the `sanity.context.mcp.update` grant on the organization. Adding a dataset source requires full read access to the dataset and, on its project, the Administrator or Developer role or a custom role that can create datasets. Changing the GROQ filter requires the same access for the endpoint's dataset. Sending the current values changes nothing.
      *
-     *     An unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`.
+     *     An unknown endpoint returns `404` with code `mcpEndpointNotFound`. A knowledge base that doesn't exist in the organization returns `422` with code `mcpSourceKnowledgeBaseNotFound`, and an invalid GROQ filter returns `422` with code `invalidGroqFilter`. If the endpoint changed while the update was in progress, the update returns `409` with code `mcpEndpointEditConflict` and changes nothing. You can safely retry it.
      */
     patch: operations['updateMcpEndpoint']
     trace?: never
@@ -587,7 +587,7 @@ export interface paths {
     }
     /**
      * Check an MCP endpoint
-     * @description Checks whether an agent can connect to the endpoint with your credentials. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `requiredOk` summarizes the result. Returns `404` if the endpoint doesn't exist.
+     * @description Checks whether the endpoint is ready for agents, and whether your credentials can read what it serves. A failed check returns `200` with that check's `ok` set to `false`, so you can see every problem at once. `ready` summarizes the result. Returns `404` if the endpoint doesn't exist.
      */
     get: operations['getMcpEndpointStatus']
     put?: never
@@ -644,6 +644,7 @@ export interface components {
         | 'invalidGroqFilter'
         | 'mcpEndpointNotFound'
         | 'mcpEndpointNameConflict'
+        | 'mcpEndpointEditConflict'
         | 'mcpSourceKnowledgeBaseNotFound'
         | 'mcpEndpointNotServable'
         | 'conversationNotFound'
@@ -1513,6 +1514,16 @@ export interface components {
       instructions: string | null
       /** @description A GROQ filter that limits what the MCP endpoint's `dataset` source serves. It has no effect on `knowledge-base` sources. `null` when unset. The API clears it when the endpoint has no `dataset` source. */
       groqFilter: string | null
+      /**
+       * Format: date-time
+       * @description When the MCP endpoint was last created or edited through the API, as an ISO 8601 timestamp. Agent use never changes it, unlike `_updatedAt`.
+       */
+      updatedAt?: string
+      /**
+       * Format: date-time
+       * @description When an agent last used the MCP endpoint, as an ISO 8601 timestamp. Recorded at most once per UTC day. `null` when it has not been used since usage tracking started.
+       */
+      lastUsedAt?: string | null
     }
   }
   responses: never
@@ -1577,22 +1588,12 @@ export interface operations {
               buildStageState: {
                 /** @description The ID of the build job this progress belongs to. */
                 jobId: string
-                /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
+                /** @description Every stage this build runs, in the order it runs them, with each stage's progress. */
                 stages: {
-                  /**
-                   * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
-                   * @enum {string}
-                   */
-                  id:
-                    | 'tldr'
-                    | 'map'
-                    | 'triage'
-                    | 'plan'
-                    | 'organize'
-                    | 'arrange'
-                    | 'write'
-                    | 'review'
-                    | 'polish'
+                  /** @description The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize. */
+                  id: string
+                  /** @description The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1. */
+                  weight: number
                   /**
                    * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
                    * @enum {string}
@@ -1776,22 +1777,12 @@ export interface operations {
             buildStageState: {
               /** @description The ID of the build job this progress belongs to. */
               jobId: string
-              /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
+              /** @description Every stage this build runs, in the order it runs them, with each stage's progress. */
               stages: {
-                /**
-                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
-                 * @enum {string}
-                 */
-                id:
-                  | 'tldr'
-                  | 'map'
-                  | 'triage'
-                  | 'plan'
-                  | 'organize'
-                  | 'arrange'
-                  | 'write'
-                  | 'review'
-                  | 'polish'
+                /** @description The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize. */
+                id: string
+                /** @description The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1. */
+                weight: number
                 /**
                  * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
                  * @enum {string}
@@ -1960,22 +1951,12 @@ export interface operations {
             buildStageState: {
               /** @description The ID of the build job this progress belongs to. */
               jobId: string
-              /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
+              /** @description Every stage this build runs, in the order it runs them, with each stage's progress. */
               stages: {
-                /**
-                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
-                 * @enum {string}
-                 */
-                id:
-                  | 'tldr'
-                  | 'map'
-                  | 'triage'
-                  | 'plan'
-                  | 'organize'
-                  | 'arrange'
-                  | 'write'
-                  | 'review'
-                  | 'polish'
+                /** @description The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize. */
+                id: string
+                /** @description The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1. */
+                weight: number
                 /**
                  * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
                  * @enum {string}
@@ -2194,22 +2175,12 @@ export interface operations {
             buildStageState: {
               /** @description The ID of the build job this progress belongs to. */
               jobId: string
-              /** @description The build's stages and their progress. Stages that haven't reported yet can be missing. */
+              /** @description Every stage this build runs, in the order it runs them, with each stage's progress. */
               stages: {
-                /**
-                 * @description The stage's ID. Which stages a build runs can change between builds and knowledge bases, so handle IDs you don't recognize.
-                 * @enum {string}
-                 */
-                id:
-                  | 'tldr'
-                  | 'map'
-                  | 'triage'
-                  | 'plan'
-                  | 'organize'
-                  | 'arrange'
-                  | 'write'
-                  | 'review'
-                  | 'polish'
+                /** @description The stage's ID, such as `tldr` or `write`. Which stages a build runs changes between builds and knowledge bases, so treat it as an open string and handle IDs you don't recognize. */
+                id: string
+                /** @description The stage's share of the whole build, from 0 to 1. The weights of a build's stages sum to 1. */
+                weight: number
                 /**
                  * @description The stage's status. `pending`: not started. `running`: in progress. `done`: finished. `failed`: the build ended before the stage finished.
                  * @enum {string}
@@ -4767,9 +4738,14 @@ export interface operations {
             createdAt: string
             /**
              * Format: date-time
-             * @description When the endpoint was last changed, as an ISO 8601 timestamp.
+             * @description When the endpoint was last edited, as an ISO 8601 timestamp. Agents using the endpoint don't change it.
              */
             updatedAt: string
+            /**
+             * Format: date-time
+             * @description When an agent last used the endpoint, as an ISO 8601 timestamp. It's recorded at most once a day, so it can be up to a day behind. `null` if the endpoint hasn't been used since usage tracking started.
+             */
+            lastUsedAt: string | null
           }
         }
       }
@@ -5016,9 +4992,14 @@ export interface operations {
             createdAt: string
             /**
              * Format: date-time
-             * @description When the endpoint was last changed, as an ISO 8601 timestamp.
+             * @description When the endpoint was last edited, as an ISO 8601 timestamp. Agents using the endpoint don't change it.
              */
             updatedAt: string
+            /**
+             * Format: date-time
+             * @description When an agent last used the endpoint, as an ISO 8601 timestamp. It's recorded at most once a day, so it can be up to a day behind. `null` if the endpoint hasn't been used since usage tracking started.
+             */
+            lastUsedAt: string | null
           }
         }
       }
@@ -5168,7 +5149,12 @@ export interface operations {
         }
         content: {
           'application/json': {
-            /** @description Whether every check that applies to the connection passed, except `semanticSearch`. When `true`, an agent connecting with the same credentials can use the endpoint. */
+            /** @description Whether every check that applies to the connection passed, except `semanticSearch` and `access`. When `true`, the endpoint is ready for an agent whose credentials can read what it serves. */
+            ready: boolean
+            /**
+             * @deprecated
+             * @description Deprecated: use `ready`, which always has the same value.
+             */
             requiredOk: boolean
             /** @description One result per check. A check is `null` when it doesn't apply to the connection. */
             checks: {
@@ -5206,7 +5192,7 @@ export interface operations {
                       }
                   )
                 | null
-              /** @description Whether semantic search works on the endpoint's dataset. `null` when the connection doesn't query a dataset, or when semantic search is on but the dataset doesn't have embeddings enabled. It never affects `requiredOk`: without it, the agent searches with GROQ only. */
+              /** @description Whether semantic search works on the endpoint's dataset. `null` when the connection doesn't query a dataset, or when semantic search is on but the dataset doesn't have embeddings enabled. It never affects `ready`: without it, the agent searches with GROQ only. */
               semanticSearch:
                 | (
                     | {
@@ -5267,7 +5253,7 @@ export interface operations {
                       }
                   )
                 | null
-              /** @description Whether every knowledge base the connection serves exists, is readable with your credentials, and has been built. `null` when the connection doesn't serve knowledge bases. */
+              /** @description Whether every knowledge base the connection serves exists and has been built. `null` when the connection doesn't serve knowledge bases. */
               knowledgeBases:
                 | (
                     | {
@@ -5285,15 +5271,36 @@ export interface operations {
                          * @enum {boolean}
                          */
                         ok: false
-                        /** @description The IDs of the knowledge bases that exist and that you can read. */
+                        /** @description The IDs of the knowledge bases that exist. */
                         resolved: string[]
                         /** @description The IDs of knowledge bases that don't exist in the organization. */
                         missing: string[]
-                        /** @description The IDs of knowledge bases your credentials can't read. */
-                        denied: string[]
                         /** @description The IDs of knowledge bases that haven't been built yet. Build them before connecting an agent. */
                         unbuilt: string[]
                         /** @description Why the check failed, written to show to users. */
+                        error: string
+                      }
+                  )
+                | null
+              /** @description Whether your credentials can read the knowledge bases the connection serves. It never affects `ready`: agents connect with their own credentials, so check with the agent's token to know whether that agent can connect. `null` when the connection serves no knowledge bases that exist. */
+              access:
+                | (
+                    | {
+                        /**
+                         * @description You can read every knowledge base.
+                         * @enum {boolean}
+                         */
+                        ok: true
+                      }
+                    | {
+                        /**
+                         * @description You can't read some of the knowledge bases.
+                         * @enum {boolean}
+                         */
+                        ok: false
+                        /** @description The IDs of knowledge bases your credentials can't read. */
+                        denied: string[]
+                        /** @description What you lack, written to show to users. */
                         error: string
                       }
                   )
