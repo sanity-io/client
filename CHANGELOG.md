@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.15.0
+
+### Minor Changes
+
+- **context:** build stages publish their order and weight ([#1392](https://github.com/sanity-io/client/pull/1392)) ([3c85c84](https://github.com/sanity-io/client/commit/3c85c846c65c37926b684fa7ab1822ad8d882b44))
+
 ## 8.14.1
 
 ### Patch Changes
