@@ -35,7 +35,7 @@
       "react-server": "./dist/index.js",
       "sanity-function": "./dist/index.js",
       "deno": "./dist/index.js",
-      "bun": "./dist/index.js",
+      "bun": "./dist/index.node.js",
       "workerd": "./dist/index.js",
       "worker": "./dist/index.js",
       "node": {
