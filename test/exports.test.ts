@@ -4,7 +4,7 @@ import pkg from '../package.json'
 
 /**
  * The default platform-neutral fetch build that worker/edge runtimes (and
- * everything that isn't Node) must resolve. The Node build
+ * other runtimes without Node stream support) must resolve. The Node build
  * (`./dist/index.node.js`) pulls in `get-it/node` (undici), which is not
  * available on worker runtimes.
  */
@@ -51,10 +51,9 @@ describe('pkg.exports - worker/edge resolution guard', () => {
     ],
     'vercel edge': ['edge-light', 'worker', 'browser', 'module', 'import', 'node'],
     deno: ['deno', 'node', 'module', 'import'],
-    bun: ['bun', 'node', 'module', 'import'],
     'react-server': ['react-server', 'node', 'module', 'import'],
     'sanity-function': ['sanity-function', 'node', 'module', 'import'],
-  } as const
+  }
 
   for (const [runtime, conditions] of Object.entries(workerRuntimes)) {
     test(`${runtime} never resolves the Node (undici) build for "."`, () => {
@@ -73,10 +72,11 @@ describe('pkg.exports - worker/edge resolution guard', () => {
   const nodeRuntimes = {
     'node (esm import)': ['node', 'import', 'module'],
     'node (require / require(esm))': ['node', 'require'],
-  } as const
+    bun: ['bun', 'node', 'module', 'import'],
+  }
 
   for (const [runtime, conditions] of Object.entries(nodeRuntimes)) {
-    test(`${runtime} resolves the Node (undici) build for "."`, () => {
+    test(`${runtime} resolves the Node stream-compatible build for "."`, () => {
       const resolved = resolveExport(pkg.exports['.'], new Set(conditions))
       expect(resolved).toBe(NODE_BUILD)
     })
