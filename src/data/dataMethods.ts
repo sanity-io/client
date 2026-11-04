@@ -637,6 +637,7 @@ function _dataRequestOptions(
     fetch: options.fetch,
     useAbortSignal: options.useAbortSignal,
     useCdn: options.useCdn,
+    instrumentation: options.instrumentation,
   }
 
   return {reqOptions, isMutation, returnFirst}

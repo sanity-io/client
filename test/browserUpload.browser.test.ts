@@ -242,6 +242,45 @@ describe('assets.upload() through the XHR path', () => {
     expect(diagnostics.query.tag).toBe(`studio.${tag}`)
   })
 
+  test('instrumentation follows the upload, failed uploads included', async () => {
+    const log: unknown[] = []
+    const client = createClient({
+      projectId: 'abc123',
+      // `assets.upload()` lands on `/v1/assets/images/<dataset>`, so this
+      // dataset picks the upload server's 401 route, which sends a `traceparent`.
+      dataset: 'error400',
+      apiVersion: '1',
+      useCdn: false,
+      useProjectHostname: false,
+      apiHost: getApiHost(),
+      instrumentation: {
+        onRequest: ({method}) => {
+          log.push({event: 'request', method})
+          return {
+            onHeaders: ({status, headers}) => {
+              log.push({event: 'headers', status, traceparent: headers.get('traceparent')})
+            },
+            onEnd: ({error}) => {
+              log.push({event: 'end', error})
+            },
+          }
+        },
+      },
+    })
+
+    const error = await lastValueFrom(client.observable.assets.upload('image', smallBody())).then(
+      () => undefined,
+      (err: unknown) => err,
+    )
+
+    expect(error).toBeInstanceOf(ClientError)
+    expect(log).toEqual([
+      {event: 'request', method: 'POST'},
+      {event: 'headers', status: 401, traceparent: '00-abcdef1234567890-0000-01'},
+      {event: 'end', error: undefined},
+    ])
+  })
+
   test('unsubscribing while the credential is pending releases the source and sends nothing', async () => {
     // A renewal that never settles: the upload waits for it.
     const auth = new BehaviorSubject<Promise<Auth>>(new Promise<Auth>(() => {}))

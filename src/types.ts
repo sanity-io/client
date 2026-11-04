@@ -71,6 +71,57 @@ export type RequestHandler = (
 ) => Promise<unknown>
 
 /**
+ * Observes the HTTP requests a client makes, without changing them. See the
+ * `instrumentation` client option.
+ *
+ * @beta
+ */
+export interface RequestInstrumentation {
+  /**
+   * Called when a request attempt starts. Return handlers to observe the rest of
+   * the attempt, or nothing.
+   */
+  onRequest?: (request: {
+    /**
+     * The full requested URL, including the query string. For a GET query that
+     * contains the GROQ query and its parameter values.
+     */
+    url: string
+    /** The request method, upper-cased. */
+    method: string
+  }) => RequestObserver | void
+}
+
+/**
+ * Handlers that observe one request attempt, returned from
+ * {@link RequestInstrumentation.onRequest}.
+ *
+ * @beta
+ */
+export interface RequestObserver {
+  /**
+   * Called when the response headers arrive. Not called if the attempt fails
+   * before there is a response.
+   *
+   * In browsers, only CORS-safelisted headers and the headers the API lists in
+   * `Access-Control-Expose-Headers` are readable.
+   */
+  onHeaders?: (response: {status: number; headers: Headers}) => void
+  /**
+   * Called once at the end of every attempt: when the body has been read, the
+   * stream has closed, or the attempt failed. A `listen()` response that the
+   * connection does not read, such as a 401, ends when its headers arrive.
+   *
+   * A failed, timed-out or aborted attempt has an `error` property, holding
+   * whatever it failed with, which can be `undefined`; check `'error' in result`
+   * rather than the value. Unsubscribing from a request, or closing a `listen()`
+   * connection, ends it as aborted. An HTTP error status is not a failed
+   * attempt: it ends without `error`.
+   */
+  onEnd?: (result: {error?: unknown}) => void
+}
+
+/**
  * @public
  * @deprecated – The `r`-prefix is not required, use `string` instead
  */
@@ -268,6 +319,52 @@ export interface ClientConfig {
    * Browser asset uploads and server-sent event connections are not intercepted.
    */
   requestHandler?: RequestHandler
+
+  /**
+   * Observes the HTTP requests the client makes: when an attempt starts, when
+   * its response headers arrive, and when it ends. This includes the connection
+   * `listen()` opens and asset uploads. Use it to read headers the client does
+   * not otherwise return, such as `traceparent`, or to time and count requests.
+   *
+   * It observes and never changes a request. Each retry, and each reconnect of a
+   * `listen()` connection, is reported as its own attempt. Handlers run
+   * synchronously and are not awaited, so don't make them async: a rejected
+   * promise is not caught. If a handler throws, the client logs the error with
+   * `console.error` and the request continues.
+   *
+   * Clients derived with `withConfig()` keep the instrumentation, and one
+   * passed to `withConfig()` replaces it. To observe a single call, pass
+   * `instrumentation` in the options of `fetch()`, `mutate()`, `action()`,
+   * `request()` or a method that takes the same options, such as `create()`,
+   * `patch().commit()`, `transaction().commit()` or the `releases` methods. It
+   * runs after the client's, and an exception in either does not stop the
+   * other.
+   *
+   * Connections opened by `live.events()` are not observed, because several
+   * clients can share one.
+   *
+   * @example
+   * ```ts
+   * const client = createClient({
+   *   // ...
+   *   instrumentation: {
+   *     onRequest: ({method, url}) => {
+   *       const start = performance.now()
+   *       return {
+   *         onHeaders: ({headers}) => console.log(url, headers.get('traceparent')),
+   *         onEnd: (result) => {
+   *           const outcome = 'error' in result ? result.error : 'ok'
+   *           console.log(method, url, performance.now() - start, outcome)
+   *         },
+   *       }
+   *     },
+   *   },
+   * })
+   * ```
+   *
+   * @beta
+   */
+  instrumentation?: RequestInstrumentation
 
   /**
    * Optional default headers to include with all requests
@@ -878,6 +975,8 @@ export interface QueryParams {
   method?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   next?: 'next' extends keyof RequestInit ? never : any
+  /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
+  instrumentation?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
   perspective?: never
   /** @deprecated you're using a fetch option as a GROQ parameter, this is likely a mistake */
@@ -1928,6 +2027,13 @@ export interface ResumableListenOptions extends Omit<ListenOptions, 'events' | '
 
 /** @public */
 export interface ResponseQueryOptions extends RequestOptions {
+  /**
+   * Observes this call's request attempts. Runs after the client's
+   * `instrumentation`; see that option for details.
+   *
+   * @beta
+   */
+  instrumentation?: RequestInstrumentation
   perspective?: ClientPerspective
   /**
    * @beta
@@ -2000,6 +2106,13 @@ export type RawQuerylessQueryResponse<R> = Omit<RawQueryResponse<R>, 'query'>
 
 /** @internal */
 export type BaseMutationOptions = RequestOptions & {
+  /**
+   * Observes this call's request attempts. Runs after the client's
+   * `instrumentation`; see that option for details.
+   *
+   * @beta
+   */
+  instrumentation?: RequestInstrumentation
   visibility?: 'sync' | 'async' | 'deferred'
   returnDocuments?: boolean
   returnFirst?: boolean
@@ -2086,6 +2199,13 @@ export type TransactionMutationOptions =
 
 /** @internal */
 export type BaseActionOptions = RequestOptions & {
+  /**
+   * Observes this call's request attempts. Runs after the client's
+   * `instrumentation`; see that option for details.
+   *
+   * @beta
+   */
+  instrumentation?: RequestInstrumentation
   transactionId?: string
   skipCrossDatasetReferenceValidation?: boolean
   dryRun?: boolean
@@ -2118,6 +2238,13 @@ export type RawRequestOptions = RequestUrlOptions & {
   /** Max retries for this request; `0` disables retries. Overrides the client-level maximum in both directions. */
   maxRetries?: number
   signal?: AbortSignal
+  /**
+   * Observes this call's request attempts. Runs after the client's
+   * `instrumentation`; see that option for details.
+   *
+   * @beta
+   */
+  instrumentation?: RequestInstrumentation
 }
 
 /** @internal */

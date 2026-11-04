@@ -1,6 +1,7 @@
 import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
+import {instrumentStreamFetch} from '../http/instrumentation'
 import type {InitializedClientConfig} from '../types'
 
 /** @internal */
@@ -83,14 +84,17 @@ export type EventSourceFetch = (
 /**
  * The fetch the client's own transport resolves for this config: the
  * configured `resolveFetch` (honouring an explicit `proxy`) if present,
- * otherwise the global fetch. Shared by the EventSource connection and the
- * `/check/cors` probe so both resolve identically.
+ * otherwise the global fetch, wrapped for the config's `instrumentation`.
+ * Shared by the EventSource connection and the `/check/cors` probe so both
+ * resolve identically.
  *
  * @internal
  */
 export function pickBaseFetch(config: InitializedClientConfig): FetchFunction {
-  if (config.resolveFetch) {
-    return config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
-  }
-  return globalThis.fetch.bind(globalThis)
+  const baseFetch = config.resolveFetch
+    ? config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
+    : globalThis.fetch.bind(globalThis)
+  return config.instrumentation
+    ? instrumentStreamFetch(baseFetch, [config.instrumentation])
+    : baseFetch
 }
