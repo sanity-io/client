@@ -1,320 +1,262 @@
-import {createClient} from '@sanity/client'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {type ClientConfig, createClient, EXPERIMENTAL_API_WARNING} from '@sanity/client'
+import {firstValueFrom} from 'rxjs'
+import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {ContextClient} from '../src/context/ContextClient'
-import type {SanityClient} from '../src/SanityClient'
+import {bodyBytes, getActiveMock, testResolveFetch} from './helpers/mockFetch'
 
-const TEST_ORG_ID = 'orgAbc123'
-const TEST_KB_ID = 'kb3do82whm'
-const TEST_KB = {
-  id: 'c0ffee00-0000-4000-8000-000000000000',
-  publicId: TEST_KB_ID,
-  organizationId: TEST_ORG_ID,
-  title: 'Support docs',
-}
+const apiHost = 'https://api.sanity.url'
+const kbId = 'kb3do82whm'
+const kbPath = `/v2026-05-26/context/knowledge-bases/${kbId}`
 
-const httpRequest = vi.fn()
-
-/** A client configured the way scoped context methods require: with the knowledge base as its resource. */
-function createKbClient(): SanityClient {
-  return createClient({
+const getMockClient = (config: Partial<ClientConfig> = {}) =>
+  createClient({
+    apiHost,
     apiVersion: '2026-05-26',
     useCdn: false,
-    resource: {type: 'knowledge-base', id: TEST_KB_ID},
+    useProjectHostname: false,
+    resolveFetch: testResolveFetch,
+    ...config,
   })
-}
 
-describe('ContextClient', () => {
-  let kbContext: ContextClient
+const kbClient = () => getMockClient({resource: {type: 'knowledge-base', id: kbId}})
 
+describe('context.request', () => {
+  // Observes the designed-in warning channel, not a collaborator.
+  const warn = vi.spyOn(console, 'warn')
   beforeEach(() => {
-    httpRequest.mockReset()
-    kbContext = new ContextClient(createKbClient(), httpRequest)
+    warn.mockReset().mockImplementation(() => undefined)
+  })
+  afterAll(() => {
+    warn.mockRestore()
   })
 
-  test('knowledgeBases.create posts to the collection with the organization in the body', async () => {
-    httpRequest.mockResolvedValueOnce(TEST_KB)
-    const client = createClient({
-      projectId: 'proj123',
-      dataset: 'production',
-      apiVersion: '2026-05-26',
-      useCdn: false,
-    })
-    const context = new ContextClient(client, httpRequest)
+  test('sends the method, the encoded path parameters, the query and the JSON body', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('PATCH', `${kbPath}/sources/${encodeURIComponent('a/../b')}`, {body: {title: 'Docs'}})
+      .respond({status: 200, body: {id: 'a/../b'}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', `${kbPath}/documents`, {query: {limit: '10', state: 'missing'}})
+      .respond({status: 200, body: {data: [], nextCursor: null}})
 
-    const created = await context.knowledgeBases.create({
-      organizationId: TEST_ORG_ID,
-      title: 'Support docs',
-      description: 'Docs and guides',
-    })
+    const client = kbClient()
+    const edited = await client.context.request(
+      'PATCH /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}',
+      {params: {sourceId: 'a/../b'}, body: {title: 'Docs'}},
+    )
+    const documents = await client.context.request(
+      'GET /knowledge-bases/{knowledgeBaseId}/documents',
+      {query: {limit: 10, state: 'missing', cursor: undefined}},
+    )
 
-    expect(httpRequest).toHaveBeenCalledTimes(1)
-    const req = httpRequest.mock.calls[0][0]
-    expect(req.url).toContain('/context/knowledge-bases')
-    expect(req.method).toBe('POST')
-    expect(req.body.organizationId).toBe(TEST_ORG_ID)
-    expect(req.body.title).toBe('Support docs')
-    expect(created.publicId).toBe(TEST_KB_ID)
+    expect(edited).toEqual({id: 'a/../b'})
+    expect(documents).toEqual({data: [], nextCursor: null})
   })
 
-  test('knowledgeBases management addresses per call: list, get, edit, delete', async () => {
-    httpRequest
-      .mockResolvedValueOnce({data: [], nextCursor: null}) // list
-      .mockResolvedValueOnce(TEST_KB) // get
-      .mockResolvedValueOnce(TEST_KB) // edit
-      .mockResolvedValueOnce(undefined) // delete
-    const client = createClient({
-      projectId: 'proj123',
-      dataset: 'production',
-      apiVersion: '2026-05-26',
-      useCdn: false,
-    })
-    const context = new ContextClient(client, httpRequest)
+  test('sends the header parameters the spec declares', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sources`, {
+        headers: {'idempotency-key': 'key-1'},
+        body: {type: 'files', title: 'Handbook'},
+      })
+      .respond({status: 201, body: {id: 'src1'}})
 
-    await context.knowledgeBases.list({
-      organizationId: TEST_ORG_ID,
-      limit: 5,
-      cursor: 'abc',
-    })
-    await context.knowledgeBases.get(TEST_KB_ID)
-    await context.knowledgeBases.edit(TEST_KB_ID, {
-      title: 'Support docs (EU)',
-    })
-    const deleted = await context.knowledgeBases.delete(TEST_KB_ID)
+    const created = await kbClient().context.request(
+      'POST /knowledge-bases/{knowledgeBaseId}/sources',
+      {headers: {'Idempotency-Key': 'key-1'}, body: {type: 'files', title: 'Handbook'}},
+    )
 
-    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
-      organizationId: TEST_ORG_ID,
-      limit: '5',
-      cursor: 'abc',
-    })
-    expect(httpRequest.mock.calls[1][0].url).toContain(`/context/knowledge-bases/${TEST_KB_ID}`)
-    expect(httpRequest.mock.calls[2][0]).toMatchObject({
-      method: 'PATCH',
-      body: {title: 'Support docs (EU)'},
-    })
-    expect(httpRequest.mock.calls[3][0].method).toBe('DELETE')
+    expect(created).toEqual({id: 'src1'})
+  })
+
+  test('takes the knowledge base from params over the configured resource', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-05-26/context/knowledge-bases/kbOther/build')
+      .respond({status: 202, body: {jobId: 'job1'}})
+
+    const accepted = await kbClient().context.request(
+      'POST /knowledge-bases/{knowledgeBaseId}/build',
+      {params: {knowledgeBaseId: 'kbOther'}},
+    )
+
+    expect(accepted).toEqual({jobId: 'job1'})
+  })
+
+  test('takes the organization from context.organizationId', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('DELETE', '/v2026-05-26/context/organizations/org1/mcp/support')
+      .respond({status: 204})
+
+    const deleted = await getMockClient({context: {organizationId: 'org1'}}).context.request(
+      'DELETE /organizations/{organizationId}/mcp/{mcpEndpoint}',
+      {params: {mcpEndpoint: 'support'}},
+    )
+
     expect(deleted).toBeUndefined()
   })
 
-  test('scoped methods address the configured knowledge-base resource', async () => {
-    httpRequest
-      .mockResolvedValueOnce({data: [], nextCursor: null}) // imports.list
-      .mockResolvedValueOnce({jobId: 'job1', status: 'running'}) // jobs.get
-
-    await kbContext.imports.list()
-    await kbContext.jobs.get({jobId: 'job1'})
-
-    expect(httpRequest.mock.calls[0][0].url).toContain(
-      `/context/knowledge-bases/${TEST_KB_ID}/imports`,
-    )
-    expect(httpRequest.mock.calls[1][0].url).toContain(
-      `/context/knowledge-bases/${TEST_KB_ID}/jobs/job1`,
-    )
-  })
-
-  test('scoped methods require a knowledge-base resource in the client configuration', () => {
-    const resourceError =
-      '`resource` of type `knowledge-base` must be configured to use knowledge-base methods'
-
-    const noResource = new ContextClient(
-      createClient({
-        projectId: 'proj123',
-        dataset: 'production',
-        apiVersion: '2026-05-26',
-        useCdn: false,
+  test('refuses a path parameter it cannot fill', () => {
+    expect(() =>
+      getMockClient().context.request('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
+        params: {sourceId: 's1'},
       }),
-      httpRequest,
+    ).toThrow(
+      '`params.knowledgeBaseId` is required unless a `knowledge-base` resource is configured',
     )
-    expect(() => noResource.build()).toThrow(resourceError)
-
-    const wrongResource = new ContextClient(
-      createClient({
-        apiVersion: '2026-05-26',
-        useCdn: false,
-        resource: {type: 'media-library', id: 'ml123'},
+    expect(() =>
+      getMockClient().context.request('DELETE /organizations/{organizationId}/mcp/{mcpEndpoint}', {
+        params: {mcpEndpoint: 'support'},
       }),
-      httpRequest,
-    )
-    expect(() => wrongResource.imports.list()).toThrow(resourceError)
-    expect(httpRequest).not.toHaveBeenCalled()
+    ).toThrow('`params.organizationId` is required unless `context.organizationId` is configured')
+    expect(() =>
+      kbClient().context.request('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
+        params: {sourceId: ''},
+      }),
+    ).toThrow('`params.sourceId` must be a non-empty string')
   })
 
-  test('data URLs on a knowledge-base resource follow the platform resource grammar', () => {
-    // Pins the query surface's address shape ahead of it going live, the
-    // same way media libraries resolve to /media-libraries/{id}/query.
-    expect(createKbClient().getDataUrl('query')).toBe(`/knowledge-bases/${TEST_KB_ID}/query`)
+  test('surfaces the experimental API warning unless it is ignored', async () => {
+    const warning = {'X-Sanity-Warning': EXPERIMENTAL_API_WARNING}
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', kbPath)
+      .respond({status: 200, body: {}, headers: warning})
+      .respond({status: 200, body: {}, headers: warning})
+
+    await kbClient().context.request('GET /knowledge-bases/{knowledgeBaseId}')
+    expect(warn).toHaveBeenCalledWith(EXPERIMENTAL_API_WARNING)
+
+    warn.mockClear()
+    await getMockClient({
+      resource: {type: 'knowledge-base', id: kbId},
+      ignoreWarnings: EXPERIMENTAL_API_WARNING,
+    }).context.request('GET /knowledge-bases/{knowledgeBaseId}')
+    expect(warn).not.toHaveBeenCalled()
   })
 
-  test('a caller abort signal rides the request', async () => {
-    httpRequest.mockResolvedValueOnce({jobId: 'job1'})
-
-    const controller = new AbortController()
-    await kbContext.build({signal: controller.signal})
-
-    expect(httpRequest.mock.calls[0][0].signal).toBe(controller.signal)
-  })
-
-  test('issues.resolve posts the resolution with the issueId in the path', async () => {
-    httpRequest.mockResolvedValueOnce({
-      issue: {status: 'accepted'},
-      entry: null,
-      jobId: null,
-    })
-
-    const result = await kbContext.issues.resolve({
-      issueId: 'issue.abc',
-      resolution: 0,
-    })
-
-    const req = httpRequest.mock.calls[0][0]
-    expect(req.url).toContain('/issues/issue.abc/resolve')
-    expect(req.body).toEqual({resolution: 0})
-    expect(result.issue.status).toBe('accepted')
-  })
-
-  test('imports.create with type file stages, PUTs to the signed URL, and confirms', async () => {
-    httpRequest
-      .mockResolvedValueOnce({
-        importId: 'imp1',
-        uploadUrl: 'https://storage.example/signed',
+  test('rejects with the API error', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', `${kbPath}/jobs/missing`)
+      .respond({
+        status: 404,
+        body: {error: 'Not Found', message: 'Job not found', statusCode: 404, code: 'jobNotFound'},
+        headers: {'content-type': 'application/json'},
       })
-      .mockResolvedValueOnce({jobId: 'job9'}) // complete
-    // The PUT rides the client's fetch resolution (so proxy config applies),
-    // injected the same way the transport tests inject theirs.
-    const uploadFetch = vi.fn().mockResolvedValueOnce(new Response(null, {status: 200}))
-    const uploadClient = createKbClient().withConfig({
-      resolveFetch: () => uploadFetch,
-    })
-    const uploadContext = new ContextClient(uploadClient, httpRequest)
 
-    const result = await uploadContext.imports.create({
-      type: 'file',
+    await expect(
+      kbClient().context.request('GET /knowledge-bases/{knowledgeBaseId}/jobs/{jobId}', {
+        params: {jobId: 'missing'},
+      }),
+    ).rejects.toMatchObject({statusCode: 404, response: {body: {code: 'jobNotFound'}}})
+  })
+
+  test('requestBytes resolves with the bytes, unparsed even when they are JSON', async () => {
+    const raw = '{"_id":"article-1","title":"Refunds é"}'
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', `${kbPath}/documents/d1/content`, {query: {format: 'raw'}})
+      .respond({status: 200, body: raw, headers: {'content-type': 'application/json'}})
+
+    const content = await kbClient().context.requestBytes(
+      'GET /knowledge-bases/{knowledgeBaseId}/documents/{documentId}/content',
+      {params: {documentId: 'd1'}, query: {format: 'raw'}},
+    )
+
+    expect(content).toEqual(new TextEncoder().encode(raw))
+  })
+
+  test('the observable client sends the same request', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sync`)
+      .respond({status: 202, body: {jobIds: []}})
+
+    const accepted = await firstValueFrom(
+      kbClient().observable.context.request('POST /knowledge-bases/{knowledgeBaseId}/sync'),
+    )
+
+    expect(accepted).toEqual({jobIds: []})
+  })
+})
+
+describe('context file uploads', () => {
+  const storage = 'https://storage.example'
+
+  test('uploadFile stages the upload, PUTs the bytes to the signed URL, and syncs with it', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sources/src1/uploads`, {
+        body: {filename: 'hello.txt', contentType: 'text/plain'},
+      })
+      .respond({status: 201, body: {uploadId: 'up1', uploadUrl: `${storage}/signed`}})
+    getActiveMock()
+      .scope(storage)
+      .on('PUT', '/signed', {
+        body: bodyBytes(new TextEncoder().encode('hello')),
+        headers: {'content-type': 'text/plain'},
+      })
+      .respond({status: 200})
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sources/src1/syncs`, {body: {uploadId: 'up1'}})
+      .respond({status: 202, body: {sourceId: 'src1', syncId: 'sync1', jobId: 'job1'}})
+
+    const accepted = await kbClient().context.uploadFile({
+      sourceId: 'src1',
       file: new Blob(['hello']),
       filename: 'hello.txt',
       contentType: 'text/plain',
     })
 
-    expect(httpRequest.mock.calls[0][0].url).toContain('/imports/uploads')
-    expect(httpRequest.mock.calls[0][0].body).toEqual({
-      filename: 'hello.txt',
-      contentType: 'text/plain',
-    })
-    expect(uploadFetch).toHaveBeenCalledWith(
-      'https://storage.example/signed',
-      expect.objectContaining({method: 'PUT'}),
-    )
-    expect(httpRequest.mock.calls[1][0].url).toContain('/imports/uploads/imp1/complete')
-    expect(result).toEqual({jobId: 'job9'})
+    expect(accepted).toEqual({sourceId: 'src1', syncId: 'sync1', jobId: 'job1'})
   })
 
-  test('a failed signed-URL PUT surfaces as an error and never confirms', async () => {
-    httpRequest.mockResolvedValueOnce({
-      importId: 'imp1',
-      uploadUrl: 'https://storage.example/signed',
-    })
-    const uploadFetch = vi
-      .fn()
-      .mockResolvedValueOnce(new Response(null, {status: 403, statusText: 'Forbidden'}))
-    const uploadClient = createKbClient().withConfig({
-      resolveFetch: () => uploadFetch,
-    })
-    const uploadContext = new ContextClient(uploadClient, httpRequest)
+  test('a failed signed-URL PUT rejects and never syncs', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sources/src1/uploads`, {body: {filename: 'x.txt'}})
+      .respond({status: 201, body: {uploadId: 'up1', uploadUrl: `${storage}/signed`}})
+    getActiveMock()
+      .scope(storage)
+      .on('PUT', '/signed')
+      .respond({status: 403, statusText: 'Forbidden'})
 
     await expect(
-      uploadContext.imports.create({
-        type: 'file',
-        file: new Blob(['x']),
-        filename: 'x.txt',
-      }),
+      kbClient().context.uploadFile({sourceId: 'src1', file: new Blob(['x']), filename: 'x.txt'}),
     ).rejects.toThrow('File upload failed: 403')
-    // stage only; the confirm call must not have fired
-    expect(httpRequest).toHaveBeenCalledTimes(1)
   })
 
-  test('path parameters are encoded on their way into the URL', async () => {
-    httpRequest.mockResolvedValueOnce({id: 'imp1'})
+  test('createFileSource adds the source without the file, uploads it, and reads the source again', async () => {
+    const base = '/v2026-05-26/context/knowledge-bases/kbOther/sources'
+    const synced = {id: 'src1', type: 'files', latestSync: {id: 'sync1', status: 'running'}}
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', base, {body: {type: 'files', title: 'Handbook'}})
+      .respond({status: 201, body: {id: 'src1', type: 'files', latestSync: null}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${base}/src1/uploads`)
+      .respond({status: 201, body: {uploadId: 'up1', uploadUrl: `${storage}/signed`}})
+    getActiveMock().scope(storage).on('PUT', '/signed').respond({status: 200})
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${base}/src1/syncs`)
+      .respond({status: 202, body: {sourceId: 'src1', syncId: 'sync1', jobId: 'job1'}})
+    getActiveMock().scope(apiHost).on('GET', `${base}/src1`).respond({status: 200, body: synced})
 
-    await kbContext.imports.get({importId: 'imports/../sneaky'})
-
-    expect(httpRequest.mock.calls[0][0].url).toContain('/imports/imports%2F..%2Fsneaky')
-  })
-
-  test('sources.content encodes the sourceId and passes the line range as query params', async () => {
-    httpRequest.mockResolvedValueOnce({
-      content: '',
-      slice: null,
-      sourceId: 's1',
-      totalLines: 1,
+    const source = await getMockClient().context.createFileSource({
+      knowledgeBaseId: 'kbOther',
+      type: 'files',
+      title: 'Handbook',
+      file: new Blob(['hello']),
+      filename: 'hello.txt',
     })
 
-    await kbContext.sources.content({
-      sourceId: 's/1',
-      startLine: 4,
-      endLine: 10,
-    })
-
-    expect(httpRequest.mock.calls[0][0].url).toContain('/sources/s%2F1/content')
-    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
-      startLine: '4',
-      endLine: '10',
-    })
-  })
-
-  test('sources.list forwards the status, importId, and ids filters', async () => {
-    httpRequest.mockResolvedValueOnce({data: [], nextCursor: null})
-
-    await kbContext.sources.list({
-      status: 'ready',
-      importId: 'imp1',
-      ids: ['s1', 's2'],
-    })
-
-    expect(httpRequest.mock.calls[0][0].query).toMatchObject({
-      status: 'ready',
-      importId: 'imp1',
-      ids: 's1,s2',
-    })
-  })
-
-  test('sources.delete issues a DELETE and resolves to nothing', async () => {
-    httpRequest.mockResolvedValueOnce(undefined)
-
-    const result = await kbContext.sources.delete({sourceId: 'source1'})
-
-    expect(httpRequest.mock.calls[0][0]).toMatchObject({
-      method: 'DELETE',
-      url: expect.stringContaining('/sources/source1'),
-    })
-    expect(result).toBeUndefined()
-  })
-
-  test('instructions.delete passes rebuild as a query param and returns the rebuild job', async () => {
-    httpRequest
-      .mockResolvedValueOnce({rebuildJobId: 'ctx-rebuild-1'})
-      .mockResolvedValueOnce({rebuildJobId: null})
-
-    const rebuilt = await kbContext.instructions.delete({instructionId: 'ins1', rebuild: true})
-    const plain = await kbContext.instructions.delete({instructionId: 'ins1'})
-
-    expect(httpRequest.mock.calls[0][0]).toMatchObject({
-      method: 'DELETE',
-      url: expect.stringContaining('/instructions/ins1'),
-      query: {rebuild: 'true'},
-    })
-    expect(httpRequest.mock.calls[1][0].query).toEqual({})
-    expect(rebuilt).toEqual({rebuildJobId: 'ctx-rebuild-1'})
-    expect(plain).toEqual({rebuildJobId: null})
-  })
-
-  test('imports.delete issues a DELETE and resolves to nothing', async () => {
-    httpRequest.mockResolvedValueOnce(undefined)
-
-    const result = await kbContext.imports.delete({importId: 'imp1'})
-
-    expect(httpRequest.mock.calls[0][0]).toMatchObject({
-      method: 'DELETE',
-      url: expect.stringContaining('/imports/imp1'),
-    })
-    expect(result).toBeUndefined()
+    expect(source).toEqual(synced)
   })
 })

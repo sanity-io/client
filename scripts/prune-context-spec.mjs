@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-// Filters the vendored Context API spec down to the paths the client.context
-// namespace exposes, so `generate:context` emits types for that surface only.
+// Filters the vendored Context API spec down to the paths client.context.request
+// accepts, so `generate:context` emits types for that surface only.
 //
 // src/context/openapi.json stays the full spec verbatim (it mirrors the
 // Context API's published spec, so refreshing it is a plain copy); only the
@@ -12,9 +12,9 @@ import {dirname} from 'node:path'
 
 const KB = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 
-// The paths the client.context namespace uses: the knowledge-base collection
-// plus the KnowledgeBaseHandle's routes. Future namespaces (MCP endpoints,
-// conversations, insights, ...) opt in by adding their paths here.
+// The public paths client.context.request accepts. They match the operations
+// the Context API publishes with `x-audience: public`, which is every path in
+// its published openapi.json; a newly published path opts in here.
 const PATH_ALLOWLIST = [
   '/{apiVersion}/context/knowledge-bases',
   KB,
@@ -31,11 +31,9 @@ const PATH_ALLOWLIST = [
   `${KB}/build`,
   `${KB}/build/cancel`,
   `${KB}/entries/{entryPath}/rebuild`,
-  `${KB}/imports`,
-  `${KB}/imports/uploads`,
-  `${KB}/imports/uploads/{importId}/complete`,
-  `${KB}/imports/{importId}`,
-  `${KB}/imports/{importId}/download`,
+  `${KB}/documents`,
+  `${KB}/documents/{documentId}`,
+  `${KB}/documents/{documentId}/content`,
   `${KB}/instructions`,
   `${KB}/instructions/{instructionId}`,
   `${KB}/issues/apply`,
@@ -43,10 +41,14 @@ const PATH_ALLOWLIST = [
   `${KB}/issues/{issueId}/reopen`,
   `${KB}/issues/{issueId}/resolve`,
   `${KB}/jobs/{jobId}`,
-  `${KB}/refresh`,
   `${KB}/sources`,
   `${KB}/sources/{sourceId}`,
-  `${KB}/sources/{sourceId}/content`,
+  `${KB}/sources/{sourceId}/syncs`,
+  `${KB}/sources/{sourceId}/syncs/{syncId}`,
+  `${KB}/sources/{sourceId}/syncs/{syncId}/confirm`,
+  `${KB}/sources/{sourceId}/syncs/{syncId}/discard`,
+  `${KB}/sources/{sourceId}/uploads`,
+  `${KB}/sync`,
 ]
 
 // Component schemas the namespace re-exports directly (the document shapes
@@ -66,6 +68,18 @@ const missingPaths = PATH_ALLOWLIST.filter((p) => !spec.paths?.[p])
 if (missingPaths.length > 0) {
   console.error(`Allowlisted paths missing from ${inputPath}:`)
   for (const p of missingPaths) console.error(`  ${p}`)
+  process.exit(1)
+}
+
+const nonPublic = PATH_ALLOWLIST.flatMap((p) =>
+  Object.entries(spec.paths[p])
+    .filter(([, op]) => op && typeof op === 'object' && 'x-audience' in op)
+    .filter(([, op]) => op['x-audience'] !== 'public')
+    .map(([method]) => `${method.toUpperCase()} ${p}`),
+)
+if (nonPublic.length > 0) {
+  console.error(`Allowlisted operations not marked x-audience: public in ${inputPath}:`)
+  for (const op of nonPublic) console.error(`  ${op}`)
   process.exit(1)
 }
 

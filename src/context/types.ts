@@ -4,10 +4,9 @@ import type {
   ResumableListenOptions,
   UploadBody,
 } from '../types'
-import type {components, paths} from './types.gen'
+import type {components, operations, paths} from './types.gen'
 
-/** Options accepted by every Context method. @beta */
-export type RequestOptions = {signal?: AbortSignal; tag?: string}
+export type {components, operations, paths}
 
 /** @internal */
 export const possibleStoreRequestOptions = ['headers', 'signal', 'tag', 'timeout', 'token'] as const
@@ -35,253 +34,168 @@ export type ContextListenOptions =
   | Omit<ListenOptions, 'includeAllVersions'>
   | Omit<ResumableListenOptions, 'includeAllVersions'>
 
+type Method = 'get' | 'put' | 'post' | 'patch' | 'delete'
+type PathPrefix = '/{apiVersion}/context'
+type ContextPath = keyof paths extends infer K
+  ? K extends `${PathPrefix}${infer P}`
+    ? P
+    : never
+  : never
+type PathItem<P extends ContextPath> = paths[`${PathPrefix}${P}`]
+
 /**
- * A file import. The client stages the upload, PUTs the bytes straight to
- * storage with a signed URL, and confirms. The Context API never holds the
- * file content.
+ * A Context API operation as `METHOD /path`, the path as the Context API's
+ * OpenAPI spec writes it after `/{apiVersion}/context`, for example
+ * `'POST /knowledge-bases/{knowledgeBaseId}/sources'`.
+ *
  * @beta
  */
-export type CreateFileImportParams = {
-  type: 'file'
+export type Route = {
+  [P in ContextPath]: {
+    [M in Method]: PathItem<P>[M] extends {responses: unknown} ? `${Uppercase<M>} ${P}` : never
+  }[Method]
+}[ContextPath]
+
+/**
+ * The spec's operation object for a route.
+ *
+ * @beta
+ */
+export type Operation<R extends Route> = R extends `${infer M} ${infer P}`
+  ? P extends ContextPath
+    ? Lowercase<M> extends Method
+      ? PathItem<P>[Lowercase<M>]
+      : never
+    : never
+  : never
+
+type OperationParameters<R extends Route, In extends 'path' | 'query' | 'header'> =
+  Operation<R> extends {parameters: {[K in In]?: infer T}} ? NonNullable<T> : never
+
+/** Path parameters the client fills in from its configuration when a call leaves them out. */
+type ConfiguredParam = 'knowledgeBaseId' | 'organizationId'
+
+type SpecPathParams<R extends Route> = Omit<OperationParameters<R, 'path'>, 'apiVersion'>
+
+/**
+ * A route's path parameters. `knowledgeBaseId` defaults to the client's
+ * `resource` when it is a knowledge base, and `organizationId` to
+ * `context.organizationId`.
+ *
+ * @beta
+ */
+export type PathParams<R extends Route> = Omit<SpecPathParams<R>, ConfiguredParam> &
+  Partial<Pick<SpecPathParams<R>, Extract<keyof SpecPathParams<R>, ConfiguredParam>>>
+
+/** @beta */
+export type QueryParams<R extends Route> = OperationParameters<R, 'query'>
+
+/** @beta */
+export type HeaderParams<R extends Route> = OperationParameters<R, 'header'>
+
+/**
+ * A route's JSON request body.
+ *
+ * @beta
+ */
+export type Body<R extends Route> =
+  Operation<R> extends {requestBody: {content: {'application/json': infer B}}} ? B : never
+
+type SuccessStatus = 200 | 201 | 202 | 204
+
+/**
+ * What a route resolves with: its success response body, `undefined` for
+ * `204 No Content`, and `unknown` where the spec gives no JSON schema.
+ *
+ * @beta
+ */
+export type Response<R extends Route> =
+  Operation<R> extends {responses: infer Responses}
+    ? {
+        [S in keyof Responses]: S extends SuccessStatus
+          ? S extends 204
+            ? undefined
+            : Responses[S] extends {content: {'application/json': infer T}}
+              ? T
+              : unknown
+          : never
+      }[keyof Responses]
+    : never
+
+type RequiredKeys<T> = {[K in keyof T]-?: {} extends Pick<T, K> ? never : K}[keyof T]
+
+/** Required when `T` has a required key, optional when it has none, absent when `never`. */
+type Slot<Name extends string, T> = [T] extends [never]
+  ? {[K in Name]?: never}
+  : [RequiredKeys<T>] extends [never]
+    ? {[K in Name]?: T}
+    : {[K in Name]: T}
+
+/**
+ * The second argument of `context.request`: the route's path parameters,
+ * query, headers and body, each typed from the spec, plus `signal` and `tag`.
+ *
+ * @beta
+ */
+export type RequestInit<R extends Route> = Slot<'params', PathParams<R>> &
+  Slot<'query', QueryParams<R>> &
+  Slot<'headers', HeaderParams<R>> &
+  ([Body<R>] extends [never] ? {body?: never} : {body: Body<R>}) & {
+    signal?: AbortSignal
+    tag?: string
+  }
+
+/**
+ * The init argument as a rest tuple: optional when nothing in it is required.
+ *
+ * @beta
+ */
+export type RequestArgs<R extends Route> = [RequiredKeys<RequestInit<R>>] extends [never]
+  ? [init?: RequestInit<R>]
+  : [init: RequestInit<R>]
+
+/**
+ * A file for a `files` source. The client stages an upload, PUTs the bytes
+ * straight to storage with a signed URL, and starts the source's sync with
+ * it. The Context API never holds the file content.
+ *
+ * @beta
+ */
+export type FileUpload = {
   /** Same shapes `assets.upload` accepts, minus node streams: the bytes go
-   * out through `fetch`, which has no portable stream support. */
+   * out through `fetch`, which has no portable stream support. A single
+   * document, or a zip, tar or gzip archive of them. */
   file: Exclude<UploadBody, NodeJS.ReadableStream>
   filename: string
+  /** When set, the bytes are PUT with this `Content-Type`. */
   contentType?: string
 }
 
-type KnowledgeBasesPath = '/{apiVersion}/context/knowledge-bases'
-type ConversationPath =
-  '/{apiVersion}/context/organizations/{organizationId}/conversations/{threadId}'
-type KnowledgeBasePath = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
-type McpEndpointsPath = '/{apiVersion}/context/organizations/{organizationId}/mcp'
-type McpEndpointPath = `${McpEndpointsPath}/{mcpEndpoint}`
-type ImportsPath = `${KnowledgeBasePath}/imports`
-type ImportPath = `${KnowledgeBasePath}/imports/{importId}`
-type UploadsPath = `${KnowledgeBasePath}/imports/uploads`
-type EntryRebuildPath = `${KnowledgeBasePath}/entries/{entryPath}/rebuild`
-type SourcesPath = `${KnowledgeBasePath}/sources`
-type SourcePath = `${KnowledgeBasePath}/sources/{sourceId}`
-type SourceContentPath = `${KnowledgeBasePath}/sources/{sourceId}/content`
-type IssuesApplyPath = `${KnowledgeBasePath}/issues/apply`
-type InstructionPath = `${KnowledgeBasePath}/instructions/{instructionId}`
-type JobPath = `${KnowledgeBasePath}/jobs/{jobId}`
-type IssueResolvePath = `${KnowledgeBasePath}/issues/{issueId}/resolve`
-type IssueDismissPath = `${KnowledgeBasePath}/issues/{issueId}/dismiss`
-type IssueReopenPath = `${KnowledgeBasePath}/issues/{issueId}/reopen`
-type InstructionsPath = `${KnowledgeBasePath}/instructions`
-
-type JsonResponse<T> = T extends {content: {'application/json': infer R}} ? R : never
-type QueryParams<T> = T extends {parameters: {query?: infer Q}} ? NonNullable<Q> : never
-type JsonBody<T> = T extends {
-  requestBody: {content: {'application/json': infer R}}
-}
-  ? R
-  : never
-
-/**
- * A knowledge base: one buildable body of knowledge inside Context.
- * @beta
- */
-export type KnowledgeBase = JsonResponse<paths[KnowledgeBasePath]['get']['responses']['200']>
-
-/**
- * Parameters for creating a knowledge base.
- * @beta
- */
-export type CreateKnowledgeBaseParams = JsonBody<paths[KnowledgeBasesPath]['post']>
 /** @beta */
-export type EditKnowledgeBaseParams = JsonBody<paths[KnowledgeBasePath]['patch']>
-
-/**
- * Parameters for importing content. Discriminated on `type`:
- * inline text, a website crawl, or a Sanity dataset bind.
- * @beta
- */
-export type CreateImportParams = JsonBody<paths[ImportsPath]['post']>
-
-/**
- * Accepted async work. Poll the job with `jobs.get` until it reaches a
- * terminal state.
- * @beta
- */
-export type JobAccepted = JsonResponse<
-  paths[`${KnowledgeBasePath}/build`]['post']['responses']['202']
->
-
-/**
- * A background job: a `build`, an `update` (applied issues, rebuilt entries)
- * or a `sync` (refreshes and imports). Narrow on `kind` to read `result`,
- * which `build` and `update` jobs carry once they succeed.
- * @beta
- */
-export type Job = JsonResponse<paths[JobPath]['get']['responses']['200']> & {
-  // Every job carried `result?: unknown` before results were typed. Keeping it
-  // on each kind lets `job.result` compile without narrowing; `sync` jobs never
-  // send one.
-  result?: unknown
-}
-
-/**
- * Accepted entry rebuild: the job to poll plus every entry the rebuild
- * touches.
- * @beta
- */
-export type RebuildEntryResponse = JsonResponse<paths[EntryRebuildPath]['post']['responses']['202']>
+export type UploadFileParams = FileUpload & {sourceId: string; knowledgeBaseId?: string}
 
 /** @beta */
-export type ApplyIssuesParams = JsonBody<paths[IssuesApplyPath]['post']>
-/** @beta */
-export type ApplyIssuesResponse = JsonResponse<paths[IssuesApplyPath]['post']['responses']['202']>
-/** @beta */
-export type ResolveIssueParams = JsonBody<paths[IssueResolvePath]['post']>
-/** @beta */
-export type ResolveIssueResponse = JsonResponse<paths[IssueResolvePath]['post']['responses']['200']>
-/** @beta */
-export type DismissIssueResponse = JsonResponse<paths[IssueDismissPath]['post']['responses']['200']>
-/** @beta */
-export type ReopenIssueResponse = JsonResponse<paths[IssueReopenPath]['post']['responses']['200']>
+export type CreateFileSourceParams = FileUpload &
+  Omit<
+    Extract<Body<'POST /knowledge-bases/{knowledgeBaseId}/sources'>, {type: 'files'}>,
+    'content' | 'contentType'
+  > & {
+    knowledgeBaseId?: string
+  }
 
-/** @beta */
-export type CreateInstructionParams = JsonBody<paths[InstructionsPath]['post']>
-/**
- * A standing instruction, as the instruction endpoints return it.
- * @beta
- */
-export type Instruction = JsonResponse<paths[InstructionPath]['patch']['responses']['200']>
-/** The created instruction, wrapped the way the create endpoint returns it. @beta */
-export type CreateInstructionResponse = JsonResponse<
-  paths[InstructionsPath]['post']['responses']['201']
->
-/** @beta */
-export type EditInstructionParams = JsonBody<paths[InstructionPath]['patch']>
-/**
- * The rebuild a delete started: `rebuildJobId` is `null` unless `rebuild: true`
- * was passed and an entry cites the instruction's sources.
- * @beta
- */
-export type DeleteInstructionResponse = JsonResponse<
-  paths[InstructionPath]['delete']['responses']['200']
->
-
-/** @beta */
-export type KnowledgeBasesResponse = JsonResponse<
-  paths[KnowledgeBasesPath]['get']['responses']['200']
->
-
-/** @beta */
-export type ImportsResponse = JsonResponse<paths[ImportsPath]['get']['responses']['200']>
-/** @beta */
-export type Import = ImportsResponse['data'][number]
-/** @beta */
-export type ImportDetail = JsonResponse<paths[ImportPath]['get']['responses']['200']>
-/** @beta */
-export type ImportDownloadResponse = JsonResponse<
-  paths[`${ImportPath}/download`]['get']['responses']['200']
->
-
-/**
- * The staged half of a file upload: PUT the bytes to `uploadUrl`, then
- * confirm with the complete endpoint. `imports.create({type: 'file'})` does
- * all of this in one call.
- * @beta
- */
-export type StagedUpload = JsonResponse<paths[UploadsPath]['post']['responses']['201']>
-
-/** @beta */
-export type SourcesResponse = JsonResponse<paths[SourcesPath]['get']['responses']['200']>
-/** @beta */
-export type Source = SourcesResponse['data'][number]
-/** @beta */
-export type SourceDetail = JsonResponse<paths[SourcePath]['get']['responses']['200']>
-/** @beta */
-export type SourceContentResponse = JsonResponse<
-  paths[SourceContentPath]['get']['responses']['200']
->
-
-/**
- * A recorded conversation: one agent thread's transcript plus the
- * classification recorded on it. Standalone org-level telemetry — dimensions
- * (MCP endpoints, app, the customer's own keys) live in the `metadata` bag.
- * @beta
- */
-export type Conversation = JsonResponse<paths[ConversationPath]['put']['responses']['200']>
-/**
- * Body for the conversation ingest upsert. Messages replace the stored
- * transcript wholesale; `metadata` and model fields only overwrite when
- * present.
- * @beta
- */
-export type SaveConversationParams = JsonBody<paths[ConversationPath]['put']>
-/** Exactly one of a verdict (`coreMetrics`) or a failure (`classificationError`). @beta */
-export type ClassifyConversationParams = JsonBody<paths[ConversationPath]['patch']>
-
-/**
- * The raw `sanity.context.entry` document shape, as stored in the
- * organization's document store. For typing GROQ reads.
- * @beta
- */
+/** A `sanity.context.entry` document, for typing GROQ reads. @beta */
 export type EntryDoc = components['schemas']['EntryDoc']
-/** @beta */
+/** A `sanity.context.issue` document, for typing GROQ reads. @beta */
 export type IssueDoc = components['schemas']['IssueDoc']
-/** @beta */
+/** A `sanity.context.instruction` document, for typing GROQ reads. @beta */
 export type InstructionDoc = components['schemas']['InstructionDoc']
-/**
- * The raw `sanity.context.mcp` document shape (an MCP endpoint
- * configuration), as stored in the organization's document store. For
- * typing GROQ reads.
- * @beta
- */
+/** A `sanity.context.mcp` document, for typing GROQ reads. @beta */
 export type McpDoc = components['schemas']['McpDoc']
-
-/**
- * The metadata view of an entry, as `entries.list` projects it. Bodies stay
- * behind `entries.get` (or a GROQ read through `context.fetch`).
- * @beta
- */
-export type Entry = Pick<EntryDoc, '_id' | 'path' | 'title' | 'tldr' | 'status'>
-
-/**
- * The raw `sanity.context.conversation` document shape, as stored in the
- * organization's document store. For typing GROQ reads.
- * @beta
- */
+/** A `sanity.context.conversation` document, for typing GROQ reads. @beta */
 export type ConversationDoc = components['schemas']['ConversationDoc']
 
-/**
- * An MCP endpoint as the management methods return it, including the `url`
- * agents connect to.
- * @beta
- */
-export type McpEndpoint = JsonResponse<paths[McpEndpointsPath]['post']['responses']['201']>
-
 /** @beta */
-export type CreateMcpEndpointParams = JsonBody<paths[McpEndpointsPath]['post']>
-
+export type Source = Response<'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}'>
 /** @beta */
-export type EditMcpEndpointParams = JsonBody<paths[McpEndpointPath]['patch']>
-
-/**
- * Per-request options a connection to an MCP endpoint accepts. Everything
- * except `linkResolver` is deprecated and refused from API version
- * `2026-11-10`: set `instructions`, `groqFilter` and the dataset source's
- * `workspace`, `perspective` and `semanticSearch` on the endpoint instead.
- * @beta
- */
-export type McpEndpointRuntimeOptions = QueryParams<paths[`${McpEndpointPath}/status`]['get']>
-
-/**
- * Whether an agent connecting to an MCP endpoint with your credentials and
- * the same runtime options can use it. A check is `null` when it doesn't
- * apply to the connection; `ready` is true when every check that applies
- * passed, except `semanticSearch` and `access`.
- * @beta
- */
-export type McpEndpointStatus = JsonResponse<
-  paths[`${McpEndpointPath}/status`]['get']['responses']['200']
->
-
-/** Options for an MCP endpoint's initial context. @beta */
-export type McpEndpointInitialContextOptions = QueryParams<
-  paths[`${McpEndpointPath}/initial-context`]['get']
->
+export type SyncAccepted =
+  Response<'POST /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs'>
