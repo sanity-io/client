@@ -103,13 +103,7 @@ export type Body<R extends Route> =
 
 type SuccessStatus = 200 | 201 | 202 | 204
 
-/**
- * What a route resolves with: its success response body, `undefined` for
- * `204 No Content`, and `unknown` where the spec gives no JSON schema.
- *
- * @beta
- */
-export type Response<R extends Route> =
+type JsonResponse<R extends Route> =
   Operation<R> extends {responses: infer Responses}
     ? {
         [S in keyof Responses]: S extends SuccessStatus
@@ -121,6 +115,31 @@ export type Response<R extends Route> =
           : never
       }[keyof Responses]
     : never
+
+/**
+ * The `format` query values a route takes, such as a document's content in
+ * `json`, `markdown` or `plain`. `raw` answers with bytes, so it goes through
+ * `requestBytes`.
+ *
+ * @beta
+ */
+export type ResponseFormat<R extends Route> = Exclude<
+  QueryParams<R> extends {format?: infer F} ? F : never,
+  'raw'
+>
+
+/**
+ * What a route resolves with: its success response body, `undefined` for
+ * `204 No Content`, and `unknown` where the spec gives no JSON schema. A
+ * `format` of `markdown` or `plain` resolves with the text.
+ *
+ * @beta
+ */
+export type Response<R extends Route, F = never> = [F] extends [never]
+  ? JsonResponse<R>
+  : F extends 'markdown' | 'plain'
+    ? string
+    : JsonResponse<R>
 
 type RequiredKeys<T> = {[K in keyof T]-?: {} extends Pick<T, K> ? never : K}[keyof T]
 
@@ -137,9 +156,10 @@ type Slot<Name extends string, T> = [T] extends [never]
  *
  * @beta
  */
-export type RequestInit<R extends Route> = Slot<'params', PathParams<R>> &
+export type RequestInit<R extends Route, F = never> = Slot<'params', PathParams<R>> &
   Slot<'query', QueryParams<R>> &
-  Slot<'headers', HeaderParams<R>> &
+  // Lets `request` infer the `format` it was given, to type the response by it
+  {query?: {format?: F}} & Slot<'headers', HeaderParams<R>> &
   ([Body<R>] extends [never] ? {body?: never} : {body: Body<R>}) & {
     signal?: AbortSignal
     tag?: string
@@ -150,9 +170,9 @@ export type RequestInit<R extends Route> = Slot<'params', PathParams<R>> &
  *
  * @beta
  */
-export type RequestArgs<R extends Route> = [RequiredKeys<RequestInit<R>>] extends [never]
-  ? [init?: RequestInit<R>]
-  : [init: RequestInit<R>]
+export type RequestArgs<R extends Route, F = never> = [RequiredKeys<RequestInit<R>>] extends [never]
+  ? [init?: RequestInit<R, F>]
+  : [init: RequestInit<R, F>]
 
 /**
  * A file for a `files` source. The client stages an upload, PUTs the bytes

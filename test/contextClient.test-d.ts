@@ -35,6 +35,27 @@ describe('client.context.request types', () => {
     ).toEqualTypeOf<undefined>()
   })
 
+  test("types a document's content by its format", async () => {
+    const route = 'GET /knowledge-bases/{knowledgeBaseId}/documents/{documentId}/content'
+    const params = {documentId: 'd1'}
+    const view = await context.request(route, {params})
+    expectTypeOf(view.totalLines).toEqualTypeOf<number>()
+    expectTypeOf(await context.request(route, {params, query: {format: 'json'}})).toEqualTypeOf(
+      view,
+    )
+    expectTypeOf(
+      await context.request(route, {params, query: {format: 'markdown', lines: '1-10'}}),
+    ).toEqualTypeOf<string>()
+    expectTypeOf(
+      await context.request(route, {params, query: {format: 'plain'}}),
+    ).toEqualTypeOf<string>()
+    // @ts-expect-error -- raw content is bytes, which requestBytes resolves with
+    void context.request(route, {params, query: {format: 'raw'}})
+    expectTypeOf(
+      await context.requestBytes(route, {params, query: {format: 'raw'}}),
+    ).toEqualTypeOf<Uint8Array>()
+  })
+
   test('types path parameters, query and body from the spec', () => {
     void context.request('PATCH /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
       params: {sourceId: 's1'},

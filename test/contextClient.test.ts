@@ -99,24 +99,34 @@ describe('context.request', () => {
     expect(deleted).toBeUndefined()
   })
 
-  test('refuses a path parameter it cannot fill', () => {
-    expect(() =>
-      getMockClient().context.request('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
-        params: {sourceId: 's1'},
-      }),
-    ).toThrow(
+  test('rejects, rather than throws, for a path parameter it cannot fill', async () => {
+    const missingKnowledgeBase = getMockClient().context.request(
+      'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}',
+      {params: {sourceId: 's1'}},
+    )
+    await expect(missingKnowledgeBase).rejects.toThrow(
       '`params.knowledgeBaseId` is required unless a `knowledge-base` resource is configured',
     )
-    expect(() =>
+    await expect(
       getMockClient().context.request('DELETE /organizations/{organizationId}/mcp/{mcpEndpoint}', {
         params: {mcpEndpoint: 'support'},
       }),
-    ).toThrow('`params.organizationId` is required unless `context.organizationId` is configured')
-    expect(() =>
-      kbClient().context.request('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
+    ).rejects.toThrow(
+      '`params.organizationId` is required unless `context.organizationId` is configured',
+    )
+    await expect(
+      kbClient().context.requestBytes('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
         params: {sourceId: ''},
       }),
-    ).toThrow('`params.sourceId` must be a non-empty string')
+    ).rejects.toThrow('`params.sourceId` must be a non-empty string')
+  })
+
+  test('the observable client fails on subscribe, not on call', async () => {
+    const observable = getMockClient().observable.context.request(
+      'GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}',
+      {params: {sourceId: 's1'}},
+    )
+    await expect(firstValueFrom(observable)).rejects.toThrow('`params.knowledgeBaseId` is required')
   })
 
   test('surfaces the experimental API warning unless it is ignored', async () => {

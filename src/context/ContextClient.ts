@@ -1,7 +1,7 @@
 import {type FetchFunction} from 'get-it'
-import {lastValueFrom, type Observable} from 'rxjs'
+import {defer, lastValueFrom, type Observable} from 'rxjs'
 
-import {_observe, _request} from '../data/dataMethods'
+import {_request, _requestObservable} from '../data/dataMethods'
 import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, QueryParams, SanityDocument} from '../types'
@@ -13,6 +13,7 @@ import type {
   FileUpload,
   RequestArgs,
   Response,
+  ResponseFormat,
   Route,
   Source,
   SyncAccepted,
@@ -124,7 +125,7 @@ function _fetchBody(file: FileUpload['file']) {
  * })
  * const source = await client.context.request('POST /knowledge-bases/{knowledgeBaseId}/sources', {
  *   params: {knowledgeBaseId: kb.publicId},
- *   body: {type: 'web', title: 'Docs', url: 'https://example.com/docs'},
+ *   body: {type: 'web', url: 'https://example.com/docs'},
  * })
  * ```
  *
@@ -143,8 +144,11 @@ export class ContextClient {
    * Call a Context API operation. Resolves with the success response body,
    * or `undefined` for `204 No Content`; rejects with the API's error.
    */
-  request<R extends Route>(route: R, ...[init]: RequestArgs<R>): Promise<Response<R>> {
-    return _request<Response<R>>(
+  async request<R extends Route, const F extends ResponseFormat<R> = never>(
+    route: R,
+    ...[init]: RequestArgs<R, F>
+  ): Promise<Response<R, F>> {
+    return _request<Response<R, F>>(
       this.#client,
       this.#httpRequest,
       _contextRequestOptions(this.#client, route, init),
@@ -156,7 +160,10 @@ export class ContextClient {
    * of parsed JSON: for a document's content with `format: 'raw'`, the bytes
    * its source gave.
    */
-  requestBytes<R extends Route>(route: R, ...[init]: RequestArgs<R>): Promise<Uint8Array> {
+  async requestBytes<R extends Route>(
+    route: R,
+    ...[init]: RequestArgs<R, unknown>
+  ): Promise<Uint8Array> {
     return _request<Uint8Array>(this.#client, this.#httpRequest, {
       ..._contextRequestOptions(this.#client, route, init),
       rawBody: true,
@@ -270,10 +277,16 @@ export class ObservableContextClient {
   }
 
   /** Call a Context API operation. See {@link ContextClient.request}. */
-  request<R extends Route>(route: R, ...[init]: RequestArgs<R>): Observable<Response<R>> {
-    const options = _contextRequestOptions(this.#client, route, init)
-    return _observe(options.signal, (signal) =>
-      _request<Response<R>>(this.#client, this.#httpRequest, {...options, signal}),
+  request<R extends Route, const F extends ResponseFormat<R> = never>(
+    route: R,
+    ...[init]: RequestArgs<R, F>
+  ): Observable<Response<R, F>> {
+    return defer(() =>
+      _requestObservable<Response<R, F>>(
+        this.#client,
+        this.#httpRequest,
+        _contextRequestOptions(this.#client, route, init),
+      ),
     )
   }
 

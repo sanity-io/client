@@ -12,9 +12,8 @@ import {dirname} from 'node:path'
 
 const KB = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 
-// The public paths client.context.request accepts. They match the operations
-// the Context API publishes with `x-audience: public`, which is every path in
-// its published openapi.json; a newly published path opts in here.
+// The paths client.context.request accepts: every path of the Context API's
+// published spec. A newly published path opts in here.
 const PATH_ALLOWLIST = [
   '/{apiVersion}/context/knowledge-bases',
   KB,
@@ -71,15 +70,13 @@ if (missingPaths.length > 0) {
   process.exit(1)
 }
 
-const nonPublic = PATH_ALLOWLIST.flatMap((p) =>
-  Object.entries(spec.paths[p])
-    .filter(([, op]) => op && typeof op === 'object' && 'x-audience' in op)
-    .filter(([, op]) => op['x-audience'] !== 'public')
-    .map(([method]) => `${method.toUpperCase()} ${p}`),
-)
-if (nonPublic.length > 0) {
-  console.error(`Allowlisted operations not marked x-audience: public in ${inputPath}:`)
-  for (const op of nonPublic) console.error(`  ${op}`)
+// The vendored spec is the Context API's published (public) spec, which
+// carries no `x-audience`; every path in it is public. A newly published path
+// fails here until it is allowlisted, so `request` never silently lacks it.
+const unlisted = Object.keys(spec.paths ?? {}).filter((p) => !PATH_ALLOWLIST.includes(p))
+if (unlisted.length > 0) {
+  console.error(`Published paths missing from the allowlist in ${inputPath}:`)
+  for (const p of unlisted) console.error(`  ${p}`)
   process.exit(1)
 }
 
