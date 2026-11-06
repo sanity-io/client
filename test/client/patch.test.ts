@@ -156,6 +156,25 @@ describe('patch ops', () => {
     expect(negativeDelete).toEqual(patch().splice('tags', -2, 0, ['foo']).serialize())
   })
 
+  describe.each(['promise', 'observable'])('%s splice insertion', (kind) => {
+    test.each([
+      [-1, 0, 'tags[-2:-2]'],
+      [-2, 0, 'tags[-3:-3]'],
+      [-5, 0, 'tags[-6:-6]'],
+      [-1, -2, 'tags[-2:-2]'],
+      [-2, -2, 'tags[-3:-3]'],
+      [-5, -2, 'tags[-6:-6]'],
+      [3, -2, 'tags[3:3]'],
+    ])('keeps an empty replacement range at %i with deleteCount %i', (start, count, selector) => {
+      const client = getClient()
+      const patch = kind === 'promise' ? client.patch('abc123') : client.observable.patch('abc123')
+      expect(patch.splice('tags', start, count, ['inserted']).serialize()).toEqual({
+        id: 'abc123',
+        insert: {replace: selector, items: ['inserted']},
+      })
+    })
+  })
+
   test('serializing invalid selectors throws', () => {
     expect(() =>
       getClient()
