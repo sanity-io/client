@@ -316,7 +316,7 @@ function buildAssetUploadUrl(config: InitializedClientConfig, assetType: 'image'
       }
       case 'knowledge-base': {
         throw new Error(
-          'Assets are not supported for knowledge-base resources. Add content as a Context source instead, for example with `client.context.createFileSource`.',
+          'Assets are not supported for knowledge-base resources. Use `client.context.imports` to add content instead.',
         )
       }
       case 'media-library': {

@@ -22,7 +22,8 @@ import {
 
 type Client = SanityClient | ObservableSanityClient
 
-function _organizationId(client: Client): string {
+/** @internal */
+export function _organizationId(client: Client): string {
   const organizationId = client.config().context?.organizationId
 
   if (!organizationId) {

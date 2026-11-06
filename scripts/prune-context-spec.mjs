@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-// Filters the vendored Context API spec down to the paths client.context.request
-// accepts, so `generate:context` emits types for that surface only.
+// Filters the vendored Context API spec down to the paths the client.context
+// namespace exposes, so `generate:context` emits types for that surface only.
 //
 // src/context/openapi.json stays the full spec verbatim (it mirrors the
 // Context API's published spec, so refreshing it is a plain copy); only the
@@ -12,8 +12,9 @@ import {dirname} from 'node:path'
 
 const KB = '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}'
 
-// The paths client.context.request accepts: every path of the Context API's
-// published spec. A newly published path opts in here.
+// The paths the client.context namespace uses: the knowledge-base collection
+// plus the KnowledgeBaseHandle's routes. Future namespaces (MCP endpoints,
+// conversations, insights, ...) opt in by adding their paths here.
 const PATH_ALLOWLIST = [
   '/{apiVersion}/context/knowledge-bases',
   KB,
@@ -30,9 +31,11 @@ const PATH_ALLOWLIST = [
   `${KB}/build`,
   `${KB}/build/cancel`,
   `${KB}/entries/{entryPath}/rebuild`,
-  `${KB}/documents`,
-  `${KB}/documents/{documentId}`,
-  `${KB}/documents/{documentId}/content`,
+  `${KB}/imports`,
+  `${KB}/imports/uploads`,
+  `${KB}/imports/uploads/{importId}/complete`,
+  `${KB}/imports/{importId}`,
+  `${KB}/imports/{importId}/download`,
   `${KB}/instructions`,
   `${KB}/instructions/{instructionId}`,
   `${KB}/issues/apply`,
@@ -40,14 +43,10 @@ const PATH_ALLOWLIST = [
   `${KB}/issues/{issueId}/reopen`,
   `${KB}/issues/{issueId}/resolve`,
   `${KB}/jobs/{jobId}`,
+  `${KB}/refresh`,
   `${KB}/sources`,
   `${KB}/sources/{sourceId}`,
-  `${KB}/sources/{sourceId}/syncs`,
-  `${KB}/sources/{sourceId}/syncs/{syncId}`,
-  `${KB}/sources/{sourceId}/syncs/{syncId}/confirm`,
-  `${KB}/sources/{sourceId}/syncs/{syncId}/discard`,
-  `${KB}/sources/{sourceId}/uploads`,
-  `${KB}/sync`,
+  `${KB}/sources/{sourceId}/content`,
 ]
 
 // Component schemas the namespace re-exports directly (the document shapes
@@ -67,16 +66,6 @@ const missingPaths = PATH_ALLOWLIST.filter((p) => !spec.paths?.[p])
 if (missingPaths.length > 0) {
   console.error(`Allowlisted paths missing from ${inputPath}:`)
   for (const p of missingPaths) console.error(`  ${p}`)
-  process.exit(1)
-}
-
-// The vendored spec is the Context API's published (public) spec, which
-// carries no `x-audience`; every path in it is public. A newly published path
-// fails here until it is allowlisted, so `request` never silently lacks it.
-const unlisted = Object.keys(spec.paths ?? {}).filter((p) => !PATH_ALLOWLIST.includes(p))
-if (unlisted.length > 0) {
-  console.error(`Published paths missing from the allowlist in ${inputPath}:`)
-  for (const p of unlisted) console.error(`  ${p}`)
   process.exit(1)
 }
 
