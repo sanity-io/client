@@ -76,6 +76,10 @@ describe('client.context return types', () => {
     expectTypeOf<Context.Source['chunks']>().toEqualTypeOf<number | null>()
   })
 
+  test('a knowledge base reports the documents it holds, with no document limit', () => {
+    expectTypeOf<Context.KnowledgeBase['sourceUsage']>().toEqualTypeOf<{used: number} | null>()
+  })
+
   test('build stages carry an open id and their share of the build', () => {
     type Stage = NonNullable<Context.KnowledgeBase['buildStageState']>['stages'][number]
     expectTypeOf<Stage['id']>().toEqualTypeOf<string>()

@@ -636,7 +636,6 @@ export interface components {
         | 'issueDocumentInvalid'
         | 'issueTransitionConflict'
         | 'refreshControlsUnavailable'
-        | 'datasetSourceTooLarge'
         | 'datasetSourceEmpty'
         | 'datasetAlreadyBound'
         | 'datasetSourceNotBound'
@@ -1650,12 +1649,10 @@ export interface operations {
               hasWebSource: boolean
               /** @description Whether the knowledge base has at least one Sanity dataset source. */
               hasDatasetSource: boolean
-              /** @description How many sources the knowledge base uses, and its source limit. */
+              /** @description How many documents the knowledge base holds. */
               sourceUsage: {
-                /** @description The number of sources counted toward the limit, including parts split from large sources. */
+                /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
                 used: number
-                /** @description The maximum number of sources the knowledge base can have. */
-                limit: number
               } | null
               /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
               sourceChunks: number
@@ -1839,12 +1836,10 @@ export interface operations {
             hasWebSource: boolean
             /** @description Whether the knowledge base has at least one Sanity dataset source. */
             hasDatasetSource: boolean
-            /** @description How many sources the knowledge base uses, and its source limit. */
+            /** @description How many documents the knowledge base holds. */
             sourceUsage: {
-              /** @description The number of sources counted toward the limit, including parts split from large sources. */
+              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
               used: number
-              /** @description The maximum number of sources the knowledge base can have. */
-              limit: number
             } | null
             /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
             sourceChunks: number
@@ -2013,12 +2008,10 @@ export interface operations {
             hasWebSource: boolean
             /** @description Whether the knowledge base has at least one Sanity dataset source. */
             hasDatasetSource: boolean
-            /** @description How many sources the knowledge base uses, and its source limit. */
+            /** @description How many documents the knowledge base holds. */
             sourceUsage: {
-              /** @description The number of sources counted toward the limit, including parts split from large sources. */
+              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
               used: number
-              /** @description The maximum number of sources the knowledge base can have. */
-              limit: number
             } | null
             /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
             sourceChunks: number
@@ -2237,12 +2230,10 @@ export interface operations {
             hasWebSource: boolean
             /** @description Whether the knowledge base has at least one Sanity dataset source. */
             hasDatasetSource: boolean
-            /** @description How many sources the knowledge base uses, and its source limit. */
+            /** @description How many documents the knowledge base holds. */
             sourceUsage: {
-              /** @description The number of sources counted toward the limit, including parts split from large sources. */
+              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
               used: number
-              /** @description The maximum number of sources the knowledge base can have. */
-              limit: number
             } | null
             /** @description The number of source chunks the knowledge base holds, in the sources counted by `sourceUsage`, whether or not they have been built. Sources still being processed add theirs once converted. */
             sourceChunks: number
@@ -2624,7 +2615,7 @@ export interface operations {
               sanityProjectId: string
               /** @description The dataset to read documents from, in the project set by `sanityProjectId`. */
               sanityDatasetId: string
-              /** @description A GROQ query that selects the documents to import, with an optional projection. It can match up to 5,000 documents. Each refresh runs the query again. */
+              /** @description A GROQ query that selects the documents to import, with an optional projection. Each refresh runs the query again. */
               query: string
               /**
                * @description The import type. `dataset` imports documents from a Sanity dataset.

@@ -1845,7 +1845,6 @@
               "issueDocumentInvalid",
               "issueTransitionConflict",
               "refreshControlsUnavailable",
-              "datasetSourceTooLarge",
               "datasetSourceEmpty",
               "datasetAlreadyBound",
               "datasetSourceNotBound",
@@ -2133,23 +2132,17 @@
                           },
                           "sourceUsage": {
                             "nullable": true,
-                            "description": "How many sources the knowledge base uses, and its source limit.",
+                            "description": "How many documents the knowledge base holds.",
                             "type": "object",
                             "properties": {
                               "used": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991,
-                                "description": "The number of sources counted toward the limit, including parts split from large sources."
-                              },
-                              "limit": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991,
-                                "description": "The maximum number of sources the knowledge base can have."
+                                "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
                               }
                             },
-                            "required": ["used", "limit"]
+                            "required": ["used"]
                           },
                           "sourceChunks": {
                             "type": "integer",
@@ -2532,23 +2525,17 @@
                     },
                     "sourceUsage": {
                       "nullable": true,
-                      "description": "How many sources the knowledge base uses, and its source limit.",
+                      "description": "How many documents the knowledge base holds.",
                       "type": "object",
                       "properties": {
                         "used": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "The number of sources counted toward the limit, including parts split from large sources."
-                        },
-                        "limit": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "The maximum number of sources the knowledge base can have."
+                          "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
                         }
                       },
-                      "required": ["used", "limit"]
+                      "required": ["used"]
                     },
                     "sourceChunks": {
                       "type": "integer",
@@ -2893,23 +2880,17 @@
                     },
                     "sourceUsage": {
                       "nullable": true,
-                      "description": "How many sources the knowledge base uses, and its source limit.",
+                      "description": "How many documents the knowledge base holds.",
                       "type": "object",
                       "properties": {
                         "used": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "The number of sources counted toward the limit, including parts split from large sources."
-                        },
-                        "limit": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "The maximum number of sources the knowledge base can have."
+                          "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
                         }
                       },
-                      "required": ["used", "limit"]
+                      "required": ["used"]
                     },
                     "sourceChunks": {
                       "type": "integer",
@@ -3285,23 +3266,17 @@
                     },
                     "sourceUsage": {
                       "nullable": true,
-                      "description": "How many sources the knowledge base uses, and its source limit.",
+                      "description": "How many documents the knowledge base holds.",
                       "type": "object",
                       "properties": {
                         "used": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991,
-                          "description": "The number of sources counted toward the limit, including parts split from large sources."
-                        },
-                        "limit": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "The maximum number of sources the knowledge base can have."
+                          "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
                         }
                       },
-                      "required": ["used", "limit"]
+                      "required": ["used"]
                     },
                     "sourceChunks": {
                       "type": "integer",
@@ -4789,7 +4764,7 @@
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 10000,
-                        "description": "A GROQ query that selects the documents to import, with an optional projection. It can match up to 5,000 documents. Each refresh runs the query again."
+                        "description": "A GROQ query that selects the documents to import, with an optional projection. Each refresh runs the query again."
                       },
                       "type": {
                         "type": "string",
