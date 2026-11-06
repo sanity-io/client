@@ -5,6 +5,7 @@ import {_request, _requestObservable} from '../data/dataMethods'
 import type {ListenEventFromOptions} from '../data/listen'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, QueryParams, SanityDocument} from '../types'
+import {legacyNamespaces, type LegacyFetch, type LegacyRequest} from './legacy'
 import {_fetch as _fetchStore, _listen as _listenStore} from './store'
 import type {
   ContextListenOptions,
@@ -139,6 +140,31 @@ export class ContextClient {
     this.#client = client
     this.#httpRequest = httpRequest
   }
+
+  #legacy = legacyNamespaces(
+    () => this.#client,
+    this.request.bind(this) as unknown as LegacyRequest,
+    this.fetch.bind(this) as LegacyFetch,
+  )
+
+  /** @deprecated Use `request` with the `/knowledge-bases` routes. Kept for Sanity CLI 8.27 and earlier. */
+  knowledgeBases = this.#legacy.knowledgeBases
+  /** @deprecated Use `request` with the MCP endpoint routes. Kept for Sanity CLI 8.27 and earlier. */
+  mcpEndpoints = this.#legacy.mcpEndpoints
+  /** @deprecated Use `request` and `fetch`. Kept for Sanity CLI 8.27 and earlier. */
+  entries = this.#legacy.entries
+  /** @deprecated Use `request` and `fetch`. Kept for Sanity CLI 8.27 and earlier. */
+  issues = this.#legacy.issues
+  /** @deprecated Use `request`. Kept for Sanity CLI 8.27 and earlier. */
+  jobs = this.#legacy.jobs
+  /** @deprecated Use `request('POST /knowledge-bases/{knowledgeBaseId}/build')`. Kept for Sanity CLI 8.27 and earlier. */
+  build = this.#legacy.build
+  /** @deprecated Use `request('POST /knowledge-bases/{knowledgeBaseId}/build/cancel')`. Kept for Sanity CLI 8.27 and earlier. */
+  cancelBuild = this.#legacy.cancelBuild
+  /** @deprecated Removed with the imports API; throws. Use the sources, syncs and documents routes. */
+  imports = this.#legacy.imports
+  /** @deprecated Removed with the imports API; throws. Use `request('POST /knowledge-bases/{knowledgeBaseId}/sync')`. */
+  refresh = this.#legacy.refresh
 
   /**
    * Call a Context API operation. Resolves with the success response body,
