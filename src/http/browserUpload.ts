@@ -1,7 +1,8 @@
 import {Observable} from 'rxjs'
 
-import type {UploadEvent} from '../types'
+import type {RequestInstrumentation, UploadEvent} from '../types'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
+import {observeRequest} from './instrumentation'
 import {parseJsonText} from './request'
 
 /**
@@ -18,6 +19,8 @@ export interface BrowserUploadOptions {
   /** Milliseconds before the upload is aborted; `false` and `0` both disable the timeout. */
   timeout?: number | false
   signal?: AbortSignal
+  /** The client's `instrumentation` option, which observes the upload request. */
+  instrumentation?: RequestInstrumentation
 }
 
 /**
@@ -31,7 +34,13 @@ export interface BrowserUploadOptions {
 export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable<UploadEvent<T>> {
   return new Observable<UploadEvent<T>>((subscriber) => {
     const xhr = new XMLHttpRequest()
-    const {url, method, headers, body, withCredentials, timeout, signal} = options
+    const {url, method, headers, body, withCredentials, timeout, signal, instrumentation} = options
+    let requestObserver: ReturnType<typeof observeRequest>
+    // Ends the upload with `error`, reporting it to the instrumentation first.
+    const fail = (error: unknown) => {
+      requestObserver?.end({error})
+      subscriber.error(error)
+    }
 
     xhr.open(method, url)
     xhr.withCredentials = withCredentials
@@ -54,18 +63,29 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
       })
     }
 
+    xhr.onreadystatechange = () => {
+      if (requestObserver && xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+        requestObserver.headers({
+          status: xhr.status,
+          headers: parseXhrResponseHeaders(xhr.getAllResponseHeaders()),
+        })
+      }
+    }
+
     xhr.onload = () => {
+      // The body has been read in full, so the request itself completed.
+      requestObserver?.end({})
+      const responseHeaders = parseXhrResponseHeaders(xhr.getAllResponseHeaders())
       if (xhr.status >= 400) {
         // Same typed errors as the fetch transport, so consumers can keep
         // detecting `ClientError`/`ServerError` and reading `statusCode`,
         // `responseBody` and the structured API `details` on failed uploads.
-        const errorHeaders = parseXhrResponseHeaders(xhr.getAllResponseHeaders())
         const canonical = httpResponseFromFetch(
           {
             status: xhr.status,
             statusText: xhr.statusText,
-            headers: errorHeaders,
-            body: parseJsonText(xhr.responseText, errorHeaders),
+            headers: responseHeaders,
+            body: parseJsonText(xhr.responseText, responseHeaders),
             url: xhr.responseURL,
           },
           url,
@@ -90,12 +110,12 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
     }
 
     xhr.onerror = () => {
-      subscriber.error(new Error('XHR upload network error'))
+      fail(new Error('XHR upload network error'))
     }
 
     xhr.ontimeout = () => {
       // Same error shape as the fetch transport's timeout rejection.
-      subscriber.error(
+      fail(
         new DOMException(
           `The operation timed out after ${timeout}ms while attempting to reach ${url}`,
           'TimeoutError',
@@ -104,7 +124,7 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
     }
 
     xhr.onabort = () => {
-      subscriber.error(new DOMException('Upload aborted', 'AbortError'))
+      fail(new DOMException('Upload aborted', 'AbortError'))
     }
 
     const onSignalAbort = () => xhr.abort()
@@ -118,6 +138,12 @@ export function uploadWithProgress<T>(options: BrowserUploadOptions): Observable
       signal.addEventListener('abort', onSignalAbort, {once: true})
     }
 
+    if (instrumentation) {
+      requestObserver = observeRequest(instrumentation, {
+        url,
+        method: method.toUpperCase(),
+      })
+    }
     xhr.send(body as XMLHttpRequestBodyInit)
 
     // Unsubscribing cancels the in-flight upload, mirroring how the fetch
