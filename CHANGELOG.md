@@ -1,5 +1,11 @@
 # @sanity/client
 
+## 8.15.1
+
+### Patch Changes
+
+- **context:** restore the namespaces Sanity CLI 8.27 calls, alongside request ([#1401](https://github.com/sanity-io/client/pull/1401)) ([92aded9](https://github.com/sanity-io/client/commit/92aded91038c1d992fc60ea48644341e0dae13d7))
+
 ## 8.15.0
 
 ### Minor Changes
