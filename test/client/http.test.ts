@@ -2,7 +2,7 @@ import {ClientError, type RequestHandler, ServerError} from '@sanity/client'
 import {firstValueFrom} from 'rxjs'
 import {describe, expect, test} from 'vitest'
 
-import {getActiveMock} from '../helpers/mockFetch'
+import {bodyBytes, getActiveMock} from '../helpers/mockFetch'
 import {createClient, getClient, projectHost} from './helpers'
 
 describe('USERS', () => {
@@ -439,5 +439,26 @@ describe('http requests', () => {
   test('exposes default requester', async () => {
     const {requester: exportedRequester} = await import('../../src')
     expect(typeof exportedRequester).toEqual('function')
+  })
+})
+
+describe('streamed request bodies', () => {
+  // Node.js streams are async iterable, and the fetch build that Deno, workerd
+  // and `react-server` load has to convert them too
+  test('sends async iterable request bodies', async () => {
+    const encoder = new TextEncoder()
+    async function* chunks() {
+      yield encoder.encode('streamed ')
+      yield encoder.encode('body')
+    }
+
+    getActiveMock()
+      .scope(projectHost())
+      .on('POST', '/v1/stream-test', {body: bodyBytes(encoder.encode('streamed body'))})
+      .respond({status: 200, body: {ok: true}})
+
+    await expect(
+      getClient().request({url: '/stream-test', method: 'POST', body: chunks()}),
+    ).resolves.toEqual({ok: true})
   })
 })

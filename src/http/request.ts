@@ -7,7 +7,7 @@ import {
   type WrappingMiddleware,
 } from 'get-it'
 import {anySignal} from 'get-it/any-signal'
-import {isRetryableRequest, retry} from 'get-it/middleware'
+import {asyncIterableBody, isRetryableRequest, retry} from 'get-it/middleware'
 import {from, Observable} from 'rxjs'
 
 import type {Any} from '../types'
@@ -121,6 +121,10 @@ export function defineRequester(
     // has exhausted in `executeRequest`.
     httpErrors: true,
     middleware: [
+      // Node.js streams (`fs.createReadStream()` for asset uploads) are async
+      // iterable. Convert them in every environment, since Deno, workerd and
+      // `react-server` load the fetch build, not the Node one.
+      asyncIterableBody(),
       retry({
         shouldRetry: shouldRetryRequest,
         maxRetries: config.maxRetries ?? 5,
