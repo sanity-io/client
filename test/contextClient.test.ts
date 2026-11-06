@@ -269,4 +269,31 @@ describe('context file uploads', () => {
 
     expect(source).toEqual(synced)
   })
+  test('createFileSource deletes the source again when the upload fails', async () => {
+    const base = '/v2026-05-26/context/knowledge-bases/kbOther/sources'
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', base, {body: {type: 'files', title: 'Handbook'}})
+      .respond({status: 201, body: {id: 'src1', type: 'files', latestSync: null}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${base}/src1/uploads`)
+      .respond({status: 201, body: {uploadId: 'up1', uploadUrl: `${storage}/signed`}})
+    getActiveMock()
+      .scope(storage)
+      .on('PUT', '/signed')
+      .respond({status: 403, statusText: 'Forbidden'})
+    // Every registered response must be consumed, so this asserts the delete
+    getActiveMock().scope(apiHost).on('DELETE', `${base}/src1`).respond({status: 204})
+
+    await expect(
+      getMockClient().context.createFileSource({
+        knowledgeBaseId: 'kbOther',
+        type: 'files',
+        title: 'Handbook',
+        file: new Blob(['hello']),
+        filename: 'hello.txt',
+      }),
+    ).rejects.toThrow('File upload failed: 403')
+  })
 })

@@ -210,7 +210,8 @@ export class ContextClient {
   /**
    * Add a `files` source holding a file: adds the source, uploads the file
    * with {@link ContextClient.uploadFile}, and resolves with the source read
-   * again, so its `latestSync` is that sync.
+   * again, so its `latestSync` is that sync. If the upload fails, the source
+   * is deleted again before the error is thrown.
    */
   async createFileSource(
     params: CreateFileSourceParams,
@@ -226,7 +227,17 @@ export class ContextClient {
       throw new Error('The Context API answered a source create with a crawl preview')
     }
     const target = {knowledgeBaseId, sourceId: created.id}
-    await this.uploadFile({...target, file, filename, contentType}, options)
+    try {
+      await this.uploadFile({...target, file, filename, contentType}, options)
+    } catch (error) {
+      // Without the file the source is an empty shell a retry would duplicate.
+      // The delete skips the signal, which may be what aborted the upload.
+      await this.request('DELETE /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
+        params: target,
+        ...(options?.tag && {tag: options.tag}),
+      }).catch(() => {})
+      throw error
+    }
     return this.request('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
       params: target,
       ...options,
