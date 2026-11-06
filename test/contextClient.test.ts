@@ -312,3 +312,82 @@ describe('context file uploads', () => {
     ).rejects.toThrow('File upload failed: 403')
   })
 })
+
+describe('context namespaces kept for Sanity CLI 8.27 and earlier', () => {
+  const orgClient = () =>
+    getMockClient({resource: {type: 'knowledge-base', id: kbId}, context: {organizationId: 'org1'}})
+
+  test('knowledgeBases and mcpEndpoints call the routes the old methods called', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-05-26/context/knowledge-bases', {
+        body: {organizationId: 'org1', title: 'Docs'},
+      })
+      .respond({status: 201, body: {publicId: 'kbNew'}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', '/v2026-05-26/context/knowledge-bases', {query: {organizationId: 'org1'}})
+      .respond({status: 200, body: {data: [], nextCursor: null}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', '/v2026-05-26/context/knowledge-bases/kbOther')
+      .respond({status: 200, body: {publicId: 'kbOther'}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', '/v2026-05-26/context/organizations/org1/mcp', {
+        body: {name: 'support', title: 'Support'},
+      })
+      .respond({status: 201, body: {name: 'support'}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', '/v2026-05-26/context/organizations/org1/mcp/support/status')
+      .respond({status: 200, body: {ok: true}})
+
+    const context = orgClient().context
+    await expect(
+      context.knowledgeBases.create({organizationId: 'org1', title: 'Docs'} as never),
+    ).resolves.toEqual({publicId: 'kbNew'})
+    await expect(context.knowledgeBases.list({organizationId: 'org1'})).resolves.toEqual({
+      data: [],
+      nextCursor: null,
+    })
+    await expect(context.knowledgeBases.get('kbOther')).resolves.toEqual({publicId: 'kbOther'})
+    await expect(
+      context.mcpEndpoints.create({name: 'support', title: 'Support'} as never),
+    ).resolves.toEqual({name: 'support'})
+    await expect(context.mcpEndpoints.status({name: 'support'})).resolves.toEqual({ok: true})
+  })
+
+  test('mcpEndpoints.list reads the endpoint documents with GROQ, as before', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', '/v2026-05-26/context/organizations/org1/query')
+      .respond({status: 200, body: {result: [{name: 'support'}]}})
+
+    await expect(orgClient().context.mcpEndpoints.list()).resolves.toEqual([{name: 'support'}])
+  })
+
+  test('build and jobs use the configured knowledge base', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/build`)
+      .respond({status: 202, body: {jobId: 'job1'}})
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', `${kbPath}/jobs/job1`)
+      .respond({status: 200, body: {id: 'job1', status: 'running'}})
+
+    const context = orgClient().context
+    await expect(context.build()).resolves.toEqual({jobId: 'job1'})
+    await expect(context.jobs.get({jobId: 'job1'})).resolves.toEqual({
+      id: 'job1',
+      status: 'running',
+    })
+  })
+
+  test('imports and refresh, whose routes are gone, say to upgrade instead of calling them', () => {
+    const context = orgClient().context
+    expect(() => context.imports.list()).toThrow(/Upgrade the Sanity CLI/)
+    expect(() => context.refresh()).toThrow(/client\.context\.refresh\(\)/)
+  })
+})
