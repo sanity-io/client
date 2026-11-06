@@ -114,9 +114,11 @@ export interface RequestObserver {
    *
    * A failed, timed-out or aborted attempt has an `error` property, holding
    * whatever it failed with, which can be `undefined`; check `'error' in result`
-   * rather than the value. Unsubscribing from a request, or closing a `listen()`
-   * connection, ends it as aborted. An HTTP error status is not a failed
-   * attempt: it ends without `error`.
+   * rather than the value. For a `listen()` connection that breaks partway, it
+   * is the EventSource's `error` event, whose `message` describes the failure.
+   * Unsubscribing from a request, or closing a `listen()` connection, ends it as
+   * aborted. An HTTP error status is not a failed attempt: it ends without
+   * `error`.
    */
   onEnd?: (result: {error?: unknown}) => void
 }
@@ -321,10 +323,11 @@ export interface ClientConfig {
   requestHandler?: RequestHandler
 
   /**
-   * Observes the HTTP requests the client makes: when an attempt starts, when
-   * its response headers arrive, and when it ends. This includes the connection
-   * `listen()` opens and asset uploads. Use it to read headers the client does
-   * not otherwise return, such as `traceparent`, or to time and count requests.
+   * Observes the client's requests to the Sanity API: when an attempt starts,
+   * when its response headers arrive, and when it ends. This includes the
+   * connection `listen()` opens and asset uploads. Use it to read headers the
+   * client does not otherwise return, such as `traceparent`, or to time and
+   * count requests.
    *
    * It observes and never changes a request. Each retry, and each reconnect of a
    * `listen()` connection, is reported as its own attempt. Handlers run
@@ -336,7 +339,7 @@ export interface ClientConfig {
    * passed to `withConfig()` replaces it. To observe a single call, pass
    * `instrumentation` in the options of `fetch()`, `mutate()`, `action()`,
    * `request()` or a method that takes the same options, such as `create()`,
-   * `patch().commit()`, `transaction().commit()` or the `releases` methods. It
+   * `patch().commit()`, `transaction().commit()` or the `releases` actions. It
    * runs after the client's, and an exception in either does not stop the
    * other.
    *

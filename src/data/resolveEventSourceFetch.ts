@@ -1,7 +1,6 @@
 import type {EventSourceFetchInit, FetchLikeResponse} from 'eventsource'
 import type {FetchFunction, FetchInit} from 'get-it'
 
-import {instrumentStreamFetch} from '../http/instrumentation'
 import type {InitializedClientConfig} from '../types'
 
 /** @internal */
@@ -14,6 +13,8 @@ export interface EventSourceFetchOptions {
    * `connectAuthenticatedEventSource`).
    */
   headers?: Record<string, string>
+  /** Wraps the base fetch, for instrumentation (see `observeEventSource`). */
+  instrument?: (baseFetch: FetchFunction) => FetchFunction
 }
 
 /**
@@ -49,7 +50,9 @@ export function resolveEventSourceFetch(
   const extraHeaders = options.headers
 
   return function eventSourceFetch(url, init) {
-    const baseFetch = pickBaseFetch(config)
+    const baseFetch = options.instrument
+      ? options.instrument(pickBaseFetch(config))
+      : pickBaseFetch(config)
 
     // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
     // declare (`mode`, `cache`) survive the spread and reach whichever
@@ -84,17 +87,14 @@ export type EventSourceFetch = (
 /**
  * The fetch the client's own transport resolves for this config: the
  * configured `resolveFetch` (honouring an explicit `proxy`) if present,
- * otherwise the global fetch, wrapped for the config's `instrumentation`.
- * Shared by the EventSource connection and the `/check/cors` probe so both
- * resolve identically.
+ * otherwise the global fetch. Shared by the EventSource connection and the
+ * `/check/cors` probe so both resolve identically.
  *
  * @internal
  */
 export function pickBaseFetch(config: InitializedClientConfig): FetchFunction {
-  const baseFetch = config.resolveFetch
-    ? config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
-    : globalThis.fetch.bind(globalThis)
-  return config.instrumentation
-    ? instrumentStreamFetch(baseFetch, [config.instrumentation])
-    : baseFetch
+  if (config.resolveFetch) {
+    return config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
+  }
+  return globalThis.fetch.bind(globalThis)
 }

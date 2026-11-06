@@ -1,7 +1,8 @@
 import {EventSource, type EventSourceFetchInit} from 'eventsource'
-import {defer, Observable, of, switchMap, tap} from 'rxjs'
+import {defer, finalize, Observable, of, switchMap, tap} from 'rxjs'
 
 import {getStaticAuth} from '../auth'
+import {observeEventSource} from '../http/instrumentation'
 import {resolveAuth, settledAuth} from '../reactiveAuth'
 import type {Auth, InitializedClientConfig} from '../types'
 import {connectEventSource, type EventSourceEvent} from './eventsource'
@@ -64,7 +65,12 @@ export function connectAuthenticatedEventSource<EventName extends string>(
     // A rejected renewal ends the stream, since the credential behind the
     // connection has failed.
     const auth$: Observable<Auth> = options.withAuth ? settledAuth(config) : of(undefined)
-    const transport = resolveEventSourceFetch(config)
+    // Connections of one subscription follow each other, so one observer
+    // follows them all.
+    const instrumentation = config.instrumentation
+      ? observeEventSource([config.instrumentation])
+      : undefined
+    const transport = resolveEventSourceFetch(config, {instrument: instrumentation?.instrument})
     // The credential when it is known without waiting: the static value, or
     // `undefined` for an anonymous connection. Absent for a reactive `auth`,
     // which each attempt resolves on its own.
@@ -90,9 +96,18 @@ export function connectAuthenticatedEventSource<EventName extends string>(
                 (auth) => send(fetchUrl, init, auth),
               )
 
-        return connectEventSource(() => new EventSource(url, {fetch}), events).pipe(
-          reconnectOnConnectionFailure(),
-        )
+        // Each (re)subscription opens a new connection, with the instrumentation
+        // listening on it for as long as it is open.
+        const connect = () => {
+          const eventSource = new EventSource(url, {fetch})
+          const connection = connectEventSource(() => eventSource, events)
+          if (!instrumentation) return connection
+          eventSource.addEventListener('error', instrumentation.onError)
+          return connection.pipe(
+            finalize(() => eventSource.removeEventListener('error', instrumentation.onError)),
+          )
+        }
+        return defer(connect).pipe(reconnectOnConnectionFailure())
       }),
       tap((event) => {
         if ('id' in event && event.id) {

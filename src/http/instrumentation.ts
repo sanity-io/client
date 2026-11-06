@@ -77,79 +77,69 @@ export function instrumentRequests(fallbackFetch: FetchFunction): WrappingMiddle
 }
 
 /**
- * Wrap `baseFetch` for a streaming connection (the EventSource behind
- * `listen()`), which does not go through the transport middleware. The
- * request ends when the body stream closes, errors or is cancelled, or when the
- * request's signal aborts. A response the EventSource gives up on without
- * reading it (see `isEventStream`) ends as soon as its headers arrive, as a
- * completed request.
+ * Observe the attempts of one EventSource connection (the one behind
+ * `listen()`), which does not go through the transport middleware.
+ *
+ * `instrument` wraps the fetch handed to the EventSource, so each attempt
+ * reports `onRequest` and `onHeaders`. `onError` goes on the EventSource's
+ * `error` event, which the `eventsource` package fires whenever an attempt
+ * ends without the client closing it: the server closed the stream, the stream
+ * broke partway, or the connection was rejected. An attempt the client closes
+ * ends on its signal's abort instead, since closing fires no event.
  *
  * @internal
  */
-export function instrumentStreamFetch(
-  baseFetch: FetchFunction,
-  instrumentations: RequestInstrumentation[],
-): FetchFunction {
-  return async (input, init) => {
-    const observed = observeFetch(baseFetch, instrumentations)
-    const signal = init?.signal
-    function onAbort() {
-      end({error: signal?.reason})
-    }
-    function end(result: EndResult) {
-      signal?.removeEventListener('abort', onAbort)
-      observed.end(result)
-    }
-    signal?.addEventListener('abort', onAbort)
+export function observeEventSource(instrumentations: RequestInstrumentation[]): {
+  instrument: (baseFetch: FetchFunction) => FetchFunction
+  onError: (event: Event) => void
+} {
+  let endCurrent: ((result: EndResult) => void) | undefined
 
-    let response: FetchResponse
-    try {
-      response = await observed.fetch(input, init)
-    } catch (error) {
-      end({error})
-      throw error
-    }
-    // A signal that was already aborted when passed in fires no `abort` event.
-    if (signal?.aborted) {
-      end({error: signal.reason})
-      return response
-    }
-    if (!isEventStream(response)) {
-      end({})
-      return response
-    }
-    // Only pipe a body this runtime's own streams can pipe. Another
-    // implementation's stream (a polyfill, say) is passed through untouched, and
-    // its attempt then ends only on abort.
-    if (
-      typeof TransformStream !== 'function' ||
-      typeof ReadableStream !== 'function' ||
-      !(response.body instanceof ReadableStream)
-    ) {
+  const instrument =
+    (baseFetch: FetchFunction): FetchFunction =>
+    async (input, init) => {
+      const observed = observeFetch(baseFetch, instrumentations)
+      const signal = init?.signal
+      function onAbort() {
+        end({error: signal?.reason})
+      }
+      function end(result: EndResult) {
+        signal?.removeEventListener('abort', onAbort)
+        observed.end(result)
+      }
+      endCurrent = end
+      signal?.addEventListener('abort', onAbort)
+
+      let response: FetchResponse
+      try {
+        response = await observed.fetch(input, init)
+      } catch (error) {
+        end({error})
+        throw error
+      }
+      if (signal?.aborted) {
+        // A signal that was already aborted when passed in fires no `abort` event.
+        end({error: signal.reason})
+      } else if (!isEventStream(response)) {
+        // The EventSource gives up on this response by closing the connection,
+        // which aborts it before the `error` event fires. It is a completed
+        // request, so end it here.
+        end({})
+      }
       return response
     }
 
-    // The EventSource reads the response only through `body`. Piping it through
-    // an identity stream reports when it closes (success), or errors or is
-    // cancelled by the reader (failure).
-    const {readable, writable} = new TransformStream<Uint8Array, Uint8Array>()
-    response.body.pipeTo(writable).then(
-      () => end({}),
-      (error: unknown) => end({error}),
-    )
-    return {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      url: response.url,
-      redirected: response.redirected,
-      body: readable,
-      // Unusable: the piped body is locked. Present only to satisfy the type.
-      text: () => response.text(),
-      arrayBuffer: () => response.arrayBuffer(),
-    }
+  const onError = (event: Event) => {
+    // An `error` message the server sends arrives on an open stream and does
+    // not end the attempt.
+    if ('data' in event) return
+    // The package sets `message` only when the attempt failed; a stream the
+    // server closed ends without one.
+    const message = 'message' in event ? event.message : undefined
+    endCurrent?.(message === undefined ? {} : {error: event})
   }
+
+  return {instrument, onError}
 }
 
 /**

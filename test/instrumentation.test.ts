@@ -275,7 +275,12 @@ describe('instrumentation', () => {
 
     try {
       await vi.waitFor(() => expect(log.map((entry) => entry.event)).toContain('end'))
-      expect(log[2]).toEqual({event: 'end', error: failure})
+      // The EventSource reports the failure as its `error` event, carrying the
+      // original error's message.
+      expect(log[2]).toEqual({
+        event: 'end',
+        error: expect.objectContaining({type: 'error', message: failure.message}),
+      })
     } finally {
       subscription.unsubscribe()
     }

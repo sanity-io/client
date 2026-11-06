@@ -260,8 +260,8 @@ describe('assets.upload() through the XHR path', () => {
             onHeaders: ({status, headers}) => {
               log.push({event: 'headers', status, traceparent: headers.get('traceparent')})
             },
-            onEnd: ({error}) => {
-              log.push({event: 'end', error})
+            onEnd: (result) => {
+              log.push('error' in result ? {event: 'end', error: result.error} : {event: 'end'})
             },
           }
         },
@@ -277,7 +277,7 @@ describe('assets.upload() through the XHR path', () => {
     expect(log).toEqual([
       {event: 'request', method: 'POST'},
       {event: 'headers', status: 401, traceparent: '00-abcdef1234567890-0000-01'},
-      {event: 'end', error: undefined},
+      {event: 'end'},
     ])
   })
 
