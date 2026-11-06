@@ -92,6 +92,11 @@ describe('client.context.request types', () => {
     void context.request('GET /projects')
   })
 
+  test('a knowledge base reports the documents it holds, with no document limit', () => {
+    type KnowledgeBase = Context.Response<'GET /knowledge-bases/{knowledgeBaseId}'>
+    expectTypeOf<KnowledgeBase['sourceUsage']>().toEqualTypeOf<{used: number} | null>()
+  })
+
   test('the knowledge base and organization are optional, filled from the configuration', () => {
     void context.request('POST /knowledge-bases/{knowledgeBaseId}/build')
     void context.request('POST /knowledge-bases/{knowledgeBaseId}/build', {

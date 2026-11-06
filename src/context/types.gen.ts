@@ -703,7 +703,6 @@ export interface components {
         | 'issueDocumentInvalid'
         | 'issueTransitionConflict'
         | 'draftTitleRequired'
-        | 'datasetSourceTooLarge'
         | 'datasetSourceEmpty'
         | 'datasetAlreadyBound'
         | 'datasetSourceNotBound'
@@ -1765,12 +1764,10 @@ export interface operations {
               hasDatasetSource: boolean
               /** @description Whether the knowledge base has at least one uploaded file source. */
               hasFileSource: boolean
-              /** @description How many documents the knowledge base uses, and its document limit. */
+              /** @description How many documents the knowledge base holds. */
               sourceUsage: {
-                /** @description The number of documents counted toward the limit: the live documents of the knowledge base's sources that builds can take in, not counting duplicate copies. */
+                /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
                 used: number
-                /** @description The maximum number of documents the knowledge base can have. */
-                limit: number
               } | null
               /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
               sourceChunks: number
@@ -1948,12 +1945,10 @@ export interface operations {
             hasDatasetSource: boolean
             /** @description Whether the knowledge base has at least one uploaded file source. */
             hasFileSource: boolean
-            /** @description How many documents the knowledge base uses, and its document limit. */
+            /** @description How many documents the knowledge base holds. */
             sourceUsage: {
-              /** @description The number of documents counted toward the limit: the live documents of the knowledge base's sources that builds can take in, not counting duplicate copies. */
+              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
               used: number
-              /** @description The maximum number of documents the knowledge base can have. */
-              limit: number
             } | null
             /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
             sourceChunks: number
@@ -2114,12 +2109,10 @@ export interface operations {
             hasDatasetSource: boolean
             /** @description Whether the knowledge base has at least one uploaded file source. */
             hasFileSource: boolean
-            /** @description How many documents the knowledge base uses, and its document limit. */
+            /** @description How many documents the knowledge base holds. */
             sourceUsage: {
-              /** @description The number of documents counted toward the limit: the live documents of the knowledge base's sources that builds can take in, not counting duplicate copies. */
+              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
               used: number
-              /** @description The maximum number of documents the knowledge base can have. */
-              limit: number
             } | null
             /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
             sourceChunks: number
@@ -2328,12 +2321,10 @@ export interface operations {
             hasDatasetSource: boolean
             /** @description Whether the knowledge base has at least one uploaded file source. */
             hasFileSource: boolean
-            /** @description How many documents the knowledge base uses, and its document limit. */
+            /** @description How many documents the knowledge base holds. */
             sourceUsage: {
-              /** @description The number of documents counted toward the limit: the live documents of the knowledge base's sources that builds can take in, not counting duplicate copies. */
+              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
               used: number
-              /** @description The maximum number of documents the knowledge base can have. */
-              limit: number
             } | null
             /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
             sourceChunks: number
@@ -4312,7 +4303,7 @@ export interface operations {
               sanityProjectId: string
               /** @description The dataset to read documents from. */
               sanityDatasetId: string
-              /** @description A GROQ query that selects the documents, with an optional projection. It can match up to 5,000 documents. Each sync runs it again. */
+              /** @description A GROQ query that selects the documents, with an optional projection. Each sync runs it again. */
               query: string
             }
           | {
