@@ -174,6 +174,8 @@ export class ContextClient {
    * Upload a file to a `files` source and sync it, replacing the file it
    * holds: stages an upload, PUTs the bytes to the signed storage URL, and
    * starts the sync with it. The bytes never pass through the Context API.
+   * If the API refuses the sync, the error carries the staged `uploadId`, so
+   * a retry can start the sync with it instead of uploading the bytes again.
    */
   async uploadFile(
     params: UploadFileParams,
@@ -201,22 +203,29 @@ export class ContextClient {
       throw new Error(`File upload failed: ${putResponse.status} ${putResponse.statusText}`)
     }
 
-    return this.request('POST /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs', {
-      ...target,
-      body: {uploadId: staged.uploadId},
-    })
+    try {
+      return await this.request(
+        'POST /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs',
+        {...target, body: {uploadId: staged.uploadId}},
+      )
+    } catch (error) {
+      // The API keeps a staged upload whose sync was refused, for example while the source
+      // is already syncing, so the caller can retry the sync without sending the bytes again
+      if (error instanceof Error) Object.assign(error, {uploadId: staged.uploadId})
+      throw error
+    }
   }
 
   /**
    * Add a `files` source holding a file: adds the source, uploads the file
-   * with {@link ContextClient.uploadFile}, and resolves with the source read
-   * again, so its `latestSync` is that sync. If the upload fails, the source
-   * is deleted again before the error is thrown.
+   * with {@link ContextClient.uploadFile}, and resolves with the source as
+   * created and the sync the upload started (follow its `jobId`). If the
+   * upload fails, the source is deleted again before the error is thrown.
    */
   async createFileSource(
     params: CreateFileSourceParams,
     options?: {signal?: AbortSignal; tag?: string},
-  ): Promise<Source> {
+  ): Promise<{source: Source; sync: SyncAccepted}> {
     const {knowledgeBaseId, file, filename, contentType, ...body} = params
     const created = await this.request('POST /knowledge-bases/{knowledgeBaseId}/sources', {
       params: {knowledgeBaseId},
@@ -227,8 +236,9 @@ export class ContextClient {
       throw new Error('The Context API answered a source create with a crawl preview')
     }
     const target = {knowledgeBaseId, sourceId: created.id}
+    let sync: SyncAccepted
     try {
-      await this.uploadFile({...target, file, filename, contentType}, options)
+      sync = await this.uploadFile({...target, file, filename, contentType}, options)
     } catch (error) {
       // Without the file the source is an empty shell a retry would duplicate.
       // The delete skips the signal, which may be what aborted the upload.
@@ -238,10 +248,7 @@ export class ContextClient {
       }).catch(() => {})
       throw error
     }
-    return this.request('GET /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}', {
-      params: target,
-      ...options,
-    })
+    return {source: created, sync}
   }
 
   /**

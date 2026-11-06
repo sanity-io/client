@@ -214,7 +214,7 @@ describe('context file uploads', () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', `${kbPath}/sources/src1/syncs`, {body: {uploadId: 'up1'}})
-      .respond({status: 202, body: {sourceId: 'src1', syncId: 'sync1', jobId: 'job1'}})
+      .respond({status: 202, body: {sourceId: 'src1', jobId: 'job1'}})
 
     const accepted = await kbClient().context.uploadFile({
       sourceId: 'src1',
@@ -223,7 +223,7 @@ describe('context file uploads', () => {
       contentType: 'text/plain',
     })
 
-    expect(accepted).toEqual({sourceId: 'src1', syncId: 'sync1', jobId: 'job1'})
+    expect(accepted).toEqual({sourceId: 'src1', jobId: 'job1'})
   })
 
   test('a failed signed-URL PUT rejects and never syncs', async () => {
@@ -241,13 +241,29 @@ describe('context file uploads', () => {
     ).rejects.toThrow('File upload failed: 403')
   })
 
-  test('createFileSource adds the source without the file, uploads it, and reads the source again', async () => {
+  test('a refused sync rejects with the staged upload id, so the sync can be retried', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sources/src1/uploads`, {body: {filename: 'x.txt'}})
+      .respond({status: 201, body: {uploadId: 'up1', uploadUrl: `${storage}/signed`}})
+    getActiveMock().scope(storage).on('PUT', '/signed').respond({status: 200})
+    getActiveMock()
+      .scope(apiHost)
+      .on('POST', `${kbPath}/sources/src1/syncs`, {body: {uploadId: 'up1'}})
+      .respond({status: 409, body: {message: 'The source is already syncing'}})
+
+    await expect(
+      kbClient().context.uploadFile({sourceId: 'src1', file: new Blob(['x']), filename: 'x.txt'}),
+    ).rejects.toMatchObject({statusCode: 409, uploadId: 'up1'})
+  })
+
+  test('createFileSource adds the source without the file, uploads it, and returns both', async () => {
     const base = '/v2026-05-26/context/knowledge-bases/kbOther/sources'
-    const synced = {id: 'src1', type: 'files', latestSync: {id: 'sync1', status: 'running'}}
+    const created = {id: 'src1', type: 'files', latestSync: null}
     getActiveMock()
       .scope(apiHost)
       .on('POST', base, {body: {type: 'files', title: 'Handbook'}})
-      .respond({status: 201, body: {id: 'src1', type: 'files', latestSync: null}})
+      .respond({status: 201, body: created})
     getActiveMock()
       .scope(apiHost)
       .on('POST', `${base}/src1/uploads`)
@@ -256,10 +272,9 @@ describe('context file uploads', () => {
     getActiveMock()
       .scope(apiHost)
       .on('POST', `${base}/src1/syncs`)
-      .respond({status: 202, body: {sourceId: 'src1', syncId: 'sync1', jobId: 'job1'}})
-    getActiveMock().scope(apiHost).on('GET', `${base}/src1`).respond({status: 200, body: synced})
+      .respond({status: 202, body: {sourceId: 'src1', jobId: 'job1'}})
 
-    const source = await getMockClient().context.createFileSource({
+    const result = await getMockClient().context.createFileSource({
       knowledgeBaseId: 'kbOther',
       type: 'files',
       title: 'Handbook',
@@ -267,7 +282,7 @@ describe('context file uploads', () => {
       filename: 'hello.txt',
     })
 
-    expect(source).toEqual(synced)
+    expect(result).toEqual({source: created, sync: {sourceId: 'src1', jobId: 'job1'}})
   })
   test('createFileSource deletes the source again when the upload fails', async () => {
     const base = '/v2026-05-26/context/knowledge-bases/kbOther/sources'
