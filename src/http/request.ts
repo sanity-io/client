@@ -219,7 +219,7 @@ async function executeRequest(
     throw err
   }
 
-  const body = parseJsonBody(response)
+  const body = fetchOptions.meta?.rawBody === true ? response.bytes() : parseJsonBody(response)
   return {
     type: 'response',
     body,
