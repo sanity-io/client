@@ -282,7 +282,11 @@ function shouldRetryRequest(err: unknown, attempt: number, options: FetchRequest
   // HTTP errors aren't usually retryable, but Content Lake gives us a few
   // status codes where retrying *is* the right move.
   if (isGetItHttpError(err)) {
-    const isSafe = (options.method ?? 'GET') === 'GET' || options.method === 'HEAD'
+    // A request with a body and no `method` is sent as POST
+    const method = (
+      options.method || (options.body === undefined || options.body === null ? 'GET' : 'POST')
+    ).toUpperCase()
+    const isSafe = method === 'GET' || method === 'HEAD'
     const isQuery = (options.url ?? '').includes('/data/query')
     const status = err.status
     const retryableStatus = status === 429 || status === 502 || status === 503

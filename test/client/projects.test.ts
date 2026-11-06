@@ -1,4 +1,4 @@
-import {requester, type SanityProject} from '@sanity/client'
+import {requester, type SanityProject, ServerError} from '@sanity/client'
 import type {FetchFunction} from 'get-it'
 import {firstValueFrom} from 'rxjs'
 import {describe, expect, test, vi} from 'vitest'
@@ -234,6 +234,19 @@ describe('PROJECTS', () => {
 
     await expect(client.request({url: '/projects/n1f7y', maxRetries: 0})).rejects.toBeDefined()
     expect(getActiveMock()).toHaveReceivedRequestTimes('GET', '/v1/projects/n1f7y', 1)
+  })
+
+  test('does not retry a request with a body and no method (sent as POST)', async () => {
+    getActiveMock()
+      .scope(`https://${apiHost}`)
+      .on('POST', '/v1/projects/n1f7y')
+      .respondPersist({status: 503, body: {}})
+    const client = createClient({useProjectHostname: false, apiHost: `https://${apiHost}`})
+
+    await expect(
+      client.request({url: '/projects/n1f7y', body: {hello: 'world'}}),
+    ).rejects.toBeInstanceOf(ServerError)
+    expect(getActiveMock()).toHaveReceivedRequestTimes('POST', '/v1/projects/n1f7y', 1)
   })
 
   test('a per-request maxRetries caps retries below the client maximum', async () => {
