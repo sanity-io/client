@@ -71,11 +71,10 @@ describe('dist module graph', () => {
     })
   }
 
-  test('the walk is non-vacuous: index.node.js DOES reach node:stream and undici', () => {
+  test('the walk is non-vacuous: index.node.js DOES reach undici', () => {
     // If the walker silently resolved nothing, every assertion above would pass
     // for the wrong reason.
     const specifiers = reachableSpecifiers('index.node.js')
-    expect(specifiers).toContain('node:stream')
     expect(specifiers).toContain('get-it/node')
   })
 })

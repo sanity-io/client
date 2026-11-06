@@ -24,7 +24,7 @@ The suite also runs against every other supported environment: happy-dom, real b
 - `pnpm test:bun` - Bun.
 - `pnpm test:deno` - Deno.
 - `pnpm test:next` - typecheck only. It checks the Next.js App Router typings for fetch `cache`, `next.revalidate`, and `next.tags`; it runs no runtime tests.
-- `pnpm test:packaging` - needs Bun and a build (`pnpm build` first). Runs against `dist/` and the real `package.json` `exports` map, including a packed-package Bun smoke test, to catch failures a source-aliased suite cannot see.
+- `pnpm test:packaging` - needs Bun, Deno and a build (`pnpm build` first). Runs against `dist/` and the real `package.json` `exports` map, including packed-package stream tests in Bun, Deno and Node, to catch failures a source-aliased suite cannot see.
 - `pnpm test:integration` - needs a build AND network access. This is the integration smoke suite (see "Integration smoke tests" below), the only suite that talks to the real Sanity API. It runs on every pull request commit as well as nightly, so a change that breaks a real API contract fails on the pull request that introduced it. Running it locally needs a token; see that section.
 
 Other useful commands:
