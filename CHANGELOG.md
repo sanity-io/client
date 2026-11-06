@@ -1,5 +1,17 @@
 # @sanity/client
 
+## 8.15.0
+
+### Minor Changes
+
+- **context:** call the Context API through one request typed from its spec ([#1380](https://github.com/sanity-io/client/pull/1380)) ([4086318](https://github.com/sanity-io/client/commit/4086318ae2e177c1c8da6ea9854fd240cdddbff6))
+- **context:** build stages publish their order and weight ([#1392](https://github.com/sanity-io/client/pull/1392)) ([3c85c84](https://github.com/sanity-io/client/commit/3c85c846c65c37926b684fa7ab1822ad8d882b44))
+- **context:** knowledge bases no longer have a document limit ([#1399](https://github.com/sanity-io/client/pull/1399)) ([5702004](https://github.com/sanity-io/client/commit/570200407224b51fde400756e4396ecc5049e037))
+
+### Patch Changes
+
+- Fix requests and asset uploads that use Node.js streams in Bun. This resolves `Unsupported body type: object` errors during Studio deployments. ([#1396](https://github.com/sanity-io/client/pull/1396)) ([0e99008](https://github.com/sanity-io/client/commit/0e9900890d6e32f5d2a3058b4a47d948773a6d81))
+
 ## 8.14.1
 
 ### Patch Changes
