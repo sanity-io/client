@@ -1,5 +1,13 @@
 # @sanity/client
 
+## 8.15.1
+
+### Patch Changes
+
+- **context:** restore the namespaces Sanity CLI 8.27 calls, alongside request ([#1401](https://github.com/sanity-io/client/pull/1401)) ([92aded9](https://github.com/sanity-io/client/commit/92aded91038c1d992fc60ea48644341e0dae13d7))
+- support Node.js stream bodies in Deno, workerd and `react-server` ([#1398](https://github.com/sanity-io/client/pull/1398)) ([e5f88b4](https://github.com/sanity-io/client/commit/e5f88b49f10fa8a3d53b1931b09a31b2e525c015))
+- treat a request with a body and no `method` as POST when retrying ([#1403](https://github.com/sanity-io/client/pull/1403)) ([89ba6ba](https://github.com/sanity-io/client/commit/89ba6ba2fd7c71c46fd32955c09934bb724290ec))
+
 ## 8.15.0
 
 ### Minor Changes
