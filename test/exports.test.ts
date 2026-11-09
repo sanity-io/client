@@ -3,10 +3,9 @@ import {describe, expect, test} from 'vitest'
 import pkg from '../package.json'
 
 /**
- * The default platform-neutral fetch build that worker/edge runtimes (and
- * other runtimes without Node stream support) must resolve. The Node build
- * (`./dist/index.node.js`) pulls in `get-it/node` (undici), which is not
- * available on worker runtimes.
+ * The default platform-neutral fetch build that worker/edge runtimes must
+ * resolve. The Node build (`./dist/index.node.js`) pulls in `get-it/node`
+ * (undici), which is not available on worker runtimes.
  */
 const FETCH_BUILD = './dist/index.js'
 const NODE_BUILD = './dist/index.node.js'
@@ -67,8 +66,8 @@ describe('pkg.exports - worker/edge resolution guard', () => {
   // activates `require` (not `import`), so the `node` branch needs a
   // catch-all `default` — with only an `import` key, resolution backtracks
   // out of the `node` branch and hands CommonJS consumers the fetch build,
-  // silently skipping the Node middleware (Readable body conversion, explicit
-  // proxy support, lineage/User-Agent headers).
+  // silently skipping the Node middleware (explicit proxy support,
+  // lineage/User-Agent headers).
   const nodeRuntimes = {
     'node (esm import)': ['node', 'import', 'module'],
     'node (require / require(esm))': ['node', 'require'],
@@ -76,7 +75,7 @@ describe('pkg.exports - worker/edge resolution guard', () => {
   }
 
   for (const [runtime, conditions] of Object.entries(nodeRuntimes)) {
-    test(`${runtime} resolves the Node stream-compatible build for "."`, () => {
+    test(`${runtime} resolves the Node (undici) build for "."`, () => {
       const resolved = resolveExport(pkg.exports['.'], new Set(conditions))
       expect(resolved).toBe(NODE_BUILD)
     })

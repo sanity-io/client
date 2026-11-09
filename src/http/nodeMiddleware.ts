@@ -1,5 +1,3 @@
-import {Readable} from 'node:stream'
-
 import type {FetchFunction} from 'get-it'
 import {debug} from 'get-it/middleware'
 import {createNodeFetch} from 'get-it/node'
@@ -9,12 +7,6 @@ import {name, version} from '../../package.json'
 import type {EnvironmentOptions, LegacyMiddleware} from './request'
 
 const log = createDebug('sanity:client')
-
-function isNodeReadableStream(value: unknown): value is Readable {
-  if (typeof value !== 'object' || value === null) return false
-  if (!('pipe' in value)) return false
-  return typeof value.pipe === 'function'
-}
 
 // One undici-backed fetch per (proxy URL) so callers don't pay the cost of
 // rebuilding a dispatcher on every request when they use the same proxy.
@@ -70,17 +62,6 @@ const middleware: LegacyMiddleware[] = [
       const headers = new Headers(opts.headers)
       headers.set('x-sanity-lineage', lineage)
       return {...opts, headers}
-    },
-  },
-
-  // Asset uploads can pass a Node.js Readable stream (from
-  // `fs.createReadStream(...)`) as the body. The HTTP transport's body type
-  // guard only accepts Web streams, so we project Node streams here —
-  // undici's fetch accepts Web streams natively.
-  {
-    beforeRequest(opts) {
-      if (!isNodeReadableStream(opts.body)) return opts
-      return {...opts, body: Readable.toWeb(opts.body)}
     },
   },
 ]
