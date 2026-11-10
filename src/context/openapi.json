@@ -2217,25 +2217,11 @@
                             "type": "boolean",
                             "description": "Whether the knowledge base has at least one uploaded file source."
                           },
-                          "sourceUsage": {
-                            "nullable": true,
-                            "description": "How many documents the knowledge base holds.",
-                            "type": "object",
-                            "properties": {
-                              "used": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991,
-                                "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
-                              }
-                            },
-                            "required": ["used"]
-                          },
                           "sourceChunks": {
                             "type": "integer",
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991,
-                            "description": "The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted."
+                            "description": "The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted."
                           },
                           "excludedSourceChunks": {
                             "type": "integer",
@@ -2325,7 +2311,6 @@
                           "hasWebSource",
                           "hasDatasetSource",
                           "hasFileSource",
-                          "sourceUsage",
                           "sourceChunks",
                           "excludedSourceChunks",
                           "buildRestriction",
@@ -2607,25 +2592,11 @@
                       "type": "boolean",
                       "description": "Whether the knowledge base has at least one uploaded file source."
                     },
-                    "sourceUsage": {
-                      "nullable": true,
-                      "description": "How many documents the knowledge base holds.",
-                      "type": "object",
-                      "properties": {
-                        "used": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
-                        }
-                      },
-                      "required": ["used"]
-                    },
                     "sourceChunks": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted."
+                      "description": "The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted."
                     },
                     "excludedSourceChunks": {
                       "type": "integer",
@@ -2715,7 +2686,6 @@
                     "hasWebSource",
                     "hasDatasetSource",
                     "hasFileSource",
-                    "sourceUsage",
                     "sourceChunks",
                     "excludedSourceChunks",
                     "buildRestriction",
@@ -2955,25 +2925,11 @@
                       "type": "boolean",
                       "description": "Whether the knowledge base has at least one uploaded file source."
                     },
-                    "sourceUsage": {
-                      "nullable": true,
-                      "description": "How many documents the knowledge base holds.",
-                      "type": "object",
-                      "properties": {
-                        "used": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
-                        }
-                      },
-                      "required": ["used"]
-                    },
                     "sourceChunks": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted."
+                      "description": "The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted."
                     },
                     "excludedSourceChunks": {
                       "type": "integer",
@@ -3063,7 +3019,6 @@
                     "hasWebSource",
                     "hasDatasetSource",
                     "hasFileSource",
-                    "sourceUsage",
                     "sourceChunks",
                     "excludedSourceChunks",
                     "buildRestriction",
@@ -3330,25 +3285,11 @@
                       "type": "boolean",
                       "description": "Whether the knowledge base has at least one uploaded file source."
                     },
-                    "sourceUsage": {
-                      "nullable": true,
-                      "description": "How many documents the knowledge base holds.",
-                      "type": "object",
-                      "properties": {
-                        "used": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies."
-                        }
-                      },
-                      "required": ["used"]
-                    },
                     "sourceChunks": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted."
+                      "description": "The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted."
                     },
                     "excludedSourceChunks": {
                       "type": "integer",
@@ -3438,7 +3379,6 @@
                     "hasWebSource",
                     "hasDatasetSource",
                     "hasFileSource",
-                    "sourceUsage",
                     "sourceChunks",
                     "excludedSourceChunks",
                     "buildRestriction",
@@ -3831,9 +3771,15 @@
                                   },
                                   "partialReason": {
                                     "nullable": true,
-                                    "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                                    "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                                     "type": "string",
-                                    "enum": ["page-limit", "source-limit", "stalled", null]
+                                    "enum": [
+                                      "page-limit",
+                                      "source-limit",
+                                      "stalled",
+                                      "time-limit",
+                                      null
+                                    ]
                                   },
                                   "error": {
                                     "nullable": true,
@@ -4088,9 +4034,15 @@
                                   },
                                   "partialReason": {
                                     "nullable": true,
-                                    "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                                    "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                                     "type": "string",
-                                    "enum": ["page-limit", "source-limit", "stalled", null]
+                                    "enum": [
+                                      "page-limit",
+                                      "source-limit",
+                                      "stalled",
+                                      "time-limit",
+                                      null
+                                    ]
                                   },
                                   "error": {
                                     "nullable": true,
@@ -4310,9 +4262,15 @@
                                   },
                                   "partialReason": {
                                     "nullable": true,
-                                    "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                                    "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                                     "type": "string",
-                                    "enum": ["page-limit", "source-limit", "stalled", null]
+                                    "enum": [
+                                      "page-limit",
+                                      "source-limit",
+                                      "stalled",
+                                      "time-limit",
+                                      null
+                                    ]
                                   },
                                   "error": {
                                     "nullable": true,
@@ -4778,9 +4736,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -5035,9 +4993,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -5257,9 +5215,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -5535,9 +5493,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -5792,9 +5750,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -6014,9 +5972,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -6370,9 +6328,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -6627,9 +6585,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -6849,9 +6807,9 @@
                             },
                             "partialReason": {
                               "nullable": true,
-                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                              "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                               "type": "string",
-                              "enum": ["page-limit", "source-limit", "stalled", null]
+                              "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                             },
                             "error": {
                               "nullable": true,
@@ -7158,9 +7116,9 @@
                           },
                           "partialReason": {
                             "nullable": true,
-                            "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                            "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                             "type": "string",
-                            "enum": ["page-limit", "source-limit", "stalled", null]
+                            "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                           },
                           "error": {
                             "nullable": true,
@@ -7455,9 +7413,9 @@
                     },
                     "partialReason": {
                       "nullable": true,
-                      "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                      "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                       "type": "string",
-                      "enum": ["page-limit", "source-limit", "stalled", null]
+                      "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                     },
                     "error": {
                       "nullable": true,
@@ -7636,9 +7594,9 @@
                     },
                     "partialReason": {
                       "nullable": true,
-                      "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                      "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                       "type": "string",
-                      "enum": ["page-limit", "source-limit", "stalled", null]
+                      "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                     },
                     "error": {
                       "nullable": true,
@@ -7817,9 +7775,9 @@
                     },
                     "partialReason": {
                       "nullable": true,
-                      "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.",
+                      "description": "Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.",
                       "type": "string",
-                      "enum": ["page-limit", "source-limit", "stalled", null]
+                      "enum": ["page-limit", "source-limit", "stalled", "time-limit", null]
                     },
                     "error": {
                       "nullable": true,
@@ -7992,7 +7950,7 @@
         "operationId": "syncAllSources",
         "summary": "Sync every source",
         "tags": ["sources"],
-        "description": "Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file.",
+        "description": "Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file. New documents, from these syncs or waiting from earlier ones, are then placed in the knowledge base right away instead of waiting to be placed together with the documents that follow them. This covers the documents that arrive within an hour of the request. A refresh writes a limited number of entries, so a large batch is placed over several refreshes.",
         "parameters": [
           {
             "schema": {
@@ -8977,7 +8935,7 @@
         "operationId": "getJob",
         "summary": "Get a job",
         "tags": ["jobs"],
-        "description": "Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID.",
+        "description": "Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID. A job cancelled before it started never ran, so it returns 404.",
         "parameters": [
           {
             "schema": {
@@ -10646,6 +10604,277 @@
                   },
                   "required": ["instruction", "rebuildJobId"],
                   "description": "The created instruction, and the rebuild it started."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions/check": {
+      "post": {
+        "operationId": "checkInstruction",
+        "summary": "Check an instruction for contradictions",
+        "tags": ["instructions"],
+        "description": "Checks every entry built from any of the documents in `scopeDocumentIds` against `statement`, and returns the entries that contradict it. Nothing is saved. Run it before `POST .../instructions` to find the entries a new instruction would contradict, then pass their paths as `rebuildPaths` and set `verified`. Each checked entry is one model call that counts toward the organization's model spend, and the response waits for all of them, so a check over many entries can take a while. To list the entries without checking them, set `candidatesOnly`; this makes no model calls. To check only some entries, pass their paths in `paths`. Together, these let you check one entry per request and show progress.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "statement": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "description": "The instruction in plain language, as you would pass it to create."
+                  },
+                  "scopeDocumentIds": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "description": "IDs of the documents the instruction will be tied to. The check covers every entry built from any of them."
+                  },
+                  "excludeEntryId": {
+                    "description": "ID of an entry to leave out of the check, such as the entry the instruction was drafted from.",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "candidatesOnly": {
+                    "description": "Set to `true` to list the entries the check would cover in `candidates` without checking them. This makes no model calls.",
+                    "type": "boolean"
+                  },
+                  "paths": {
+                    "description": "Paths of the entries to check. Paths of entries the check would not cover are ignored. Omit it to check every entry built from the documents.",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": ["statement", "scopeDocumentIds"],
+                "description": "An instruction to check before creating it."
+              }
+            }
+          },
+          "description": "An instruction to check before creating it."
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "knowledgeBaseId",
+            "required": true,
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result of checking an instruction. Nothing is saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checked": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "How many entries were checked. Entries with no text, and entries whose check failed, are not counted and not reported. `0` when `candidatesOnly` is set."
+                    },
+                    "contradictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The entry's document ID."
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The entry's path, such as `products/api/webhooks`."
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "The entry's title."
+                          },
+                          "issue": {
+                            "type": "string",
+                            "description": "What the entry says now, and why it contradicts the instruction."
+                          }
+                        },
+                        "required": ["id", "path", "title", "issue"]
+                      },
+                      "description": "The entries that contradict the instruction, ordered by path. Empty when `candidatesOnly` is set."
+                    },
+                    "candidates": {
+                      "description": "The entries the check covers, ordered by path. Only present when `candidatesOnly` is set.",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The entry's document ID."
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "The entry's path, such as `products/api/webhooks`."
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "The entry's title."
+                          }
+                        },
+                        "required": ["id", "path", "title"]
+                      }
+                    }
+                  },
+                  "required": ["checked", "contradictions"],
+                  "description": "The result of checking an instruction. Nothing is saved."
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions/draft": {
+      "post": {
+        "operationId": "draftInstruction",
+        "summary": "Draft an instruction from feedback",
+        "tags": ["instructions"],
+        "description": "Turns free-form feedback, such as \"this is wrong\" or \"never say X\", into a proposed instruction: a statement and the documents it applies to. The documents come from `scopeDocumentIds` if you set it, or otherwise from the documents of the entry in `entryId`. Nothing is saved. Review and edit the draft, then create it with `POST .../instructions`. Each draft is one model call that counts toward the organization's model spend. If the model call fails, the request returns `502` with code `instructionDraftFailed`; retry, or write the instruction yourself.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "feedback": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "description": "What should change, in your own words, such as \"this is wrong\" or \"never say X\"."
+                  },
+                  "entryId": {
+                    "description": "ID of the entry the feedback is about. The draft reads the entry and its documents for context. If the entry doesn't exist, the request returns `404` with code `entryNotFound`.",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "excerpt": {
+                    "description": "The passage of the entry the feedback is about, so the draft addresses that claim.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "scopeDocumentIds": {
+                    "description": "IDs of the documents to tie the instruction to. Omit it to use the documents of the entry in `entryId`. If neither gives any documents, the request returns `422` with code `instructionScopeVanished`.",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": ["feedback"],
+                "description": "Feedback to turn into a proposed instruction."
+              }
+            }
+          },
+          "description": "Feedback to turn into a proposed instruction."
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "knowledgeBaseId",
+            "required": true,
+            "description": "The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "apiVersion",
+            "required": true,
+            "description": "The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A proposed instruction. Nothing is saved: pass it to `POST .../instructions` to create it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statement": {
+                      "type": "string",
+                      "description": "The proposed instruction in plain language, written as a standing rule."
+                    },
+                    "scopeDocumentIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "description": "IDs of the documents the instruction should be tied to: `scopeDocumentIds` from the request, or the documents of the entry in `entryId`. Always at least one."
+                    }
+                  },
+                  "required": ["statement", "scopeDocumentIds"],
+                  "description": "A proposed instruction. Nothing is saved: pass it to `POST .../instructions` to create it."
                 }
               }
             }

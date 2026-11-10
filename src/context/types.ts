@@ -219,3 +219,21 @@ export type Source = Response<'GET /knowledge-bases/{knowledgeBaseId}/sources/{s
 /** @beta */
 export type SyncAccepted =
   Response<'POST /knowledge-bases/{knowledgeBaseId}/sources/{sourceId}/syncs'>
+
+/**
+ * A Context API error code, from the `code` of an error response. Branch on it
+ * rather than on `message`, which can change.
+ *
+ * @beta
+ */
+export type ErrorCode = components['schemas']['ApiErrorBody']['code']
+
+/**
+ * The body of a Context API error response. `code` is one of the known
+ * {@link ErrorCode}s, or a code the API added after this client was released.
+ *
+ * @beta
+ */
+export type ApiErrorBody = Omit<components['schemas']['ApiErrorBody'], 'code'> & {
+  code: ErrorCode | (string & {})
+}

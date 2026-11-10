@@ -1,4 +1,10 @@
-import {type Context, createClient, type MutationEvent, type SanityDocument} from '@sanity/client'
+import {
+  type Context,
+  createClient,
+  isContextApiError,
+  type MutationEvent,
+  type SanityDocument,
+} from '@sanity/client'
 import {type Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
@@ -92,9 +98,30 @@ describe('client.context.request types', () => {
     void context.request('GET /projects')
   })
 
-  test('a knowledge base reports the documents it holds, with no document limit', () => {
+  test('a knowledge base reports its source chunks, not a document count', () => {
     type KnowledgeBase = Context.Response<'GET /knowledge-bases/{knowledgeBaseId}'>
-    expectTypeOf<KnowledgeBase['sourceUsage']>().toEqualTypeOf<{used: number} | null>()
+    expectTypeOf<KnowledgeBase>().not.toHaveProperty('sourceUsage')
+  })
+
+  test('an instruction can be checked and drafted before it is created', () => {
+    expectTypeOf(
+      context.request('POST /knowledge-bases/{knowledgeBaseId}/instructions/check', {
+        body: {statement: 'Refunds take 5 days', scopeDocumentIds: ['d1'], candidatesOnly: true},
+      }),
+    ).resolves.toExtend<{
+      checked: number
+      contradictions: {id: string; path: string; title: string; issue: string}[]
+      candidates?: {id: string; path: string; title: string}[]
+    }>()
+    expectTypeOf(
+      context.request('POST /knowledge-bases/{knowledgeBaseId}/instructions/draft', {
+        body: {feedback: 'Refunds take 5 days, not 10', entryId: 'entry.1'},
+      }),
+    ).resolves.toExtend<{statement: string; scopeDocumentIds: string[]}>()
+    void context.request('POST /knowledge-bases/{knowledgeBaseId}/instructions/check', {
+      // @ts-expect-error -- a check needs the documents the instruction is tied to
+      body: {statement: 'Refunds take 5 days'},
+    })
   })
 
   test('the knowledge base and organization are optional, filled from the configuration', () => {
@@ -111,6 +138,20 @@ describe('client.context.request types', () => {
     expectTypeOf(
       client.observable.context.request('POST /knowledge-bases/{knowledgeBaseId}/build'),
     ).toEqualTypeOf<Observable<Context.Response<'POST /knowledge-bases/{knowledgeBaseId}/build'>>>()
+  })
+})
+
+describe('Context API errors', () => {
+  test('isContextApiError narrows to a body with a known or newer code', () => {
+    const error: unknown = new Error('failed')
+    if (isContextApiError(error)) {
+      expectTypeOf(error.response.body.code).toExtend<string>()
+      expectTypeOf<'buildInFlight'>().toExtend<typeof error.response.body.code>()
+      expectTypeOf<'aCodeAddedLater'>().toExtend<typeof error.response.body.code>()
+      expectTypeOf(error.response.body.message).toEqualTypeOf<string>()
+    }
+    expectTypeOf<'buildInFlight'>().toExtend<Context.ErrorCode>()
+    expectTypeOf<'aCodeAddedLater'>().not.toExtend<Context.ErrorCode>()
   })
 })
 
