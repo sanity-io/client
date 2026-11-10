@@ -34,6 +34,8 @@ const PATH_ALLOWLIST = [
   `${KB}/documents/{documentId}`,
   `${KB}/documents/{documentId}/content`,
   `${KB}/instructions`,
+  `${KB}/instructions/check`,
+  `${KB}/instructions/draft`,
   `${KB}/instructions/{instructionId}`,
   `${KB}/issues/apply`,
   `${KB}/issues/{issueId}/dismiss`,

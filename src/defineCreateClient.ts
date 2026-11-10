@@ -26,6 +26,7 @@ export {
   isQueryParseError,
   ServerError,
 } from './http/errors'
+export {type ContextApiError, isContextApiError} from './context/errors'
 export * as Context from './context/types'
 export * from './SanityClient'
 export * from './types'

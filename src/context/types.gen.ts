@@ -204,6 +204,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions/check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check an instruction for contradictions
+     * @description Checks every entry built from any of the documents in `scopeDocumentIds` against `statement`, and returns the entries that contradict it. Nothing is saved. Run it before `POST .../instructions` to find the entries a new instruction would contradict, then pass their paths as `rebuildPaths` and set `verified`. Each checked entry is one model call that counts toward the organization's model spend, and the response waits for all of them, so a check over many entries can take a while. To list the entries without checking them, set `candidatesOnly`; this makes no model calls. To check only some entries, pass their paths in `paths`. Together, these let you check one entry per request and show progress.
+     */
+    post: operations['checkInstruction']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions/draft': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Draft an instruction from feedback
+     * @description Turns free-form feedback, such as "this is wrong" or "never say X", into a proposed instruction: a statement and the documents it applies to. The documents come from `scopeDocumentIds` if you set it, or otherwise from the documents of the entry in `entryId`. Nothing is saved. Review and edit the draft, then create it with `POST .../instructions`. Each draft is one model call that counts toward the organization's model spend. If the model call fails, the request returns `502` with code `instructionDraftFailed`; retry, or write the instruction yourself.
+     */
+    post: operations['draftInstruction']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/{apiVersion}/context/knowledge-bases/{knowledgeBaseId}/instructions/{instructionId}': {
     parameters: {
       query?: never
@@ -317,7 +357,7 @@ export interface paths {
     }
     /**
      * Get a job
-     * @description Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID.
+     * @description Returns the status of a background job, such as a build, sync, or refresh. The endpoint that starts the work returns the job ID. A job cancelled before it started never ran, so it returns 404.
      */
     get: operations['getJob']
     put?: never
@@ -514,7 +554,7 @@ export interface paths {
     put?: never
     /**
      * Sync every source
-     * @description Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file.
+     * @description Queues a sync of every website and dataset source, which starts once any sync of the source that is running ends. `files` sources sync when you upload a file. New documents, from these syncs or waiting from earlier ones, are then placed in the knowledge base right away instead of waiting to be placed together with the documents that follow them. This covers the documents that arrive within an hour of the request. A refresh writes a limited number of entries, so a large batch is placed over several refreshes.
      */
     post: operations['syncAllSources']
     delete?: never
@@ -1764,12 +1804,7 @@ export interface operations {
               hasDatasetSource: boolean
               /** @description Whether the knowledge base has at least one uploaded file source. */
               hasFileSource: boolean
-              /** @description How many documents the knowledge base holds. */
-              sourceUsage: {
-                /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
-                used: number
-              } | null
-              /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
+              /** @description The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted. */
               sourceChunks: number
               /** @description The number of source chunks in documents the organization's source chunk limit left out of builds. They count toward no limit, and the next build includes them once the limit has room. */
               excludedSourceChunks: number
@@ -1945,12 +1980,7 @@ export interface operations {
             hasDatasetSource: boolean
             /** @description Whether the knowledge base has at least one uploaded file source. */
             hasFileSource: boolean
-            /** @description How many documents the knowledge base holds. */
-            sourceUsage: {
-              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
-              used: number
-            } | null
-            /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
+            /** @description The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted. */
             sourceChunks: number
             /** @description The number of source chunks in documents the organization's source chunk limit left out of builds. They count toward no limit, and the next build includes them once the limit has room. */
             excludedSourceChunks: number
@@ -2109,12 +2139,7 @@ export interface operations {
             hasDatasetSource: boolean
             /** @description Whether the knowledge base has at least one uploaded file source. */
             hasFileSource: boolean
-            /** @description How many documents the knowledge base holds. */
-            sourceUsage: {
-              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
-              used: number
-            } | null
-            /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
+            /** @description The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted. */
             sourceChunks: number
             /** @description The number of source chunks in documents the organization's source chunk limit left out of builds. They count toward no limit, and the next build includes them once the limit has room. */
             excludedSourceChunks: number
@@ -2321,12 +2346,7 @@ export interface operations {
             hasDatasetSource: boolean
             /** @description Whether the knowledge base has at least one uploaded file source. */
             hasFileSource: boolean
-            /** @description How many documents the knowledge base holds. */
-            sourceUsage: {
-              /** @description The number of documents the knowledge base holds: the live documents of its sources that builds can take in, not counting duplicate copies. */
-              used: number
-            } | null
-            /** @description The number of source chunks the knowledge base holds, in the documents counted by `sourceUsage`, whether or not they have been built. Documents still being converted add theirs once converted. */
+            /** @description The number of source chunks in the live documents of the knowledge base's sources, whether or not they have been built: the sum of its sources' `chunkCount`. It includes the chunks counted by `excludedSourceChunks`, and those of documents whose content another document repeats, which builds skip. Documents still being converted add theirs once converted. */
             sourceChunks: number
             /** @description The number of source chunks in documents the organization's source chunk limit left out of builds. They count toward no limit, and the next build includes them once the limit has room. */
             excludedSourceChunks: number
@@ -3027,6 +3047,132 @@ export interface operations {
             }
             /** @description ID of the job that rebuilds the entries in `rebuildPaths`. Poll it with `GET .../jobs/{jobId}`. `null` when you didn't pass `rebuildPaths` or the rebuild could not start. The instruction is saved either way. */
             rebuildJobId: string | null
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  checkInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description An instruction to check before creating it. */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description The instruction in plain language, as you would pass it to create. */
+          statement: string
+          /** @description IDs of the documents the instruction will be tied to. The check covers every entry built from any of them. */
+          scopeDocumentIds: string[]
+          /** @description ID of an entry to leave out of the check, such as the entry the instruction was drafted from. */
+          excludeEntryId?: string
+          /** @description Set to `true` to list the entries the check would cover in `candidates` without checking them. This makes no model calls. */
+          candidatesOnly?: boolean
+          /** @description Paths of the entries to check. Paths of entries the check would not cover are ignored. Omit it to check every entry built from the documents. */
+          paths?: string[]
+        }
+      }
+    }
+    responses: {
+      /** @description The result of checking an instruction. Nothing is saved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description How many entries were checked. Entries with no text, and entries whose check failed, are not counted and not reported. `0` when `candidatesOnly` is set. */
+            checked: number
+            /** @description The entries that contradict the instruction, ordered by path. Empty when `candidatesOnly` is set. */
+            contradictions: {
+              /** @description The entry's document ID. */
+              id: string
+              /** @description The entry's path, such as `products/api/webhooks`. */
+              path: string
+              /** @description The entry's title. */
+              title: string
+              /** @description What the entry says now, and why it contradicts the instruction. */
+              issue: string
+            }[]
+            /** @description The entries the check covers, ordered by path. Only present when `candidatesOnly` is set. */
+            candidates?: {
+              /** @description The entry's document ID. */
+              id: string
+              /** @description The entry's path, such as `products/api/webhooks`. */
+              path: string
+              /** @description The entry's title. */
+              title: string
+            }[]
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApiErrorBody']
+        }
+      }
+    }
+  }
+  draftInstruction: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The knowledge base's ID (`kb...`), its `publicId`. Its UUID `id` is also accepted. */
+        knowledgeBaseId: string
+        /** @description The API version: a date in the format `vYYYY-MM-DD`, for example `v2026-05-26`, or `vX` for the latest, unstable version. */
+        apiVersion: string
+      }
+      cookie?: never
+    }
+    /** @description Feedback to turn into a proposed instruction. */
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description What should change, in your own words, such as "this is wrong" or "never say X". */
+          feedback: string
+          /** @description ID of the entry the feedback is about. The draft reads the entry and its documents for context. If the entry doesn't exist, the request returns `404` with code `entryNotFound`. */
+          entryId?: string
+          /** @description The passage of the entry the feedback is about, so the draft addresses that claim. */
+          excerpt?: string
+          /** @description IDs of the documents to tie the instruction to. Omit it to use the documents of the entry in `entryId`. If neither gives any documents, the request returns `422` with code `instructionScopeVanished`. */
+          scopeDocumentIds?: string[]
+        }
+      }
+    }
+    responses: {
+      /** @description A proposed instruction. Nothing is saved: pass it to `POST .../instructions` to create it. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            /** @description The proposed instruction in plain language, written as a standing rule. */
+            statement: string
+            /** @description IDs of the documents the instruction should be tied to: `scopeDocumentIds` from the request, or the documents of the entry in `entryId`. Always at least one. */
+            scopeDocumentIds: string[]
           }
         }
       }
@@ -3962,10 +4108,10 @@ export interface operations {
                     /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                     heldDeletions: number | null
                     /**
-                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                      * @enum {string|null}
                      */
-                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                     /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                     error: string | null
                     /**
@@ -4082,10 +4228,10 @@ export interface operations {
                     /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                     heldDeletions: number | null
                     /**
-                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                      * @enum {string|null}
                      */
-                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                     /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                     error: string | null
                     /**
@@ -4191,10 +4337,10 @@ export interface operations {
                     /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                     heldDeletions: number | null
                     /**
-                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                     * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                      * @enum {string|null}
                      */
-                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                    partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                     /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                     error: string | null
                     /**
@@ -4420,10 +4566,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -4540,10 +4686,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -4649,10 +4795,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -4787,10 +4933,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -4907,10 +5053,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -5016,10 +5162,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -5222,10 +5368,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -5342,10 +5488,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -5451,10 +5597,10 @@ export interface operations {
                   /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
                   heldDeletions: number | null
                   /**
-                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+                   * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                    * @enum {string|null}
                    */
-                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+                  partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
                   /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
                   error: string | null
                   /**
@@ -5569,10 +5715,10 @@ export interface operations {
               /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
               heldDeletions: number | null
               /**
-               * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+               * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
                * @enum {string|null}
                */
-              partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+              partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
               /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
               error: string | null
               /**
@@ -5723,10 +5869,10 @@ export interface operations {
             /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
             heldDeletions: number | null
             /**
-             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
              * @enum {string|null}
              */
-            partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+            partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
             /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
             error: string | null
             /**
@@ -5816,10 +5962,10 @@ export interface operations {
             /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
             heldDeletions: number | null
             /**
-             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
              * @enum {string|null}
              */
-            partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+            partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
             /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
             error: string | null
             /**
@@ -5909,10 +6055,10 @@ export interface operations {
             /** @description How many documents the held deletion would remove. Set while the sync is `held`, and kept after you confirm or discard it. `null` when the sync was never held. */
             heldDeletions: number | null
             /**
-             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `null` when the sync read the whole source, or hasn't finished.
+             * @description Why the sync stopped before it read the whole source, so it removed nothing. `page-limit`: the crawl reached its page limit. `source-limit`: the knowledge base had no room for more documents. `stalled`: the crawl stopped making progress. `time-limit`: the crawl ran out of time. `null` when the sync read the whole source, or hasn't finished.
              * @enum {string|null}
              */
-            partialReason: 'page-limit' | 'source-limit' | 'stalled' | null
+            partialReason: 'page-limit' | 'source-limit' | 'stalled' | 'time-limit' | null
             /** @description Why the sync failed, written to show to users. `null` unless `status` is `failed`. */
             error: string | null
             /**

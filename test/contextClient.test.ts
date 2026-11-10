@@ -1,4 +1,9 @@
-import {type ClientConfig, createClient, EXPERIMENTAL_API_WARNING} from '@sanity/client'
+import {
+  type ClientConfig,
+  createClient,
+  EXPERIMENTAL_API_WARNING,
+  isContextApiError,
+} from '@sanity/client'
 import {firstValueFrom} from 'rxjs'
 import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -158,11 +163,35 @@ describe('context.request', () => {
         headers: {'content-type': 'application/json'},
       })
 
-    await expect(
-      kbClient().context.request('GET /knowledge-bases/{knowledgeBaseId}/jobs/{jobId}', {
+    const error = await kbClient()
+      .context.request('GET /knowledge-bases/{knowledgeBaseId}/jobs/{jobId}', {
         params: {jobId: 'missing'},
-      }),
-    ).rejects.toMatchObject({statusCode: 404, response: {body: {code: 'jobNotFound'}}})
+      })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toMatchObject({statusCode: 404, response: {body: {code: 'jobNotFound'}}})
+    expect(isContextApiError(error)).toBe(true)
+  })
+
+  test('isContextApiError rejects errors without a Context API error body', async () => {
+    getActiveMock()
+      .scope(apiHost)
+      .on('GET', `${kbPath}/jobs/missing`)
+      .respond({
+        status: 401,
+        body: {statusCode: 401, error: 'Unauthorized', message: 'Session not found'},
+        headers: {'content-type': 'application/json'},
+      })
+
+    const error = await kbClient()
+      .context.request('GET /knowledge-bases/{knowledgeBaseId}/jobs/{jobId}', {
+        params: {jobId: 'missing'},
+      })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toMatchObject({statusCode: 401})
+    expect(isContextApiError(error)).toBe(false)
+    expect(isContextApiError(new Error('jobNotFound'))).toBe(false)
   })
 
   test('requestBytes resolves with the bytes, unparsed even when they are JSON', async () => {
