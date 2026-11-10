@@ -12,6 +12,7 @@ import {from, Observable} from 'rxjs'
 
 import type {Any} from '../types'
 import {ClientError, httpResponseFromFetch, ServerError} from './errors'
+import {instrumentRequests} from './instrumentation'
 
 /**
  * Middleware accepted by the internal HTTP layer. Two flavors per get-it v9:
@@ -130,6 +131,8 @@ export function defineRequester(
         maxRetries: config.maxRetries ?? 5,
         ...(config.retryDelay ? {retryDelay: config.retryDelay} : {}),
       }),
+      // Directly inside `retry`, so it follows each attempt on its own.
+      instrumentRequests(envOptions.fetch ?? ((input, init) => globalThis.fetch(input, init))),
       ...envOptions.middleware,
       applyFetchInit,
       printWarnings(config),

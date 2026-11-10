@@ -56,7 +56,9 @@ export class LiveClient {
      */
     waitFor?: 'function'
   } = {}): Observable<LiveEvent> {
-    const config = this.#client.config()
+    // Live event connections are shared between clients (see `eventsCache`),
+    // so no single client's instrumentation can follow them.
+    const config = {...this.#client.config(), instrumentation: undefined}
     const {projectId, apiVersion: _apiVersion, requestTagPrefix, headers: configHeaders} = config
     const apiVersion = _apiVersion.replace(/^v/, '')
     if (apiVersion !== 'X' && apiVersion < requiredApiVersion) {

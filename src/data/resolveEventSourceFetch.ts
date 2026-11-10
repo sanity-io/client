@@ -13,6 +13,8 @@ export interface EventSourceFetchOptions {
    * `connectAuthenticatedEventSource`).
    */
   headers?: Record<string, string>
+  /** Wraps the base fetch, for instrumentation (see `observeEventSource`). */
+  instrument?: (baseFetch: FetchFunction) => FetchFunction
 }
 
 /**
@@ -48,7 +50,9 @@ export function resolveEventSourceFetch(
   const extraHeaders = options.headers
 
   return function eventSourceFetch(url, init) {
-    const baseFetch = pickBaseFetch(config)
+    const baseFetch = options.instrument
+      ? options.instrument(pickBaseFetch(config))
+      : pickBaseFetch(config)
 
     // Extra `EventSourceFetchInit` fields get-it's `FetchInit` doesn't
     // declare (`mode`, `cache`) survive the spread and reach whichever

@@ -274,6 +274,7 @@ function _upload<
               // get-it timeout collapses to its `total` component here.
               timeout: typeof req.timeout === 'object' ? req.timeout.total : req.timeout,
               signal: req.signal,
+              instrumentation: config.instrumentation,
             }),
           ),
         ),

@@ -121,6 +121,15 @@ export function requestOptions(config: Any, overrides: Any = {}): FetchRequest {
     request.fetch = config.resolveFetch(typeof config.proxy === 'string' ? config.proxy : undefined)
   }
 
+  // Instrumentations travel in `meta` to the `instrumentRequests` transport
+  // middleware. They are read from the live config here, rather than when the
+  // transport is created, so they apply to `withConfig()` clients, which share
+  // the original client's transport. The client's runs before the per-call one.
+  const instrumentations = [config.instrumentation, overrides.instrumentation].filter(Boolean)
+  if (instrumentations.length > 0) {
+    request.meta = {...request.meta, instrumentations}
+  }
+
   // Per-request retry cap/opt-out (`maxRetries: 0` disables retries) —
   // honored natively by get-it's retry middleware, overriding the
   // client-level maximum in both directions.
