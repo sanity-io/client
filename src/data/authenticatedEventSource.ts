@@ -1,5 +1,5 @@
-import {EventSource, type EventSourceFetchInit} from 'eventsource'
-import {defer, Observable, of, switchMap, tap} from 'rxjs'
+import type {EventSourceFetchInit} from 'eventsource'
+import {defer, map, Observable, of, shareReplay, switchMap, tap} from 'rxjs'
 
 import {getStaticAuth} from '../auth'
 import {resolveAuth, settledAuth} from '../reactiveAuth'
@@ -7,6 +7,14 @@ import type {Auth, InitializedClientConfig} from '../types'
 import {connectEventSource, type EventSourceEvent} from './eventsource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 import {type EventSourceFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
+
+// `eventsource` subclasses the `Event` and `EventTarget` globals when it is
+// evaluated, which throws in runtimes that lack them (React Native on Hermes).
+// Loading it on the first connection keeps the client importable there.
+const eventSourceConstructor = defer(() => import('eventsource')).pipe(
+  map(({EventSource}) => EventSource),
+  shareReplay(1),
+)
 
 /** @internal */
 export interface AuthenticatedEventSourceOptions {
@@ -90,9 +98,10 @@ export function connectAuthenticatedEventSource<EventName extends string>(
                 (auth) => send(fetchUrl, init, auth),
               )
 
-        return connectEventSource(() => new EventSource(url, {fetch}), events).pipe(
-          reconnectOnConnectionFailure(),
-        )
+        return connectEventSource(
+          () => eventSourceConstructor.pipe(map((EventSource) => new EventSource(url, {fetch}))),
+          events,
+        ).pipe(reconnectOnConnectionFailure())
       }),
       tap((event) => {
         if ('id' in event && event.id) {
