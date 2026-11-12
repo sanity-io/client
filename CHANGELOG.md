@@ -1,5 +1,15 @@
 # @sanity/client
 
+## 8.16.0
+
+### Minor Changes
+
+- **context:** check and draft instructions, and branch on typed API error codes ([#1407](https://github.com/sanity-io/client/pull/1407)) ([5822caa](https://github.com/sanity-io/client/commit/5822caaca68580b1fabebf40cbe3a16ee14e0b41))
+
+### Patch Changes
+
+- check eventsource compatibility before using ([#1410](https://github.com/sanity-io/client/pull/1410)) ([c5d6587](https://github.com/sanity-io/client/commit/c5d65875b45ed727b1db4a732d56e917829120b4))
+
 ## 8.15.1
 
 ### Patch Changes
