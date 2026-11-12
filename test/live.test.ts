@@ -916,15 +916,9 @@ describe('.live.events()', () => {
     const onMessage = vitest.fn()
     const onError = vitest.fn()
 
-    // No handler is registered on purpose: unlike a real socket, the mock's
-    // fetch records a request synchronously as soon as it's called, before
-    // any handler lookup, so "no request recorded" can't stand in for "the
-    // connection never happened" the way it did against the real server.
-    // Instead, assert the transport-level signal the EventSource's fetch call
-    // carries: RxJS teardown (from the synchronous `unsubscribe()` below)
-    // calls `es.close()`, which aborts that request's controller before the
-    // microtask queue runs, so the recorded request's `init.signal` is
-    // already aborted.
+    // The `EventSource` is loaded lazily, so unsubscribing synchronously tears the
+    // stream down before one is created. The mock records a request as soon as
+    // its fetch is called, so no recorded request means nothing connected.
     const client = createClient({
       projectId: 'abc123',
       dataset: 'unsubscribe',
@@ -944,7 +938,7 @@ describe('.live.events()', () => {
 
     expect(onMessage).not.toHaveBeenCalled()
     expect(onError).not.toHaveBeenCalled()
-    expect(getActiveMock().getRequests()[0]?.init?.signal?.aborted).toBe(true)
+    expect(getActiveMock().getRequests()).toHaveLength(0)
   })
 
   test('closes the connection when the last subscriber unsubscribes', async () => {

@@ -1,10 +1,11 @@
-import {EventSource, type EventSourceFetchInit} from 'eventsource'
-import {defer, Observable, of, switchMap, tap} from 'rxjs'
+import type {EventSourceFetchInit} from 'eventsource'
+import {defer, from, map, Observable, of, switchMap, tap} from 'rxjs'
 
 import {getStaticAuth} from '../auth'
 import {resolveAuth, settledAuth} from '../reactiveAuth'
 import type {Auth, InitializedClientConfig} from '../types'
 import {connectEventSource, type EventSourceEvent} from './eventsource'
+import {loadEventSource} from './loadEventSource'
 import {reconnectOnConnectionFailure} from './reconnectOnConnectionFailure'
 import {type EventSourceFetch, resolveEventSourceFetch} from './resolveEventSourceFetch'
 
@@ -90,9 +91,10 @@ export function connectAuthenticatedEventSource<EventName extends string>(
                 (auth) => send(fetchUrl, init, auth),
               )
 
-        return connectEventSource(() => new EventSource(url, {fetch}), events).pipe(
-          reconnectOnConnectionFailure(),
-        )
+        return connectEventSource(
+          () => from(loadEventSource()).pipe(map((EventSource) => new EventSource(url, {fetch}))),
+          events,
+        ).pipe(reconnectOnConnectionFailure())
       }),
       tap((event) => {
         if ('id' in event && event.id) {
