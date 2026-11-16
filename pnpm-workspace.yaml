@@ -9,6 +9,10 @@
 packages:
   - .
   - tools/typedoc
+# The v13 lockfile format is far less prone to Git merge conflicts. pnpm marks it experimental
+# until pnpm 13.
+lockfile:
+  format: v13
 # Dependencies allowed to run install scripts. pnpm blocks these by default.
 # - esbuild: links its platform binary, pulled in transitively by vitest and next
 # - sharp: next's image optimizer, pulled in by the next type tests
