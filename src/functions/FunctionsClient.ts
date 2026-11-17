@@ -137,14 +137,14 @@ export class ObservableFunctionsClient {
   }
 
   /**
-   * Invoke a deployed function by its blueprint name.
+   * Invoke a deployed function by its name and stackId.
    *
-   * The name is resolved within the stack given by `stackId` on the request or
-   * the client config. Starts the invocation and emits `undefined` as soon as
+   * The function is invoked within the stack given by `stackId` on the request
+   * or the client config. Starts the invocation and emits `undefined` as soon as
    * it is accepted; pass `{sync: true}` to wait for the function's return value
    * instead.
    *
-   * @param functionName - name of the function, as declared in the blueprint
+   * @param functionName - name of the deployed function, as declared in the blueprint
    * @param request - payload and request options
    * @param options - invocation options
    */
@@ -186,24 +186,21 @@ export class FunctionsClient {
   }
 
   /**
-   * Invoke a deployed function by its blueprint name.
+   * Invoke a deployed function by its name and stack ID.
    *
-   * The name is resolved within the stack given by `stackId` on the request or
-   * the client config, which costs one extra request per call. Rejects if the
-   * stack has no function by that name, or if the name resolves to a function
-   * type that cannot be invoked the way it was asked for.
+   * The function is invoked within the stack given by `stackId` on the request
+   * or the client config. Rejects if neither supplies one.
    *
-   * The lookup is scoped to `projectId`, or to `organizationId` when one is set
+   * The call is scoped to `projectId`, or to `organizationId` when one is set
    * for a stack deployed at organization scope.
    *
    * The invocation is started by default: the promise resolves with `undefined`
    * as soon as the call is accepted, without waiting for the function to run.
    * Pass `{sync: true}` to keep the request open until the function finishes
    * and resolve with its return value — long-running functions may then need an
-   * explicit `timeout`. Only `sanity.function.pubsub` functions can be invoked
-   * synchronously.
+   * explicit `timeout`. Only some function types can be invoked synchronously.
    *
-   * @param functionName - name of the function, as declared in the blueprint
+   * @param functionName - name of the deployed function, as declared in the blueprint
    * @param request - payload and request options
    * @param options - invocation options
    */

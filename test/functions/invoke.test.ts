@@ -27,190 +27,79 @@ const getClient = (overrides: {stackId?: string} = {stackId: STACK_ID}) =>
     ...overrides,
   })
 
-const stackUri = (stackId: string) => `${BASE}/blueprints/stacks/${stackId}`
-// The route is async by default, so only a sync invoke carries the query param.
-const invokeUri = (functionId: string, sync = false) =>
-  `${BASE}/functions/${functionId}/invoke${sync ? '?sync=true' : ''}`
+// The route is async by default, so only a sync invoke carries `sync=true`.
+const invokeUri = (functionName: string, stackId = STACK_ID, sync = false) =>
+  `${BASE}/functions/${functionName}/invoke?blueprintStackId=${stackId}${sync ? '&sync=true' : ''}`
 
-const SYNC_INVOCABLE_RESOURCES = [
-  {name: 'my-func', type: 'sanity.function.pubsub', externalId: 'fn-abc123'},
-]
-const ASYNC_INVOCABLE_RESOURCES = [
-  ...SYNC_INVOCABLE_RESOURCES,
-  {name: 'my-durable', type: 'sanity.function.durable', externalId: 'fn-durable'},
-  {name: 'my-queue', type: 'sanity.function.queue', externalId: 'fn-queue'},
-]
-// INVOCABLE, but only when queued — asking for a synchronous run must be refused.
-const ASYNC_ONLY_RESOURCES = ASYNC_INVOCABLE_RESOURCES.filter(
-  (resource) => !SYNC_INVOCABLE_RESOURCES.includes(resource),
-)
-const NON_INVOCABLE_RESOURCES = [
-  {name: 'doc-func', type: 'sanity.function.document', externalId: 'fn-def456'},
-  {name: 'cron-func', type: 'sanity.function.cron', externalId: 'fn-ghi789'},
-]
-
-const STACK = {
-  id: STACK_ID,
-  name: 'my-stack',
-  resources: [
-    ...ASYNC_INVOCABLE_RESOURCES,
-    ...NON_INVOCABLE_RESOURCES,
-    // A non-function resource sharing a name must not be picked up.
-    {name: 'my-func', type: 'sanity.cors.origin', externalId: 'co-000000'},
-  ],
-}
+const FUNCTION_NAME = 'my-function'
 
 describe('client.functions.invoke', () => {
-  for (const resource of ASYNC_INVOCABLE_RESOURCES) {
-    test(`resolves the name within the stack and posts the event payload for ${resource.type}`, async () => {
-      const mock = getActiveMock()
-      mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-      mock
-        .scope(HOST)
-        .on('POST', invokeUri(resource.externalId, false), {
-          body: {event: {data: {hello: 'world'}}},
-        })
-        .respond({status: 202})
-
-      const result = await getClient().functions.invoke(resource.name, {
-        event: {data: {hello: 'world'}},
-      })
-
-      expect(result).toEqual(undefined)
-      expect(mock).toHaveReceivedRequest('GET', stackUri(STACK_ID))
-      expect(mock).toHaveReceivedRequest('POST', invokeUri(resource.externalId, false))
-    })
-
-    test(`resolves the name within the stack and posts the event payload for ${resource.type} and async requested`, async () => {
-      const mock = getActiveMock()
-      mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-      mock
-        .scope(HOST)
-        .on('POST', invokeUri(resource.externalId, false), {
-          body: {event: {data: {hello: 'world'}}},
-        })
-        .respond({status: 202})
-
-      const result = await getClient().functions.invoke(
-        resource.name,
-        {
-          event: {data: {hello: 'world'}},
-        },
-        {sync: false},
-      )
-
-      expect(result).toEqual(undefined)
-      expect(mock).toHaveReceivedRequest('GET', stackUri(STACK_ID))
-      expect(mock).toHaveReceivedRequest('POST', invokeUri(resource.externalId, false))
-    })
-  }
-
-  for (const resource of SYNC_INVOCABLE_RESOURCES) {
-    test(`resolves the name within the stack and posts the event payload for ${resource.type} and sync requested`, async () => {
-      const mock = getActiveMock()
-      mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-      mock
-        .scope(HOST)
-        .on('POST', invokeUri(resource.externalId, true), {body: {event: {data: {hello: 'world'}}}})
-        .respond({status: 200, body: {ok: true}})
-
-      const result = await getClient().functions.invoke(
-        resource.name,
-        {
-          event: {data: {hello: 'world'}},
-        },
-        {sync: true},
-      )
-
-      expect(result).toEqual({ok: true})
-      expect(mock).toHaveReceivedRequest('GET', stackUri(STACK_ID))
-      expect(mock).toHaveReceivedRequest('POST', invokeUri(resource.externalId, true))
-    })
-  }
-
-  for (const resource of ASYNC_ONLY_RESOURCES) {
-    test(`rejects a sync invoke of ${resource.type} without calling the Functions service`, async () => {
-      const mock = getActiveMock()
-      mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-
-      await expect(
-        getClient().functions.invoke(resource.name, undefined, {sync: true}),
-      ).rejects.toThrow(`Synchronous function invocation is not supported for ${resource.type}`)
-      expect(mock).toHaveReceivedRequestTimes('POST', invokeUri(resource.externalId, true), 0)
-    })
-  }
-
-  test('matches only resources of a function type', async () => {
+  test('posts the event payload to the function within the stack', async () => {
     const mock = getActiveMock()
-    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
     mock
       .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'))
+      .on('POST', invokeUri(FUNCTION_NAME), {body: {event: {data: {hello: 'world'}}}})
+      .respond({status: 202})
+
+    const result = await getClient().functions.invoke(FUNCTION_NAME, {
+      event: {data: {hello: 'world'}},
+    })
+
+    expect(result).toBeUndefined()
+    expect(mock).toHaveReceivedRequest('POST', invokeUri(FUNCTION_NAME))
+  })
+
+  test('leaves `sync` off the wire when async is requested explicitly', async () => {
+    const mock = getActiveMock()
+    mock.scope(HOST).on('POST', invokeUri(FUNCTION_NAME)).respond({status: 202})
+
+    await getClient().functions.invoke(FUNCTION_NAME, undefined, {sync: false})
+
+    expect(mock).toHaveReceivedRequest('POST', invokeUri(FUNCTION_NAME))
+  })
+
+  test('adds `sync=true` and resolves with the return value', async () => {
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('POST', invokeUri(FUNCTION_NAME, STACK_ID, true), {
+        body: {event: {data: {hello: 'world'}}},
+      })
       .respond({status: 200, body: {ok: true}})
 
-    await getClient().functions.invoke('my-func')
-
-    expect(mock).toHaveReceivedRequest('POST', invokeUri('fn-abc123'))
-  })
-
-  test('rejects when the stack has no function by that name', async () => {
-    getActiveMock().scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-
-    await expect(getClient().functions.invoke('not-in-stack')).rejects.toThrow(
-      `Function "not-in-stack" not found in stack "${STACK_ID}"`,
+    const result = await getClient().functions.invoke(
+      FUNCTION_NAME,
+      {event: {data: {hello: 'world'}}},
+      {sync: true},
     )
+
+    expect(result).toEqual({ok: true})
+    expect(mock).toHaveReceivedRequest('POST', invokeUri(FUNCTION_NAME, STACK_ID, true))
   })
 
-  test('rejects when the function is declared but not yet deployed', async () => {
-    getActiveMock()
-      .scope(HOST)
-      .on('GET', stackUri(STACK_ID))
-      .respond({
-        status: 200,
-        body: {...STACK, resources: [{name: 'pending-func', type: 'sanity.function.pubsub'}]},
-      })
+  test('does not call the blueprints service', async () => {
+    const mock = getActiveMock()
+    mock.scope(HOST).on('POST', invokeUri(FUNCTION_NAME)).respond({status: 202})
 
-    await expect(getClient().functions.invoke('pending-func')).rejects.toThrow('is not deployed')
+    await getClient().functions.invoke(FUNCTION_NAME)
+
+    expect(mock).toHaveReceivedRequestTimes('GET', `${BASE}/blueprints/stacks/${STACK_ID}`, 0)
   })
-
-  for (const resource of NON_INVOCABLE_RESOURCES) {
-    test(`rejects a ${resource.type} without calling the Functions service`, async () => {
-      const mock = getActiveMock()
-      mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-
-      await expect(getClient().functions.invoke(resource.name)).rejects.toThrow(
-        `Function invocation is not supported for ${resource.type}`,
-      )
-      expect(mock).toHaveReceivedRequestTimes('POST', invokeUri(resource.externalId), 0)
-    })
-  }
 
   test('a per-call stackId overrides the client config', async () => {
     const mock = getActiveMock()
-    mock
-      .scope(HOST)
-      .on('GET', stackUri(OTHER_STACK_ID))
-      .respond({
-        status: 200,
-        body: {
-          id: OTHER_STACK_ID,
-          resources: [{name: 'my-func', type: 'sanity.function.pubsub', externalId: 'fn-other999'}],
-        },
-      })
-    mock
-      .scope(HOST)
-      .on('POST', invokeUri('fn-other999', false))
-      .respond({status: 200, body: {ok: true}})
+    mock.scope(HOST).on('POST', invokeUri(FUNCTION_NAME, OTHER_STACK_ID)).respond({status: 202})
 
-    await getClient().functions.invoke('my-func', {stackId: OTHER_STACK_ID})
+    await getClient().functions.invoke(FUNCTION_NAME, {stackId: OTHER_STACK_ID})
 
-    expect(mock).toHaveReceivedRequest('POST', invokeUri('fn-other999', false))
-    // The stack from the client config is never consulted.
-    expect(mock).toHaveReceivedRequestTimes('GET', stackUri(STACK_ID), 0)
+    expect(mock).toHaveReceivedRequest('POST', invokeUri(FUNCTION_NAME, OTHER_STACK_ID))
+    expect(mock).toHaveReceivedRequestTimes('POST', invokeUri(FUNCTION_NAME, STACK_ID), 0)
   })
 
   test('rejects when no stackId is configured or passed', async () => {
-    await expect(getClient({}).functions.invoke('my-func')).rejects.toThrow('requires a `stackId`')
+    await expect(getClient({}).functions.invoke(FUNCTION_NAME)).rejects.toThrow(
+      'requires a `stackId`',
+    )
   })
 
   test('rejects rather than throwing when projectId is missing', async () => {
@@ -220,17 +109,16 @@ describe('client.functions.invoke', () => {
       stackId: STACK_ID,
     })
 
-    await expect(client.functions.invoke('my-func')).rejects.toThrow('requires a `projectId`')
+    await expect(client.functions.invoke(FUNCTION_NAME)).rejects.toThrow('requires a `projectId`')
   })
 
   test('does not require a dataset', async () => {
     // Functions are project-scoped: the routes carry no dataset segment and the
     // scope headers name only the project, so a dataset-less client must work.
     const mock = getActiveMock()
-    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
     mock
       .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'))
+      .on('POST', invokeUri(FUNCTION_NAME))
       .respond({status: 200, body: {ok: true}})
 
     const client = createClient({
@@ -241,7 +129,7 @@ describe('client.functions.invoke', () => {
       stackId: STACK_ID,
     })
 
-    await expect(client.functions.invoke('my-func')).resolves.toEqual({ok: true})
+    await expect(client.functions.invoke(FUNCTION_NAME)).resolves.toEqual({ok: true})
   })
 
   test('sends the project scope headers the services require', async () => {
@@ -249,18 +137,12 @@ describe('client.functions.invoke', () => {
     const mock = getActiveMock()
     mock
       .scope(HOST)
-      .on('GET', stackUri(STACK_ID), {headers: scopeHeaders})
-      .respond({status: 200, body: STACK})
-    mock
-      .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'), {headers: scopeHeaders})
+      .on('POST', invokeUri(FUNCTION_NAME), {headers: scopeHeaders})
       .respond({status: 200, body: {ok: true}})
 
-    await getClient().functions.invoke('my-func')
+    await getClient().functions.invoke(FUNCTION_NAME)
 
-    expect(mock).toHaveReceivedRequest('POST', invokeUri('fn-abc123'), {
-      headers: scopeHeaders,
-    })
+    expect(mock).toHaveReceivedRequest('POST', invokeUri(FUNCTION_NAME), {headers: scopeHeaders})
   })
 
   test('scopes to the organization when `organizationId` is configured', async () => {
@@ -268,11 +150,7 @@ describe('client.functions.invoke', () => {
     const mock = getActiveMock()
     mock
       .scope(HOST)
-      .on('GET', stackUri(STACK_ID), {headers: orgHeaders})
-      .respond({status: 200, body: STACK})
-    mock
-      .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'), {headers: orgHeaders})
+      .on('POST', invokeUri(FUNCTION_NAME), {headers: orgHeaders})
       .respond({status: 200, body: {ok: true}})
 
     const client = createClient({
@@ -284,11 +162,8 @@ describe('client.functions.invoke', () => {
       organizationId: ORG_ID,
     })
 
-    await expect(client.functions.invoke('my-func')).resolves.toEqual({ok: true})
     // Organization scope wins over the configured project.
-    expect(mock).toHaveReceivedRequest('GET', stackUri(STACK_ID), {
-      headers: {'X-Sanity-Scope-Type': 'organization'},
-    })
+    await expect(client.functions.invoke(FUNCTION_NAME)).resolves.toEqual({ok: true})
   })
 
   test('a per-call organizationId overrides the client config', async () => {
@@ -296,11 +171,7 @@ describe('client.functions.invoke', () => {
     const mock = getActiveMock()
     mock
       .scope(HOST)
-      .on('GET', stackUri(STACK_ID), {headers: orgHeaders})
-      .respond({status: 200, body: STACK})
-    mock
-      .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'), {headers: orgHeaders})
+      .on('POST', invokeUri(FUNCTION_NAME), {headers: orgHeaders})
       .respond({status: 200, body: {ok: true}})
 
     const client = createClient({
@@ -313,21 +184,16 @@ describe('client.functions.invoke', () => {
     })
 
     await expect(
-      client.functions.invoke('my-func', {organizationId: OTHER_ORG_ID}),
+      client.functions.invoke(FUNCTION_NAME, {organizationId: OTHER_ORG_ID}),
     ).resolves.toEqual({ok: true})
   })
 
   test('organization scope does not require a projectId', async () => {
     const orgHeaders = {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': ORG_ID}
     const mock = getActiveMock()
-    const globalHost = 'https://api.sanity.io'
     mock
-      .scope(globalHost)
-      .on('GET', stackUri(STACK_ID), {headers: orgHeaders})
-      .respond({status: 200, body: STACK})
-    mock
-      .scope(globalHost)
-      .on('POST', invokeUri('fn-abc123'), {headers: orgHeaders})
+      .scope('https://api.sanity.io')
+      .on('POST', invokeUri(FUNCTION_NAME), {headers: orgHeaders})
       .respond({status: 200, body: {ok: true}})
 
     const client = createClient({
@@ -339,64 +205,46 @@ describe('client.functions.invoke', () => {
       organizationId: ORG_ID,
     })
 
-    await expect(client.functions.invoke('my-func')).resolves.toEqual({ok: true})
+    await expect(client.functions.invoke(FUNCTION_NAME)).resolves.toEqual({ok: true})
   })
 
   test('defaults the payload to an empty object when no event is given', async () => {
     const mock = getActiveMock()
-    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
     mock
       .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'), {body: {event: {data: {}}}})
+      .on('POST', invokeUri(FUNCTION_NAME), {body: {event: {data: {}}}})
       .respond({status: 200, body: {ok: true}})
 
-    await getClient().functions.invoke('my-func')
+    await getClient().functions.invoke(FUNCTION_NAME)
 
-    expect(mock).toHaveReceivedRequest('POST', invokeUri('fn-abc123'))
+    expect(mock).toHaveReceivedRequest('POST', invokeUri(FUNCTION_NAME))
   })
 
   test('resolves to undefined when the function returns nothing (204)', async () => {
-    const mock = getActiveMock()
-    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-    mock.scope(HOST).on('POST', invokeUri('fn-abc123')).respond({status: 204})
+    getActiveMock().scope(HOST).on('POST', invokeUri(FUNCTION_NAME)).respond({status: 204})
 
-    await expect(getClient().functions.invoke('my-func')).resolves.toBeUndefined()
+    await expect(getClient().functions.invoke(FUNCTION_NAME)).resolves.toBeUndefined()
   })
 
   test('surfaces a function error as a rejection', async () => {
-    const mock = getActiveMock()
-    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-    mock
+    getActiveMock()
       .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'))
+      .on('POST', invokeUri(FUNCTION_NAME))
       .respond({status: 500, body: {error: {description: 'Function invoke failed!'}}})
 
-    await expect(getClient().functions.invoke('my-func')).rejects.toThrow()
-  })
-
-  test('does not invoke when the stack request fails', async () => {
-    const mock = getActiveMock()
-    mock
-      .scope(HOST)
-      .on('GET', stackUri(STACK_ID))
-      .respond({status: 404, body: {error: {description: 'Stack not found'}}})
-
-    await expect(getClient().functions.invoke('my-func')).rejects.toThrow()
-    expect(mock).toHaveReceivedRequestTimes('POST', invokeUri('fn-abc123'), 0)
+    await expect(getClient().functions.invoke(FUNCTION_NAME)).rejects.toThrow()
   })
 
   test('is available on the observable client', async () => {
-    const mock = getActiveMock()
-    mock.scope(HOST).on('GET', stackUri(STACK_ID)).respond({status: 200, body: STACK})
-    mock
+    getActiveMock()
       .scope(HOST)
-      .on('POST', invokeUri('fn-abc123'))
+      .on('POST', invokeUri(FUNCTION_NAME))
       .respond({status: 200, body: {ok: true}})
 
     const results: unknown[] = []
     await new Promise<void>((resolve, reject) => {
       getClient()
-        .observable.functions.invoke('my-func')
+        .observable.functions.invoke(FUNCTION_NAME)
         .subscribe({
           next: (value) => results.push(value),
           error: reject,

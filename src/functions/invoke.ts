@@ -1,20 +1,8 @@
-import {defer, map, mergeMap, type Observable} from 'rxjs'
+import {defer, type Observable} from 'rxjs'
 
 import {_requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, InitializedClientConfig} from '../types'
-
-/** Function resource types in a blueprint are namespaced under this prefix. */
-const FUNCTION_RESOURCE_PREFIX = 'sanity.function.'
-const SYNC_INVOCABLE_FUNCTION_TYPES = ['sanity.function.pubsub']
-const ASYNC_INVOCABLE_FUNCTION_TYPES = [
-  'sanity.function.durable',
-  'sanity.function.pubsub',
-  'sanity.function.queue',
-]
-const INVOCABLE_FUNCTION_TYPES = [
-  ...new Set([...SYNC_INVOCABLE_FUNCTION_TYPES, ...ASYNC_INVOCABLE_FUNCTION_TYPES]),
-]
 
 /** @public */
 export interface InvokeFunctionEvent {
@@ -29,7 +17,7 @@ export interface InvokeFunctionEvent {
 export interface InvokeFunctionRequest {
   event?: InvokeFunctionEvent
   /**
-   * Stack to resolve the function name against.
+   * Stack the function belongs to.
    * Overrides `stackId` from the client config.
    */
   stackId?: string
@@ -55,18 +43,6 @@ export interface InvokeFunctionOptions {
    * that support running inline can be invoked synchronously.
    */
   sync?: boolean
-}
-
-/**
- * Subset of a stack resource the client needs in order to resolve a name.
- *
- * @internal
- */
-interface StackResource {
-  name: string
-  type: string
-  /** Provider-side id. For a function resource, the function id. */
-  externalId?: string
 }
 
 type Client = SanityClient | ObservableSanityClient
@@ -115,59 +91,6 @@ const resolveStackId = (
   return stackId
 }
 
-/**
- * The invoke route is keyed by function id, but callers know functions by the
- * name declared in the blueprint. Names are unique within a stack, so the stack
- * both makes the name resolvable and confines the call to its own functions.
- *
- * @internal
- */
-function _resolveFunctionId(
-  client: Client,
-  httpRequest: HttpRequest,
-  functionName: string,
-  stackId: string,
-  headers: Record<string, string>,
-  request: InvokeFunctionRequest | undefined,
-  sync: boolean,
-): Observable<string> {
-  return _requestObservable<{resources?: StackResource[]}>(client, httpRequest, {
-    method: 'GET',
-    url: `/blueprints/stacks/${stackId}`,
-    headers,
-    signal: request?.signal,
-  }).pipe(
-    map((stack) => {
-      const match = (stack?.resources || []).find(
-        (resource) =>
-          resource.type?.startsWith(FUNCTION_RESOURCE_PREFIX) && resource.name === functionName,
-      )
-
-      if (!match) {
-        throw new Error(`Function "${functionName}" not found in stack "${stackId}"`)
-      }
-
-      if (!match.externalId) {
-        throw new Error(
-          `Function "${functionName}" is declared in stack "${stackId}" but is not deployed`,
-        )
-      }
-
-      if (!INVOCABLE_FUNCTION_TYPES.includes(match.type)) {
-        throw new Error(`Function invocation is not supported for ${match.type}`)
-      }
-      if (sync && !SYNC_INVOCABLE_FUNCTION_TYPES.includes(match.type)) {
-        throw new Error(`Synchronous function invocation is not supported for ${match.type}`)
-      }
-      if (!sync && !ASYNC_INVOCABLE_FUNCTION_TYPES.includes(match.type)) {
-        throw new Error(`Asynchronous function invocation is not supported for ${match.type}`)
-      }
-
-      return match.externalId
-    }),
-  )
-}
-
 /** @internal */
 export function _invoke<R = unknown>(
   client: Client,
@@ -184,34 +107,22 @@ export function _invoke<R = unknown>(
     const stackId = resolveStackId(config, request)
     const sync = options?.sync ?? false
 
-    return _resolveFunctionId(
-      client,
-      httpRequest,
-      functionName,
-      stackId,
+    // An async invocation is only acknowledged (202, no body), and a sync
+    // function that returns nothing answers 204, which the transport parses
+    // to an `undefined` body. The status code is not observable from here —
+    // the `HttpRequest` boundary resolves to the body alone — so an empty
+    // response and a function that returned nothing both surface as
+    // `undefined`.
+    //
+    // The route is async by default, so `sync=false` is left off the wire
+    // rather than spelled out.
+    return _requestObservable<R | undefined>(client, httpRequest, {
+      method: 'POST',
+      url: `/functions/${functionName}/invoke?blueprintStackId=${stackId}${sync ? '&sync=true' : ''}`,
       headers,
-      request,
-      sync,
-    ).pipe(
-      // An async invocation is only acknowledged (202, no body), and a sync
-      // function that returns nothing answers 204, which the transport parses
-      // to an `undefined` body. The status code is not observable from here —
-      // the `HttpRequest` boundary resolves to the body alone — so an empty
-      // response and a function that returned nothing both surface as
-      // `undefined`.
-      //
-      // The route is async by default, so `sync=false` is left off the wire
-      // rather than spelled out.
-      mergeMap((functionId) =>
-        _requestObservable<R | undefined>(client, httpRequest, {
-          method: 'POST',
-          url: `/functions/${functionId}/invoke${sync ? '?sync=true' : ''}`,
-          headers,
-          body: {event: {data: request?.event?.data ?? {}}},
-          timeout: request?.timeout,
-          signal: request?.signal,
-        }),
-      ),
-    )
+      body: {event: {data: request?.event?.data ?? {}}},
+      timeout: request?.timeout,
+      signal: request?.signal,
+    })
   })
 }
