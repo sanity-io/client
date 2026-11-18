@@ -2625,9 +2625,7 @@ Both Promise and Observable forms are available:
 await client.functions.invoke('my-function', {stackId: 'another-stack-id'})
 ```
 
-Resolving the name takes one extra request per call: the client reads the stack to find the function, then invokes it. If neither the request nor the config supplies a `stackId`, the call rejects without touching the network.
-
-Invoking a name the stack doesn't declare rejects, as does invoking a function in a way its type doesn't support.
+If neither the request nor the config supplies a `stackId`, the call rejects without touching the network. Invoking a function in a way its type doesn't support is rejected by the Functions service.
 
 #### Scoping to an organization
 
