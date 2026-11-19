@@ -1,4 +1,9 @@
-import {createClient, type DurableCallbackFailure} from '@sanity/client'
+import {
+  createClient,
+  type DurableCallbackFailure,
+  type DurableExecution,
+  type DurableStopExecutionOptions,
+} from '@sanity/client'
 import type {Observable} from 'rxjs'
 import {describe, expectTypeOf, test} from 'vitest'
 
@@ -18,6 +23,18 @@ describe('client.functions.durables', () => {
     expectTypeOf(client.observable.functions.durables.callbackFailure('id')).toEqualTypeOf<
       Observable<void>
     >()
+  })
+
+  test('stopExecution resolves with the stopped execution', () => {
+    expectTypeOf(
+      client.functions.durables.stopExecution('functionId', 'executionId'),
+    ).toEqualTypeOf<Promise<DurableExecution>>()
+    expectTypeOf(
+      client.observable.functions.durables.stopExecution('functionId', 'executionId'),
+    ).toEqualTypeOf<Observable<DurableExecution>>()
+    expectTypeOf(client.functions.durables.stopExecution)
+      .parameter(2)
+      .toEqualTypeOf<DurableStopExecutionOptions | undefined>()
   })
 
   test('a failure is an Error or the wire fields', () => {

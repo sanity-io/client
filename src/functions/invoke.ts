@@ -3,6 +3,7 @@ import {defer, type Observable} from 'rxjs'
 import {_requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest, InitializedClientConfig} from '../types'
+import {_scopeHeaders} from './scope'
 
 /** @public */
 export interface InvokeFunctionEvent {
@@ -47,32 +48,6 @@ export interface InvokeFunctionOptions {
 
 type Client = SanityClient | ObservableSanityClient
 
-const scopeHeaders = (
-  config: InitializedClientConfig,
-  request: InvokeFunctionRequest | undefined,
-): Record<string, string> => {
-  const organizationId = request?.organizationId || config.organizationId
-  if (organizationId) {
-    return {
-      'X-Sanity-Scope-Type': 'organization',
-      'X-Sanity-Scope-Id': organizationId,
-    }
-  }
-
-  const {projectId} = config
-  if (!projectId) {
-    throw new Error(
-      '`functions.invoke()` requires a `projectId` to be set in the client config, or an ' +
-        '`organizationId` for a stack deployed at organization scope',
-    )
-  }
-
-  return {
-    'X-Sanity-Scope-Type': 'project',
-    'X-Sanity-Scope-Id': projectId,
-  }
-}
-
 /**
  * A per-call `stackId` overrides the one in the client config.
  */
@@ -103,7 +78,7 @@ export function _invoke<R = unknown>(
   // (and so a rejected promise) rather than throwing at the call site.
   return defer(() => {
     const config = client.config()
-    const headers = scopeHeaders(config, request)
+    const headers = _scopeHeaders(config, request?.organizationId)
     const stackId = resolveStackId(config, request)
     const sync = options?.sync ?? false
 
