@@ -3,6 +3,7 @@ import {defer, map, type Observable} from 'rxjs'
 import {_requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest} from '../types'
+import {isRecord} from '../util/isRecord'
 import {_scopeHeaders} from './scope'
 
 /** @public */
@@ -81,10 +82,6 @@ export function _callback(
   )
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 function isDurableExecution(value: unknown): value is DurableExecution {
   return (
     isRecord(value) &&
@@ -106,7 +103,7 @@ export function _stopExecution(
     return _requestObservable<unknown>(client, httpRequest, {
       method: 'POST',
       // Execution ids contain `/` - each id must be encoded as a single path segment
-      url: `/functions/durables/${encodeURIComponent(functionId)}/executions/${encodeURIComponent(executionId)}/stop`,
+      url: `/functions/durables/${functionId}/executions/${encodeURIComponent(executionId)}/stop`,
       headers,
       timeout: options?.timeout,
       signal: options?.signal,
