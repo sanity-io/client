@@ -2679,7 +2679,7 @@ const result = await client.functions.invoke(
 )
 ```
 
-#### Completing durable function callbacks
+### Completing durable function callbacks
 
 A durable function can pause on `step.waitForCallback` until an external system reports back. The function hands out a callback ID, and whoever holds that ID resumes the function through `client.functions.durables`:
 
@@ -2713,6 +2713,23 @@ await client.functions.durables.callbackFailure(callbackId, {
 ```
 
 Both calls resolve with `undefined` once the callback is accepted, and reject with a `404` if the callback ID is unknown. Payloads are limited to 256 KB. Each accepts `{timeout, signal}` as a third argument, and both have Observable forms on `client.observable.functions.durables`.
+
+### Stopping durable function executions
+
+A durable function's running execution can be stopped as long as you have the function's ID and durable execution ID via `client.functions.durables.stopExecution`:
+
+```js
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  useProjectHostname: false,
+  apiVersion: '2025-02-19',
+})
+
+await client.functions.durables.stopExecution(functionId, executionId)
+```
+
+Resolves with an object containing `stopTimestamp`, a number representing the timestamp the stop execution API was accepted by the backend.
 
 ### Collaboration Comments API
 

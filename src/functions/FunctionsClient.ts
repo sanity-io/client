@@ -4,9 +4,12 @@ import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest} from '../types'
 import {
   _callback,
+  _stopExecution,
   _toCallbackFailure,
   type DurableCallbackFailure,
   type DurableCallbackRequestOptions,
+  type DurableExecution,
+  type DurableStopExecutionOptions,
 } from './durables'
 import {_invoke, type InvokeFunctionOptions, type InvokeFunctionRequest} from './invoke'
 
@@ -58,6 +61,23 @@ export class ObservableDurablesClient {
       _toCallbackFailure(failure),
       options,
     )
+  }
+
+  /**
+   * Stop a durable function execution.
+   *
+   * Emits the stopped execution, including its `stopTimestamp`, once the stop is accepted.
+   *
+   * @param functionId - ID of the durable function
+   * @param executionId - ID of the execution to stop
+   * @param options - request options
+   */
+  stopExecution(
+    functionId: string,
+    executionId: string,
+    options?: DurableStopExecutionOptions,
+  ): Observable<DurableExecution> {
+    return _stopExecution(this.#client, this.#httpRequest, functionId, executionId, options)
   }
 }
 
@@ -120,6 +140,25 @@ export class DurablesClient {
         _toCallbackFailure(failure),
         options,
       ),
+    )
+  }
+
+  /**
+   * Stop a durable function execution.
+   *
+   * Resolves with the stopped execution, including its `stopTimestamp`, once the stop is accepted.
+   *
+   * @param functionId - ID of the durable function
+   * @param executionId - ID of the execution to stop
+   * @param options - request options
+   */
+  stopExecution(
+    functionId: string,
+    executionId: string,
+    options?: DurableStopExecutionOptions,
+  ): Promise<DurableExecution> {
+    return lastValueFrom(
+      _stopExecution(this.#client, this.#httpRequest, functionId, executionId, options),
     )
   }
 }

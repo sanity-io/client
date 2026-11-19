@@ -180,3 +180,146 @@ describe('client.functions.durables.callbackFailure', () => {
     expect(result).toBeUndefined()
   })
 })
+
+const FUNCTION_ID = 'abcd123456'
+const EXECUTION_ID = '1/durable-execution/my-function/721704c1-73ae-3004-95fa-f472e130fb15'
+const STOP_TIMESTAMP = 1763500000000
+const ORG_ID = 'oOrG12345'
+const OTHER_ORG_ID = 'oOtHeR9999'
+const PROJECT_HEADERS = {'X-Sanity-Scope-Type': 'project', 'X-Sanity-Scope-Id': PROJECT_ID}
+const ORG_HEADERS = {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': ORG_ID}
+
+const stopUri = (functionId: string, executionId: string) =>
+  `${BASE}/functions/durables/${functionId}/executions/${encodeURIComponent(executionId)}/stop`
+
+const stoppedBody = {execution: {executionId: EXECUTION_ID, stopTimestamp: STOP_TIMESTAMP}}
+
+describe('client.functions.durables.stopExecution', () => {
+  test('encodes the function and execution ids into single path segments', async () => {
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID))
+      .respond({status: 202, body: stoppedBody})
+
+    await getClient().functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID)
+
+    const [request] = mock.getRequests()
+    expect(request.fullUrl).toBe(`${HOST}${stopUri(FUNCTION_ID, EXECUTION_ID)}`)
+    expect(request.fullUrl).toContain('%2Fdurable-execution%2F')
+  })
+
+  test('resolves with the stopped execution, including its stopTimestamp', async () => {
+    getActiveMock()
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID))
+      .respond({status: 202, body: stoppedBody})
+
+    const result = await getClient().functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID)
+
+    expect(result).toEqual({executionId: EXECUTION_ID, stopTimestamp: STOP_TIMESTAMP})
+  })
+
+  test('sends the project scope headers by default', async () => {
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID), {headers: PROJECT_HEADERS})
+      .respond({status: 202, body: stoppedBody})
+
+    await getClient().functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID)
+
+    expect(mock).toHaveReceivedRequest('POST', stopUri(FUNCTION_ID, EXECUTION_ID), {
+      headers: PROJECT_HEADERS,
+    })
+  })
+
+  test('scopes to the organization when `organizationId` is configured', async () => {
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID), {headers: ORG_HEADERS})
+      .respond({status: 202, body: stoppedBody})
+
+    const client = createClient({
+      projectId: PROJECT_ID,
+      apiVersion: API_VERSION,
+      useCdn: false,
+      organizationId: ORG_ID,
+    })
+
+    await client.functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID)
+
+    expect(mock).toHaveReceivedRequest('POST', stopUri(FUNCTION_ID, EXECUTION_ID), {
+      headers: ORG_HEADERS,
+    })
+  })
+
+  test('a per-call organizationId overrides the client config', async () => {
+    const mock = getActiveMock()
+    mock
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID), {
+        headers: {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': OTHER_ORG_ID},
+      })
+      .respond({status: 202, body: stoppedBody})
+
+    const client = createClient({
+      projectId: PROJECT_ID,
+      apiVersion: API_VERSION,
+      useCdn: false,
+      organizationId: ORG_ID,
+    })
+
+    await client.functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID, {
+      organizationId: OTHER_ORG_ID,
+    })
+
+    expect(mock).toHaveReceivedRequest('POST', stopUri(FUNCTION_ID, EXECUTION_ID), {
+      headers: {'X-Sanity-Scope-Type': 'organization', 'X-Sanity-Scope-Id': OTHER_ORG_ID},
+    })
+  })
+
+  test('rejects rather than throwing when projectId is missing', async () => {
+    const client = createClient({apiVersion: API_VERSION, useProjectHostname: false})
+
+    await expect(
+      client.functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID),
+    ).rejects.toThrow('requires a `projectId`')
+  })
+
+  test('rejects when the response carries no stopped execution', async () => {
+    getActiveMock()
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID))
+      .respond({status: 202, body: {}})
+
+    await expect(
+      getClient().functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID),
+    ).rejects.toThrow('Expected the stopped execution in the response')
+  })
+
+  test('rejects when the execution is not found', async () => {
+    getActiveMock()
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID))
+      .respond({status: 404, body: {error: 'NOT_FOUND', message: 'Execution not found'}})
+
+    await expect(
+      getClient().functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID),
+    ).rejects.toMatchObject({statusCode: 404})
+  })
+
+  test('the observable client emits the stopped execution and completes', async () => {
+    getActiveMock()
+      .scope(HOST)
+      .on('POST', stopUri(FUNCTION_ID, EXECUTION_ID))
+      .respond({status: 202, body: stoppedBody})
+
+    const result = await lastValueFrom(
+      getClient().observable.functions.durables.stopExecution(FUNCTION_ID, EXECUTION_ID),
+    )
+
+    expect(result).toEqual({executionId: EXECUTION_ID, stopTimestamp: STOP_TIMESTAMP})
+  })
+})

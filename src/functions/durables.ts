@@ -3,6 +3,8 @@ import {defer, map, type Observable} from 'rxjs'
 import {_requestObservable} from '../data/dataMethods'
 import type {ObservableSanityClient, SanityClient} from '../SanityClient'
 import type {HttpRequest} from '../types'
+import {isRecord} from '../util/isRecord'
+import {_scopeHeaders} from './scope'
 
 /** @public */
 export interface DurableCallbackFailure {
@@ -20,6 +22,23 @@ export interface DurableCallbackRequestOptions {
   timeout?: number
   /** Abort the request. */
   signal?: AbortSignal
+}
+
+/** @public */
+export interface DurableExecution {
+  /** ID of the execution. */
+  executionId: string
+  /** When the stop was recorded, as reported by the API. */
+  stopTimestamp: number
+}
+
+/** @public */
+export interface DurableStopExecutionOptions extends DurableCallbackRequestOptions {
+  /**
+   * Organization owning the stack.
+   * Overrides `organizationId` from the client config.
+   */
+  organizationId?: string
 }
 
 type Client = SanityClient | ObservableSanityClient
@@ -61,4 +80,40 @@ export function _callback(
       signal: options?.signal,
     }).pipe(map((): void => undefined)),
   )
+}
+
+function isDurableExecution(value: unknown): value is DurableExecution {
+  return (
+    isRecord(value) &&
+    typeof value.executionId === 'string' &&
+    typeof value.stopTimestamp === 'number'
+  )
+}
+
+/** @internal */
+export function _stopExecution(
+  client: Client,
+  httpRequest: HttpRequest,
+  functionId: string,
+  executionId: string,
+  options?: DurableStopExecutionOptions,
+): Observable<DurableExecution> {
+  return defer(() => {
+    const headers = _scopeHeaders(client.config(), options?.organizationId)
+    return _requestObservable<unknown>(client, httpRequest, {
+      method: 'POST',
+      // Execution ids contain `/` - each id must be encoded as a single path segment
+      url: `/functions/durables/${functionId}/executions/${encodeURIComponent(executionId)}/stop`,
+      headers,
+      timeout: options?.timeout,
+      signal: options?.signal,
+    }).pipe(
+      map((body): DurableExecution => {
+        if (isRecord(body) && isDurableExecution(body.execution)) {
+          return body.execution
+        }
+        throw new Error('Expected the stopped execution in the response')
+      }),
+    )
+  })
 }
