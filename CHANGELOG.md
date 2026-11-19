@@ -1,5 +1,16 @@
 # @sanity/client
 
+## 8.17.0
+
+### Minor Changes
+
+- add stop-durable-execution API to `functions.durables` ([#1416](https://github.com/sanity-io/client/pull/1416)) ([50c6251](https://github.com/sanity-io/client/commit/50c6251bf457a16107ad30c50487bdee1c3ce078))
+
+### Patch Changes
+
+- **functions:** Remove extraneous call to blueprints ([#1413](https://github.com/sanity-io/client/pull/1413)) ([94cc634](https://github.com/sanity-io/client/commit/94cc63483e7a3c7978227bae8baca7898dde45ed))
+- **deps:** bump vite to patched version (GHSA-p4f5-76q4-ffq7) ([#1415](https://github.com/sanity-io/client/pull/1415)) ([87da6e0](https://github.com/sanity-io/client/commit/87da6e07fc3266ddd9c1afbb8fa4fbb4393a6a04))
+
 ## 8.16.0
 
 ### Minor Changes
