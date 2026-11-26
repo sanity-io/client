@@ -85,11 +85,14 @@ function _contextRequestOptions(client: Client, route: string, init: unknown) {
   const separator = route.indexOf(' ')
   const method = route.slice(0, separator)
   const params = request.params ?? {}
-  const path = route
-    .slice(separator + 1)
-    .replace(/\{([^}]+)\}/g, (_match, name: string) =>
-      encodeURIComponent(_pathParam(client, name, params)),
-    )
+  const path = route.slice(separator + 1).replace(/\{([^}]+)\}/g, (_match, name: string) => {
+    const value = _pathParam(client, name, params)
+    // URL parsers normalize these even when the dots are percent-encoded.
+    if (value === '.' || value === '..') {
+      throw new Error(`\`params.${name}\` must not be a dot segment`)
+    }
+    return encodeURIComponent(value)
+  })
 
   return {
     url: `/context${path}`,
